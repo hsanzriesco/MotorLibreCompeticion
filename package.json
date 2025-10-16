@@ -1,16 +1,8 @@
 {
-  "name": "motor-libre-competicion",
-  "version": "1.0.0",
-  "main": "server.js",
   "type": "module",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
-  },
   "dependencies": {
+    "pg": "^8.11.3",
     "bcryptjs": "^2.4.3",
-    "dotenv": "^16.4.5",
-    "express": "^4.18.2",
-    "pg": "^8.11.3"
+    "dotenv": "^16.4.5"
   }
 }
