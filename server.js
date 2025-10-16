@@ -23,7 +23,6 @@ app.post("/api/register", async (req, res) => {
     if (!name || !email || !password)
       return res.status(400).json({ error: "Faltan datos" });
 
-    // ¿Ya existe?
     const existing = await pool.query("SELECT id FROM users WHERE email=$1", [email]);
     if (existing.rows.length > 0)
       return res.status(400).json({ error: "El correo ya está registrado" });
@@ -40,6 +39,7 @@ app.post("/api/register", async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 });
+
 
 // Página principal
 app.get("/", (req, res) => {
