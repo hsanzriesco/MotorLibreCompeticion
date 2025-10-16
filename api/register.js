@@ -1,58 +1,29 @@
-// Esperar a que el DOM cargue
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("registerForm");
-  const message = document.getElementById("message");
+import pool from "../db.js";
 
-  // Escuchar el evento de envío del formulario
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método no permitido" });
+  }
 
-    // Obtener los valores de los inputs
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+  try {
+    const { name, email, password } = req.body;
+    console.log("📩 Datos recibidos:", req.body);
 
-    // Verificación rápida
     if (!name || !email || !password) {
-      message.textContent = "⚠️ Todos los campos son obligatorios.";
-      message.classList.add("text-danger");
-      return;
+      return res.status(400).json({ error: "Faltan datos" });
     }
 
-    console.log("📤 Enviando datos:", { name, email, password });
+    // Insertar en la base de datos
+    const result = await pool.query(
+      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *",
+      [name, email, password]
+    );
 
-    try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
+    console.log("✅ Usuario registrado:", result.rows[0]);
+    return res.status(200).json({ success: true, user: result.rows[0] });
 
-      const data = await response.json();
-      console.log("📥 Respuesta del servidor:", data);
-
-      if (response.ok) {
-        // Registro exitoso
-        message.textContent = "✅ Registro exitoso. Bienvenido a Motor Libre Competición.";
-        message.classList.remove("text-danger");
-        message.classList.add("text-success");
-
-        // Limpiar el formulario
-        form.reset();
-      } else {
-        // Error controlado desde el backend
-        message.textContent = "❌ " + (data.error || "Error en el registro.");
-        message.classList.remove("text-success");
-        message.classList.add("text-danger");
-      }
-    } catch (error) {
-      // Error en la conexión o servidor
-      console.error("❌ Error en el fetch:", error);
-      message.textContent = "❌ Error de conexión con el servidor.";
-      message.classList.remove("text-success");
-      message.classList.add("text-danger");
-    }
-  });
-});
+  } catch (error) {
+    console.error("❌ Error al registrar usuario:", error);
+    return res.status(500).json({ error: "Error en el servidor o base de datos" });
+  }
+}
