@@ -1,28 +1,33 @@
-import { pool } from "../db.js";
-import bcrypt from "bcryptjs";
+document.getElementById("registerForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-export default async function handler(req, res) {
-  if (req.method !== "POST")
-    return res.status(405).json({ error: "Método no permitido" });
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  console.log("📤 Enviando:", { name, email, password }); // <- para verificar en consola
 
   try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password)
-      return res.status(400).json({ error: "Faltan datos" });
+    const response = await fetch("/api/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
 
-    const existing = await pool.query("SELECT id FROM users WHERE email=$1", [email]);
-    if (existing.rows.length > 0)
-      return res.status(400).json({ error: "Correo ya registrado" });
+    const data = await response.json();
+    console.log("📥 Respuesta del servidor:", data);
 
-    const hashed = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
-      [name, email, hashed]
-    );
-
-    res.status(201).json({ success: true, user: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error del servidor" });
+    if (response.ok) {
+      document.getElementById("message").textContent = "✅ Registro exitoso";
+      document.getElementById("registerForm").reset();
+    } else {
+      document.getElementById("message").textContent =
+        "❌ " + (data.error || "Error en el registro");
+    }
+  } catch (error) {
+    console.error("Error en fetch:", error);
+    document.getElementById("message").textContent = "❌ Error en el servidor";
   }
-}
+});
