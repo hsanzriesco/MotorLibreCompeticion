@@ -1,11 +1,11 @@
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-  console.log("📤 Enviando:", { name, email, password }); // <- para verificar en consola
+  console.log("📤 Enviando datos:", { name, email, password });
 
   try {
     const response = await fetch("/api/register", {
@@ -27,7 +27,7 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
         "❌ " + (data.error || "Error en el registro");
     }
   } catch (error) {
-    console.error("Error en fetch:", error);
+    console.error("❌ Error en el fetch:", error);
     document.getElementById("message").textContent = "❌ Error en el servidor";
   }
 });
