@@ -18,7 +18,7 @@ body {
   background: linear-gradient(90deg, #000000, #1a1a1a);
   border-bottom: 2px solid #e50914;
   box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
-  padding: 10px 30px;
+  padding: 10px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -45,7 +45,7 @@ body {
 }
 
 /* ====== FORMULARIO CENTRADO ====== */
-.register-container {
+.form-container {
   flex-grow: 1;
   display: flex;
   justify-content: center;
@@ -55,27 +55,28 @@ body {
 form {
   background: #1a1a1a;
   padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 0 25px rgba(229, 9, 20, 0.4);
+  border-radius: 15px;
+  box-shadow: 0 0 30px rgba(229, 9, 20, 0.4);
   text-align: center;
-  width: 350px;
+  width: 380px;
   animation: fadeIn 1s ease;
 }
 
 h2 {
   color: #e50914;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   margin: 10px 0;
   background: #222;
   border: none;
   color: white;
-  border-radius: 5px;
+  border-radius: 8px;
   font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
 }
 
 input::placeholder {
@@ -86,13 +87,14 @@ button {
   background: #e50914;
   color: white;
   border: none;
-  padding: 10px;
+  padding: 12px;
   width: 100%;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 600;
   font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
 }
 
 button:hover {
