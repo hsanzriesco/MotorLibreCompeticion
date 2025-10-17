@@ -27,6 +27,7 @@ body {
 .nav-link {
   color: #ccc !important;
   transition: color 0.2s ease;
+  font-size: 1rem;
 }
 
 .nav-link:hover {
@@ -63,6 +64,13 @@ body {
   color: #fff;
 }
 
+/* ✅ PLACEHOLDERS VISIBLES */
+::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* ====== BOTÓN ====== */
 .btn-custom {
   background: #e50914;
   border: none;

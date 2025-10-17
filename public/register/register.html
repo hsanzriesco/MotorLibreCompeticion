@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,6 +17,11 @@
       <a class="navbar-brand" href="../index.html">Motor Libre Competición</a>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
+          <li class="nav-item me-2">
+            <a class="nav-link" href="../login/login.html">
+              <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
+            </a>
+          </li>
           <li class="nav-item">
             <a class="nav-link active" href="./register.html">
               <i class="bi bi-person-plus"></i> Registro
@@ -32,15 +38,18 @@
 
       <form id="registerForm" class="text-center">
         <div class="mb-3">
-          <input type="text" id="name" name="name" class="form-control form-control-lg" placeholder="Nombre completo" required>
+          <input type="text" id="name" name="name" class="form-control form-control-lg" placeholder="Nombre completo"
+            required>
         </div>
 
         <div class="mb-3">
-          <input type="email" id="email" name="email" class="form-control form-control-lg" placeholder="Correo electrónico" required>
+          <input type="email" id="email" name="email" class="form-control form-control-lg"
+            placeholder="Correo electrónico" required>
         </div>
 
         <div class="mb-4">
-          <input type="password" id="password" name="password" class="form-control form-control-lg" placeholder="Contraseña" required>
+          <input type="password" id="password" name="password" class="form-control form-control-lg"
+            placeholder="Contraseña" required>
         </div>
 
         <button type="submit" class="btn btn-custom w-100 py-2 fw-semibold">
@@ -54,4 +63,5 @@
 
   <script src="../script.js"></script>
 </body>
+
 </html>
