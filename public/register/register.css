@@ -111,3 +111,17 @@ body {
     padding: 20px;
   }
 }
+
+/* ====== LINK DE REGISTRO ====== */
+.link-register {
+  color: #e50914;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-register:hover {
+  color: #ff4d4d;
+  text-decoration: underline;
+}
+
