@@ -26,14 +26,14 @@ body {
 input.form-control {
   background-color: #2b2b2b;
   border: 1px solid #333;
-  color: #fff;
+  color: #fff; /* 🔥 hace visible el texto dentro del input */
   border-radius: 10px;
   padding: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
 }
 
-/* Placeholder blanco */
+/* Placeholder visible y blanco */
 input::placeholder {
   color: rgba(255, 255, 255, 0.75);
 }
@@ -76,8 +76,4 @@ input:focus {
 .navbar-brand {
   font-weight: bold;
   font-size: 1.2rem;
-}
-
-.text-center mt-3 {
-    text-decoration-color: white;
 }
