@@ -45,7 +45,7 @@ body {
 }
 
 /* ====== FORMULARIO CENTRADO ====== */
-.login-container {
+.register-container {
   flex-grow: 1;
   display: flex;
   justify-content: center;
@@ -101,18 +101,18 @@ button:hover {
   transform: translateY(-2px);
 }
 
-.register-link {
+.login-link {
   margin-top: 15px;
   font-size: 0.9rem;
 }
 
-.register-link a {
+.login-link a {
   color: #e50914;
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
-.register-link a:hover {
+.login-link a:hover {
   color: #ff0a1e;
 }
 
