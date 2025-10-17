@@ -1,34 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* 🔴 Fondo general */
+/* ====== ESTILO GENERAL ====== */
 body {
   font-family: 'Orbitron', sans-serif;
-  background-color: #000;
-  color: #fff;
+  background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
+  color: #f5f5f5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
-  margin: 0;
 }
 
+/* ====== NAVBAR ====== */
 .navbar {
+  width: 100%;
   background: linear-gradient(90deg, #000000, #1a1a1a);
   border-bottom: 2px solid #e50914;
   box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
-  transition: background 0.3s ease;
-}
-
-.navbar:hover {
-  background: linear-gradient(90deg, #1a1a1a, #000000);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 60px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
 }
 
 .navbar-brand {
+  color: #e50914;
   font-weight: 800;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   text-transform: uppercase;
-  color: #e50914 !important;
   letter-spacing: 1px;
   transition: transform 0.2s ease;
 }
@@ -37,52 +42,34 @@ body {
   transform: scale(1.05);
 }
 
-.nav-link {
-  color: #ccc !important;
-  font-weight: 500;
-  transition: color 0.2s ease, transform 0.2s ease;
+.navbar-user .nav-link {
+  color: #ccc;
+  font-size: 1.4rem;
+  transition: color 0.3s ease, transform 0.3s ease;
 }
 
-.nav-link:hover {
-  color: #e50914 !important;
+.navbar-user .nav-link:hover {
+  color: #e50914;
   transform: translateY(-2px);
 }
 
-.nav-item i {
-  margin-right: 6px;
-}
-
-.logo {
-  font-size: 1.1rem;
-}
-
-.user-icon a {
-  color: #ff2b2b;
-  font-size: 1.4rem;
-  transition: 0.3s;
-}
-
-.user-icon a:hover {
-  color: #fff;
-}
-
-/* 🔥 Caja del formulario */
+/* ====== FORMULARIOS ====== */
 .form-container {
   background-color: #111;
   padding: 40px;
   border-radius: 10px;
-  box-shadow: 0 0 20px red;
+  box-shadow: 0 0 25px rgba(229, 9, 20, 0.4);
   text-align: center;
   width: 320px;
-  margin-top: 120px;
+  margin-top: 150px;
+  animation: fadeIn 1.2s ease;
 }
 
-h2 {
-  color: #ff2b2b;
+.form-container h2 {
+  color: #e50914;
   margin-bottom: 20px;
 }
 
-/* Campos */
 input {
   width: 100%;
   padding: 10px;
@@ -94,15 +81,14 @@ input {
 }
 
 input::placeholder {
-  color: #fff; /* placeholder blanco */
+  color: #fff;
 }
 
-/* Botón */
 button {
   width: 100%;
   padding: 10px;
   margin-top: 10px;
-  background-color: #ff2b2b;
+  background-color: #e50914;
   color: white;
   border: none;
   border-radius: 5px;
@@ -112,20 +98,34 @@ button {
 }
 
 button:hover {
-  background-color: #e60000;
+  background-color: #ff0a1e;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
-/* Enlaces */
 p {
   margin-top: 15px;
   font-size: 0.9rem;
+  color: #ccc;
 }
 
 a {
-  color: #ff2b2b;
+  color: #e50914;
   text-decoration: none;
 }
 
 a:hover {
   text-decoration: underline;
+}
+
+/* ====== ANIMACIÓN ====== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
