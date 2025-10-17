@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* ====== ESTILO GENERAL ====== */
 body {
   font-family: 'Orbitron', sans-serif;
   background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
@@ -13,7 +12,6 @@ body {
   align-items: center;
 }
 
-/* ====== NAVBAR ====== */
 .navbar {
   width: 100%;
   background: linear-gradient(90deg, #000000, #1a1a1a);
@@ -53,7 +51,6 @@ body {
   transform: translateY(-2px);
 }
 
-/* ====== FORMULARIOS ====== */
 .form-container {
   background-color: #111;
   padding: 40px;
@@ -118,7 +115,6 @@ a:hover {
   text-decoration: underline;
 }
 
-/* ====== ANIMACIÓN ====== */
 @keyframes fadeIn {
   from {
     opacity: 0;
