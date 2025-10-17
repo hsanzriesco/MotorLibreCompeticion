@@ -1,26 +1,24 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("registerForm");
-  if (!form) return;
+document.getElementById("registerForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(form));
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    const msg = document.getElementById("message");
-    const response = await res.json();
-
-    if (res.ok) {
-      msg.className = "alert alert-success";
-      msg.textContent = "✅ Usuario registrado correctamente";
-      form.reset();
-    } else {
-      msg.className = "alert alert-danger";
-      msg.textContent = response.error || "Error al registrar";
-    }
+  const response = await fetch("/api/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password })
   });
+
+  const messageEl = document.getElementById("message");
+
+  try {
+    const data = await response.json();
+    messageEl.textContent = data.message || "Registro completado.";
+    messageEl.style.color = response.ok ? "green" : "red";
+  } catch {
+    messageEl.textContent = "Error al registrar usuario.";
+    messageEl.style.color = "red";
+  }
 });
