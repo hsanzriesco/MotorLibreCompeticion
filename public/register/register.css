@@ -35,6 +35,7 @@ input.form-control {
 
 /* Placeholder visible y blanco */
 input::placeholder {
+    text-decoration-color: white;
   color: rgba(255, 255, 255, 0.75);
 }
 
