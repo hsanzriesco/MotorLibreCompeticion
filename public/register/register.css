@@ -13,23 +13,43 @@ body {
   margin: 0;
 }
 
-/* 🔺 Navbar igual que la página principal */
 .navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: linear-gradient(180deg, #0a0a0a, #000);
-  border-bottom: 2px solid red;
-  color: #ff2b2b;
-  font-weight: bold;
+  background: linear-gradient(90deg, #000000, #1a1a1a);
+  border-bottom: 2px solid #e50914;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
+  transition: background 0.3s ease;
+}
+
+.navbar:hover {
+  background: linear-gradient(90deg, #1a1a1a, #000000);
+}
+
+.navbar-brand {
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  color: #e50914 !important;
   letter-spacing: 1px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 30px;
-  box-shadow: 0 0 10px red;
-  z-index: 100;
+  transition: transform 0.2s ease;
+}
+
+.navbar-brand:hover {
+  transform: scale(1.05);
+}
+
+.nav-link {
+  color: #ccc !important;
+  font-weight: 500;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #e50914 !important;
+  transform: translateY(-2px);
+}
+
+.nav-item i {
+  margin-right: 6px;
 }
 
 .logo {
