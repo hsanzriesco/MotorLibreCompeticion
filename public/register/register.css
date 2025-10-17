@@ -1,56 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
 body {
-  background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
+  background-color: #000;
   color: #fff;
   font-family: 'Orbitron', sans-serif;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
 }
 
+/* Formulario */
 .form-container {
-  background-color: rgba(20, 20, 20, 0.95);
-  border: 1px solid #222;
-  box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
+  background-color: #111;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+  text-align: center;
+  width: 90%;
   max-width: 400px;
-  width: 100%;
 }
 
+h2 {
+  color: #ff2e2e;
+  margin-bottom: 25px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+}
+
+/* Inputs */
 input {
   width: 100%;
-  padding: 12px 15px;
-  margin-bottom: 15px;
+  padding: 12px;
+  margin-bottom: 20px;
   border: none;
   border-radius: 8px;
-  background-color: #1a1a1a;
-  color: #fff;
-  font-family: 'Orbitron', sans-serif;
+  background-color: #1b1b1b;
+  color: white;
+  font-size: 16px;
 }
 
 input::placeholder {
-  color: #fff; /* 👈 ahora los placeholders se ven blancos */
-  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.7);
 }
 
+/* Botón */
 button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background-color: #e50914;
+  background-color: #ff2e2e;
   color: white;
-  font-weight: bold;
-  font-family: 'Orbitron', sans-serif;
+  border: none;
+  padding: 12px;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
   transition: background 0.3s ease;
 }
 
 button:hover {
-  background-color: #ff1b1b;
+  background-color: #ff5050;
 }
 
+/* Enlaces */
 a {
+  color: #ff2e2e;
   text-decoration: none;
 }
 
 a:hover {
   text-decoration: underline;
+}
+
+/* Navbar */
+.navbar {
+  background-color: #0a0a0a !important;
 }
