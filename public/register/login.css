@@ -1,12 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
 /* ====== GENERAL ====== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   font-family: 'Orbitron', sans-serif;
   background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
   color: #f5f5f5;
-  margin: 0;
-  padding: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -23,7 +27,6 @@ body {
   justify-content: space-between;
   align-items: center;
   transition: background 0.3s ease;
-  box-sizing: border-box;
 }
 
 .navbar:hover {
@@ -34,7 +37,7 @@ body {
   font-weight: 800;
   font-size: 1.5rem;
   text-transform: uppercase;
-  color: #e50914 !important;
+  color: #e50914;
   text-decoration: none;
   letter-spacing: 1px;
   transition: transform 0.2s ease;
@@ -46,10 +49,11 @@ body {
 
 /* ====== FORMULARIO CENTRADO ====== */
 .form-container {
-  flex-grow: 1;
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 20px;
 }
 
 form {
@@ -65,8 +69,10 @@ form {
 h2 {
   color: #e50914;
   margin-bottom: 25px;
+  font-weight: 700;
 }
 
+/* ====== CAMPOS ====== */
 input {
   width: 100%;
   padding: 12px;
@@ -83,6 +89,7 @@ input::placeholder {
   color: #bbb;
 }
 
+/* ====== BOTÓN ====== */
 button {
   background: #e50914;
   color: white;
@@ -103,6 +110,7 @@ button:hover {
   transform: translateY(-2px);
 }
 
+/* ====== LINK ====== */
 .login-link {
   margin-top: 15px;
   font-size: 0.9rem;
