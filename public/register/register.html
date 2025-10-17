@@ -1,48 +1,48 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro - Motor Libre Competición</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-  <link rel="stylesheet" href="./register.css" />
-</head>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
+  <!-- Fuente futurista -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./register.css">
+</head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-danger">
     <div class="container">
-      <a class="navbar-brand fw-bold text-danger" href="../index.html">Motor Libre Competición</a>
+      <a class="navbar-brand text-danger fw-bold" href="/">MOTOR LIBRE COMPETICIÓN</a>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link text-light" href="../login/login.html">
+            <i class="bi bi-person"></i>
+          </a>
+        </li>
+      </ul>
     </div>
   </nav>
 
-  <main class="container register-container">
-    <div class="card shadow-lg p-4 border-0 rounded-4">
-      <h2 class="text-center mb-4 text-danger fw-bold">Registro de Usuario</h2>
+  <main class="container d-flex flex-column align-items-center justify-content-center min-vh-100 text-center">
+    <div class="form-container p-5 rounded-4 shadow-lg">
+      <h2 class="mb-4 text-danger fw-bold">Registro de Usuario</h2>
 
-      <form id="registerForm" class="text-center">
-        <div class="mb-3">
-          <input type="text" id="name" name="name" class="form-control form-control-lg" placeholder="Nombre completo" required>
-        </div>
-        <div class="mb-3">
-          <input type="email" id="email" name="email" class="form-control form-control-lg" placeholder="Correo electrónico" required>
-        </div>
-        <div class="mb-4">
-          <input type="password" id="password" name="password" class="form-control form-control-lg" placeholder="Contraseña" required>
-        </div>
-        <button type="submit" class="btn btn-custom w-100 py-2 fw-semibold">
-          <i class="bi bi-person-plus"></i> Registrarse
-        </button>
+      <form id="registerForm">
+        <input type="text" id="name" name="name" placeholder="Nombre completo" required>
+        <input type="email" id="email" name="email" placeholder="Correo electrónico" required>
+        <input type="password" id="password" name="password" placeholder="Contraseña" required>
+        <button type="submit"><i class="bi bi-person-plus"></i> Registrarse</button>
       </form>
 
-      <!-- Enlace hacia login -->
-      <p class="text-center mt-3">
-        ¿Ya tienes cuenta? 
-        <a href="./login.html" class="link-register">Inicia sesión aquí</a>
+      <p class="mt-3 text-light">
+        ¿Ya tienes cuenta? <a href="../login/login.html" class="text-danger">Inicia sesión aquí</a>
       </p>
-
-      <p id="message" class="text-center mt-3"></p>
     </div>
   </main>
 

@@ -1,80 +1,56 @@
-/* Fondo general */
 body {
-  background-color: #0d0d0d;
+  background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
   color: #fff;
-  font-family: "Poppins", sans-serif;
-}
-
-/* Contenedor centrado */
-.register-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-family: 'Orbitron', sans-serif;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Tarjeta de formulario */
-.card {
-  background-color: #1a1a1a;
-  border-radius: 20px;
+.form-container {
+  background-color: rgba(20, 20, 20, 0.95);
+  border: 1px solid #222;
+  box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
+  max-width: 400px;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 4px 20px rgba(255, 0, 0, 0.15);
 }
 
-/* Inputs */
-input.form-control {
-  background-color: #2b2b2b;
-  border: 1px solid #333;
-  color: #fff; /* 🔥 hace visible el texto dentro del input */
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-/* Placeholder visible y blanco */
-input::placeholder {
-    text-decoration-color: white;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-/* Efecto al enfocar el input */
-input:focus {
-  background-color: #333;
-  border-color: #dc3545;
-  box-shadow: 0 0 5px #dc3545;
-  color: #fff;
-}
-
-/* Botón principal */
-.btn-custom {
-  background-color: #dc3545;
+input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
   border: none;
+  border-radius: 8px;
+  background-color: #1a1a1a;
   color: #fff;
-  border-radius: 10px;
-  font-size: 1rem;
-  transition: 0.3s;
+  font-family: 'Orbitron', sans-serif;
 }
 
-.btn-custom:hover {
-  background-color: #ff4d4d;
-  transform: scale(1.02);
+input::placeholder {
+  color: #fff; /* 👈 ahora los placeholders se ven blancos */
+  opacity: 0.8;
 }
 
-/* Enlace entre login y registro */
-.link-register {
-  color: #ff4d4d;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.link-register:hover {
-  text-decoration: underline;
-}
-
-/* Navbar */
-.navbar-brand {
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: #e50914;
+  color: white;
   font-weight: bold;
-  font-size: 1.2rem;
+  font-family: 'Orbitron', sans-serif;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  background-color: #ff1b1b;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }
