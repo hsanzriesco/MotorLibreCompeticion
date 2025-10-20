@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta username="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,6 +10,7 @@
   <link rel="stylesheet" href="../../../css/auth.css" />
   <link rel="stylesheet" href="../../../css/navbar.css" />
 </head>
+
 <body>
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
     <a href="../../../index.html" class="navbar-brand">
@@ -20,17 +22,18 @@
     <div class="form-box">
       <h2>Crear cuenta</h2>
       <form id="registerForm">
-        <label for="userusername">Nombre</label>
-        <input type="text" id="userusername" required placeholder="Ej. Juan Pérez" />
+        <label for="username">Nombre</label>
+        <input type="text" id="username" required placeholder="Ej. piloto123">
 
         <label for="email">Correo electrónico</label>
-        <input type="email" id="email" required placeholder="ejemplo@correo.com" />
+        <input type="email" id="email" required placeholder="ejemplo@correo.com">
 
         <label for="password">Contraseña</label>
-        <input type="password" id="password" required placeholder="********" />
+        <input type="password" id="password" required placeholder="********">
 
         <button type="submit">Registrarme</button>
       </form>
+
 
       <p class="switch-link">
         ¿Ya tienes cuenta?
@@ -42,4 +45,5 @@
   <script src="./register.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
