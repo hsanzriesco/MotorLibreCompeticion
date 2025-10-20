@@ -11,12 +11,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name, email, password } = req.body;
+    // 👇 Aseguramos que el body se interprete correctamente
+    const buffers = [];
+    for await (const chunk of req) {
+      buffers.push(chunk);
+    }
+    const data = Buffer.concat(buffers).toString();
+    const body = data ? JSON.parse(data) : {};
+
+    const { name, email, password } = body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
 
+    // Crear tabla si no existe
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -27,6 +36,7 @@ export default async function handler(req, res) {
       )
     `);
 
+    // Insertar nuevo usuario
     const result = await pool.query(
       "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
       [name, email, password]
