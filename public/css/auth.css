@@ -200,3 +200,6 @@ body {
   cursor: pointer;
 }
 
+.form-container {
+  margin-top: 100px;
+}
