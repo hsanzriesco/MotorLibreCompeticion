@@ -4,11 +4,11 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const name = document.getElementById("username").value.trim();
+    const username = document.getElementById("userusername").value.trim();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
 
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
       alert("⚠️ Todos los campos son obligatorios");
       return;
     }
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/createUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ username, email, password }),
       });
 
       const result = await res.json();
