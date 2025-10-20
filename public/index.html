@@ -18,11 +18,14 @@
   <!-- NAVBAR -->
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
     <a href="./index.html" class="navbar-brand d-flex align-items-center">
-      <img src="./img/imagen-tfg.png" alt="Logo" height="40" class="me-2" style="height: 80px; width: auto;">
+      <img src="./img/imagen-tfg.png" alt="Logo" height="80" class="me-2">
     </a>
 
     <div class="d-flex align-items-center">
-      <a href="./pages/auth/login/login.html" class="text-light me-3"><i class="bi bi-person-circle fs-4"></i></a>
+      <span id="user-name" class="text-light me-3"></span>
+      <a href="./pages/auth/login/login.html" id="login-link" class="text-light me-3">
+        <i class="bi bi-person-circle fs-4"></i>
+      </a>
       <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
         <i class="bi bi-list"></i>
@@ -40,7 +43,7 @@
       <a href="./pages/dashboard/admin/admin.html" class="d-block text-light mb-2">Panel Administrador</a>
       <a href="./pages/dashboard/user/user.html" class="d-block text-light mb-2">Panel Usuario</a>
       <hr class="border-secondary">
-      <a href="#" class="d-block text-light">Cerrar Sesión</a>
+      <a href="#" id="logout-btn" class="d-block text-light">Cerrar Sesión</a>
     </div>
   </div>
 
@@ -50,7 +53,7 @@
   </main>
 
   <!-- JS -->
-  <script src="./js/navbar.jss"></script>
+  <script src="./js/navbar.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

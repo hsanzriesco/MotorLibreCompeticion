@@ -1,7 +1,7 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const username = document.getElementById("username").value;
+  const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
 
   try {
@@ -14,8 +14,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const data = await res.json();
 
     if (res.ok) {
+      localStorage.setItem("username", data.username);
       alert(`Bienvenido ${data.username}`);
-      window.location.href = "/public/index.html";
+      window.location.href = "/index.html";
     } else {
       alert(data.message || "Error al iniciar sesión");
     }

@@ -1,15 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const toggle = document.getElementById("menu-toggle");
-  const menu = document.getElementById("dropdown-menu");
+  const userName = document.getElementById("user-name");
+  const loginLink = document.getElementById("login-link");
+  const logoutBtn = document.getElementById("logout-btn");
 
-  toggle.addEventListener("click", () => {
-    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
-  });
+  // Mostrar nombre de usuario si hay sesión guardada
+  const loggedUser = localStorage.getItem("username");
+  if (loggedUser) {
+    userName.textContent = loggedUser;
+    loginLink.style.display = "none";
+  }
 
-  // Ocultar el menú si se hace clic fuera
-  document.addEventListener("click", (e) => {
-    if (!menu.contains(e.target) && !toggle.contains(e.target)) {
-      menu.style.display = "none";
-    }
-  });
+  // Cerrar sesión
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("username");
+      window.location.href = "/index.html";
+    });
+  }
 });
