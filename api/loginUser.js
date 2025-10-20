@@ -17,22 +17,21 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL
-      );
-    `);
+    const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
 
-    const result = await pool.query(
-      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username",
-      [username, password]
-    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+    }
 
-    return res.status(201).json({ success: true, user: result.rows[0] });
+    const user = result.rows[0];
+
+    if (user.password !== password) {
+      return res.status(401).json({ success: false, message: "Contraseña incorrecta" });
+    }
+
+    return res.status(200).json({ success: true, user });
   } catch (error) {
-    console.error("❌ Error en createUser:", error);
+    console.error("❌ Error en loginUser:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 }
