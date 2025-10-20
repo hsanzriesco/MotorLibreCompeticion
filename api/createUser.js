@@ -1,4 +1,3 @@
-// /api/createUser.js
 import { Pool } from "pg";
 
 const pool = new Pool({
@@ -15,29 +14,26 @@ export default async function handler(req, res) {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
+      console.log("❌ Faltan campos requeridos:", { name, email, password });
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
 
-    // Crear tabla si no existe
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100),
-        email VARCHAR(100) UNIQUE,
-        password VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Insertar nuevo usuario
     const result = await pool.query(
       "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
       [name, email, password]
     );
 
-    res.status(201).json({ success: true, user: result.rows[0] });
+    console.log("✅ Usuario insertado:", result.rows[0]);
+
+    return res.status(201).json({
+      success: true,
+      user: result.rows[0],
+    });
   } catch (error) {
     console.error("❌ Error en createUser:", error);
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error interno del servidor",
+    });
   }
 }
