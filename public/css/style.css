@@ -117,3 +117,13 @@ main p {
   width: auto;
   display: block;
 }
+
+.form-container {
+  margin-top: 8vh; /* usa porcentaje de la altura de la pantalla */
+}
+
+@media (max-width: 768px) {
+  .form-container {
+    margin-top: 6vh;
+  }
+}
