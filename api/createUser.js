@@ -1,41 +1,34 @@
-// /api/createUser.js
-import pool from "../../db.js";
-import bcrypt from "bcryptjs";
+import { Pool } from "pg";
+
+// 🔒 Conexión a Neon (usa tus credenciales reales del dashboard de Neon)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // En Vercel, define esta variable en Settings → Environment Variables
+  ssl: { rejectUnauthorized: false },
+});
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ success: false, error: "Método no permitido" });
+    return res.status(405).json({ success: false, message: "Método no permitido" });
   }
 
-  const { username, email, password } = req.body;
+  const { username, password } = req.body;
 
-  if (!username || !email || !password) {
-    return res.status(400).json({ success: false, error: "Faltan campos obligatorios" });
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
   }
 
   try {
-    // Comprobar si ya existe el usuario
-    const existingUser = await pool.query(
-      "SELECT * FROM users WHERE username = $1 OR email = $2",
-      [username, email]
+    const result = await pool.query(
+      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username",
+      [username, password]
     );
 
-    if (existingUser.rows.length > 0) {
-      return res.status(409).json({ success: false, error: "El usuario o correo ya existe" });
-    }
-
-    // Encriptar contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insertar usuario
-    await pool.query(
-      "INSERT INTO users (username, email, password) VALUES ($1, $2, $3)",
-      [username, email, hashedPassword]
-    );
-
-    return res.status(201).json({ success: true, message: "Usuario registrado correctamente" });
-  } catch (error) {
-    console.error("❌ Error al registrar usuario:", error);
-    return res.status(500).json({ success: false, error: "Error en el servidor" });
+    res.status(201).json({
+      success: true,
+      user: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Error al crear usuario:", err);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
   }
 }

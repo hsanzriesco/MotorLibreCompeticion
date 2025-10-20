@@ -5,37 +5,26 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
 
     const username = document.getElementById("username").value.trim();
-    const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
 
-    if (!username || !email || !password) {
-      alert("Por favor, completa todos los campos.");
-      return;
-    }
-
     try {
-      // Petición al backend (Neon vía Vercel)
-      const res = await fetch("https://motor-libre-competicion.vercel.app/api/createUser", {
+      const res = await fetch("/api/createUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await res.json();
 
-      if (res.ok && data.success) {
-        alert("✅ Usuario registrado correctamente");
-        // Guardar temporalmente en localStorage (solo si quieres usarlo para mostrar el nombre)
-        localStorage.setItem("user", JSON.stringify({ username }));
-
-        // Redirigir al login
+      if (data.success) {
+        alert(`Usuario ${data.user.username} creado correctamente.`);
         window.location.href = "../login/login.html";
       } else {
-        alert(`❌ ${data.error || "Error al registrar usuario"}`);
+        alert(`Error: ${data.message}`);
       }
     } catch (err) {
-      console.error("Error:", err);
-      alert("⚠️ Ocurrió un error al conectar con el servidor");
+      console.error("Error al conectar:", err);
+      alert("No se pudo conectar al servidor.");
     }
   });
 });
