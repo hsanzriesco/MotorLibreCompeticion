@@ -1,4 +1,3 @@
-// register.js
 document.getElementById("registerForm").addEventListener("submit", (e) => {
   e.preventDefault();
 
