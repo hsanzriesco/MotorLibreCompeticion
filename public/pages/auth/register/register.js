@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
 
-    console.log("Datos enviados:", { name, email, password }); // 👈 Verifica en consola
+    console.log("Datos enviados:", { name, email, password }); // <-- Aquí debe mostrar los textos
 
     try {
       const res = await fetch("/api/createUser", {
@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const result = await res.json();
-      console.log("Respuesta del servidor:", result); // 👈 Verifica también esto
+      console.log("Respuesta del servidor:", result);
 
       if (result.success) {
         alert("✅ Usuario creado con éxito");
