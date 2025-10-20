@@ -1,5 +1,5 @@
-import pkg from "pg";
-const { Pool } = pkg;
+// db.js
+import { Pool } from "pg";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
