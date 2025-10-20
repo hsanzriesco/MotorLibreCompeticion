@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;600&display=swap');
+
+body {
+  background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* === Navbar === */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem; /* Aumenta el alto (1rem) y ancho (2rem) */
+  background: linear-gradient(to right, #080808, #0d0d0d);
+  border-bottom: 2px solid #e50914;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
+}
+
+
+.navbar-brand {
+  color: #dc3545;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(229, 9, 20, 0.8);
+}
+
+.navbar-icons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.navbar-icons i {
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: white;
+  transition: 0.3s;
+}
+
+.navbar-icons i:hover {
+  color: #e50914;
+  transform: scale(1.1);
+}
+
+/* === Contenedor del formulario === */
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 70px);
+}
+
+.form-box {
+  background: rgba(20, 20, 20, 0.9);
+  padding: 2.2rem 2.5rem;
+  border-radius: 15px;
+  box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
+  width: 340px;
+  text-align: center;
+  animation: fadeIn 0.6s ease-in-out;
+  backdrop-filter: blur(6px);
+}
+
+.form-box h2 {
+  color: #e50914;
+  margin-bottom: 1.5rem;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+  font-size: 1.6rem;
+  text-shadow: 0 0 6px rgba(229, 9, 20, 0.8);
+}
+
+.form-box label {
+  display: block;
+  color: #ccc;
+  text-align: left;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form-box input {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.6rem;
+  background: #1b1b1b;
+  border: 1px solid #333;
+  border-radius: 5px;
+  color: white;
+  outline: none;
+  transition: 0.3s;
+  font-size: 0.95rem;
+}
+
+.form-box input:focus {
+  border-color: #e50914;
+  box-shadow: 0 0 8px #e50914;
+}
+
+.form-box small {
+  display: block;
+  color: #888;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.form-box button {
+  width: 100%;
+  background-color: #e50914;
+  border: none;
+  padding: 0.7rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.form-box button:hover {
+  background-color: #ff1a1a;
+  transform: scale(1.05);
+  box-shadow: 0 0 10px #e50914;
+}
+
+.switch-link {
+  margin-top: 1.2rem;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.switch-link a {
+  color: #e50914;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.switch-link a:hover {
+  text-decoration: underline;
+}
+
+/* === Animaciones === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === MENÚ HAMBURGUESA === */
+.dropdown-menu {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  background-color: #111;
+  border: 1px solid #b90000;
+  border-radius: 10px;
+  display: none;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 0.5rem 0;
+  z-index: 999;
+}
+
+.dropdown-menu a {
+  color: white;
+  padding: 10px 15px;
+  text-decoration: none;
+  display: block;
+  transition: background 0.2s;
+}
+
+.dropdown-menu a:hover {
+  background-color: #b90000;
+}
+
+.dropdown-menu hr {
+  border: 0;
+  border-top: 1px solid #b90000;
+  margin: 5px 0;
+}
+
+/* Posicionamiento del contenedor */
+.navbar-icons {
+  position: relative;
+}
+
+.navbar-icons i {
+  cursor: pointer;
+}
+

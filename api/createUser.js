@@ -1,27 +1,63 @@
-import pool from "../db.js";
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("registerForm");
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método no permitido" });
-  }
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  try {
-    const { name, email, password } = req.body;
+    const data = Object.fromEntries(new FormData(form).entries());
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "Faltan datos" });
+    // Validar contraseña antes de enviar
+    const passwordError = validatePassword(data.password);
+    if (passwordError) {
+      showMessage(passwordError, "error");
+      return;
     }
 
-    const result = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *",
-      [name, email, password]
-    );
+    try {
+      const res = await fetch("/api/registerUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
 
-    return res.status(200).json({ success: true, user: result.rows[0] });
-  } catch (error) {
-    console.error("❌ Error al registrar usuario:", error);
-    return res
-      .status(500)
-      .json({ error: "Error en el servidor", detail: error.message });
-  }
+      const result = await res.json();
+
+      if (result.success) {
+        showMessage("✅ Registro exitoso. Redirigiendo...", "success");
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 3000);
+      } else {
+        showMessage(`❌ ${result.error || "Error al registrar"}`, "error");
+      }
+    } catch {
+      showMessage("⚠️ Error al conectar con el servidor", "error");
+    }
+  });
+});
+
+/* Validación avanzada de contraseña */
+function validatePassword(password) {
+  if (password.length < 8)
+    return "La contraseña debe tener al menos 8 caracteres.";
+  if (!/[A-Z]/.test(password))
+    return "La contraseña debe incluir al menos una letra mayúscula.";
+  if (!/[a-z]/.test(password))
+    return "La contraseña debe incluir al menos una letra minúscula.";
+  if (!/[0-9]/.test(password))
+    return "La contraseña debe incluir al menos un número.";
+  if (!/[!@#$%^&*(),.?\":{}|<>_\-]/.test(password))
+    return "La contraseña debe incluir al menos un carácter especial.";
+
+  return null; // ✅ Sin errores
+}
+
+/* Mensaje flotante reutilizable */
+function showMessage(text, type = "info") {
+  const div = document.createElement("div");
+  div.textContent = text;
+  div.className = `floating-msg ${type}`;
+  document.body.appendChild(div);
+
+  setTimeout(() => div.remove(), 5000);
 }
