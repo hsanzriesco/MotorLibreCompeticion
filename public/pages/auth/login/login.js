@@ -1,24 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
 
-  if (!form) {
-    console.error("Formulario login no encontrado");
-    return;
-  }
-
-  const inputEmail = document.getElementById("email");
-  const inputPassword = document.getElementById("password");
-
-  if (!inputEmail || !inputPassword) {
-    console.error("Campos de login faltantes en el HTML");
+  if (!form || !emailInput || !passwordInput) {
+    console.error("Formulario o campos no encontrados en el DOM");
     return;
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const email = inputEmail.value.trim();
-    const password = inputPassword.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
 
     if (!email || !password) {
       alert("Por favor, completa todos los campos.");
@@ -36,15 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Respuesta del servidor:", result);
 
       if (res.ok && result.success) {
-        const nombreUsuario = result.user.name || "Usuario";
-
-        // Guarda el usuario en localStorage
         localStorage.setItem("usuario", JSON.stringify(result.user));
-
-        // Muestra bienvenida
-        alert(`👋 Bienvenido, ${nombreUsuario}!`);
-
-        // Redirige al index
+        alert(`👋 Bienvenido, ${result.user.name || "Usuario"}!`);
         window.location.href = "/index.html";
       } else {
         alert("❌ " + (result.message || "Credenciales incorrectas"));
