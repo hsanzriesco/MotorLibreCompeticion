@@ -1,27 +1,23 @@
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
+// login.js
+document.getElementById("loginForm").addEventListener("submit", (e) => {
   e.preventDefault();
 
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
 
-  try {
-    const res = await fetch("/api/createUser", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+  // Simulación de login local
+  const storedUser = localStorage.getItem("user");
+  if (!storedUser) {
+    alert("No hay ningún usuario registrado.");
+    return;
+  }
 
-    const data = await res.json();
-
-    if (res.ok) {
-      localStorage.setItem("username", data.username);
-      alert(`Bienvenido ${data.username}`);
-      window.location.href = "/index.html";
-    } else {
-      alert(data.message || "Error al iniciar sesión");
-    }
-  } catch (err) {
-    console.error("Error:", err);
-    alert("Ocurrió un error al conectar con el servidor");
+  const user = JSON.parse(storedUser);
+  if (user.username === username && user.password === password) {
+    localStorage.setItem("username", user.username);
+    alert(`Bienvenido ${user.username}`);
+    window.location.href = "/index.html";
+  } else {
+    alert("Usuario o contraseña incorrectos");
   }
 });
