@@ -2,25 +2,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
 
   if (!form) {
-    console.error("login.js - no se encontró el formulario #loginForm");
+    console.error("Formulario login no encontrado");
     return;
   }
 
-  // Buscar inputs una sola vez
   const inputEmail = document.getElementById("email");
   const inputPassword = document.getElementById("password");
 
   if (!inputEmail || !inputPassword) {
-    console.error("login.js - faltan inputs con id 'email' o 'password' en el HTML");
+    console.error("Campos de login faltantes en el HTML");
     return;
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Leer valores de forma segura
-    const email = (inputEmail.value || "").trim();
-    const password = (inputPassword.value || "").trim();
+    const email = inputEmail.value.trim();
+    const password = inputPassword.value.trim();
 
     if (!email || !password) {
       alert("Por favor, completa todos los campos.");
@@ -34,25 +32,22 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email, password }),
       });
 
-      let result;
-      try {
-        result = await res.json();
-      } catch (err) {
-        console.error("Respuesta no JSON del servidor:", err);
-        alert("Respuesta inesperada del servidor.");
-        return;
-      }
-
+      const result = await res.json();
       console.log("Respuesta del servidor:", result);
 
       if (res.ok && result.success) {
-        const nombreUsuario = result.user?.name || result.user?.username || "Usuario";
+        const nombreUsuario = result.user.name || "Usuario";
+
+        // Guarda el usuario en localStorage
         localStorage.setItem("usuario", JSON.stringify(result.user));
-        // Mensaje bonito en vez de alert (puedes cambiar por modal)
+
+        // Muestra bienvenida
         alert(`👋 Bienvenido, ${nombreUsuario}!`);
+
+        // Redirige al index
         window.location.href = "/index.html";
       } else {
-        alert("❌ " + (result.message || "Error al iniciar sesión"));
+        alert("❌ " + (result.message || "Credenciales incorrectas"));
       }
     } catch (error) {
       console.error("Error en login:", error);
