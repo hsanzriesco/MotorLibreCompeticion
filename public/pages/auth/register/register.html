@@ -10,30 +10,46 @@
   <link rel="stylesheet" href="../../../css/navbar.css">
 </head>
 <body>
+  <!-- 🔻 Navbar superior -->
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
-    <a href="../../../index.html" class="navbar-brand">
+    <a href="../../../index.html" class="navbar-brand d-flex align-items-center">
       <img src="../../../img/imagen-tfg.png" alt="Logo" height="80">
     </a>
   </nav>
 
+  <!-- 🔻 Formulario de registro -->
   <div class="form-container mt-5">
-    <div class="form-box">
-      <h2>Crear cuenta</h2>
-      <form id="registerForm">
-        <label for="username">Nombre de usuario</label>
-        <input type="text" id="username" required placeholder="Ej. piloto123">
+    <div class="form-box shadow-lg p-4 rounded bg-light">
+      <h2 class="text-center mb-4">Crear cuenta</h2>
 
-        <label for="password">Contraseña</label>
-        <input type="password" id="password" required placeholder="********">
+      <form id="registerForm" novalidate>
+        <div class="mb-3">
+          <label for="name" class="form-label">Nombre completo</label>
+          <input type="text" class="form-control" id="name" placeholder="Ej. Juan Pérez" required>
+        </div>
 
-        <button type="submit">Registrarme</button>
+        <div class="mb-3">
+          <label for="email" class="form-label">Correo electrónico</label>
+          <input type="email" class="form-control" id="email" placeholder="Ej. usuario@correo.com" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Contraseña</label>
+          <input type="password" class="form-control" id="password" placeholder="********" required minlength="8">
+        </div>
+
+        <button type="submit" class="btn btn-danger w-100">Registrarme</button>
       </form>
 
-      <p class="switch-link">¿Ya tienes cuenta? <a href="../login/login.html">Inicia sesión</a></p>
+      <p class="text-center mt-3 switch-link">
+        ¿Ya tienes cuenta?
+        <a href="../login/login.html" class="text-danger text-decoration-none">Inicia sesión</a>
+      </p>
     </div>
   </div>
 
-  <script src="register.js"></script>
+  <!-- Scripts -->
+  <script src="../../../js/register.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

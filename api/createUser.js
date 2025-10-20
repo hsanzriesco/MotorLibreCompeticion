@@ -11,28 +11,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { username, password } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!username || !password) {
+    if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL
-      );
-    `);
-
+    // Insertar nuevo usuario
     const result = await pool.query(
-      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username",
-      [username, password]
+      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
+      [name, email, password]
     );
 
-    return res.status(201).json({ success: true, user: result.rows[0] });
+    return res.status(201).json({
+      success: true,
+      user: result.rows[0],
+    });
   } catch (error) {
     console.error("❌ Error en createUser:", error);
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error interno del servidor",
+    });
   }
 }

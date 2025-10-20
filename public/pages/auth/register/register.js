@@ -4,26 +4,48 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const username = document.getElementById("username").value.trim();
+    // Obtener valores del formulario
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
 
+    // Validaciones básicas
+    if (!name || !email || !password) {
+      alert("⚠️ Todos los campos son obligatorios");
+      return;
+    }
+
+    // Validación de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert("⚠️ Ingresa un correo electrónico válido");
+      return;
+    }
+
+    // Validación de contraseña mínima
+    if (password.length < 8) {
+      alert("⚠️ La contraseña debe tener al menos 8 caracteres");
+      return;
+    }
+
     try {
-      const res = await fetch("https://motor-libre-competicion.vercel.app/api/createUser", {
+      const res = await fetch("/api/createUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await res.json();
+      const result = await res.json();
 
-      if (data.success) {
-        alert("✅ Registro exitoso. Redirigiendo...");
-        setTimeout(() => window.location.href = "../login/login.html", 1500);
+      if (result.success) {
+        alert("✅ Usuario registrado correctamente");
+        // Redirige al login
+        window.location.href = "../login/login.html";
       } else {
-        alert("⚠️ " + data.message);
+        alert("⚠️ " + (result.message || "Error al registrar el usuario"));
       }
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error("❌ Error al conectar con el servidor:", error);
       alert("❌ Error al conectar con el servidor");
     }
   });
