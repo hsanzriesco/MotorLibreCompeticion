@@ -111,3 +111,9 @@ main p {
     font-size: 1rem;
   }
 }
+
+.navbar-logo {
+  height: 50px;
+  width: auto;
+  display: block;
+}
