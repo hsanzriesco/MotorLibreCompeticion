@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
 
     const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
+    const password = document.getElementById("password").value.trim();
 
     try {
       const res = await fetch("/api/createUser", {
@@ -14,17 +14,17 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await res.json();
+      const result = await res.json();
 
-      if (data.success) {
-        alert(`Usuario ${data.user.username} creado correctamente.`);
+      if (result.success) {
+        alert("✅ Usuario creado con éxito");
         window.location.href = "../login/login.html";
       } else {
-        alert(`Error: ${data.message}`);
+        alert("⚠️ " + result.message);
       }
     } catch (err) {
-      console.error("Error al conectar:", err);
-      alert("No se pudo conectar al servidor.");
+      alert("❌ Error al conectar con el servidor");
+      console.error(err);
     }
   });
 });

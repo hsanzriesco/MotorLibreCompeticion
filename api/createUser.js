@@ -1,8 +1,7 @@
 import { Pool } from "pg";
 
-// 🔒 Conexión a Neon (usa tus credenciales reales del dashboard de Neon)
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // En Vercel, define esta variable en Settings → Environment Variables
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
@@ -11,24 +10,37 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: "Método no permitido" });
   }
 
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
-  }
-
   try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
+    }
+
+    // Crear tabla si no existe
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL
+      )
+    `);
+
+    // Insertar nuevo usuario
     const result = await pool.query(
       "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username",
       [username, password]
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       user: result.rows[0],
     });
-  } catch (err) {
-    console.error("Error al crear usuario:", err);
-    res.status(500).json({ success: false, message: "Error en el servidor" });
+  } catch (error) {
+    console.error("❌ Error en createUser:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error interno del servidor",
+    });
   }
 }
