@@ -19,9 +19,9 @@ export default async function handler(req, res) {
     const data = Buffer.concat(buffers).toString();
     const body = data ? JSON.parse(data) : {};
 
-    const { name, email, password } = body;
+    const { username, email, password } = body;
 
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
 
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(100),
+        username VARCHAR(100),
         email VARCHAR(100) UNIQUE,
         password VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -38,8 +38,8 @@ export default async function handler(req, res) {
 
     // Insertar nuevo usuario
     const result = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
-      [name, email, password]
+      "INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email",
+      [username, email, password]
     );
 
     return res.status(201).json({ success: true, user: result.rows[0] });
