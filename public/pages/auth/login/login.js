@@ -1,18 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
-  if (!form) {
-    console.error("❌ No se encontró el formulario con id='loginForm'");
-    return;
-  }
+  if (!form) return;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const email = document.getElementById("email")?.value.trim();
-    const password = document.getElementById("password")?.value.trim();
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+
+    if (!emailInput || !passwordInput) {
+      console.error("❌ No se encontraron los campos del formulario.");
+      return;
+    }
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
 
     if (!email || !password) {
-      alert("⚠️ Por favor, completa todos los campos.");
+      showMessage("⚠️ Por favor, completa todos los campos.", "error");
       return;
     }
 
@@ -23,26 +28,76 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await res.json();
-      console.log("Respuesta del servidor:", result);
+      const text = await res.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        console.error("Respuesta no JSON:", text);
+        showMessage("❌ Error inesperado del servidor.", "error");
+        return;
+      }
 
       if (result.success) {
         const user = result.user;
         localStorage.setItem("usuario", JSON.stringify(user));
-        alert(`👋 Bienvenido, ${user.name}!`);
+        showMessage(`👋 Bienvenido, ${user.name}!`, "success");
 
-        // Redirección según rol
-        if (user.role === "admin") {
-          window.location.href = "/pages/dashboard/admin/admin.html";
-        } else {
-          window.location.href = "/pages/dashboard/user/user.html";
-        }
+        // Redirección según el rol
+        setTimeout(() => {
+          if (user.role === "admin") {
+            window.location.href = "/pages/dashboard/admin/admin.html";
+          } else {
+            window.location.href = "/index.html"; // usuario normal → index
+          }
+        }, 1500);
       } else {
-        alert("❌ " + result.message);
+        showMessage("❌ " + result.message, "error");
       }
     } catch (error) {
       console.error("Error en login:", error);
-      alert("Error en el servidor.");
+      showMessage("⚠️ Error de conexión con el servidor.", "error");
     }
   });
 });
+
+// ✅ función para mostrar mensaje bonito en pantalla
+function showMessage(message, type = "info") {
+  let msgBox = document.getElementById("messageBox");
+  if (!msgBox) {
+    msgBox = document.createElement("div");
+    msgBox.id = "messageBox";
+    msgBox.style.position = "fixed";
+    msgBox.style.top = "20px";
+    msgBox.style.left = "50%";
+    msgBox.style.transform = "translateX(-50%)";
+    msgBox.style.padding = "15px 25px";
+    msgBox.style.borderRadius = "10px";
+    msgBox.style.fontWeight = "bold";
+    msgBox.style.zIndex = "9999";
+    msgBox.style.transition = "opacity 0.5s ease";
+    document.body.appendChild(msgBox);
+  }
+
+  msgBox.textContent = message;
+
+  switch (type) {
+    case "success":
+      msgBox.style.backgroundColor = "#28a745";
+      msgBox.style.color = "#fff";
+      break;
+    case "error":
+      msgBox.style.backgroundColor = "#dc3545";
+      msgBox.style.color = "#fff";
+      break;
+    default:
+      msgBox.style.backgroundColor = "#ffc107";
+      msgBox.style.color = "#000";
+  }
+
+  msgBox.style.opacity = "1";
+
+  setTimeout(() => {
+    msgBox.style.opacity = "0";
+  }, 2500);
+}
