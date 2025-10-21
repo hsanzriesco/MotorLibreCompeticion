@@ -8,20 +8,20 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const { title, start, end } = req.body;
+      const { title, start, end_date } = req.body;
       const { rows } = await pool.query(
-        "INSERT INTO events (title, start, end) VALUES ($1, $2, $3) RETURNING *",
-        [title, start, end]
+        "INSERT INTO events (title, start, end_date) VALUES ($1, $2, $3) RETURNING *",
+        [title, start, end_date]
       );
       return res.status(200).json({ success: true, data: rows[0] });
     }
 
     if (req.method === "PUT") {
       const id = req.url.split("/").pop();
-      const { title, start, end } = req.body;
+      const { title, start, end_date } = req.body;
       const { rows } = await pool.query(
-        "UPDATE events SET title=$1, start=$2, end=$3 WHERE id=$4 RETURNING *",
-        [title, start, end, id]
+        "UPDATE events SET title=$1, start=$2, end_date=$3 WHERE id=$4 RETURNING *",
+        [title, start, end_date, id]
       );
       return res.status(200).json({ success: true, data: rows[0] });
     }
