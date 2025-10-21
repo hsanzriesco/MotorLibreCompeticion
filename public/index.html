@@ -19,21 +19,18 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
   <style>
+    body {
+      background-color: #111;
+      color: white;
+    }
+
     #calendar {
-      max-width: 1000px;
+      max-width: 900px;
       margin: 50px auto;
-      background: #1e1e1e;
-      border-radius: 15px;
+      background: #1c1c1c;
       padding: 20px;
-      box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
-    }
-
-    .fc-toolbar-title {
-      color: #dc3545 !important;
-    }
-
-    .fc-daygrid-day-number {
-      color: white !important;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
     }
   </style>
 </head>
@@ -74,12 +71,13 @@
   <!-- CONTENIDO -->
   <main class="main-content text-center mt-5">
     <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
-    <h2 id="bienvenida" class="text-danger mt-3"></h2>
+    <h4 id="bienvenida" class="mt-3 text-danger"></h4>
 
+    <!-- Calendario -->
     <div id="calendar"></div>
   </main>
 
-  <!-- Scripts -->
+  <!-- JS -->
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -87,87 +85,71 @@
       const userName = document.getElementById("user-name");
       const loginLink = document.getElementById("login-link");
 
+      // Mostrar saludo si hay usuario logueado
       if (usuario) {
-        bienvenida.textContent = `👋 Bienvenido, ${usuario.name}!`;
-        userName.textContent = usuario.name;
-        loginLink.style.display = "none";
-      } else {
-        bienvenida.textContent = "👋 Bienvenido invitado.";
+        if (bienvenida) {
+          bienvenida.textContent = `👋 Bienvenido, ${usuario.name}!`;
+        }
+        if (userName) {
+          userName.textContent = usuario.name;
+        }
+        if (loginLink) {
+          loginLink.style.display = "none";
+        }
       }
 
-      const isAdmin = usuario && usuario.role === "admin";
+      // Cerrar sesión
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("usuario");
 
-      const calendarEl = document.getElementById("calendar");
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        locale: "es",
-        editable: isAdmin,
-        selectable: isAdmin,
-        headerToolbar: {
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay"
-        },
-        events: async (fetchInfo, successCallback, failureCallback) => {
-          try {
-            const res = await fetch("/api/events");
-            const data = await res.json();
-            if (data.success) {
-              successCallback(
-                data.data.map(e => ({
-                  id: e.id,
-                  title: e.title,
-                  start: e.start,
-                  end: e.end
-                }))
-              );
-            } else {
-              failureCallback(data.message);
-            }
-          } catch (err) {
-            console.error("Error cargando eventos:", err);
-            failureCallback(err);
-          }
-        },
-        select: async (info) => {
-          if (!isAdmin) return;
-          const title = prompt("Título del evento:");
-          if (title) {
-            const res = await fetch("/api/events", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                title,
-                start: info.startStr,
-                end: info.endStr
-              })
-            });
-            const data = await res.json();
-            if (data.success) {
-              alert("✅ Evento creado correctamente");
-              calendar.refetchEvents();
-            } else {
-              alert("❌ Error al crear el evento");
-            }
-          }
-        },
-        eventClick: async (info) => {
-          if (!isAdmin) return;
-          const opcion = confirm(`¿Eliminar el evento "${info.event.title}"?`);
-          if (opcion) {
-            const res = await fetch(`/api/events/${info.event.id}`, { method: "DELETE" });
-            const data = await res.json();
-            if (data.success) {
-              alert("🗑️ Evento eliminado");
-              calendar.refetchEvents();
-            } else {
-              alert("❌ Error al eliminar el evento");
-            }
-          }
-        }
-      });
+          // Mostrar mensaje visual
+          const message = document.createElement("div");
+          message.textContent = "👋 Has cerrado sesión correctamente.";
+          message.style.position = "fixed";
+          message.style.top = "20px";
+          message.style.left = "50%";
+          message.style.transform = "translateX(-50%)";
+          message.style.backgroundColor = "#dc3545";
+          message.style.color = "white";
+          message.style.padding = "10px 20px";
+          message.style.borderRadius = "10px";
+          message.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+          message.style.zIndex = "9999";
+          document.body.appendChild(message);
 
-      calendar.render();
+          setTimeout(() => {
+            message.remove();
+            window.location.href = "./pages/auth/login/login.html";
+          }, 1500);
+        });
+      }
+
+      // Cargar calendario
+      const calendarEl = document.getElementById('calendar');
+      if (calendarEl) {
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          locale: 'es',
+          events: async (fetchInfo, successCallback, failureCallback) => {
+            try {
+              const res = await fetch('/api/events');
+              const data = await res.json();
+              if (data.success) {
+                successCallback(data.data);
+              } else {
+                failureCallback();
+              }
+            } catch (err) {
+              console.error('Error al cargar eventos:', err);
+              failureCallback(err);
+            }
+          }
+        });
+        calendar.render();
+      }
     });
   </script>
 
