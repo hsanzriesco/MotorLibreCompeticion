@@ -26,8 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await res.json();
-      console.log("Respuesta del servidor:", result);
+      const text = await res.text();
+      console.log("Respuesta del servidor (texto):", text);
+
+      // Intentar convertir a JSON
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (err) {
+        throw new Error("Respuesta del servidor no es JSON válido");
+      }
 
       if (res.ok && result.success) {
         localStorage.setItem("usuario", JSON.stringify(result.user));
@@ -38,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (error) {
       console.error("Error en login:", error);
-      alert("Error al conectar con el servidor.");
+      alert("Error en el servidor o conexión fallida.");
     }
   });
 });
