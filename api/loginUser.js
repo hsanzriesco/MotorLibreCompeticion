@@ -17,7 +17,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
 
-    // Buscar usuario en la base de datos
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
 
     if (result.rows.length === 0) {
@@ -30,7 +29,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, message: "Contraseña incorrecta" });
     }
 
-    // Éxito
     return res.status(200).json({
       success: true,
       message: "Inicio de sesión exitoso",
@@ -38,6 +36,7 @@ export default async function handler(req, res) {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role, // 👈 Incluye el rol aquí
       },
     });
   } catch (error) {

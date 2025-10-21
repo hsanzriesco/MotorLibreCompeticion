@@ -1,21 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("loginForm");
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
+  const loginForm = document.getElementById("loginForm");
 
-  if (!form || !emailInput || !passwordInput) {
-    console.error("Formulario o campos no encontrados en el DOM");
+  if (!loginForm) {
+    console.error("❌ No se encontró el formulario con id 'loginForm'");
     return;
   }
 
-  form.addEventListener("submit", async (e) => {
+  loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    // Obtenemos los inputs de forma segura
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+
+    if (!emailInput || !passwordInput) {
+      alert("Error interno: no se encontraron los campos del formulario.");
+      return;
+    }
 
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
 
     if (!email || !password) {
-      alert("Por favor, completa todos los campos.");
+      alert("⚠️ Por favor, completa todos los campos.");
       return;
     }
 
@@ -26,27 +33,41 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email, password }),
       });
 
+      // Verificar si la respuesta es válida antes de intentar parsear
       const text = await res.text();
-      console.log("Respuesta del servidor (texto):", text);
-
-      // Intentar convertir a JSON
       let result;
+
       try {
         result = JSON.parse(text);
-      } catch (err) {
-        throw new Error("Respuesta del servidor no es JSON válido");
+      } catch {
+        console.error("❌ Error al parsear la respuesta del servidor:", text);
+        alert("Error en el servidor (respuesta no válida).");
+        return;
       }
 
-      if (res.ok && result.success) {
-        localStorage.setItem("usuario", JSON.stringify(result.user));
-        alert(`👋 Bienvenido, ${result.user.name || "Usuario"}!`);
-        window.location.href = "/index.html";
+      console.log("📩 Respuesta del servidor:", result);
+
+      if (result.success) {
+        const usuario = result.user;
+
+        // Guardamos usuario completo en localStorage (incluye rol)
+        localStorage.setItem("usuario", JSON.stringify(usuario));
+
+        // Mostramos mensaje de bienvenida
+        alert(`👋 Bienvenido, ${usuario.name}!`);
+
+        // Redirigir según el rol
+        if (usuario.role === "admin") {
+          window.location.href = "/pages/admin/dashboard.html";
+        } else {
+          window.location.href = "/index.html";
+        }
       } else {
-        alert("❌ " + (result.message || "Credenciales incorrectas"));
+        alert("❌ " + (result.message || "Error en el inicio de sesión."));
       }
     } catch (error) {
-      console.error("Error en login:", error);
-      alert("Error en el servidor o conexión fallida.");
+      console.error("💥 Error en login:", error);
+      alert("Error en la conexión con el servidor.");
     }
   });
 });
