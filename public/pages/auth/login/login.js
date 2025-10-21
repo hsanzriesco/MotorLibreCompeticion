@@ -1,25 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const loginForm = document.getElementById("loginForm");
-
-  if (!loginForm) {
-    console.error("❌ No se encontró el formulario con id 'loginForm'");
+  const form = document.getElementById("loginForm");
+  if (!form) {
+    console.error("❌ No se encontró el formulario con id='loginForm'");
     return;
   }
 
-  loginForm.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Obtenemos los inputs de forma segura
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-
-    if (!emailInput || !passwordInput) {
-      alert("Error interno: no se encontraron los campos del formulario.");
-      return;
-    }
-
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
+    const email = document.getElementById("email")?.value.trim();
+    const password = document.getElementById("password")?.value.trim();
 
     if (!email || !password) {
       alert("⚠️ Por favor, completa todos los campos.");
@@ -33,41 +23,26 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email, password }),
       });
 
-      // Verificar si la respuesta es válida antes de intentar parsear
-      const text = await res.text();
-      let result;
-
-      try {
-        result = JSON.parse(text);
-      } catch {
-        console.error("❌ Error al parsear la respuesta del servidor:", text);
-        alert("Error en el servidor (respuesta no válida).");
-        return;
-      }
-
-      console.log("📩 Respuesta del servidor:", result);
+      const result = await res.json();
+      console.log("Respuesta del servidor:", result);
 
       if (result.success) {
-        const usuario = result.user;
+        const user = result.user;
+        localStorage.setItem("usuario", JSON.stringify(user));
+        alert(`👋 Bienvenido, ${user.name}!`);
 
-        // Guardamos usuario completo en localStorage (incluye rol)
-        localStorage.setItem("usuario", JSON.stringify(usuario));
-
-        // Mostramos mensaje de bienvenida
-        alert(`👋 Bienvenido, ${usuario.name}!`);
-
-        // Redirigir según el rol
-        if (usuario.role === "admin") {
-          window.location.href = "/pages/admin/dashboard.html";
+        // Redirección según rol
+        if (user.role === "admin") {
+          window.location.href = "/pages/dashboard/admin/admin.html";
         } else {
-          window.location.href = "/index.html";
+          window.location.href = "/pages/dashboard/user/user.html";
         }
       } else {
-        alert("❌ " + (result.message || "Error en el inicio de sesión."));
+        alert("❌ " + result.message);
       }
     } catch (error) {
-      console.error("💥 Error en login:", error);
-      alert("Error en la conexión con el servidor.");
+      console.error("Error en login:", error);
+      alert("Error en el servidor.");
     }
   });
 });

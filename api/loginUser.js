@@ -17,32 +17,27 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
 
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    // Buscar usuario en la base de datos
+    const result = await pool.query(
+      "SELECT id, name, email, role, password FROM users WHERE email = $1 AND password = $2",
+      [email, password]
+    );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ success: false, message: "Usuario no encontrado" });
+      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
     const user = result.rows[0];
 
-    if (user.password !== password) {
-      return res.status(401).json({ success: false, message: "Contraseña incorrecta" });
-    }
-
     return res.status(200).json({
       success: true,
-      message: "Inicio de sesión exitoso",
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role, // 👈 Incluye el rol aquí
-      },
+      user,
     });
   } catch (error) {
     console.error("❌ Error en loginUser:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Error interno del servidor", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor",
+    });
   }
 }
