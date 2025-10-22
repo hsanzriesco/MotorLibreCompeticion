@@ -1,47 +1,28 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const registerForm = document.getElementById("registerForm");
+import { showToast } from "../../../js/toast.js";
 
-  if (!registerForm) return;
+document.getElementById("register-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-  registerForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    const name = document.getElementById("username").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
 
-    if (!name || !email || !password) {
-      alert("⚠️ Por favor, completa todos los campos.");
-      return;
+    const data = await res.json();
+
+    if (data.success) {
+      showToast("¡Usuario registrado correctamente!");
+      setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 1500);
+    } else {
+      showToast(data.message || "Error al registrar usuario", "error");
     }
-
-    try {
-      const res = await fetch("/api/createUser", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const result = await res.json();
-      console.log("Respuesta del servidor:", result);
-
-      if (result.success) {
-        const nombreUsuario = result.user.name;
-
-        // ✅ Guardar datos del usuario en localStorage
-        localStorage.setItem("usuario", JSON.stringify(result.user));
-
-        // ✅ Mostrar el mismo tipo de mensaje que en el login
-        alert(`🎉 Bienvenido, ${nombreUsuario}! Tu cuenta ha sido creada correctamente.`);
-
-        // ✅ Redirigir al index
-        window.location.href = "/index.html";
-      } else {
-        alert("❌ " + result.message);
-      }
-    } catch (error) {
-      console.error("Error en registro:", error);
-      alert("❌ Error en el servidor. Inténtalo nuevamente.");
-    }
-  });
+  } catch {
+    showToast("Error al conectar con el servidor", "error");
+  }
 });
