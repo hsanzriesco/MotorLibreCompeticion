@@ -8,7 +8,6 @@ body {
   padding: 0;
 }
 
-/* === Navbar === */
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -48,7 +47,6 @@ body {
   transform: scale(1.1);
 }
 
-/* === Contenedor del formulario === */
 .form-container {
   display: flex;
   justify-content: center;
@@ -146,7 +144,6 @@ body {
   text-decoration: underline;
 }
 
-/* === Animaciones === */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -158,7 +155,6 @@ body {
   }
 }
 
-/* === MENÚ HAMBURGUESA === */
 .dropdown-menu {
   position: absolute;
   top: 60px;
@@ -191,7 +187,6 @@ body {
   margin: 5px 0;
 }
 
-/* Posicionamiento del contenedor */
 .navbar-icons {
   position: relative;
 }

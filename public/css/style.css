@@ -1,6 +1,3 @@
-/* ====== Motor Libre Competición - Estilo General ====== */
-
-/* Fuente moderna estilo racing */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
 body {
@@ -52,7 +49,6 @@ body {
   margin-right: 6px;
 }
 
-/* ====== MAIN CONTENT ====== */
 main {
   margin-top: 8vh;
   text-align: center;
@@ -72,7 +68,6 @@ main p {
   line-height: 1.6;
 }
 
-/* ====== BUTTONS (opcional para usar luego) ====== */
 .btn-custom {
   background: #e50914;
   color: #fff;
@@ -89,7 +84,6 @@ main p {
   transform: translateY(-2px);
 }
 
-/* ====== ANIMATIONS ====== */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -101,7 +95,6 @@ main p {
   }
 }
 
-/* ====== RESPONSIVE ====== */
 @media (max-width: 768px) {
   main h1 {
     font-size: 2rem;
@@ -118,7 +111,6 @@ main p {
   display: block;
 }
 
-/* Espacio entre el navbar y el contenido principal */
 .main-content {
-  padding-top: 100px; /* ajusta según la altura real del navbar */
+  padding-top: 100px;
 }
