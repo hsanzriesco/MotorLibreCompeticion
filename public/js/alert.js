@@ -1,25 +1,16 @@
-// === alert.js ===
-export function showAlert(message, type = "success") {
-  // Crear contenedor si no existe
-  let container = document.querySelector(".alert-container");
-  if (!container) {
-    container = document.createElement("div");
-    container.className = "alert-container";
-    document.body.appendChild(container);
-  }
+// /public/js/alert.js
+export function showToast(message, type = "success") {
+  const existing = document.querySelector(".custom-toast");
+  if (existing) existing.remove();
 
-  // Crear alerta
-  const alertBox = document.createElement("div");
-  alertBox.className = `custom-alert ${type}`;
-  alertBox.textContent = message;
+  const toast = document.createElement("div");
+  toast.className = `custom-toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
 
-  // Insertar y mostrar
-  container.appendChild(alertBox);
-  setTimeout(() => alertBox.classList.add("visible"), 50);
-
-  // Eliminar tras 3s
+  setTimeout(() => toast.classList.add("show"), 100);
   setTimeout(() => {
-    alertBox.classList.remove("visible");
-    setTimeout(() => alertBox.remove(), 500);
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
   }, 3000);
 }

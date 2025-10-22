@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = form.password.value.trim();
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/pages/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
