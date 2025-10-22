@@ -1,28 +1,38 @@
-import { showToast } from "../../../js/toast";
+import { showAlert } from "../../../js/alert.js";
 
-document.getElementById("login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("login-form");
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  try {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const email = form.email.value.trim();
+    const password = form.password.value.trim();
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (data.success) {
-      localStorage.setItem("usuario", JSON.stringify(data.user));
-      showToast(`Bienvenido, ${data.user.name}!`);
-      setTimeout(() => (window.location.href = "/index.html"), 1500);
-    } else {
-      showToast("Correo o contraseña incorrectos", "error");
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem("usuario", JSON.stringify(data.usuario));
+        showAlert(`Bienvenido, ${data.usuario.role === "admin" ? "Administrador" : data.usuario.name}!`, "success");
+
+        setTimeout(() => {
+          window.location.href = data.usuario.role === "admin"
+            ? "../../dashboard/admin/admin.html"
+            : "../../dashboard/user/user.html";
+        }, 2000);
+      } else {
+        showAlert(data.message || "Credenciales incorrectas", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showAlert("Error del servidor", "error");
     }
-  } catch {
-    showToast("Error al conectar con el servidor", "error");
-  }
+  });
 });

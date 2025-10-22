@@ -1,28 +1,33 @@
-import { showToast } from "../../../js/toast";
+import { showAlert } from "../../../js/alert.js";
 
-document.getElementById("register-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("register-form");
 
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  try {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    const password = form.password.value.trim();
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    if (data.success) {
-      showToast("¡Usuario registrado correctamente!");
-      setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 1500);
-    } else {
-      showToast(data.message || "Error al registrar usuario", "error");
+      const data = await res.json();
+
+      if (data.success) {
+        showAlert("Usuario registrado correctamente", "success");
+        setTimeout(() => (window.location.href = "../login/login.html"), 2000);
+      } else {
+        showAlert(data.message || "Error al registrar usuario", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showAlert("Error del servidor", "error");
     }
-  } catch {
-    showToast("Error al conectar con el servidor", "error");
-  }
+  });
 });
