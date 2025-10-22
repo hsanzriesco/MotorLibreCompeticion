@@ -1,38 +1,30 @@
-import { showAlert } from "../../../js/alert.js";
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("login-form");
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  try {
+    const response = await fetch("/api/loginUser.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-    const email = form.email.value.trim();
-    const password = form.password.value.trim();
+    const data = await response.json();
 
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    if (!response.ok) throw new Error(data.message || "Error al iniciar sesión");
 
-      const data = await res.json();
+    showToast("¡Bienvenido a Motor Libre Competición!", "success");
 
-      if (data.success) {
-        localStorage.setItem("usuario", JSON.stringify(data.usuario));
-        showAlert(`Bienvenido, ${data.usuario.role === "admin" ? "Administrador" : data.usuario.name}!`, "success");
-
-        setTimeout(() => {
-          window.location.href = data.usuario.role === "admin"
-            ? "../../dashboard/admin/admin.html"
-            : "../../dashboard/user/user.html";
-        }, 2000);
+    setTimeout(() => {
+      if (data.role === "admin") {
+        window.location.href = "/pages/dashboard/admin/admin.html";
       } else {
-        showAlert(data.message || "Credenciales incorrectas", "error");
+        window.location.href = "/index.html";
       }
-    } catch (error) {
-      console.error(error);
-      showAlert("Error del servidor", "error");
-    }
-  });
+    }, 1500);
+  } catch (error) {
+    showToast(error.message, "error");
+  }
 });

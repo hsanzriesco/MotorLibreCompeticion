@@ -354,26 +354,28 @@ main p {
   transform: translateY(0);
 }
 
-/* === TOAST === */
+/* ==== TOAST ==== */
 .custom-toast {
   position: fixed;
   top: 20px;
-  left: 50%;
-  transform: translateX(-50%) scale(0.9);
-  background: #28a745;
-  color: white;
-  padding: 12px 24px;
+  right: 20px;
+  padding: 12px 20px;
   border-radius: 8px;
+  color: white;
   font-weight: 600;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  transition: all 0.3s ease;
   z-index: 9999;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.4s ease;
+}
+.custom-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.custom-toast.success {
+  background-color: #28a745;
 }
 .custom-toast.error {
-  background: #e50914;
+  background-color: #dc3545;
 }
-.custom-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-}
+
