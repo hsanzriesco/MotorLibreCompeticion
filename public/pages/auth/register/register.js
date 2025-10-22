@@ -1,23 +1,34 @@
-document.getElementById("registerForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("registerForm");
 
-  const username = document.getElementById("username").value.trim();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  try {
-    const response = await fetch("/api/createUser.js", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password }),
-    });
+    const name = document.getElementById("username").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Error al registrarse");
+    console.log("Datos enviados:", { name, email, password }); // <-- Aquí debe mostrar los textos
 
-    showToast("¡Usuario registrado con éxito!", "success");
-    setTimeout(() => (window.location.href = "../login/login.html"), 1500);
-  } catch (error) {
-    showToast(error.message, "error");
-  }
+    try {
+      const res = await fetch("/api/createUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const result = await res.json();
+      console.log("Respuesta del servidor:", result);
+
+      if (result.success) {
+        alert("✅ Usuario creado con éxito");
+        window.location.href = "../login/login.html";
+      } else {
+        alert("⚠️ " + result.message);
+      }
+    } catch (err) {
+      alert("❌ Error al conectar con el servidor");
+      console.error(err);
+    }
+  });
 });
