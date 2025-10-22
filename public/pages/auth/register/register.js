@@ -1,4 +1,4 @@
-import { showToast } from "../../../js/toast.js";
+import { showToast } from "../../../js/toast";
 
 document.getElementById("register-form").addEventListener("submit", async (e) => {
   e.preventDefault();
