@@ -1,14 +1,12 @@
-// /public/js/toast.js
+window.showToast = function (message, type = "success") {
+  const toast = document.createElement("div");
+  toast.className = `custom-toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
 
-export function showToast(message, type = "success") {
-  const toastContainer = document.createElement("div");
-  toastContainer.className = `custom-toast ${type}`;
-  toastContainer.textContent = message;
-  document.body.appendChild(toastContainer);
-
-  setTimeout(() => toastContainer.classList.add("visible"), 100);
+  setTimeout(() => toast.classList.add("visible"), 100);
   setTimeout(() => {
-    toastContainer.classList.remove("visible");
-    setTimeout(() => toastContainer.remove(), 500);
+    toast.classList.remove("visible");
+    setTimeout(() => toast.remove(), 500);
   }, 3000);
-}
+};
