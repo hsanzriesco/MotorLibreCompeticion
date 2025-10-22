@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const passwordInput = document.getElementById("password");
 
     if (!emailInput || !passwordInput) {
-      console.error("❌ No se encontraron los campos del formulario.");
+      console.error("No se encontraron los campos del formulario.");
       return;
     }
 
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = passwordInput.value.trim();
 
     if (!email || !password) {
-      showMessage("⚠️ Por favor, completa todos los campos.", "error");
+      showMessage("Por favor, completa todos los campos.", "error");
       return;
     }
 
@@ -34,14 +34,14 @@ document.addEventListener("DOMContentLoaded", () => {
         result = JSON.parse(text);
       } catch {
         console.error("Respuesta no JSON:", text);
-        showMessage("❌ Error inesperado del servidor.", "error");
+        showMessage("Error inesperado del servidor.", "error");
         return;
       }
 
       if (result.success) {
         const user = result.user;
         localStorage.setItem("usuario", JSON.stringify(user));
-        showMessage(`👋 Bienvenido, ${user.name}!`, "success");
+        showMessage(`Bienvenido, ${user.name}!`, "success");
 
         // Redirección según el rol
         setTimeout(() => {
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (error) {
       console.error("Error en login:", error);
-      showMessage("⚠️ Error de conexión con el servidor.", "error");
+      showMessage("Error de conexión con el servidor.", "error");
     }
   });
 });

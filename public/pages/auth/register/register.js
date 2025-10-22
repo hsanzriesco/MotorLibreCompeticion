@@ -1,14 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("registerForm");
+  const registerForm = document.getElementById("registerForm");
 
-  form.addEventListener("submit", async (e) => {
+  if (!registerForm) return;
+
+  registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const name = document.getElementById("username").value.trim();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
 
-    console.log("Datos enviados:", { name, email, password }); // <-- Aquí debe mostrar los textos
+    if (!name || !email || !password) {
+      alert("⚠️ Por favor, completa todos los campos.");
+      return;
+    }
 
     try {
       const res = await fetch("/api/createUser", {
@@ -21,14 +26,22 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Respuesta del servidor:", result);
 
       if (result.success) {
-        alert("✅ Usuario creado con éxito");
-        window.location.href = "../login/login.html";
+        const nombreUsuario = result.user.name;
+
+        // ✅ Guardar datos del usuario en localStorage
+        localStorage.setItem("usuario", JSON.stringify(result.user));
+
+        // ✅ Mostrar el mismo tipo de mensaje que en el login
+        alert(`🎉 Bienvenido, ${nombreUsuario}! Tu cuenta ha sido creada correctamente.`);
+
+        // ✅ Redirigir al index
+        window.location.href = "/index.html";
       } else {
-        alert("⚠️ " + result.message);
+        alert("❌ " + result.message);
       }
-    } catch (err) {
-      alert("❌ Error al conectar con el servidor");
-      console.error(err);
+    } catch (error) {
+      console.error("Error en registro:", error);
+      alert("❌ Error en el servidor. Inténtalo nuevamente.");
     }
   });
 });
