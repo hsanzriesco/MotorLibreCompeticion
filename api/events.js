@@ -1,40 +1,35 @@
-import { pool } from "../../db.js";
+import { Pool } from "pg";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 export default async function handler(req, res) {
-  try {
-    if (req.method === "GET") {
-      const { rows } = await pool.query("SELECT * FROM events ORDER BY start ASC");
-      return res.status(200).json({ success: true, data: rows });
-    }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS events (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(100),
+      description TEXT,
+      location VARCHAR(150),
+      start_date DATE,
+      end_date DATE
+    )
+  `);
 
-    if (req.method === "POST") {
-      const { title, start, end } = req.body;
-      const { rows } = await pool.query(
-        "INSERT INTO events (title, start, end) VALUES ($1, $2, $3) RETURNING *",
-        [title, start, end]
-      );
-      return res.status(200).json({ success: true, data: rows[0] });
-    }
-
-    if (req.method === "PUT") {
-      const id = req.url.split("/").pop();
-      const { title, start, end } = req.body;
-      const { rows } = await pool.query(
-        "UPDATE events SET title=$1, start=$2, end=$3 WHERE id=$4 RETURNING *",
-        [title, start, end, id]
-      );
-      return res.status(200).json({ success: true, data: rows[0] });
-    }
-
-    if (req.method === "DELETE") {
-      const id = req.url.split("/").pop();
-      await pool.query("DELETE FROM events WHERE id=$1", [id]);
-      return res.status(200).json({ success: true });
-    }
-
-    res.status(405).json({ success: false, message: "Método no permitido" });
-  } catch (error) {
-    console.error("❌ Error en /api/events:", error);
-    res.status(500).json({ success: false, message: "Error interno del servidor" });
+  if (req.method === "GET") {
+    const result = await pool.query("SELECT id, title, description, location, start_date AS start, end_date AS end FROM events");
+    return res.json({ success: true, events: result.rows });
   }
+
+  if (req.method === "POST") {
+    const { title, description, location, start, end } = req.body;
+    const result = await pool.query(
+      "INSERT INTO events (title, description, location, start_date, end_date) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [title, description, location, start, end]
+    );
+    return res.json({ success: true, event: result.rows[0] });
+  }
+
+  return res.status(405).json({ success: false, message: "Método no permitido" });
 }
