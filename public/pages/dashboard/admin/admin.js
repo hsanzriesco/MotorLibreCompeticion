@@ -8,12 +8,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const bienvenida = document.getElementById("bienvenida");
-  if (bienvenida) bienvenida.textContent = `👋 ${usuario.name} (Administrador)`;
+  if (bienvenida) bienvenida.textContent = `Bienvenido, ${usuario.name} (Administrador)`;
 
-  // Inicializar calendario de eventos
+  // Inicializar calendario
   initCalendar();
 
-  // Cargar lista de usuarios
+  // Cargar usuarios
   loadUsers();
 });
 
@@ -101,7 +101,7 @@ async function loadUsers() {
           <span><strong>${u.name}</strong> - ${u.email} (${u.role})</span>
           ${
             u.role !== "admin"
-              ? `<button onclick="deleteUser(${u.id})">Eliminar</button>`
+              ? `<button class="delete-btn" onclick="deleteUser(${u.id})">Eliminar</button>`
               : ""
           }
         </div>`
