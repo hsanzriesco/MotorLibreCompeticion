@@ -54,14 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Verificación de campos vacíos
     if (!name || !email || !password) {
-      showAlert("⚠️ Todos los campos son obligatorios.", "error");
+      showAlert("Todos los campos son obligatorios.", "error");
       return;
     }
 
     // Validar contraseña antes de enviar
     const passwordError = validatePassword(password);
     if (passwordError) {
-      showAlert("❌ " + passwordError, "error");
+      showAlert(passwordError, "error");
       return;
     }
 
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await res.json();
 
       if (res.status === 409) {
-        showAlert("⚠️ El nombre o correo ya están en uso.", "error");
+        showAlert("El nombre o correo ya están en uso.", "error");
         return;
       }
 
@@ -85,11 +85,11 @@ document.addEventListener("DOMContentLoaded", () => {
           window.location.href = "../login/login.html";
         }, 1500);
       } else {
-        showAlert(`⚠️ ${result.message}`, "error");
+        showAlert(`${result.message}`, "error");
       }
     } catch (err) {
       console.error(err);
-      showAlert("❌ Error al conectar con el servidor.", "error");
+      showAlert("Error al conectar con el servidor.", "error");
     }
   });
 });

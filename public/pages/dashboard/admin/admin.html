@@ -8,7 +8,60 @@
   <link rel="stylesheet" href="../../../css/navbar.css">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background-color: #f8f9fa;
+    }
 
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #212529;
+      color: white;
+      padding: 15px 25px;
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    .section {
+      margin-top: 30px;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #usersList div {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding: 8px 0;
+    }
+
+    button {
+      border: none;
+      background: #dc3545;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #b02a37;
+    }
+
+    #calendar {
+      margin-top: 15px;
+    }
+  </style>
 </head>
 
 <body>
@@ -20,25 +73,29 @@
     }
   </script>
 
-  <nav class="navbar bg-dark text-white p-3">
+  <nav class="navbar">
     <h3>Panel Administrador</h3>
-    <p id="bienvenida"></p>
+    <div>
+      <span id="bienvenida"></span>
+      <button onclick="cerrarSesion()" style="background:#198754; margin-left:15px;">Cerrar sesión</button>
+    </div>
   </nav>
 
-  <main class="p-3">
+  <div class="content">
     <h2>👨‍💻 Bienvenido al panel de administración</h2>
-    <button onclick="cerrarSesion()">Cerrar sesión</button>
-  </main>
 
-  <script>
-    const u = JSON.parse(localStorage.getItem("usuario"));
-    if (u) document.getElementById("bienvenida").textContent = `Bienvenido, ${u.name} (Admin)`;
+    <div class="section">
+      <h3>📅 Gestión de Eventos</h3>
+      <div id="calendar"></div>
+    </div>
 
-    function cerrarSesion() {
-      localStorage.removeItem("usuario");
-      window.location.href = "/pages/auth/login/login.html";
-    }
-  </script>
+    <div class="section">
+      <h3>👥 Gestión de Usuarios</h3>
+      <div id="usersList">Cargando usuarios...</div>
+    </div>
+  </div>
+
+  <script src="./admin.js"></script>
 </body>
 
 </html>

@@ -13,31 +13,24 @@ export default async function handler(req, res) {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
-    }
-
-    // Buscar usuario en la base de datos
-    const result = await pool.query(
-      "SELECT id, name, email, role, password FROM users WHERE email = $1 AND password = $2",
+    const { rows } = await pool.query(
+      "SELECT id, name, email, role, password FROM users WHERE email=$1 AND password=$2",
       [email, password]
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
-    const user = result.rows[0];
+    const user = rows[0];
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      user,
+      message: "Inicio de sesión correcto",
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   } catch (error) {
-    console.error("❌ Error en loginUser:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error interno del servidor",
-    });
+    console.error("Error en loginUser:", error);
+    res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 }

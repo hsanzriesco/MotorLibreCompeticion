@@ -1,0 +1,19 @@
+import { Pool } from "pg";
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
+export default async function handler(req, res) {
+  if (req.method === "GET") {
+    try {
+      const { rows } = await pool.query("SELECT id, name, email, role FROM users ORDER BY id ASC");
+      return res.status(200).json({ success: true, users: rows });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Error al obtener usuarios" });
+    }
+  } else {
+    return res.status(405).json({ success: false, message: "Método no permitido" });
+  }
+}
