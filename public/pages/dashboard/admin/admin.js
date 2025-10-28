@@ -56,8 +56,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     startTemp = start;
     endTemp = end;
     document.getElementById("eventForm").reset();
+
+    if (document.activeElement) document.activeElement.blur();
+
     eventModal.show();
   }
+
 
   function showEventDetails(event) {
     const detalles = `
