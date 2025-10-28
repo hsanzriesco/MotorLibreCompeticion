@@ -7,7 +7,6 @@ const pool = new Pool({
 
 export default async function handler(req, res) {
   try {
-    // Crear tabla si no existe
     await pool.query(`
       CREATE TABLE IF NOT EXISTS events (
         id SERIAL PRIMARY KEY,
@@ -35,7 +34,7 @@ export default async function handler(req, res) {
          VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [title, description, location, start, end]
       );
-      return res.status(201).json({ success: true, event: result.rows[0] });
+      return res.status(201).json({ success: true, data: result.rows[0] });
     }
 
     if (req.method === "PUT") {
@@ -55,9 +54,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
-    return res.status(405).json({ success: false, message: "Método no permitido" });
+    return res.status(405).json({ message: "Método no permitido" });
   } catch (error) {
-    console.error("❌ Error en /api/events:", error);
+    console.error("❌ Error en /api/events:", error.message);
     return res.status(500).json({ success: false, message: error.message });
   }
 }
