@@ -7,31 +7,25 @@ const pool = new Pool({
 
 export default async function handler(req, res) {
   try {
-    // Crear tabla si no existe (usa tus nombres reales)
+    // 🧱 Crea tabla si no existe (usa start y end, que son más comunes)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS events (
         id SERIAL PRIMARY KEY,
         title VARCHAR(100) NOT NULL,
         description TEXT,
         location VARCHAR(100),
-        start_date TIMESTAMP NOT NULL,
-        end_date TIMESTAMP NOT NULL,
+        start TIMESTAMP NOT NULL,
+        "end" TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // --- GET: obtener todos los eventos ---
+    // 🟢 GET — listar eventos
     if (req.method === "GET") {
       const result = await pool.query(`
-        SELECT 
-          id,
-          title,
-          description,
-          location,
-          start_date AS start,
-          end_date AS "end"
+        SELECT id, title, description, location, start, "end"
         FROM events
-        ORDER BY start_date ASC
+        ORDER BY start ASC
       `);
 
       return res.status(200).json({
@@ -40,21 +34,21 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- POST: crear un nuevo evento ---
+    // 🟡 POST — crear evento
     if (req.method === "POST") {
       const { title, description, location, start, end } = req.body;
 
       if (!title || !start || !end) {
         return res.status(400).json({
           success: false,
-          message: "Faltan campos obligatorios (título, fecha inicio o fin).",
+          message: "Faltan campos obligatorios: título, inicio o fin.",
         });
       }
 
       const insert = await pool.query(
-        `INSERT INTO events (title, description, location, start_date, end_date)
+        `INSERT INTO events (title, description, location, start, "end")
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, title, description, location, start_date AS start, end_date AS "end"`,
+         RETURNING id, title, description, location, start, "end"`,
         [title, description || "", location || "", start, end]
       );
 
@@ -65,7 +59,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- Método no permitido ---
+    // ❌ Otros métodos no permitidos
     return res.status(405).json({
       success: false,
       message: "Método no permitido",
