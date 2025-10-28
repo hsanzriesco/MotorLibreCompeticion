@@ -1,34 +1,47 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
 
-  // Verificar rol de administrador
+  // Verificar acceso
   if (!usuario || usuario.role !== "admin") {
     alert("❌ Acceso denegado. No eres administrador.");
     window.location.href = "/index.html";
     return;
   }
 
-  // Mostrar bienvenida y cerrar sesión
-  function cerrarSesion() {
+  // Cerrar sesión
+  window.cerrarSesion = function () {
     localStorage.removeItem("usuario");
     window.location.href = "/pages/auth/login/login.html";
-  }
-  window.cerrarSesion = cerrarSesion;
+  };
+
+  // Referencias
+  const calendarEl = document.getElementById("calendar");
+  const modalEl = document.getElementById("eventModal");
+  const modal = new bootstrap.Modal(modalEl);
+  const form = document.getElementById("eventForm");
+  const saveBtn = document.getElementById("saveEventBtn");
+  const viewInfo = document.getElementById("viewEventInfo");
+
+  let selectedEvent = null;
 
   // Inicializar calendario
-  const calendarEl = document.getElementById("calendar");
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     locale: "es",
     selectable: true,
     editable: true,
+    eventColor: "#e50914",
 
     events: async (info, successCallback, failureCallback) => {
       try {
         const res = await fetch("/api/events");
         const data = await res.json();
-        if (data.success) successCallback(data.data);
-        else failureCallback(data.message);
+        if (data.success) {
+          successCallback(data.data);
+        } else {
+          console.warn("⚠️ No se pudieron cargar eventos:", data.message);
+          failureCallback(data.message);
+        }
       } catch (err) {
         console.error("❌ Error al cargar eventos:", err);
         failureCallback(err);
@@ -36,104 +49,97 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
 
     select: (info) => {
-      openEventModal(info.startStr, info.endStr);
+      selectedEvent = null;
+      form.reset();
+      form.style.display = "block";
+      viewInfo.style.display = "none";
+      saveBtn.textContent = "Guardar";
+      saveBtn.dataset.mode = "create";
+
+      document.getElementById("startDate").value = info.startStr;
+      document.getElementById("endDate").value = info.endStr;
+
+      modal.show();
     },
 
     eventClick: (info) => {
-      const e = info.event;
-      mostrarEvento(e);
-    },
+      selectedEvent = info.event;
 
-    eventChange: async (info) => {
-      const e = info.event;
-      try {
-        await fetch("/api/events", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: e.id,
-            title: e.title,
-            description: e.extendedProps.description,
-            location: e.extendedProps.location,
-            start: e.startStr,
-            end: e.endStr,
-          }),
-        });
-      } catch (err) {
-        console.error("Error al actualizar evento:", err);
-      }
+      // Mostrar datos
+      document.getElementById("vTitle").textContent = selectedEvent.title;
+      document.getElementById("vDescription").textContent = selectedEvent.extendedProps.description || "Sin descripción";
+      document.getElementById("vLocation").textContent = selectedEvent.extendedProps.location || "Sin ubicación";
+      document.getElementById("vStart").textContent = new Date(selectedEvent.start).toLocaleString();
+      document.getElementById("vEnd").textContent = selectedEvent.end ? new Date(selectedEvent.end).toLocaleString() : "N/A";
+
+      // Mostrar modal en modo "ver"
+      form.style.display = "none";
+      viewInfo.style.display = "block";
+      saveBtn.textContent = "Eliminar evento";
+      saveBtn.dataset.mode = "delete";
+
+      modal.show();
     },
   });
 
   calendar.render();
 
-  // --- MODAL ---
-  const modal = new bootstrap.Modal(document.getElementById("eventModal"));
-  const form = document.getElementById("eventForm");
-  const saveBtn = document.getElementById("saveEventBtn");
-
-  let startTemp = null, endTemp = null;
-
-  function openEventModal(start, end) {
-    startTemp = start;
-    endTemp = end;
-    document.getElementById("viewEventInfo").style.display = "none";
-    form.style.display = "block";
-    saveBtn.style.display = "inline-block";
-    form.reset();
-    modal.show();
-  }
-
-  function mostrarEvento(e) {
-    document.getElementById("viewEventInfo").style.display = "block";
-    form.style.display = "none";
-    saveBtn.style.display = "none";
-
-    document.getElementById("vTitle").textContent = e.title;
-    document.getElementById("vDescription").textContent = e.extendedProps.description || "Sin descripción";
-    document.getElementById("vLocation").textContent = e.extendedProps.location || "Sin ubicación";
-    document.getElementById("vStart").textContent = new Date(e.start).toLocaleString();
-    document.getElementById("vEnd").textContent = e.end ? new Date(e.end).toLocaleString() : "N/A";
-
-    modal.show();
-  }
-
-  // --- GUARDAR EVENTO ---
+  // Guardar o eliminar evento
   saveBtn.addEventListener("click", async () => {
-    const title = document.getElementById("title").value.trim();
-    const description = document.getElementById("description").value.trim();
-    const location = document.getElementById("location").value.trim();
-    const start = document.getElementById("startDate").value;
-    const end = document.getElementById("endDate").value;
+    const mode = saveBtn.dataset.mode;
 
-    if (!title || !start || !end) {
-      alert("⚠️ Título, inicio y fin son obligatorios");
-      return;
+    if (mode === "create") {
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const location = document.getElementById("location").value.trim();
+      const start = document.getElementById("startDate").value;
+      const end = document.getElementById("endDate").value;
+
+      if (!title || !start || !end) {
+        alert("⚠️ Título, inicio y fin son obligatorios");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, description, location, start, end }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert("✅ Evento creado correctamente");
+          modal.hide();
+          calendar.refetchEvents();
+        } else {
+          alert("❌ Error al crear evento: " + data.message);
+        }
+      } catch (err) {
+        console.error("❌ Error al crear evento:", err);
+      }
     }
 
-    try {
-      const res = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          description,
-          location,
-          start,
-          end,
-        }),
-      });
-      const data = await res.json();
+    // 🗑️ Eliminar evento
+    else if (mode === "delete" && selectedEvent) {
+      if (!confirm("¿Seguro que quieres eliminar este evento?")) return;
 
-      if (data.success) {
-        alert("✅ Evento creado correctamente");
-        modal.hide();
-        calendar.refetchEvents();
-      } else {
-        alert("❌ Error al crear evento: " + data.message);
+      try {
+        const res = await fetch(`/api/events?id=${selectedEvent.id}`, {
+          method: "DELETE",
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert("🗑️ Evento eliminado");
+          modal.hide();
+          calendar.refetchEvents();
+        } else {
+          alert("❌ Error al eliminar evento: " + data.message);
+        }
+      } catch (err) {
+        console.error("❌ Error al eliminar evento:", err);
       }
-    } catch (err) {
-      console.error("Error al crear evento:", err);
     }
   });
 });
