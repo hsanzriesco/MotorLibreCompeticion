@@ -1,23 +1,20 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
-  const adminName = document.getElementById("admin-name");
-
-  // Verifica usuario admin
-  if (!usuario || usuario.role !== "admin") {
-    alert("❌ Acceso denegado. Solo administradores.");
-    window.location.href = "/index.html";
-    return;
+  // Cerrar sesión
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("usuario");
+      window.location.href = "/pages/auth/login/login.html";
+    });
   }
-  adminName.textContent = `👋 ${usuario.name}`;
-
-  // Botón de cerrar sesión
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    localStorage.removeItem("usuario");
-    window.location.href = "/pages/auth/login/login.html";
-  });
 
   // Inicializar calendario
   const calendarEl = document.getElementById("calendar");
+  const modalEl = new bootstrap.Modal(document.getElementById("eventModal"));
+  const saveBtn = document.getElementById("saveEventBtn");
+
+  if (!calendarEl) return;
+
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     locale: "es",
@@ -28,93 +25,70 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const res = await fetch("/api/events");
         const data = await res.json();
-
-        if (data.success && Array.isArray(data.data)) {
-          successCallback(data.data);
-        } else {
-          console.warn("⚠️ No se encontraron eventos o formato incorrecto");
-          successCallback([]);
-        }
+        if (data.success) successCallback(data.data);
+        else failureCallback(data.message);
       } catch (err) {
         console.error("❌ Error al cargar eventos:", err);
         failureCallback(err);
       }
     },
 
-    select: (info) => openEventModal(info.startStr, info.endStr),
-    eventClick: (info) => showEventDetails(info.event),
+    dateClick: (info) => {
+      document.getElementById("eventForm").reset();
+      document.getElementById("eventId").value = "";
+      document.getElementById("startDate").value = info.dateStr + "T12:00";
+      document.getElementById("endDate").value = info.dateStr + "T14:00";
+      modalEl.show();
+    },
+
+    eventClick: (info) => {
+      const e = info.event;
+      document.getElementById("eventId").value = e.id;
+      document.getElementById("title").value = e.title;
+      document.getElementById("description").value = e.extendedProps.description || "";
+      document.getElementById("location").value = e.extendedProps.location || "";
+      document.getElementById("startDate").value = e.startStr.slice(0, 16);
+      document.getElementById("endDate").value = e.endStr ? e.endStr.slice(0, 16) : "";
+      modalEl.show();
+    },
   });
 
   calendar.render();
 
-  // ===== MODAL =====
-  const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
-  const saveBtn = document.getElementById("saveEventBtn");
-  let startTemp = null, endTemp = null;
-
-  function openEventModal(start, end) {
-    startTemp = start;
-    endTemp = end;
-    document.getElementById("eventForm").reset();
-
-    if (document.activeElement) document.activeElement.blur();
-
-    eventModal.show();
-  }
-
-
-  function showEventDetails(event) {
-    const detalles = `
-      📅 <b>${event.title}</b><br>
-      📝 ${event.extendedProps.description || "Sin descripción"}<br>
-      📍 ${event.extendedProps.location || "Sin ubicación"}<br>
-      ⏰ ${event.start.toLocaleString()}
-    `;
-    alert(detalles);
-  }
-
+  // Guardar evento (crear o actualizar)
   saveBtn.addEventListener("click", async () => {
+    const id = document.getElementById("eventId").value;
     const title = document.getElementById("title").value.trim();
     const description = document.getElementById("description").value.trim();
     const location = document.getElementById("location").value.trim();
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
 
-    if (!title || !startDate || !endDate) {
+    if (!title || !start || !end) {
       alert("⚠️ Todos los campos son obligatorios.");
       return;
     }
 
+    const method = id ? "PUT" : "POST";
+    const body = JSON.stringify({ id, title, description, location, start, end });
+
     try {
       const res = await fetch("/api/events", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title, description, location,
-          start: startDate,
-          end: endDate
-        }),
+        body,
       });
 
       const data = await res.json();
 
       if (data.success) {
-        calendar.addEvent({
-          id: data.data.id,
-          title,
-          description,
-          location,
-          start: startDate,
-          end: endDate
-        });
-        eventModal.hide();
-        alert("✅ Evento creado con éxito");
+        modalEl.hide();
+        calendar.refetchEvents();
       } else {
         alert("❌ Error: " + data.message);
       }
     } catch (err) {
-      console.error("Error al guardar evento:", err);
-      alert("❌ No se pudo guardar el evento.");
+      console.error("Error guardando evento:", err);
     }
   });
 });
