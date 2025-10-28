@@ -18,7 +18,7 @@
    
   <link href="../../../css/navbar.css" rel="stylesheet" />
      
-  <link rel="icon" href="/img/imagen-tfg.png" type="image/png">
+  <link rel="icon" href="../../../../img/imagen-tfg.png" type="image/png">
 
      
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
@@ -75,26 +75,26 @@
     const usuario = JSON.parse(localStorage.getItem("usuario"));
     if (!usuario || usuario.role !== "admin") {
       alert("❌ Acceso denegado. Solo administradores.");
-      window.location.href = "/index.html"; // RUTA ABSOLUTA CORREGIDA
+      // RUTA CORREGIDA: 4 niveles atrás a index.html
+      window.location.href = "../../../../index.html";
     }
   </script>
 
       <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
-            <a href="/index.html" class="navbar-brand d-flex align-items-center">
-                  <img src="/img/imagen-tfg.png" alt="Logo" height="60" />
+            <a href="../../../../index.html" class="navbar-brand d-flex align-items-center">
+                  <img src="../../../../img/imagen-tfg.png" alt="Logo" height="60" />
           </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
             <span class="navbar-toggler-icon"></span>
           </button>
 
         <div class="collapse navbar-collapse text-center" id="adminNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a href="#eventos" class="nav-link">📅 Eventos</a></li>
+                <li class="nav-item"><a href="#eventos" class="nav-link">📅 Eventos</a></li>
                 <li class="nav-item"><a href="./usuarios.html" class="nav-link">👥 Usuarios</a></li>
                 <li class="nav-item"><a href="#" class="nav-link text-danger" id="logoutBtn">Cerrar sesión</a></li>
-             
-      </ul>
+              </ul>
           </div>
       </nav>
 
