@@ -10,8 +10,8 @@
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
-  <link rel="stylesheet" href="../../../css/navbar.css" />
   <link rel="icon" href="/img/imagen-tfg.png" type="image/png" />
+  <link rel="stylesheet" href="../../../css/navbar.css" />
 
   <style>
     body {
@@ -21,45 +21,28 @@
 
     #calendar {
       max-width: 900px;
-      margin: 50px auto;
+      margin: 40px auto;
       background: #1c1c1c;
       padding: 20px;
       border-radius: 15px;
-      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
     }
 
-    .modal-content {
-      background-color: #1a1a1a;
+    .admin-section {
+      background: #1c1c1c;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 30px auto;
+      max-width: 1000px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+    }
+
+    table {
       color: white;
-      border: 1px solid #e50914;
-    }
-
-    .btn-danger {
-      background-color: #e50914;
-      border: none;
-    }
-
-    .btn-danger:hover {
-      background-color: #ff1a1a;
-    }
-
-    .preview-img {
-      max-width: 100%;
-      border-radius: 10px;
-      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
-  <script>
-    const usuario = JSON.parse(localStorage.getItem("usuario"));
-    if (!usuario || usuario.role !== "admin") {
-      alert("❌ Acceso denegado. No eres administrador.");
-      window.location.href = "/index.html";
-    }
-  </script>
-
   <!-- NAVBAR -->
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
     <a href="../../../index.html" class="navbar-brand d-flex align-items-center">
@@ -82,64 +65,75 @@
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-      <a href="#calendar" class="d-block text-light mb-3">📅 Gestionar Eventos</a>
-      <a href="#" id="logoutBtn" class="d-block text-light text-danger">Cerrar Sesión</a>
+      <a href="#calendarSection" class="d-block text-light mb-3">📅 Gestionar Eventos</a>
+      <a href="#usersSection" class="d-block text-light mb-3">👥 Administrar Usuarios</a>
+      <a href="#" id="logoutBtn" class="d-block text-danger">Cerrar Sesión</a>
     </div>
   </div>
 
-  <main class="text-center mt-5">
-    <h1>📅 Gestión de Eventos</h1>
-    <div id="calendar"></div>
+  <main class="text-center mt-4">
+    <!-- EVENTOS -->
+    <section id="calendarSection" class="admin-section">
+      <h2>📅 Gestión de Eventos</h2>
+      <div id="calendar"></div>
+    </section>
+
+    <!-- USUARIOS -->
+    <section id="usersSection" class="admin-section">
+      <h2>👥 Gestión de Usuarios</h2>
+      <button id="addUserBtn" class="btn btn-danger mb-3">➕ Nuevo Usuario</button>
+      <table class="table table-dark table-bordered align-middle text-center">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">Cargando usuarios...</tbody>
+      </table>
+    </section>
   </main>
 
-  <!-- MODAL -->
-  <div class="modal fade" id="eventModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
+  <!-- MODAL USUARIO -->
+  <div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-light border border-danger">
         <div class="modal-header border-danger">
-          <h5 class="modal-title">Evento</h5>
+          <h5 class="modal-title">Usuario</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <form id="eventForm">
-            <input type="hidden" id="eventId">
-
+          <form id="userForm">
+            <input type="hidden" id="userId">
             <div class="mb-3">
-              <label class="form-label">Título</label>
-              <input type="text" id="title" class="form-control" required>
+              <label class="form-label">Nombre</label>
+              <input type="text" id="userName" class="form-control" required>
             </div>
-
             <div class="mb-3">
-              <label class="form-label">Descripción</label>
-              <textarea id="description" class="form-control"></textarea>
+              <label class="form-label">Email</label>
+              <input type="email" id="userEmail" class="form-control" required>
             </div>
-
             <div class="mb-3">
-              <label class="form-label">Lugar</label>
-              <input type="text" id="location" class="form-control">
+              <label class="form-label">Contraseña</label>
+              <input type="password" id="userPassword" class="form-control">
+              <small class="text-secondary">Dejar vacío para mantener la actual</small>
             </div>
-
             <div class="mb-3">
-              <label class="form-label">Inicio</label>
-              <input type="datetime-local" id="start" class="form-control" required>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Fin</label>
-              <input type="datetime-local" id="end" class="form-control" required>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Imagen de portada</label>
-              <input type="file" id="image" class="form-control" accept="image/*">
-              <img id="preview" class="preview-img d-none" alt="Vista previa">
+              <label class="form-label">Rol</label>
+              <select id="userRole" class="form-select">
+                <option value="user">Usuario</option>
+                <option value="admin">Administrador</option>
+              </select>
             </div>
           </form>
         </div>
         <div class="modal-footer border-danger">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" id="deleteBtn" class="btn btn-outline-danger">Eliminar</button>
-          <button type="button" id="saveBtn" class="btn btn-danger">Guardar</button>
+          <button type="button" id="deleteUserBtn" class="btn btn-outline-danger">Eliminar</button>
+          <button type="button" id="saveUserBtn" class="btn btn-danger">Guardar</button>
         </div>
       </div>
     </div>
