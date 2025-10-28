@@ -1,23 +1,28 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
 
+  // Verificar rol de administrador
   if (!usuario || usuario.role !== "admin") {
     alert("❌ Acceso denegado. No eres administrador.");
     window.location.href = "/index.html";
     return;
   }
 
-  document.getElementById("bienvenida").textContent = `👋 Bienvenido, ${usuario.name} (Administrador)`;
-  document.getElementById("logoutBtn").addEventListener("click", () => {
+  // Mostrar bienvenida y cerrar sesión
+  function cerrarSesion() {
     localStorage.removeItem("usuario");
     window.location.href = "/pages/auth/login/login.html";
-  });
+  }
+  window.cerrarSesion = cerrarSesion;
 
+  // Inicializar calendario
   const calendarEl = document.getElementById("calendar");
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
+    locale: "es",
     selectable: true,
     editable: true,
+
     events: async (info, successCallback, failureCallback) => {
       try {
         const res = await fetch("/api/events");
@@ -36,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     eventClick: (info) => {
       const e = info.event;
-      alert(`📅 ${e.title}\n${e.extendedProps.description || "Sin descripción"}\n📍 ${e.extendedProps.location || "Sin ubicación"}`);
+      mostrarEvento(e);
     },
 
     eventChange: async (info) => {
@@ -62,28 +67,47 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   calendar.render();
 
-  // MODAL LÓGICA
-  const modal = document.getElementById("eventModal");
-  const cancelModal = document.getElementById("cancelModal");
+  // --- MODAL ---
+  const modal = new bootstrap.Modal(document.getElementById("eventModal"));
   const form = document.getElementById("eventForm");
+  const saveBtn = document.getElementById("saveEventBtn");
+
   let startTemp = null, endTemp = null;
 
   function openEventModal(start, end) {
     startTemp = start;
     endTemp = end;
-    modal.classList.remove("hidden");
+    document.getElementById("viewEventInfo").style.display = "none";
+    form.style.display = "block";
+    saveBtn.style.display = "inline-block";
+    form.reset();
+    modal.show();
   }
 
-  cancelModal.addEventListener("click", () => modal.classList.add("hidden"));
+  function mostrarEvento(e) {
+    document.getElementById("viewEventInfo").style.display = "block";
+    form.style.display = "none";
+    saveBtn.style.display = "none";
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const title = document.getElementById("eventTitle").value.trim();
-    const description = document.getElementById("eventDesc").value.trim();
-    const location = document.getElementById("eventLoc").value.trim();
+    document.getElementById("vTitle").textContent = e.title;
+    document.getElementById("vDescription").textContent = e.extendedProps.description || "Sin descripción";
+    document.getElementById("vLocation").textContent = e.extendedProps.location || "Sin ubicación";
+    document.getElementById("vStart").textContent = new Date(e.start).toLocaleString();
+    document.getElementById("vEnd").textContent = e.end ? new Date(e.end).toLocaleString() : "N/A";
 
-    if (!title) {
-      alert("⚠️ El título es obligatorio");
+    modal.show();
+  }
+
+  // --- GUARDAR EVENTO ---
+  saveBtn.addEventListener("click", async () => {
+    const title = document.getElementById("title").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const location = document.getElementById("location").value.trim();
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+
+    if (!title || !start || !end) {
+      alert("⚠️ Título, inicio y fin son obligatorios");
       return;
     }
 
@@ -92,21 +116,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, description, location, start: startTemp, end: endTemp,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        calendar.addEvent({
-          id: data.data.id,
           title,
           description,
           location,
-          start: startTemp,
-          end: endTemp,
-        });
-        modal.classList.add("hidden");
-        form.reset();
+          start,
+          end,
+        }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("✅ Evento creado correctamente");
+        modal.hide();
+        calendar.refetchEvents();
       } else {
         alert("❌ Error al crear evento: " + data.message);
       }
