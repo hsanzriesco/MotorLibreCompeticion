@@ -1,59 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel de Administrador - Motor Libre Competición</title>
 
-  <!-- Estilos base -->
+  <!-- Estilos -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-  <link href="../../../css/main.css" rel="stylesheet" />
-  <link href="../../../css/navbar.css" rel="stylesheet" />
-
-  <!-- FullCalendar -->
+  <link rel="stylesheet" href="../../../css/navbar.css" />
+  <link rel="stylesheet" href="../../../css/main.css" />
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
   <link rel="icon" href="/img/imagen-tfg.png" type="image/png">
 
-
   <style>
-    main {
-      margin-top: 100px;
-      color: #f5f5f5;
-      padding: 1rem;
-      min-height: calc(100vh - 120px);
+    body {
+      background-color: #0b0b0b;
+      color: white;
     }
-
-    .admin-section {
-      background: rgba(15, 15, 15, 0.9);
-      border: 1px solid rgba(229, 9, 20, 0.4);
-      box-shadow: 0 0 25px rgba(229, 9, 20, 0.25);
-      border-radius: 15px;
-      padding: 1.5rem;
-      margin: 2rem auto;
-      width: 90%;
-      max-width: 1000px;
-    }
-
     #calendar {
-      background-color: rgba(30, 30, 30, 0.8);
-      border-radius: 10px;
-      padding: 10px;
+      background: #1c1c1c;
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
     }
-
     .modal-content {
       background-color: #111;
       color: white;
       border: 1px solid #e50914;
     }
-
     .btn-danger {
       background-color: #e50914;
       border: none;
     }
-
     .btn-danger:hover {
       background-color: #ff1a1a;
     }
@@ -61,96 +41,80 @@
 </head>
 
 <body>
-  <script>
-    const usuario = JSON.parse(localStorage.getItem("usuario"));
-    if (!usuario) {
-      alert("❌ Debes iniciar sesión para acceder.");
-      window.location.href = "/pages/auth/login/login.html";
-    }
-  </script>
-
-  <!-- NAVBAR -->
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
     <a href="../../../index.html" class="navbar-brand d-flex align-items-center">
-      <img src="../../../img/imagen-tfg.png" alt="Logo" height="60" href="../../../index.html"/>
+      <img src="../../../img/imagen-tfg.png" alt="Logo" height="60" />
     </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse text-center" id="adminNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a href="#eventos" class="nav-link">📅 Eventos</a></li>
-        <li class="nav-item"><a href="#usuarios" class="nav-link">👥 Usuarios</a></li>
-        <li class="nav-item"><a href="#" class="nav-link text-danger" onclick="cerrarSesion()">Cerrar sesión</a></li>
-      </ul>
+    <div class="d-flex align-items-center">
+      <span id="admin-name" class="me-3 text-light"></span>
+      <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+        data-bs-target="#adminMenu" aria-controls="adminMenu">
+        <i class="bi bi-list"></i>
+      </button>
     </div>
   </nav>
 
-  <main>
-    <h1 class="text-center">Panel de Administración</h1>
+  <!-- Menú lateral -->
+  <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="adminMenu">
+    <div class="offcanvas-header border-bottom border-secondary">
+      <h5 class="offcanvas-title">Menú</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <a href="#calendar" class="d-block text-light mb-2">📅 Gestión de Eventos</a>
+      <a href="./users.html" class="d-block text-light mb-2">👥 Gestión de Usuarios</a>
+      <hr class="border-secondary">
+      <a href="#" id="logout-btn" class="d-block text-danger">Cerrar Sesión</a>
+    </div>
+  </div>
 
-    <section id="eventos" class="admin-section">
-      <h3>📅 Gestión de Eventos</h3>
-      <div id="calendar"></div>
-    </section>
-
-    <section id="usuarios" class="admin-section">
-      <h3>👥 Gestión de Usuarios</h3>
-      <div id="usersList">Cargando usuarios...</div>
-    </section>
+  <main class="container mt-5">
+    <h1 class="text-center text-danger mb-4">Panel de Administración</h1>
+    <div id="calendar"></div>
   </main>
 
-  <!-- Modal para crear o ver evento -->
+  <!-- Modal crear/editar evento -->
   <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header border-danger">
-          <h5 class="modal-title" id="eventModalLabel">Detalles del Evento</h5>
+          <h5 class="modal-title" id="eventModalLabel">Crear/Editar Evento</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="eventForm">
             <div class="mb-3">
-              <label for="title" class="form-label">Título</label>
-              <input type="text" id="title" class="form-control" required>
+              <label class="form-label">Título</label>
+              <input type="text" id="title" class="form-control" required />
             </div>
             <div class="mb-3">
-              <label for="description" class="form-label">Descripción</label>
-              <textarea id="description" class="form-control" required></textarea>
+              <label class="form-label">Descripción</label>
+              <textarea id="description" class="form-control"></textarea>
             </div>
             <div class="mb-3">
-              <label for="location" class="form-label">Lugar</label>
-              <input type="text" id="location" class="form-control" required>
+              <label class="form-label">Ubicación</label>
+              <input type="text" id="location" class="form-control" />
             </div>
             <div class="mb-3">
-              <label for="startDate" class="form-label">Fecha de inicio</label>
-              <input type="date" id="startDate" class="form-control" required>
+              <label class="form-label">Inicio</label>
+              <input type="datetime-local" id="startDate" class="form-control" required />
             </div>
             <div class="mb-3">
-              <label for="endDate" class="form-label">Fecha de fin</label>
-              <input type="date" id="endDate" class="form-control" required>
+              <label class="form-label">Fin</label>
+              <input type="datetime-local" id="endDate" class="form-control" required />
             </div>
           </form>
-          <div id="viewEventInfo" style="display:none;">
-            <p><strong>Título:</strong> <span id="vTitle"></span></p>
-            <p><strong>Descripción:</strong> <span id="vDescription"></span></p>
-            <p><strong>Lugar:</strong> <span id="vLocation"></span></p>
-            <p><strong>Inicio:</strong> <span id="vStart"></span></p>
-            <p><strong>Fin:</strong> <span id="vEnd"></span></p>
-          </div>
         </div>
         <div class="modal-footer border-danger">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button id="saveEventBtn" type="button" class="btn btn-danger">Guardar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="./admin.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="./admin.js"></script>
 </body>
-
 </html>
