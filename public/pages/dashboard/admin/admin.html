@@ -49,6 +49,13 @@
       color: #fff;
       border: 1px solid #e50914;
     }
+
+    .preview-img {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 
@@ -72,40 +79,54 @@
 
   <!-- Modal Crear/Editar Evento -->
   <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-danger">
-          <h5 class="modal-title">Evento</h5>
+          <h5 class="modal-title">Gestionar Evento</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
+
         <div class="modal-body">
           <form id="eventForm">
             <input type="hidden" id="eventId" />
-            <div class="mb-3">
-              <label class="form-label">Título</label>
-              <input type="text" id="title" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Descripción</label>
-              <textarea id="description" class="form-control"></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Ubicación</label>
-              <input type="text" id="location" class="form-control">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Inicio</label>
-              <input type="datetime-local" id="startDate" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Fin</label>
-              <input type="datetime-local" id="endDate" class="form-control" required>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Título</label>
+                  <input type="text" id="title" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Descripción</label>
+                  <textarea id="description" class="form-control"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Ubicación</label>
+                  <input type="text" id="location" class="form-control">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Inicio</label>
+                  <input type="datetime-local" id="startDate" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Fin</label>
+                  <input type="datetime-local" id="endDate" class="form-control" required>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Imagen de portada</label>
+                  <input type="file" id="image" class="form-control" accept="image/*">
+                  <img id="previewImg" class="preview-img" alt="Vista previa">
+                </div>
+              </div>
             </div>
           </form>
         </div>
+
         <div class="modal-footer border-danger">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button id="deleteEventBtn" type="button" class="btn btn-outline-danger" style="display:none;">Eliminar</button>
+          <button id="deleteEventBtn" type="button" class="btn btn-outline-danger">Eliminar</button>
           <button id="saveEventBtn" type="button" class="btn btn-danger">Guardar</button>
         </div>
       </div>
