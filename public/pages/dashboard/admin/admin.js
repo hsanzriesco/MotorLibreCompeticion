@@ -1,77 +1,105 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // ==== VERIFICAR ADMIN ====
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   if (!usuario || usuario.role !== "admin") {
-    alert("❌ Acceso denegado");
-    window.location.href = "/index.html";
+    alert("❌ Acceso denegado. Solo administradores pueden acceder.");
+    window.location.href = "/pages/auth/login/login.html";
+    return;
   }
 
-  const logoutBtn = document.getElementById("logoutBtn");
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("usuario");
-    window.location.href = "/pages/auth/login/login.html";
-  });
+  // ==== BOTÓN CERRAR SESIÓN ====
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("usuario");
+      window.location.href = "/pages/auth/login/login.html";
+    });
+  }
 
+  // ==== CALENDARIO ====
   const calendarEl = document.getElementById("calendar");
-  const modal = new bootstrap.Modal(document.getElementById("eventModal"));
-  const form = document.getElementById("eventForm");
-  const preview = document.getElementById("preview");
-
+  let calendar;
   let selectedEvent = null;
 
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: "dayGridMonth",
-    selectable: true,
-    editable: true,
-    locale: "es",
+  if (calendarEl) {
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: "dayGridMonth",
+      locale: "es",
+      selectable: true,
+      editable: false,
+      height: "auto",
 
-    events: async (info, success, fail) => {
-      try {
-        const res = await fetch("/api/events");
-        const data = await res.json();
-        if (data.success) success(data.data);
-        else fail();
-      } catch (e) {
-        console.error(e);
-        fail(e);
-      }
-    },
+      events: async (fetchInfo, successCallback, failureCallback) => {
+        try {
+          const res = await fetch("/api/events");
+          const data = await res.json();
+          if (data.success) {
+            successCallback(data.data);
+          } else {
+            console.warn("⚠️ No se encontraron eventos");
+            successCallback([]);
+          }
+        } catch (err) {
+          console.error("❌ Error al cargar eventos:", err);
+          failureCallback(err);
+        }
+      },
 
-    select: (info) => {
-      selectedEvent = null;
-      form.reset();
-      preview.classList.add("d-none");
-      document.getElementById("eventId").value = "";
-      document.getElementById("start").value = info.startStr.slice(0, 16);
-      document.getElementById("end").value = info.endStr.slice(0, 16);
-      modal.show();
-    },
+      select: (info) => {
+        openModal({
+          id: "",
+          title: "",
+          description: "",
+          location: "",
+          start: info.startStr,
+          end: info.endStr,
+          image_url: "",
+        });
+      },
 
-    eventClick: (info) => {
-      selectedEvent = info.event;
-      const props = selectedEvent.extendedProps;
+      eventClick: (info) => {
+        const e = info.event;
+        openModal({
+          id: e.id,
+          title: e.title,
+          description: e.extendedProps.description,
+          location: e.extendedProps.location,
+          start: e.startStr,
+          end: e.endStr,
+          image_url: e.extendedProps.image_url || "",
+        });
+      },
+    });
 
-      document.getElementById("eventId").value = selectedEvent.id;
-      document.getElementById("title").value = selectedEvent.title;
-      document.getElementById("description").value = props.description || "";
-      document.getElementById("location").value = props.location || "";
-      document.getElementById("start").value = selectedEvent.startStr.slice(0, 16);
-      document.getElementById("end").value = selectedEvent.endStr.slice(0, 16);
+    calendar.render();
+  }
 
-      if (props.image_base64) {
-        preview.src = props.image_base64;
-        preview.classList.remove("d-none");
-      } else {
-        preview.classList.add("d-none");
-      }
+  // ==== MODAL ====
+  const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
+  const saveBtn = document.getElementById("saveEventBtn");
+  const deleteBtn = document.getElementById("deleteEventBtn");
 
-      modal.show();
-    },
-  });
+  function openModal(eventData) {
+    selectedEvent = eventData;
 
-  calendar.render();
+    document.getElementById("eventId").value = eventData.id || "";
+    document.getElementById("title").value = eventData.title || "";
+    document.getElementById("description").value = eventData.description || "";
+    document.getElementById("location").value = eventData.location || "";
+    document.getElementById("start").value = eventData.start
+      ? eventData.start.slice(0, 16)
+      : "";
+    document.getElementById("end").value = eventData.end
+      ? eventData.end.slice(0, 16)
+      : "";
 
-  // Guardar evento
-  document.getElementById("saveBtn").addEventListener("click", async () => {
+    deleteBtn.style.display = eventData.id ? "inline-block" : "none";
+    eventModal.show();
+  }
+
+  // ==== GUARDAR / ACTUALIZAR EVENTO ====
+  saveBtn.addEventListener("click", async () => {
     const id = document.getElementById("eventId").value;
     const title = document.getElementById("title").value.trim();
     const description = document.getElementById("description").value.trim();
@@ -80,59 +108,69 @@ document.addEventListener("DOMContentLoaded", () => {
     const end = document.getElementById("end").value;
     const imageFile = document.getElementById("image").files[0];
 
-    let image_base64 = selectedEvent?.extendedProps?.image_base64 || null;
-    if (imageFile) {
-      image_base64 = await toBase64(imageFile);
+    if (!title || !start || !end) {
+      alert("⚠️ Completa todos los campos obligatorios.");
+      return;
     }
 
-    const payload = { id, title, description, location, start, end, image_base64 };
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("location", location);
+    formData.append("start", start);
+    formData.append("end", end);
+    if (imageFile) formData.append("image", imageFile);
 
-    const method = id ? "PUT" : "POST";
-    const res = await fetch("/api/events", {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      let res;
+      if (id) {
+        // 🔁 ACTUALIZAR EVENTO
+        res = await fetch(`/api/events/${id}`, {
+          method: "PUT",
+          body: formData,
+        });
+      } else {
+        // ➕ CREAR EVENTO
+        res = await fetch("/api/events", {
+          method: "POST",
+          body: formData,
+        });
+      }
 
-    const data = await res.json();
-    if (data.success) {
-      calendar.refetchEvents();
-      modal.hide();
-    } else {
-      alert("❌ Error: " + data.message);
+      const data = await res.json();
+      if (data.success) {
+        alert(id ? "✅ Evento actualizado." : "✅ Evento creado.");
+        eventModal.hide();
+        calendar.refetchEvents();
+      } else {
+        alert("❌ Error: " + data.message);
+      }
+    } catch (err) {
+      console.error("❌ Error al guardar evento:", err);
+      alert("❌ Error al guardar evento.");
     }
   });
 
-  // Eliminar evento
-  document.getElementById("deleteBtn").addEventListener("click", async () => {
+  // ==== ELIMINAR EVENTO ====
+  deleteBtn.addEventListener("click", async () => {
     const id = document.getElementById("eventId").value;
-    if (!id) return alert("⚠️ No hay evento seleccionado");
+    if (!id) return;
 
-    if (confirm("¿Seguro que deseas eliminar este evento?")) {
-      await fetch(`/api/events?id=${id}`, { method: "DELETE" });
-      calendar.refetchEvents();
-      modal.hide();
+    if (!confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
+
+    try {
+      const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        alert("🗑️ Evento eliminado correctamente.");
+        eventModal.hide();
+        calendar.refetchEvents();
+      } else {
+        alert("❌ Error al eliminar evento: " + data.message);
+      }
+    } catch (err) {
+      console.error("❌ Error al eliminar evento:", err);
+      alert("❌ Error de conexión al eliminar evento.");
     }
   });
-
-  // Imagen → vista previa
-  document.getElementById("image").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      preview.src = reader.result;
-      preview.classList.remove("d-none");
-    };
-    reader.readAsDataURL(file);
-  });
-
-  function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-    });
-  }
 });
