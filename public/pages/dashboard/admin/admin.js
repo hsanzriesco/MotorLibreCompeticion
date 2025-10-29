@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ==== VERIFICAR ADMIN ====
-  // ⭐ CAMBIO CLAVE: Usar sessionStorage
+  // Usamos sessionStorage para que la sesión se cierre al cerrar la pestaña.
   const usuario = JSON.parse(sessionStorage.getItem("usuario"));
   if (!usuario || usuario.role !== "admin") {
     alert("❌ Acceso denegado. Solo administradores pueden acceder.");
@@ -9,14 +9,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==== BOTÓN CERRAR SESIÓN ====
-  // Este es un botón de logout específico para el dashboard si no usa el de navbar.js
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      // ⭐ CAMBIO CLAVE: Usar sessionStorage.removeItem
-      sessionStorage.removeItem("usuario");
-        window.location.href = "/pages/auth/login/login.html";
+      // Eliminar la sesión
+      sessionStorage.removeItem("usuario");
+      window.location.href = "/pages/auth/login/login.html";
     });
   }
 
