@@ -1,4 +1,4 @@
-// ⚙️ usersList.js (Actualizado a sintaxis CommonJS)
+// ⚙️ usersList.js 
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 
@@ -9,7 +9,7 @@ const pool = new Pool({
 
 async function handler(req, res) {
   try {
-    // ✅ OBTENER TODOS LOS USUARIOS
+    // ✅ OBTENER TODOS LOS USUARIOS (GET)
     if (req.method === "GET") {
       const result = await pool.query(
         "SELECT id, name, email, role, created_at FROM users ORDER BY id ASC"
@@ -17,7 +17,7 @@ async function handler(req, res) {
       return res.status(200).json({ success: true, data: result.rows });
     }
 
-    // ✅ CREAR NUEVO USUARIO
+    // ✅ CREAR NUEVO USUARIO (POST)
     if (req.method === "POST") {
       const { name, email, password, role } = req.body;
 
@@ -28,7 +28,6 @@ async function handler(req, res) {
         });
       }
 
-      // Encriptar la contraseña
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const result = await pool.query(
@@ -41,7 +40,7 @@ async function handler(req, res) {
       return res.status(201).json({ success: true, data: result.rows[0] });
     }
 
-    // ✅ ACTUALIZAR USUARIO EXISTENTE
+    // ✅ ACTUALIZAR USUARIO EXISTENTE (PUT)
     if (req.method === "PUT") {
       const { id, name, email, password, role } = req.body;
 
@@ -52,7 +51,6 @@ async function handler(req, res) {
         });
       }
 
-      // Si se manda una contraseña nueva, se encripta
       const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
       const query = `
@@ -77,7 +75,7 @@ async function handler(req, res) {
       return res.status(200).json({ success: true, data: result.rows[0] });
     }
 
-    // ✅ ELIMINAR USUARIO
+    // ✅ ELIMINAR USUARIO (DELETE)
     if (req.method === "DELETE") {
       const { id } = req.query;
 
@@ -110,5 +108,4 @@ async function handler(req, res) {
   }
 }
 
-// Exportación CommonJS
 module.exports = handler;
