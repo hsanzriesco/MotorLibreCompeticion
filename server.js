@@ -6,7 +6,7 @@ const path = require('path');
 const cors = require('cors'); 
 
 // ⭐ 1. Importar los Handlers de la API (Usa rutas relativas correctas)
-const usersListHandler = require('./api/usersList'); 
+const usersListHandler = require('./api/userList'); 
 const loginUserHandler = require('./api/loginUser'); 
 
 const app = express();
