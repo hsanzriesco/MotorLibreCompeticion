@@ -1,10 +1,11 @@
-// ⚙️ usersList.js (api/usersList.js)
+// ⚙️ userList.js (api/userList.js)
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  // Esto es necesario para Vercel si usas un proveedor como Neon o Heroku.
+  ssl: { rejectUnauthorized: false }, 
 });
 
 async function handler(req, res) {
@@ -53,11 +54,14 @@ async function handler(req, res) {
     res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
     return res.status(405).json({ success: false, message: `Método ${req.method} no permitido` });
   } catch (error) {
-    console.error("❌ Error en /api/usersList:", error);
+    // ⭐ MENSAJE DE ERROR ACTUALIZADO PARA DEPURACIÓN ⭐
+    console.error("❌ ERROR CRÍTICO EN /api/userList:", error.message || error);
+    
+    // Devolvemos el mensaje de error de la DB para diagnosticar el fallo 500
     res.status(500).json({
       success: false,
-      message: "Error interno del servidor",
-      error: error.message,
+      message: "Error interno del servidor o de conexión a la DB.",
+      error: error.message || "Error desconocido. Revisa logs de Vercel.",
     });
   }
 }
