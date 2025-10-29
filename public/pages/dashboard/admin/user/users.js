@@ -22,12 +22,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function cargarUsuarios() {
         try {
-            const res = await fetch("/api/usersList");
+            const res = await fetch("/api/userList");
 
             if (!res.ok) {
                 // Si hay un error 404/500, lanzamos un error claro
                 throw new Error(
-                    `Error de la API: ${res.status}. **Revisa que la ruta '/api/usersList' esté definida correctamente en tu servidor (puede ser por sintaxis 'import' vs 'require').**`
+                    `Error de la API: ${res.status}. **Revisa que la ruta '/api/userList' esté definida correctamente en tu servidor (puede ser por sintaxis 'import' vs 'require').**`
                 );
             }
 
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!id) return;
 
         if (action === "edit") {
-            const res = await fetch("/api/usersList");
+            const res = await fetch("/api/userList");
             if (!res.ok) {
                 alert(`Error al obtener lista para editar: ${res.status}.`);
                 return;
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
 
             try {
-                const res = await fetch(`/api/usersList?id=${id}`, { method: "DELETE" });
+                const res = await fetch(`/api/userList?id=${id}`, { method: "DELETE" });
                 if (!res.ok) {
                     throw new Error(`Error al eliminar: ${res.status}`);
                 }
@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const method = userId.value ? "PUT" : "POST";
 
         try {
-            const res = await fetch("/api/usersList", {
+            const res = await fetch("/api/userList", {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
