@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!res.ok) {
                 // Si hay un error 404/500, lanzamos un error claro
                 throw new Error(
-                    `Error de la API: ${res.status}. **Revisa que 'api/usersList.js' esté dentro de la carpeta 'pages/api'**.`
+                    `Error de la API: ${res.status}. **Revisa que la ruta '/api/usersList' esté definida correctamente en tu servidor (puede ser por sintaxis 'import' vs 'require').**`
                 );
             }
 
