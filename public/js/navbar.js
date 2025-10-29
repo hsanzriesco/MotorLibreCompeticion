@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       // ⭐ CAMBIO CLAVE: Usar sessionStorage.removeItem
-      **sessionStorage.removeItem("usuario");**
+      sessionStorage.removeItem("usuario");
       window.location.href = "/index.html";
     });
   }

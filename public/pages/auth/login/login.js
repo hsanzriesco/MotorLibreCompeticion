@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (result.success) {
         const user = result.user;
         // ⭐ CAMBIO CLAVE: Usar sessionStorage
-        **sessionStorage.setItem("usuario", JSON.stringify(user));**
+        sessionStorage.setItem("usuario", JSON.stringify(user));
         showMessage(`👋 Bienvenido, ${user.name}!`, "success");
 
         // Redirección según el rol
