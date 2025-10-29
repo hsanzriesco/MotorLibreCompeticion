@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ==== VERIFICAR ADMIN ====
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const usuario = JSON.parse(sessionStorage.getItem("usuario"));
   if (!usuario || usuario.role !== "admin") {
     alert("❌ Acceso denegado. Solo administradores pueden acceder.");
     window.location.href = "/pages/auth/login/login.html";
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      localStorage.removeItem("usuario");
+      sessionStorage.removeItem("usuario");
       window.location.href = "/pages/auth/login/login.html";
     });
   }
@@ -124,13 +124,11 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       let res;
       if (id) {
-        // 🔁 ACTUALIZAR EVENTO
         res = await fetch(`/api/events/${id}`, {
           method: "PUT",
           body: formData,
         });
       } else {
-        // ➕ CREAR EVENTO
         res = await fetch("/api/events", {
           method: "POST",
           body: formData,

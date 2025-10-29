@@ -81,7 +81,7 @@
 <body>
   <!-- Protección de acceso -->
   <script>
-    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const usuario = JSON.parse(sessionStorage.getItem("usuario"));
     if (!usuario || usuario.role !== "admin") {
       alert("❌ Acceso denegado. Solo administradores pueden entrar.");
       window.location.href = "/pages/auth/login/login.html";
