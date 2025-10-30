@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 3. Listener para la navegación
+    // 3. Listener para la navegación (al hacer clic en la barra lateral)
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
@@ -38,27 +38,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 4. Lógica para botones de acción (ej. llamadas a API)
+    // 4. Lógica para botones de acción del Dashboard
     const actionButtons = document.querySelectorAll('.action-btn');
 
     actionButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             const action = button.getAttribute('data-action');
             
-            // Aquí iría la lógica para interactuar con tu API
+            // Aquí iría la lógica para interactuar con tu API o cambiar de vista
             switch(action) {
                 case 'view-users':
                     console.log('Navegando a la vista de Usuarios...');
-                    // Se podría llamar a changeView('users');
+                    changeView('users'); // Cambia a la vista de usuarios
                     break;
                 case 'delete-user':
                     // Normalmente requeriría una confirmación o un modal
-                    alert('Acción: Eliminar Usuario (pendiente de implementación)');
+                    alert('Acción: Abrir modal para Eliminar Usuario');
+                    break;
+                case 'view-events':
+                    console.log('Navegando a la vista de Eventos...');
+                    changeView('events'); // Cambia a la vista de eventos
                     break;
                 case 'add-event':
                 case 'create-event':
-                    console.log('Navegando a la vista de Creación/Añadir Evento...');
-                    // Se podría llamar a changeView('events'); y activar un formulario
+                    console.log('Acción: Abrir formulario de creación de Evento...');
+                    // Se podría cambiar a la vista de eventos y mostrar un formulario
+                    changeView('events');
                     break;
                 default:
                     console.log(`Acción desconocida: ${action}`);
@@ -70,11 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Función para cargar datos iniciales (Simulación)
     const loadInitialData = async () => {
         try {
-            // **Aquí harías tus llamadas a la API**
-            // const responseUsers = await fetch('/api/users');
-            // const dataUsers = await responseUsers.json();
-            
-            // SIMULACIÓN de datos
+            // SIMULACIÓN de datos (aquí harías fetch a tus endpoints)
             const totalUsers = 1245;
             const upcomingEvents = 8;
 
