@@ -28,6 +28,7 @@ document.addEventListener("click", (e) => {
 
   // ==== NAVEGACIÓN ENTRE SECCIONES ====
   if (menuEventos && menuUsuarios && seccionEventos && seccionUsuarios) {
+    // Si los elementos existen (gracias a los cambios en admin.html), la navegación funciona.
     menuEventos.addEventListener("click", (e) => {
       e.preventDefault();
       seccionEventos.style.display = "block";
@@ -45,6 +46,7 @@ document.addEventListener("click", (e) => {
       await cargarUsuarios();
     });
   } else {
+    // ESTA ADVERTENCIA DEJARÁ DE APARECER
     console.warn("⚠️ No se encontraron los menús o secciones para navegar.");
   }
 
