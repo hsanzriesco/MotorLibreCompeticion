@@ -1,67 +1,103 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Administrador</title>
+  <title>Panel de Administración - Motor Libre Competición</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <!-- 🔗 Bootstrap y estilos -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="../../../css/style.css" rel="stylesheet" />
+  <link href="../../../css/main.css" rel="stylesheet" />
+  <link rel="icon" href="/img/imagen-tfg.png" type="image/png" />
+
+  <!-- 📅 FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
 </head>
 
 <body>
-  <nav>
-    <img src="/img/imagen-tfg.png" alt="Logo MLC" class="logo">
-    <!-- ... tu navbar ... -->
-  </nav>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="/img/imagen-tfg.png" alt="Logo Motor Libre" />
+    </div>
+    <nav class="menu">
+      <a href="#" id="menuEventos" class="active"><i class="bi bi-calendar3"></i> Eventos</a>
+      <a href="#" id="menuUsuarios"><i class="bi bi-people-fill"></i> Usuarios</a>
+      <a href="#" id="logoutBtn" class="text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+    </nav>
+  </aside>
 
-  <div id="calendar"></div>
+  <!-- MAIN -->
+  <main class="main-content">
+    <h1>Panel de Administración</h1>
 
-  <!-- Modal -->
-  <div class="modal fade" id="eventModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content bg-dark text-white">
-        <div class="modal-header">
-          <h5 class="modal-title">Nuevo Evento</h5>
+    <section id="seccionEventos" class="admin-section">
+      <h3>📅 Gestión de Eventos</h3>
+      <div id="calendar"></div>
+    </section>
+
+    <section id="seccionUsuarios" class="admin-section" style="display: none;">
+      <h3>👥 Gestión de Usuarios</h3>
+      <div id="usersList">Cargando usuarios...</div>
+    </section>
+  </main>
+
+  <!-- Modal de eventos -->
+  <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-danger">
+          <h5 class="modal-title" id="eventModalLabel">Detalles del Evento</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="eventForm">
-            <input type="hidden" id="eventId">
+            <input type="hidden" id="eventId" />
             <div class="mb-3">
               <label for="title" class="form-label">Título</label>
-              <input type="text" id="title" class="form-control" required>
+              <input type="text" id="title" class="form-control" required />
             </div>
             <div class="mb-3">
               <label for="description" class="form-label">Descripción</label>
-              <textarea id="description" class="form-control"></textarea>
+              <textarea id="description" class="form-control" required></textarea>
             </div>
             <div class="mb-3">
-              <label for="location" class="form-label">Ubicación</label>
-              <input type="text" id="location" class="form-control">
+              <label for="location" class="form-label">Lugar</label>
+              <input type="text" id="location" class="form-control" required />
             </div>
             <div class="mb-3">
-              <label for="start" class="form-label">Inicio</label>
-              <input type="datetime-local" id="start" class="form-control" required>
+              <label for="image" class="form-label">Imagen de Portada</label>
+              <input type="file" id="image" class="form-control" accept="image/*" />
             </div>
-            <div class="mb-3">
-              <label for="end" class="form-label">Fin</label>
-              <input type="datetime-local" id="end" class="form-control">
+            <div class="row">
+              <div class="col">
+                <label for="start" class="form-label">Inicio</label>
+                <input type="datetime-local" id="start" class="form-control" required />
+              </div>
+              <div class="col">
+                <label for="end" class="form-label">Fin</label>
+                <input type="datetime-local" id="end" class="form-control" required />
+              </div>
             </div>
           </form>
         </div>
-        <div class="modal-footer">
-          <button id="deleteEventBtn" class="btn btn-danger">Eliminar</button>
-          <button id="saveEventBtn" class="btn btn-primary">Guardar</button>
+        <div class="modal-footer border-danger">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cerrar</button>
+          <button id="deleteEventBtn" type="button" class="btn btn-outline-light">Eliminar</button>
+          <button id="saveEventBtn" type="button" class="btn btn-danger">Guardar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Librerías -->
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <!-- JS -->
+  <script src="/pages/admin/admin.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="./admin.js"></script>
 </body>
+
 </html>
