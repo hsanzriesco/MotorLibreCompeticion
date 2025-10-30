@@ -16,47 +16,49 @@ document.addEventListener("DOMContentLoaded", () => {
   const seccionEventos = document.getElementById("seccionEventos");
   const seccionUsuarios = document.getElementById("seccionUsuarios");
 
-  // ==== VALIDAR ELEMENTOS ====
-  if (!logoutBtn || !menuEventos || !menuUsuarios || !seccionEventos || !seccionUsuarios) {
-    console.error("❌ Error: No se encontraron uno o más elementos del panel.");
-    return;
+  // ==== CERRAR SESIÓN ====
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      sessionStorage.clear();
+      window.location.href = "/pages/auth/login/login.html";
+    });
+  } else {
+    console.warn("⚠️ No se encontró el botón con id='logoutBtn'.");
   }
 
-  // ==== CERRAR SESIÓN ====
-  logoutBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    sessionStorage.clear();
-    window.location.href = "/pages/auth/login/login.html";
-  });
-
   // ==== NAVEGACIÓN ENTRE SECCIONES ====
-  menuEventos.addEventListener("click", (e) => {
-    e.preventDefault();
-    seccionEventos.style.display = "block";
-    seccionUsuarios.style.display = "none";
-    menuEventos.classList.add("active");
-    menuUsuarios.classList.remove("active");
-  });
+  if (menuEventos && menuUsuarios && seccionEventos && seccionUsuarios) {
+    menuEventos.addEventListener("click", (e) => {
+      e.preventDefault();
+      seccionEventos.style.display = "block";
+      seccionUsuarios.style.display = "none";
+      menuEventos.classList.add("active");
+      menuUsuarios.classList.remove("active");
+    });
 
-  menuUsuarios.addEventListener("click", async (e) => {
-    e.preventDefault();
-    seccionEventos.style.display = "none";
-    seccionUsuarios.style.display = "block";
-    menuUsuarios.classList.add("active");
-    menuEventos.classList.remove("active");
-    await cargarUsuarios();
-  });
+    menuUsuarios.addEventListener("click", async (e) => {
+      e.preventDefault();
+      seccionEventos.style.display = "none";
+      seccionUsuarios.style.display = "block";
+      menuUsuarios.classList.add("active");
+      menuEventos.classList.remove("active");
+      await cargarUsuarios();
+    });
+  } else {
+    console.warn("⚠️ No se encontraron los menús o secciones para navegar.");
+  }
 
   // ==== FULLCALENDAR ====
   const calendarEl = document.getElementById("calendar");
   const modalEl = document.getElementById("eventModal");
   const saveBtn = document.getElementById("saveEventBtn");
   const deleteBtn = document.getElementById("deleteEventBtn");
-  let calendar;
-  let selectedEvent = null;
 
   if (calendarEl && modalEl && saveBtn && deleteBtn) {
     const eventModal = new bootstrap.Modal(modalEl);
+    let calendar;
+    let selectedEvent = null;
 
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: "dayGridMonth",
@@ -104,7 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     calendar.render();
 
-    // ==== MODAL ====
     function openModal(eventData) {
       selectedEvent = eventData;
 
@@ -119,7 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
       eventModal.show();
     }
 
-    // ==== GUARDAR EVENTO ====
     saveBtn.addEventListener("click", async () => {
       const id = document.getElementById("eventId").value;
       const title = document.getElementById("title").value.trim();
@@ -162,7 +162,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // ==== ELIMINAR EVENTO ====
     deleteBtn.addEventListener("click", async () => {
       const id = document.getElementById("eventId").value;
       if (!id || !confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
@@ -183,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   } else {
-    console.warn("⚠️ No se encontró el calendario o elementos del modal, se omite inicialización de eventos.");
+    console.warn("⚠️ No se encontró el calendario o los elementos del modal. Se omite la configuración de eventos.");
   }
 
   // ==== CARGAR USUARIOS ====
