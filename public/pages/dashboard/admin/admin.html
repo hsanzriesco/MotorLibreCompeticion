@@ -63,29 +63,20 @@
 </head>
 
 <body>
-  <!-- NAVBAR SUPERIOR -->
-  <nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand d-flex align-items-center" href="#">
-        <img src="../../../img/imagen-tfg.png" alt="Logo Motor Libre" class="me-2" />
-        <span>Motor Libre Competición</span>
+  <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
+    <a href="./index.html" class="navbar-brand d-flex align-items-center">
+      <img src="./img/imagen-tfg.png" alt="Logo" height="80" class="me-2">
+    </a>
+
+    <div class="d-flex align-items-center">
+      <span id="user-name" class="text-light me-3"></span>
+      <a href="./pages/auth/login/login.html" id="login-link" class="text-light me-3">
+        <i class="bi bi-person-circle fs-4"></i>
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarAdmin">
-        <span class="navbar-toggler-icon"></span>
+      <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+        <i class="bi bi-list"></i>
       </button>
-      <div class="collapse navbar-collapse" id="navbarAdmin">
-        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a href="#" id="menuEventos" class="nav-link active"><i class="bi bi-calendar3"></i> Eventos</a>
-          </li>
-          <li class="nav-item">
-            <a href="#" id="menuUsuarios" class="nav-link"><i class="bi bi-people-fill"></i> Usuarios</a>
-          </li>
-          <li class="nav-item">
-            <a href="#" id="logoutBtn" class="nav-link text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
-          </li>
-        </ul>
-      </div>
     </div>
   </nav>
 
