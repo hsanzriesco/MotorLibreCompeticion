@@ -1,81 +1,94 @@
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("✅ admin.js cargado correctamente (Modo de Prueba Funcional)");
+/**
+ * admin.js
+ * Lógica para la navegación y funcionalidades del Panel de Administración.
+ */
 
-    // =========================================================
-    // ==== 1. DESACTIVACIÓN TEMPORAL DE VERIFICACIÓN ADMIN ====
-    // =========================================================
-    // La barrera de seguridad está temporalmente DESACTIVADA para asegurar que el resto del panel funcione.
-    const usuario = JSON.parse(sessionStorage.getItem("usuario"));
-    
-    if (!usuario || usuario.role !== "admin") {
-        // alert("❌ Acceso denegado. Solo administradores pueden acceder.");
-        // window.location.href = "../../auth/login/login.html"; // Comentado
-        // return; // COMENTADO: ¡ESTO ES LO QUE ESTABA ROMPIENDO LA EJECUCIÓN!
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Elementos de Navegación y Vistas
+    const navItems = document.querySelectorAll('.nav-menu .nav-item');
+    const viewPanels = document.querySelectorAll('.view-panel');
 
-    // ==== 2. ELEMENTOS DE INTERFAZ ====
-    const menuEventos = document.getElementById("menuEventos");
-    const menuUsuarios = document.getElementById("menuUsuarios");
-    const seccionEventos = document.getElementById("seccionEventos");
-    const seccionUsuarios = document.getElementById("seccionUsuarios");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const calendarEl = document.getElementById("calendar");
-    const modalEl = document.getElementById("eventModal");
+    // 2. Función para cambiar de vista
+    const changeView = (viewId) => {
+        // Desactiva todos los ítems de navegación
+        navItems.forEach(item => item.classList.remove('active'));
+        
+        // Oculta todos los paneles de vista
+        viewPanels.forEach(panel => panel.classList.remove('active'));
 
-    // ==== 3. INICIALIZACIÓN Y LÓGICA DE LA INTERFAZ ====
+        // Activa el ítem de navegación y el panel correspondientes
+        const activeNav = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+        const activePanel = document.getElementById(viewId);
 
-    // CERRAR SESIÓN
-    document.addEventListener("click", (e) => {
-        if (e.target && e.target.id === "logoutBtn") {
-            e.preventDefault();
-            sessionStorage.clear();
-            window.location.href = "../../auth/login/login.html"; 
+        if (activeNav) {
+            activeNav.classList.add('active');
         }
+
+        if (activePanel) {
+            activePanel.classList.add('active');
+        }
+    };
+
+    // 3. Listener para la navegación
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const viewId = item.getAttribute('data-view');
+            changeView(viewId);
+        });
     });
 
-    // NAVEGACIÓN ENTRE SECCIONES
-    if (menuEventos && menuUsuarios && seccionEventos && seccionUsuarios) {
-        
-        async function cargarUsuarios() {
-            const usersList = document.getElementById("usersList");
-            if (usersList) {
-                usersList.textContent = "Cargando usuarios...";
-                usersList.innerHTML = `<p class="mt-3">La gestión de usuarios funciona correctamente.</p>`;
+    // 4. Lógica para botones de acción (ej. llamadas a API)
+    const actionButtons = document.querySelectorAll('.action-btn');
+
+    actionButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const action = button.getAttribute('data-action');
+            
+            // Aquí iría la lógica para interactuar con tu API
+            switch(action) {
+                case 'view-users':
+                    console.log('Navegando a la vista de Usuarios...');
+                    // Se podría llamar a changeView('users');
+                    break;
+                case 'delete-user':
+                    // Normalmente requeriría una confirmación o un modal
+                    alert('Acción: Eliminar Usuario (pendiente de implementación)');
+                    break;
+                case 'add-event':
+                case 'create-event':
+                    console.log('Navegando a la vista de Creación/Añadir Evento...');
+                    // Se podría llamar a changeView('events'); y activar un formulario
+                    break;
+                default:
+                    console.log(`Acción desconocida: ${action}`);
             }
+        });
+    });
+
+
+    // 5. Función para cargar datos iniciales (Simulación)
+    const loadInitialData = async () => {
+        try {
+            // **Aquí harías tus llamadas a la API**
+            // const responseUsers = await fetch('/api/users');
+            // const dataUsers = await responseUsers.json();
+            
+            // SIMULACIÓN de datos
+            const totalUsers = 1245;
+            const upcomingEvents = 8;
+
+            document.getElementById('total-users').textContent = totalUsers.toLocaleString('es-ES');
+            document.getElementById('upcoming-events').textContent = upcomingEvents;
+
+        } catch (error) {
+            console.error('Error al cargar datos iniciales:', error);
+            document.getElementById('total-users').textContent = 'ERROR';
+            document.getElementById('upcoming-events').textContent = 'ERROR';
         }
-        
-        menuEventos.addEventListener("click", (e) => {
-            e.preventDefault();
-            seccionEventos.style.display = "block";
-            seccionUsuarios.style.display = "none";
-            menuEventos.classList.add("active");
-            menuUsuarios.classList.remove("active");
-        });
+    };
 
-        menuUsuarios.addEventListener("click", async (e) => {
-            e.preventDefault();
-            seccionEventos.style.display = "none";
-            seccionUsuarios.style.display = "block";
-            menuUsuarios.classList.add("active");
-            menuEventos.classList.remove("active");
-            await cargarUsuarios();
-        });
-    } else {
-        console.warn("⚠️ No se encontraron los menús o secciones para navegar.");
-    }
+    // Carga los datos al iniciar
+    loadInitialData();
 
-    // FULLCALENDAR
-    if (calendarEl) {
-        let calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: "dayGridMonth",
-            locale: "es",
-            selectable: true,
-            editable: false, 
-            height: "auto",
-            events: [{ title: 'Panel Funciona', start: new Date().toISOString().split('T')[0] }],
-        });
-        calendar.render();
-    } else {
-        console.warn("⚠️ No se encontró el calendario.");
-    }
 });
