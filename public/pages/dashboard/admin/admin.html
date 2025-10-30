@@ -1,220 +1,67 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Motor Libre Competición</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Administrador</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="../../../css/navbar.css">
-  <link rel="stylesheet" href="../../../css/style.css">
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-  <link rel="icon" type="image/png" href="../../../img/imagen-tfg.png">
-
-  <style>
-    body {
-      background-color: #111;
-      color: white;
-    }
-
-    #calendar {
-      max-width: 900px;
-      margin: 50px auto;
-      background: #1c1c1c;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-    }
-
-    /* Modal eventos */
-    .modal-event {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-    }
-
-    .modal-event-content {
-      background: #1c1c1c;
-      color: white;
-      padding: 25px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 450px;
-      box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
-    }
-
-    .modal-event-content h4 {
-      color: #ff4d4d;
-      margin-bottom: 10px;
-    }
-
-    .close-modal {
-      background: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      margin-top: 15px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .close-modal:hover {
-      background: #e60000;
-    }
-  </style>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
-  <!-- NAVBAR -->
-  <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
-    <a href="./index.html" class="navbar-brand d-flex align-items-center">
-      <img src="./img/imagen-tfg.png" alt="Logo" height="80" class="me-2">
-    </a>
-
-    <div class="d-flex align-items-center">
-      <span id="user-name" class="text-light me-3"></span>
-      <a href="./pages/auth/login/login.html" id="login-link" class="text-light me-3">
-        <i class="bi bi-person-circle fs-4"></i>
-      </a>
-      <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
-        data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-        <i class="bi bi-list"></i>
-      </button>
-    </div>
+  <nav>
+    <img src="/img/imagen-tfg.png" alt="Logo MLC" class="logo">
+    <!-- ... tu navbar ... -->
   </nav>
 
-  <!-- OFFCANVAS MENU -->
-  <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-    <div class="offcanvas-header border-bottom border-secondary">
-      <h5 class="offcanvas-title">Menú</h5>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body">
-      <a href="./pages/dashboard/admin/admin.html" class="d-block text-light mb-2">Panel Administrador</a>
-      <a href="./pages/dashboard/user/user.html" class="d-block text-light mb-2">Panel Usuario</a>
-      <hr class="border-secondary">
-      <a href="#" id="logout-btn" class="d-block text-light">Cerrar Sesión</a>
+  <div id="calendar"></div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">Nuevo Evento</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="eventForm">
+            <input type="hidden" id="eventId">
+            <div class="mb-3">
+              <label for="title" class="form-label">Título</label>
+              <input type="text" id="title" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Descripción</label>
+              <textarea id="description" class="form-control"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="location" class="form-label">Ubicación</label>
+              <input type="text" id="location" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="start" class="form-label">Inicio</label>
+              <input type="datetime-local" id="start" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="end" class="form-label">Fin</label>
+              <input type="datetime-local" id="end" class="form-control">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button id="deleteEventBtn" class="btn btn-danger">Eliminar</button>
+          <button id="saveEventBtn" class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- CONTENIDO -->
-  <main class="main-content text-center mt-5">
-    <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
-    <h4 id="bienvenida" class="mt-3 text-danger"></h4>
-
-    <!-- Calendario -->
-    <div id="calendar"></div>
-  </main>
-
-  <!-- MODAL PARA EVENTOS -->
-  <div id="eventViewModal" class="modal-event" style="display: none;">
-    <div class="modal-event-content">
-      <h4 id="modalTitle"></h4>
-      <p id="modalDesc"></p>
-      <p id="modalLoc"></p>
-      <p id="modalDate"></p>
-      <button class="close-modal" id="closeModalBtn">Cerrar</button>
-    </div>
-  </div>
-
-  <!-- JS -->
-  <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
-      const bienvenida = document.getElementById("bienvenida");
-      const userName = document.getElementById("user-name");
-      const loginLink = document.getElementById("login-link");
-
-      if (usuario) {
-        bienvenida.textContent = `👋 Bienvenido, ${usuario.name}!`;
-        userName.textContent = usuario.name;
-        loginLink.style.display = "none";
-      }
-
-      const logoutBtn = document.getElementById("logout-btn");
-      if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          localStorage.removeItem("usuario");
-          const msg = document.createElement("div");
-          msg.textContent = "👋 Has cerrado sesión correctamente.";
-          msg.style.position = "fixed";
-          msg.style.top = "20px";
-          msg.style.left = "50%";
-          msg.style.transform = "translateX(-50%)";
-          msg.style.backgroundColor = "#dc3545";
-          msg.style.color = "white";
-          msg.style.padding = "10px 20px";
-          msg.style.borderRadius = "10px";
-          msg.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
-          msg.style.zIndex = "9999";
-          document.body.appendChild(msg);
-          setTimeout(() => {
-            msg.remove();
-            window.location.href = "./pages/auth/login/login.html";
-          }, 1500);
-        });
-      }
-
-      // ✅ Calendario con modal de visualización
-      const calendarEl = document.getElementById("calendar");
-      if (calendarEl) {
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-          initialView: "dayGridMonth",
-          locale: "es",
-          events: async (fetchInfo, successCallback, failureCallback) => {
-            try {
-              const res = await fetch("/api/events");
-              const data = await res.json();
-              if (data.success && Array.isArray(data.data)) {
-                successCallback(data.data);
-              } else {
-                console.warn("⚠️ No se encontraron eventos o formato incorrecto");
-                successCallback([]);
-              }
-            } catch (err) {
-              console.error("❌ Error al cargar eventos:", err);
-              failureCallback(err);
-            }
-          },
-
-          eventClick: (info) => {
-            const e = info.event;
-            document.getElementById("modalTitle").textContent = e.title || "Evento sin título";
-            document.getElementById("modalDesc").textContent = e.extendedProps.description
-              ? `📝 ${e.extendedProps.description}`
-              : "Sin descripción.";
-            document.getElementById("modalLoc").textContent = e.extendedProps.location
-              ? `📍 ${e.extendedProps.location}`
-              : "Ubicación no especificada.";
-            document.getElementById("modalDate").textContent = `🗓️ ${new Date(e.start).toLocaleDateString("es-ES")}`;
-            document.getElementById("eventViewModal").style.display = "flex";
-          }
-        });
-
-        calendar.render();
-      }
-
-      // Cerrar modal
-      document.getElementById("closeModalBtn").addEventListener("click", () => {
-        document.getElementById("eventViewModal").style.display = "none";
-      });
-    });
-  </script>
-
-  <script src="../../../js/navbar.js"></script>
-  <script src="./admin.js"></script>
+  <!-- Librerías -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="./admin.js"></script>
 </body>
-
 </html>
