@@ -1,28 +1,55 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Administrador - Motor Libre Competición</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motor Libre Competición</title>
 
   <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
   <!-- Estilos -->
-  <link rel="stylesheet" href="../../../css/navbar.css" />
-  <link rel="stylesheet" href="../../../css/style.css" />
+  <link rel="stylesheet" href="./css/navbar.css">
+  <link rel="stylesheet" href="./css/style.css">
+
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+  <style>
+    #calendar {
+      max-width: 1000px;
+      margin: 50px auto;
+      background: #1e1e1e;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+    }
+
+    .fc-toolbar-title {
+      color: #dc3545 !important;
+    }
+
+    .fc-daygrid-day-number {
+      color: white !important;
+    }
+  </style>
 </head>
 
 <body>
   <!-- NAVBAR -->
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
-    <a href="../../../index.html" class="navbar-brand d-flex align-items-center">
-      <img src="../../../img/imagen-tfg.png" alt="Logo" height="40" class="me-2">
+    <a href="./index.html" class="navbar-brand d-flex align-items-center">
+      <img src="./img/imagen-tfg.png" alt="Logo" height="80" class="me-2">
     </a>
 
     <div class="d-flex align-items-center">
-      <a href="../../auth/login.html" class="text-light me-3"><i class="bi bi-person-circle fs-4"></i></a>
+      <span id="user-name" class="text-light me-3"></span>
+      <a href="./pages/auth/login/login.html" id="login-link" class="text-light me-3">
+        <i class="bi bi-person-circle fs-4"></i>
+      </a>
       <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
         <i class="bi bi-list"></i>
@@ -37,20 +64,115 @@
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-      <a href="../admin/admin.html" class="d-block text-light mb-2">Panel Administrador</a>
-      <a href="../user/user.html" class="d-block text-light mb-2">Panel Usuario</a>
+      <a href="./pages/dashboard/admin/admin.html" class="d-block text-light mb-2">Panel Administrador</a>
+      <a href="./pages/dashboard/user/user.html" class="d-block text-light mb-2">Panel Usuario</a>
       <hr class="border-secondary">
-      <a href="#" class="d-block text-light">Cerrar Sesión</a>
+      <a href="#" id="logout-btn" class="d-block text-light">Cerrar Sesión</a>
     </div>
   </div>
 
   <!-- CONTENIDO -->
   <main class="main-content text-center mt-5">
-    <h1 class="text-light">Panel Administrador</h1>
-    <p class="text-secondary">Aquí puedes gestionar el sistema y los usuarios.</p>
+    <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
+    <h2 id="bienvenida" class="text-danger mt-3"></h2>
+
+    <div id="calendar"></div>
   </main>
 
-  <script src="../../../js/navbar.js"></script>
+  <!-- Scripts -->
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const usuario = JSON.parse(localStorage.getItem("usuario"));
+      const bienvenida = document.getElementById("bienvenida");
+      const userName = document.getElementById("user-name");
+      const loginLink = document.getElementById("login-link");
+
+      if (usuario) {
+        bienvenida.textContent = `👋 Bienvenido, ${usuario.name}!`;
+        userName.textContent = usuario.name;
+        loginLink.style.display = "none";
+      } else {
+        bienvenida.textContent = "👋 Bienvenido invitado.";
+      }
+
+      const isAdmin = usuario && usuario.role === "admin";
+
+      const calendarEl = document.getElementById("calendar");
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        locale: "es",
+        editable: isAdmin,
+        selectable: isAdmin,
+        headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay"
+        },
+        events: async (fetchInfo, successCallback, failureCallback) => {
+          try {
+            const res = await fetch("/api/events");
+            const data = await res.json();
+            if (data.success) {
+              successCallback(
+                data.data.map(e => ({
+                  id: e.id,
+                  title: e.title,
+                  start: e.start,
+                  end: e.end
+                }))
+              );
+            } else {
+              failureCallback(data.message);
+            }
+          } catch (err) {
+            console.error("Error cargando eventos:", err);
+            failureCallback(err);
+          }
+        },
+        select: async (info) => {
+          if (!isAdmin) return;
+          const title = prompt("Título del evento:");
+          if (title) {
+            const res = await fetch("/api/events", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title,
+                start: info.startStr,
+                end: info.endStr
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              alert("✅ Evento creado correctamente");
+              calendar.refetchEvents();
+            } else {
+              alert("❌ Error al crear el evento");
+            }
+          }
+        },
+        eventClick: async (info) => {
+          if (!isAdmin) return;
+          const opcion = confirm(`¿Eliminar el evento "${info.event.title}"?`);
+          if (opcion) {
+            const res = await fetch(`/api/events/${info.event.id}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.success) {
+              alert("🗑️ Evento eliminado");
+              calendar.refetchEvents();
+            } else {
+              alert("❌ Error al eliminar el evento");
+            }
+          }
+        }
+      });
+
+      calendar.render();
+    });
+  </script>
+
+  <script src="./js/navbar.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
