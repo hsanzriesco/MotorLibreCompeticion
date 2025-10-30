@@ -1,95 +1,243 @@
-/**
- * admin.js
- * Lógica para la navegación y funcionalidades del Panel de Administración.
- */
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ admin.js cargado correctamente");
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Elementos de Navegación y Vistas
-    const navItems = document.querySelectorAll('.nav-menu .nav-item');
-    const viewPanels = document.querySelectorAll('.view-panel');
+  // ==== VERIFICAR ADMIN ====
+  const usuario = JSON.parse(sessionStorage.getItem("usuario"));
+  if (!usuario || usuario.role !== "admin") {
+    alert("❌ Acceso denegado. Solo administradores pueden acceder.");
+    window.location.href = "/pages/auth/login/login.html";
+    return;
+  }
 
-    // 2. Función para cambiar de vista
-    const changeView = (viewId) => {
-        // Desactiva todos los ítems de navegación
-        navItems.forEach(item => item.classList.remove('active'));
-        
-        // Oculta todos los paneles de vista
-        viewPanels.forEach(panel => panel.classList.remove('active'));
+  // ==== ELEMENTOS ====
+  const logoutBtn = document.getElementById("logoutBtn");
+  const menuEventos = document.getElementById("menuEventos");
+  const menuUsuarios = document.getElementById("menuUsuarios");
+  const seccionEventos = document.getElementById("seccionEventos");
+  const seccionUsuarios = document.getElementById("seccionUsuarios");
 
-        // Activa el ítem de navegación y el panel correspondientes
-        const activeNav = document.querySelector(`.nav-item[data-view="${viewId}"]`);
-        const activePanel = document.getElementById(viewId);
+// ==== CERRAR SESIÓN ====
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "logoutBtn") {
+    e.preventDefault();
+    sessionStorage.clear(); //hola
+    window.location.href = "/pages/auth/login/login.html";
+  }
+});
 
-        if (activeNav) {
-            activeNav.classList.add('active');
-        }
 
-        if (activePanel) {
-            activePanel.classList.add('active');
-        }
-    };
-
-    // 3. Listener para la navegación (al hacer clic en la barra lateral)
-    navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            const viewId = item.getAttribute('data-view');
-            changeView(viewId);
-        });
+  // ==== NAVEGACIÓN ENTRE SECCIONES ====
+  if (menuEventos && menuUsuarios && seccionEventos && seccionUsuarios) {
+    menuEventos.addEventListener("click", (e) => {
+      e.preventDefault();
+      seccionEventos.style.display = "block";
+      seccionUsuarios.style.display = "none";
+      menuEventos.classList.add("active");
+      menuUsuarios.classList.remove("active");
     });
 
-    // 4. Lógica para botones de acción del Dashboard
-    const actionButtons = document.querySelectorAll('.action-btn');
-
-    actionButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            const action = button.getAttribute('data-action');
-            
-            // Aquí iría la lógica para interactuar con tu API o cambiar de vista
-            switch(action) {
-                case 'view-users':
-                    console.log('Navegando a la vista de Usuarios...');
-                    changeView('users'); // Cambia a la vista de usuarios
-                    break;
-                case 'delete-user':
-                    alert('Acción: Abrir modal para Eliminar Usuario');
-                    break;
-                case 'view-events':
-                    console.log('Navegando a la vista de Eventos...');
-                    changeView('events'); // Cambia a la vista de eventos
-                    break;
-                case 'add-event':
-                case 'create-event':
-                    console.log('Acción: Abrir formulario de creación de Evento...');
-                    changeView('events');
-                    break;
-                default:
-                    console.log(`Acción desconocida: ${action}`);
-            }
-        });
+    menuUsuarios.addEventListener("click", async (e) => {
+      e.preventDefault();
+      seccionEventos.style.display = "none";
+      seccionUsuarios.style.display = "block";
+      menuUsuarios.classList.add("active");
+      menuEventos.classList.remove("active");
+      await cargarUsuarios();
     });
+  } else {
+    console.warn("⚠️ No se encontraron los menús o secciones para navegar.");
+  }
 
+  // ==== FULLCALENDAR ====
+  const calendarEl = document.getElementById("calendar");
+  const modalEl = document.getElementById("eventModal");
+  const saveBtn = document.getElementById("saveEventBtn");
+  const deleteBtn = document.getElementById("deleteEventBtn");
 
-    // 5. Función para cargar datos iniciales (Simulación)
-    const loadInitialData = async () => {
+  if (calendarEl && modalEl && saveBtn && deleteBtn) {
+    const eventModal = new bootstrap.Modal(modalEl);
+    let calendar;
+    let selectedEvent = null;
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: "dayGridMonth",
+      locale: "es",
+      selectable: true,
+      editable: false,
+      height: "auto",
+
+      events: async (fetchInfo, successCallback, failureCallback) => {
         try {
-            // **Implementar llamada a la API real aquí**
-            
-            // SIMULACIÓN de datos
-            const totalUsers = 1245;
-            const upcomingEvents = 8;
-
-            document.getElementById('total-users').textContent = totalUsers.toLocaleString('es-ES');
-            document.getElementById('upcoming-events').textContent = upcomingEvents;
-
-        } catch (error) {
-            console.error('Error al cargar datos iniciales:', error);
-            document.getElementById('total-users').textContent = 'ERROR';
-            document.getElementById('upcoming-events').textContent = 'ERROR';
+          const res = await fetch("/api/events");
+          const data = await res.json();
+          successCallback(data.success ? data.data : []);
+        } catch (err) {
+          console.error("❌ Error al cargar eventos:", err);
+          failureCallback(err);
         }
-    };
+      },
 
-    // Carga los datos al iniciar
-    loadInitialData();
+      select: (info) => {
+        openModal({
+          id: "",
+          title: "",
+          description: "",
+          location: "",
+          start: info.startStr,
+          end: info.endStr,
+          image_url: "",
+        });
+      },
 
+      eventClick: (info) => {
+        const e = info.event;
+        openModal({
+          id: e.id,
+          title: e.title,
+          description: e.extendedProps.description,
+          location: e.extendedProps.location,
+          start: e.startStr,
+          end: e.endStr,
+          image_url: e.extendedProps.image_url || "",
+        });
+      },
+    });
+
+    calendar.render();
+
+    function openModal(eventData) {
+      selectedEvent = eventData;
+
+      document.getElementById("eventId").value = eventData.id || "";
+      document.getElementById("title").value = eventData.title || "";
+      document.getElementById("description").value = eventData.description || "";
+      document.getElementById("location").value = eventData.location || "";
+      document.getElementById("start").value = eventData.start ? eventData.start.slice(0, 16) : "";
+      document.getElementById("end").value = eventData.end ? eventData.end.slice(0, 16) : "";
+
+      deleteBtn.style.display = eventData.id ? "inline-block" : "none";
+      eventModal.show();
+    }
+
+    saveBtn.addEventListener("click", async () => {
+      const id = document.getElementById("eventId").value;
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const location = document.getElementById("location").value.trim();
+      const start = document.getElementById("start").value;
+      const end = document.getElementById("end").value;
+      const imageFile = document.getElementById("image").files[0];
+
+      if (!title || !start || !end) {
+        alert("⚠️ Completa todos los campos obligatorios.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("location", location);
+      formData.append("start", start);
+      formData.append("end", end);
+      if (imageFile) formData.append("image", imageFile);
+
+      try {
+        const res = await fetch(id ? `/api/events/${id}` : "/api/events", {
+          method: id ? "PUT" : "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert(id ? "✅ Evento actualizado." : "✅ Evento creado.");
+          eventModal.hide();
+          calendar.refetchEvents();
+        } else {
+          alert("❌ " + data.message);
+        }
+      } catch (err) {
+        console.error("❌ Error al guardar evento:", err);
+        alert("❌ Error al guardar evento.");
+      }
+    });
+
+    deleteBtn.addEventListener("click", async () => {
+      const id = document.getElementById("eventId").value;
+      if (!id || !confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
+
+      try {
+        const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          alert("🗑️ Evento eliminado correctamente.");
+          eventModal.hide();
+          calendar.refetchEvents();
+        } else {
+          alert("❌ " + data.message);
+        }
+      } catch (err) {
+        console.error("❌ Error al eliminar evento:", err);
+        alert("❌ Error de conexión al eliminar evento.");
+      }
+    });
+  } else {
+    console.warn("⚠️ No se encontró el calendario o los elementos del modal. Se omite la configuración de eventos.");
+  }
+
+  // ==== CARGAR USUARIOS ====
+  async function cargarUsuarios() {
+    const usersList = document.getElementById("usersList");
+    if (!usersList) return;
+
+    usersList.textContent = "Cargando usuarios...";
+
+    try {
+      const res = await fetch("/api/userList");
+      const data = await res.json();
+
+      if (!data.success) {
+        usersList.innerHTML = `<p>Error al cargar usuarios.</p>`;
+        return;
+      }
+
+      const usuarios = data.data;
+      if (usuarios.length === 0) {
+        usersList.innerHTML = "<p>No hay usuarios registrados.</p>";
+        return;
+      }
+
+      let html = `
+        <table class="table table-dark table-hover align-middle text-center">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      usuarios.forEach((u) => {
+        html += `
+          <tr>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td>${u.role}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-light" onclick="editarUsuario('${u._id}')"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-danger" onclick="eliminarUsuario('${u._id}')"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table>`;
+      usersList.innerHTML = html;
+    } catch (err) {
+      console.error("❌ Error al cargar usuarios:", err);
+      usersList.innerHTML = "<p>Error al conectar con el servidor.</p>";
+    }
+  }
 });
