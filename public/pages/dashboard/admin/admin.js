@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ admin.js cargado correctamente");
+
   // ==== VERIFICAR ADMIN ====
   const usuario = JSON.parse(sessionStorage.getItem("usuario"));
   if (!usuario || usuario.role !== "admin") {
@@ -13,6 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const menuUsuarios = document.getElementById("menuUsuarios");
   const seccionEventos = document.getElementById("seccionEventos");
   const seccionUsuarios = document.getElementById("seccionUsuarios");
+
+  // ==== VALIDAR ELEMENTOS ====
+  if (!logoutBtn || !menuEventos || !menuUsuarios || !seccionEventos || !seccionUsuarios) {
+    console.error("❌ Error: No se encontraron uno o más elementos del panel.");
+    return;
+  }
 
   // ==== CERRAR SESIÓN ====
   logoutBtn.addEventListener("click", (e) => {
@@ -41,13 +49,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ==== FULLCALENDAR ====
   const calendarEl = document.getElementById("calendar");
-  const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
+  const modalEl = document.getElementById("eventModal");
   const saveBtn = document.getElementById("saveEventBtn");
   const deleteBtn = document.getElementById("deleteEventBtn");
   let calendar;
   let selectedEvent = null;
 
-  if (calendarEl) {
+  if (calendarEl && modalEl && saveBtn && deleteBtn) {
+    const eventModal = new bootstrap.Modal(modalEl);
+
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: "dayGridMonth",
       locale: "es",
@@ -91,91 +101,96 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       },
     });
+
     calendar.render();
-  }
 
-  // ==== MODAL ====
-  function openModal(eventData) {
-    selectedEvent = eventData;
+    // ==== MODAL ====
+    function openModal(eventData) {
+      selectedEvent = eventData;
 
-    document.getElementById("eventId").value = eventData.id || "";
-    document.getElementById("title").value = eventData.title || "";
-    document.getElementById("description").value = eventData.description || "";
-    document.getElementById("location").value = eventData.location || "";
-    document.getElementById("start").value = eventData.start ? eventData.start.slice(0, 16) : "";
-    document.getElementById("end").value = eventData.end ? eventData.end.slice(0, 16) : "";
+      document.getElementById("eventId").value = eventData.id || "";
+      document.getElementById("title").value = eventData.title || "";
+      document.getElementById("description").value = eventData.description || "";
+      document.getElementById("location").value = eventData.location || "";
+      document.getElementById("start").value = eventData.start ? eventData.start.slice(0, 16) : "";
+      document.getElementById("end").value = eventData.end ? eventData.end.slice(0, 16) : "";
 
-    deleteBtn.style.display = eventData.id ? "inline-block" : "none";
-    eventModal.show();
-  }
-
-  // ==== GUARDAR EVENTO ====
-  saveBtn.addEventListener("click", async () => {
-    const id = document.getElementById("eventId").value;
-    const title = document.getElementById("title").value.trim();
-    const description = document.getElementById("description").value.trim();
-    const location = document.getElementById("location").value.trim();
-    const start = document.getElementById("start").value;
-    const end = document.getElementById("end").value;
-    const imageFile = document.getElementById("image").files[0];
-
-    if (!title || !start || !end) {
-      alert("⚠️ Completa todos los campos obligatorios.");
-      return;
+      deleteBtn.style.display = eventData.id ? "inline-block" : "none";
+      eventModal.show();
     }
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("location", location);
-    formData.append("start", start);
-    formData.append("end", end);
-    if (imageFile) formData.append("image", imageFile);
+    // ==== GUARDAR EVENTO ====
+    saveBtn.addEventListener("click", async () => {
+      const id = document.getElementById("eventId").value;
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const location = document.getElementById("location").value.trim();
+      const start = document.getElementById("start").value;
+      const end = document.getElementById("end").value;
+      const imageFile = document.getElementById("image").files[0];
 
-    try {
-      const res = await fetch(id ? `/api/events/${id}` : "/api/events", {
-        method: id ? "PUT" : "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        alert(id ? "✅ Evento actualizado." : "✅ Evento creado.");
-        eventModal.hide();
-        calendar.refetchEvents();
-      } else {
-        alert("❌ " + data.message);
+      if (!title || !start || !end) {
+        alert("⚠️ Completa todos los campos obligatorios.");
+        return;
       }
-    } catch (err) {
-      console.error("❌ Error al guardar evento:", err);
-      alert("❌ Error al guardar evento.");
-    }
-  });
 
-  // ==== ELIMINAR EVENTO ====
-  deleteBtn.addEventListener("click", async () => {
-    const id = document.getElementById("eventId").value;
-    if (!id || !confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("location", location);
+      formData.append("start", start);
+      formData.append("end", end);
+      if (imageFile) formData.append("image", imageFile);
 
-    try {
-      const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
-        alert("🗑️ Evento eliminado correctamente.");
-        eventModal.hide();
-        calendar.refetchEvents();
-      } else {
-        alert("❌ " + data.message);
+      try {
+        const res = await fetch(id ? `/api/events/${id}` : "/api/events", {
+          method: id ? "PUT" : "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert(id ? "✅ Evento actualizado." : "✅ Evento creado.");
+          eventModal.hide();
+          calendar.refetchEvents();
+        } else {
+          alert("❌ " + data.message);
+        }
+      } catch (err) {
+        console.error("❌ Error al guardar evento:", err);
+        alert("❌ Error al guardar evento.");
       }
-    } catch (err) {
-      console.error("❌ Error al eliminar evento:", err);
-      alert("❌ Error de conexión al eliminar evento.");
-    }
-  });
+    });
+
+    // ==== ELIMINAR EVENTO ====
+    deleteBtn.addEventListener("click", async () => {
+      const id = document.getElementById("eventId").value;
+      if (!id || !confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
+
+      try {
+        const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          alert("🗑️ Evento eliminado correctamente.");
+          eventModal.hide();
+          calendar.refetchEvents();
+        } else {
+          alert("❌ " + data.message);
+        }
+      } catch (err) {
+        console.error("❌ Error al eliminar evento:", err);
+        alert("❌ Error de conexión al eliminar evento.");
+      }
+    });
+  } else {
+    console.warn("⚠️ No se encontró el calendario o elementos del modal, se omite inicialización de eventos.");
+  }
 
   // ==== CARGAR USUARIOS ====
   async function cargarUsuarios() {
     const usersList = document.getElementById("usersList");
+    if (!usersList) return;
+
     usersList.textContent = "Cargando usuarios...";
 
     try {
@@ -194,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       let html = `
-        <table class="table table-dark table-hover">
+        <table class="table table-dark table-hover align-middle text-center">
           <thead>
             <tr>
               <th>Nombre</th>
