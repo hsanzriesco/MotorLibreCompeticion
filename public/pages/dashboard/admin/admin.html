@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -114,6 +113,25 @@
       border-color: #e50914;
       color: #fff;
     }
+
+    /* USERS TABLE */
+    #usersList table {
+      width: 100%;
+      color: #fff;
+    }
+
+    #usersList th {
+      color: #e50914;
+    }
+
+    #usersList td, #usersList th {
+      padding: 0.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #usersList button {
+      margin-right: 0.3rem;
+    }
   </style>
 </head>
 
@@ -121,7 +139,7 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="logo">
-      <img src="../../../img/imagen-tfg.png" alt="Logo Motor Libre" />
+      <img src="/img/imagen-tfg.png" alt="Logo Motor Libre" />
     </div>
     <nav class="menu">
       <a href="#" id="menuEventos" class="active"><i class="bi bi-calendar3"></i> Eventos</a>
@@ -195,7 +213,6 @@
 
   <!-- JS -->
   <script src="/pages/admin/admin.js"></script>
-  <script src="/pages/admin/users.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
