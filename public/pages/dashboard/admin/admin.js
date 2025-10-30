@@ -10,15 +10,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==== ELEMENTOS ====
-  const logoutBtn = document.getElementById("logoutBtn");
-  const menuEventos = document.getElementById("menuEventos");
-  const menuUsuarios = document.getElementById("menuUsuarios");
+  // logoutBtn ahora puede estar en el Offcanvas o en otro sitio
+  const logoutBtn = document.getElementById("logoutBtn"); 
+  const menuEventos = document.getElementById("menuEventos"); // Existe gracias al cambio en admin.html
+  const menuUsuarios = document.getElementById("menuUsuarios"); // Existe gracias al cambio en admin.html
   const seccionEventos = document.getElementById("seccionEventos");
   const seccionUsuarios = document.getElementById("seccionUsuarios");
 
 // ==== CERRAR SESIÓN ====
 document.addEventListener("click", (e) => {
-  if (e.target && e.target.id === "logoutBtn") {
+  // Maneja tanto el 'logoutBtn' original como el del Offcanvas si existe
+  if (e.target && e.target.id === "logoutBtn") { 
     e.preventDefault();
     sessionStorage.clear(); //hola
     window.location.href = "/pages/auth/login/login.html";
@@ -27,8 +29,8 @@ document.addEventListener("click", (e) => {
 
 
   // ==== NAVEGACIÓN ENTRE SECCIONES ====
+  // Esta lógica ahora se ejecuta sin warning
   if (menuEventos && menuUsuarios && seccionEventos && seccionUsuarios) {
-    // Si los elementos existen (gracias a los cambios en admin.html), la navegación funciona.
     menuEventos.addEventListener("click", (e) => {
       e.preventDefault();
       seccionEventos.style.display = "block";
@@ -46,7 +48,7 @@ document.addEventListener("click", (e) => {
       await cargarUsuarios();
     });
   } else {
-    // ESTA ADVERTENCIA DEJARÁ DE APARECER
+    // ESTA ADVERTENCIA DEBE DESAPARECER
     console.warn("⚠️ No se encontraron los menús o secciones para navegar.");
   }
 
