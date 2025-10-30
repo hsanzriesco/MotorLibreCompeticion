@@ -16,16 +16,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const seccionEventos = document.getElementById("seccionEventos");
   const seccionUsuarios = document.getElementById("seccionUsuarios");
 
-  // ==== CERRAR SESIÓN ====
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      sessionStorage.clear();
-      window.location.href = "/pages/auth/login/login.html";
-    });
-  } else {
-    console.warn("⚠️ No se encontró el botón con id='logoutBtn'.");
+// ==== CERRAR SESIÓN ====
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "logoutBtn") {
+    e.preventDefault();
+    sessionStorage.clear(); //hola
+    window.location.href = "/pages/auth/login/login.html";
   }
+});
+
 
   // ==== NAVEGACIÓN ENTRE SECCIONES ====
   if (menuEventos && menuUsuarios && seccionEventos && seccionUsuarios) {
