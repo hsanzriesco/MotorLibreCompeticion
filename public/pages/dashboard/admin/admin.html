@@ -159,7 +159,22 @@
 
     <section id="seccionUsuarios" class="admin-section" style="display: none;">
       <h3>👥 Gestión de Usuarios</h3>
-      <div id="usersList">Cargando usuarios...</div>
+      <div id="usersList">
+        <button class="btn btn-danger mb-3" id="btnAddUser"><i class="bi bi-person-plus"></i> Nuevo Usuario</button>
+        <table class="table table-dark table-striped align-middle">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Creado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">Cargando...</tbody>
+        </table>
+      </div>
     </section>
   </main>
 
@@ -211,8 +226,49 @@
     </div>
   </div>
 
+  <!-- Modal de usuarios -->
+  <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-danger">
+          <h5 class="modal-title" id="userModalLabel">Nuevo Usuario</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="userForm">
+            <input type="hidden" id="userId" />
+            <div class="mb-3">
+              <label for="userName" class="form-label">Nombre</label>
+              <input type="text" id="userName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label for="userEmail" class="form-label">Email</label>
+              <input type="email" id="userEmail" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label for="userPassword" class="form-label">Contraseña</label>
+              <input type="password" id="userPassword" class="form-control" />
+            </div>
+            <div class="mb-3">
+              <label for="userRole" class="form-label">Rol</label>
+              <select id="userRole" class="form-select">
+                <option value="user">Usuario</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-danger">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" form="userForm" class="btn btn-danger">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- JS -->
-  <script src="/pages/admin/admin.js"></script>
+  <script src="/pages/dashboard/admin/admin.js"></script>
+  <script src="/pages/dashboard/admin/users.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
