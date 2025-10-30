@@ -52,7 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     changeView('users'); // Cambia a la vista de usuarios
                     break;
                 case 'delete-user':
-                    // Normalmente requeriría una confirmación o un modal
                     alert('Acción: Abrir modal para Eliminar Usuario');
                     break;
                 case 'view-events':
@@ -62,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'add-event':
                 case 'create-event':
                     console.log('Acción: Abrir formulario de creación de Evento...');
-                    // Se podría cambiar a la vista de eventos y mostrar un formulario
                     changeView('events');
                     break;
                 default:
@@ -75,7 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Función para cargar datos iniciales (Simulación)
     const loadInitialData = async () => {
         try {
-            // SIMULACIÓN de datos (aquí harías fetch a tus endpoints)
+            // **Implementar llamada a la API real aquí**
+            
+            // SIMULACIÓN de datos
             const totalUsers = 1245;
             const upcomingEvents = 8;
 
