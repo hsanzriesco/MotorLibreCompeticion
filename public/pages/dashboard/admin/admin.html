@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,14 +8,131 @@
   <!-- 🔗 Bootstrap y estilos -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-  <link href="../../../css/style.css" rel="stylesheet" />
-  <link href="../../../css/main.css" rel="stylesheet" />
+  <link href="/css/style.css" rel="stylesheet" />
   <link rel="icon" href="/img/imagen-tfg.png" type="image/png" />
 
   <!-- 📅 FullCalendar -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
+  <style>
+    body {
+      background: #0b0b0b;
+      color: #fff;
+      font-family: "Poppins", sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 250px;
+      background: #111;
+      border-right: 2px solid #e50914;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 0;
+      transition: width 0.3s;
+    }
+
+    .sidebar .logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar .logo img {
+      height: 70px;
+    }
+
+    .sidebar .menu a {
+      color: #bbb;
+      text-decoration: none;
+      display: block;
+      padding: 0.8rem 1.5rem;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .sidebar .menu a:hover,
+    .sidebar .menu a.active {
+      background: #e50914;
+      color: #fff;
+    }
+
+    /* MAIN PANEL */
+    .main-content {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #e50914;
+    }
+
+    .admin-section {
+      background: rgba(20, 20, 20, 0.95);
+      border: 1px solid rgba(229, 9, 20, 0.3);
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 25px rgba(229, 9, 20, 0.15);
+    }
+
+    #calendar {
+      background-color: rgba(30, 30, 30, 0.9);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    /* MODAL */
+    .modal-content {
+      background-color: #111;
+      color: #fff;
+      border: 1px solid #e50914;
+    }
+
+    .btn-danger {
+      background-color: #e50914;
+      border: none;
+    }
+
+    .btn-danger:hover {
+      background-color: #ff1a1a;
+    }
+
+    .btn-outline-light {
+      border-color: #aaa;
+      color: #ddd;
+    }
+
+    .btn-outline-light:hover {
+      border-color: #e50914;
+      color: #fff;
+    }
+
+    /* USERS TABLE */
+    #usersList table {
+      width: 100%;
+      color: #fff;
+    }
+
+    #usersList th {
+      color: #e50914;
+    }
+
+    #usersList td, #usersList th {
+      padding: 0.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #usersList button {
+      margin-right: 0.3rem;
+    }
+  </style>
 </head>
 
 <body>
@@ -99,5 +215,4 @@
   <script src="/pages/admin/admin.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
