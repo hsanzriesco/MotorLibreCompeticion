@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // === Protección de sesión ===
   const user = sessionStorage.getItem("user");
   if (!user) {
-    window.location.href = "../../../pages/login/login.html";
+    window.location.href = "../../../pages/auth/login/login.html";
     return;
   }
 
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", function () {
       sessionStorage.clear();
-      window.location.href = "../../../pages/login/login.html";
+      window.location.href = "../../../pages/auth/login/login.html";
     });
   }
 });
