@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	const calendarEl = document.getElementById("calendar");
 	let calendar;
 	let selectedEvent = null;
+	let selectedDate = null; // Guardamos la fecha seleccionada
 
 	if (calendarEl) {
 		calendar = new FullCalendar.Calendar(calendarEl, {
@@ -49,14 +50,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			// === Seleccionar día para nuevo evento ===
 			select: (info) => {
-				const selectedDate = info.startStr.split("T")[0]; // Solo la fecha
+				selectedDate = info.startStr.split("T")[0]; // Solo la fecha
 				openModal({
 					id: "",
 					title: "",
 					description: "",
 					location: "",
-					start: `${selectedDate}T`, // Fecha seleccionada sin hora
-					end: `${selectedDate}T`,
+					start: `${selectedDate}T00:00`, // Fecha seleccionada sin hora
+					end: `${selectedDate}T01:00`,
 					image_url: "",
 				});
 			},
@@ -64,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			// === Clic en evento existente ===
 			eventClick: (info) => {
 				const e = info.event;
+				selectedDate = e.startStr.split("T")[0];
 				openModal({
 					id: e.id,
 					title: e.title,
@@ -87,24 +89,33 @@ document.addEventListener("DOMContentLoaded", () => {
 	function openModal(eventData) {
 		selectedEvent = eventData;
 
-		document.getElementById("eventId").value = eventData.id || "";
-		document.getElementById("title").value = eventData.title || "";
-		document.getElementById("description").value = eventData.description || "";
-		document.getElementById("location").value = eventData.location || "";
+		const eventIdInput = document.getElementById("eventId");
+		const titleInput = document.getElementById("title");
+		const descriptionInput = document.getElementById("description");
+		const locationInput = document.getElementById("location");
+		const startInput = document.getElementById("start");
+		const endInput = document.getElementById("end");
 
-		document.getElementById("start").value =
-			eventData.start && eventData.start.includes("T")
-				? eventData.start.slice(0, 16)
-				: eventData.start
-				? `${eventData.start}T`
-				: "";
+		eventIdInput.value = eventData.id || "";
+		titleInput.value = eventData.title || "";
+		descriptionInput.value = eventData.description || "";
+		locationInput.value = eventData.location || "";
 
-		document.getElementById("end").value =
-			eventData.end && eventData.end.includes("T")
-				? eventData.end.slice(0, 16)
-				: eventData.end
-				? `${eventData.end}T`
-				: "";
+		// Mostrar solo las horas, no la fecha (fecha fijada)
+		if (selectedDate) {
+			startInput.type = "time";
+			endInput.type = "time";
+
+			// Limpiamos la hora por defecto
+			startInput.value = "";
+			endInput.value = "";
+		} else {
+			// Si se abre para editar evento existente
+			startInput.type = "datetime-local";
+			endInput.type = "datetime-local";
+			startInput.value = eventData.start ? eventData.start.slice(0, 16) : "";
+			endInput.value = eventData.end ? eventData.end.slice(0, 16) : "";
+		}
 
 		deleteBtn.style.display = eventData.id ? "inline-block" : "none";
 		eventModal.show();
@@ -116,14 +127,20 @@ document.addEventListener("DOMContentLoaded", () => {
 		const title = document.getElementById("title").value.trim();
 		const description = document.getElementById("description").value.trim();
 		const location = document.getElementById("location").value.trim();
-		const start = document.getElementById("start").value;
-		const end = document.getElementById("end").value;
+		let startTime = document.getElementById("start").value;
+		let endTime = document.getElementById("end").value;
 		const imageFile = document.getElementById("image").files[0];
 
-		if (!title || !start || !end) {
+		if (!title || !startTime || !endTime) {
 			alert("⚠️ Completa todos los campos obligatorios.");
 			return;
 		}
+
+		// Si se seleccionó un día, concatenamos la fecha fija
+		let start = startTime.includes("T")
+			? startTime
+			: `${selectedDate}T${startTime}`;
+		let end = endTime.includes("T") ? endTime : `${selectedDate}T${endTime}`;
 
 		const formData = new FormData();
 		formData.append("title", title);
@@ -136,13 +153,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		try {
 			let res;
 			if (id) {
-				// 🔁 ACTUALIZAR EVENTO
 				res = await fetch(`/api/events/${id}`, {
 					method: "PUT",
 					body: formData,
 				});
 			} else {
-				// ➕ CREAR EVENTO
 				res = await fetch("/api/events", {
 					method: "POST",
 					body: formData,
