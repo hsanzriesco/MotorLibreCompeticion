@@ -172,3 +172,44 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 });
+
+// === SISTEMA DE NOTIFICACIONES ===
+function mostrarMensaje(texto, tipo = "info") {
+	const toastContainer = document.getElementById("toast-container");
+
+	const colores = {
+		success: "bg-success text-white",
+		error: "bg-danger text-white",
+		warning: "bg-warning text-dark",
+		info: "bg-secondary text-white",
+	};
+
+	const iconos = {
+		success: "bi bi-check-circle-fill",
+		error: "bi bi-x-circle-fill",
+		warning: "bi bi-exclamation-triangle-fill",
+		info: "bi bi-info-circle-fill",
+	};
+
+	const toast = document.createElement("div");
+	toast.className = `toast align-items-center border-0 fade show ${colores[tipo] || colores.info}`;
+	toast.setAttribute("role", "alert");
+	toast.setAttribute("aria-live", "assertive");
+	toast.setAttribute("aria-atomic", "true");
+
+	toast.innerHTML = `
+		<div class="d-flex p-2">
+			<i class="${iconos[tipo] || iconos.info} me-2 fs-5"></i>
+			<div class="toast-body fw-semibold">${texto}</div>
+			<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+		</div>
+	`;
+
+	toastContainer.appendChild(toast);
+
+	setTimeout(() => {
+		toast.classList.remove("show");
+		toast.classList.add("hide");
+		setTimeout(() => toast.remove(), 400);
+	}, 3500);
+}
