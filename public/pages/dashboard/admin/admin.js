@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			editable: false,
 			height: "auto",
 
+			// === Cargar eventos desde la API ===
 			events: async (fetchInfo, successCallback, failureCallback) => {
 				try {
 					const res = await fetch("/api/events");
@@ -46,18 +47,21 @@ document.addEventListener("DOMContentLoaded", () => {
 				}
 			},
 
+			// === Seleccionar día para nuevo evento ===
 			select: (info) => {
+				const selectedDate = info.startStr.split("T")[0]; // Solo la fecha
 				openModal({
 					id: "",
 					title: "",
 					description: "",
 					location: "",
-					start: info.startStr,
-					end: info.endStr,
+					start: `${selectedDate}T`, // Fecha seleccionada sin hora
+					end: `${selectedDate}T`,
 					image_url: "",
 				});
 			},
 
+			// === Clic en evento existente ===
 			eventClick: (info) => {
 				const e = info.event;
 				openModal({
@@ -87,12 +91,20 @@ document.addEventListener("DOMContentLoaded", () => {
 		document.getElementById("title").value = eventData.title || "";
 		document.getElementById("description").value = eventData.description || "";
 		document.getElementById("location").value = eventData.location || "";
-		document.getElementById("start").value = eventData.start
-			? eventData.start.slice(0, 16)
-			: "";
-		document.getElementById("end").value = eventData.end
-			? eventData.end.slice(0, 16)
-			: "";
+
+		document.getElementById("start").value =
+			eventData.start && eventData.start.includes("T")
+				? eventData.start.slice(0, 16)
+				: eventData.start
+				? `${eventData.start}T`
+				: "";
+
+		document.getElementById("end").value =
+			eventData.end && eventData.end.includes("T")
+				? eventData.end.slice(0, 16)
+				: eventData.end
+				? `${eventData.end}T`
+				: "";
 
 		deleteBtn.style.display = eventData.id ? "inline-block" : "none";
 		eventModal.show();
@@ -113,22 +125,33 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 
-		// Convertir imagen a Base64
-		let image_base64 = null;
-		if (imageFile) {
-			image_base64 = await toBase64(imageFile);
-		}
+		const formData = new FormData();
+		formData.append("title", title);
+		formData.append("description", description);
+		formData.append("location", location);
+		formData.append("start", start);
+		formData.append("end", end);
+		if (imageFile) formData.append("image", imageFile);
 
 		try {
-			const res = await fetch(`/api/events${id ? `?id=${id}` : ""}`, {
-				method: id ? "PUT" : "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ title, description, location, start, end, image_base64 }),
-			});
+			let res;
+			if (id) {
+				// 🔁 ACTUALIZAR EVENTO
+				res = await fetch(`/api/events/${id}`, {
+					method: "PUT",
+					body: formData,
+				});
+			} else {
+				// ➕ CREAR EVENTO
+				res = await fetch("/api/events", {
+					method: "POST",
+					body: formData,
+				});
+			}
 
 			const data = await res.json();
 			if (data.success) {
-				alert(id ? "✅ Evento actualizado." : "✅ Evento creado.");
+				alert(id ? "✅ Evento actualizado correctamente." : "✅ Evento creado correctamente.");
 				eventModal.hide();
 				calendar.refetchEvents();
 			} else {
@@ -140,15 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
-	function toBase64(file) {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.readAsDataURL(file);
-			reader.onload = () => resolve(reader.result);
-			reader.onerror = reject;
-		});
-	}
-
 	// ==== ELIMINAR EVENTO ====
 	deleteBtn.addEventListener("click", async () => {
 		const id = document.getElementById("eventId").value;
@@ -157,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
 
 		try {
-			const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+			const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
 			const data = await res.json();
 			if (data.success) {
 				alert("🗑️ Evento eliminado correctamente.");
@@ -172,44 +186,3 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 });
-
-// === SISTEMA DE NOTIFICACIONES ===
-function mostrarMensaje(texto, tipo = "info") {
-	const toastContainer = document.getElementById("toast-container");
-
-	const colores = {
-		success: "bg-success text-white",
-		error: "bg-danger text-white",
-		warning: "bg-warning text-dark",
-		info: "bg-secondary text-white",
-	};
-
-	const iconos = {
-		success: "bi bi-check-circle-fill",
-		error: "bi bi-x-circle-fill",
-		warning: "bi bi-exclamation-triangle-fill",
-		info: "bi bi-info-circle-fill",
-	};
-
-	const toast = document.createElement("div");
-	toast.className = `toast align-items-center border-0 fade show ${colores[tipo] || colores.info}`;
-	toast.setAttribute("role", "alert");
-	toast.setAttribute("aria-live", "assertive");
-	toast.setAttribute("aria-atomic", "true");
-
-	toast.innerHTML = `
-		<div class="d-flex p-2">
-			<i class="${iconos[tipo] || iconos.info} me-2 fs-5"></i>
-			<div class="toast-body fw-semibold">${texto}</div>
-			<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-		</div>
-	`;
-
-	toastContainer.appendChild(toast);
-
-	setTimeout(() => {
-		toast.classList.remove("show");
-		toast.classList.add("hide");
-		setTimeout(() => toast.remove(), 400);
-	}, 3500);
-}
