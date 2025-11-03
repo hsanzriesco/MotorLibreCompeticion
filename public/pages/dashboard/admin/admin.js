@@ -11,7 +11,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
-      const data = await res.json();
+      const result = await res.json();
+
+      // 🧠 Si la API devuelve { success, data: [...] }
+      const data = Array.isArray(result) ? result : result.data;
+
+      if (!Array.isArray(data)) {
+        console.warn("⚠️ No se encontraron eventos válidos en la API");
+        return [];
+      }
+
       return data.map(event => ({
         id: event.id,
         title: event.title,
@@ -49,8 +58,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Obtener fecha seleccionada
       const selectedDate = info.startStr.split("T")[0];
       document.getElementById("start-date").value = selectedDate;
-
-      // Limpiar horas
       document.getElementById("start-time").value = "";
       document.getElementById("end-time").value = "";
 
@@ -70,7 +77,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const start = new Date(selectedEvent.start);
       const end = selectedEvent.end ? new Date(selectedEvent.end) : null;
 
-      // Cargar fecha y hora en inputs
       document.getElementById("start-date").value = start.toISOString().split("T")[0];
       document.getElementById("start-time").value = start.toISOString().slice(11, 16);
       document.getElementById("end-time").value = end ? end.toISOString().slice(11, 16) : "";
@@ -113,27 +119,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       let res;
       if (id) {
-        // 🟠 Actualizar evento existente
-        res = await fetch(`/api/events/${id}`, {
-          method: "PUT",
-          body: formData,
-        });
+        res = await fetch(`/api/events/${id}`, { method: "PUT", body: formData });
       } else {
-        // 🟢 Crear nuevo evento
-        res = await fetch("/api/events", {
-          method: "POST",
-          body: formData,
-        });
+        res = await fetch("/api/events", { method: "POST", body: formData });
       }
 
       if (!res.ok) throw new Error(`Error ${res.status}`);
 
-      showMessage(id ? "Evento actualizado correctamente 🎉" : "Evento creado con éxito ✅");
+      showMessage(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito");
       eventModal.hide();
       calendar.refetchEvents();
     } catch (err) {
       console.error("❌ Error al guardar evento:", err);
-      showMessage("Error al guardar evento ❌", true);
+      showMessage("❌ Error al guardar evento", true);
     }
   });
 
@@ -141,23 +139,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   deleteEventBtn.addEventListener("click", async () => {
     const id = document.getElementById("eventId").value;
     if (!id) return;
-
     if (!confirm("¿Seguro que quieres eliminar este evento?")) return;
 
     try {
       const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`Error ${res.status}`);
 
-      showMessage("Evento eliminado correctamente 🗑️");
+      showMessage("🗑️ Evento eliminado correctamente");
       eventModal.hide();
       calendar.refetchEvents();
     } catch (err) {
       console.error("❌ Error al eliminar evento:", err);
-      showMessage("Error al eliminar evento ❌", true);
+      showMessage("❌ Error al eliminar evento", true);
     }
   });
 
-  // 🟢 Mostrar mensajes estilo "Bienvenido"
+  // 🟢 Mensajes flotantes estilo “Bienvenido”
   function showMessage(text, error = false) {
     const msg = document.createElement("div");
     msg.className = `alert ${error ? "alert-danger" : "alert-success"} text-center fw-bold position-fixed top-0 start-50 translate-middle-x mt-3`;
