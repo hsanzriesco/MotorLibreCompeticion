@@ -122,3 +122,37 @@ main p {
 .main-content {
   padding-top: 100px; /* ajusta según la altura real del navbar */
 }
+
+/* ==== Mensajes tipo "Bienvenido" ==== */
+.custom-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #22c55e; /* Verde tipo Tailwind */
+  color: white;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(-15px);
+  transition: all 0.3s ease;
+}
+
+.custom-alert.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.custom-alert.error {
+  background-color: #ef4444; /* Rojo para errores */
+}
+
+.custom-alert.warning {
+  background-color: #facc15; /* Amarillo */
+  color: #1f2937;
+}
