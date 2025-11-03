@@ -16,11 +16,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const eventModal = new bootstrap.Modal(eventModalEl);
   const form = document.getElementById("eventForm");
 
+  // Campos del formulario
   const titleInput = document.getElementById("title");
   const descriptionInput = document.getElementById("description");
   const locationInput = document.getElementById("location");
-  const startInput = document.getElementById("start");
-  const endInput = document.getElementById("end");
+  const startDateInput = document.getElementById("start-date");
+  const startTimeInput = document.getElementById("start-time");
+  const endTimeInput = document.getElementById("end-time");
   const imageInput = document.getElementById("image");
   const eventIdInput = document.getElementById("eventId");
 
@@ -29,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let selectedEvent = null;
 
-  // === 🟢 1. Obtener eventos del servidor ===
+  // === 🟢 Obtener eventos del servidor ===
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
@@ -57,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // === 2️⃣ Inicializar calendario ===
+  // === 🗓️ Inicializar calendario ===
   console.log("🗓️ Inicializando FullCalendar...");
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
@@ -66,17 +68,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     height: "auto",
     locale: "es",
 
-    // 🔹 Cuando seleccionas un día vacío
+    // Seleccionar día vacío
     select: (info) => {
       console.log("📅 Día seleccionado:", info.startStr);
       selectedEvent = null;
       form.reset();
 
       const date = info.startStr.split("T")[0];
-      startInput.value = `${date}T00:00`;
-      endInput.value = `${date}T00:00`;
-      startInput.readOnly = true;
-      endInput.readOnly = false;
+      startDateInput.value = date;
+      startTimeInput.value = "00:00";
+      endTimeInput.value = "00:00";
 
       eventIdInput.value = "";
       deleteEventBtn.style.display = "none";
@@ -85,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("✅ Modal abierto para nuevo evento");
     },
 
-    // 🔹 Cuando haces clic en un evento existente
+    // Clic en evento existente
     eventClick: (info) => {
       console.log("📝 Evento seleccionado:", info.event.id);
       const event = info.event;
@@ -95,15 +96,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       titleInput.value = event.title;
       descriptionInput.value = event.extendedProps.description || "";
       locationInput.value = event.extendedProps.location || "";
-      startInput.value = event.start
-        ? new Date(event.start).toISOString().slice(0, 16)
-        : "";
-      endInput.value = event.end
-        ? new Date(event.end).toISOString().slice(0, 16)
-        : "";
 
-      startInput.readOnly = true;
-      endInput.readOnly = false;
+      if (event.start) {
+        const startDate = new Date(event.start);
+        startDateInput.value = startDate.toISOString().split("T")[0];
+        startTimeInput.value = startDate.toTimeString().slice(0, 5);
+      }
+
+      if (event.end) {
+        const endDate = new Date(event.end);
+        endTimeInput.value = endDate.toTimeString().slice(0, 5);
+      }
 
       deleteEventBtn.style.display = "inline-block";
       eventModal.show();
@@ -118,7 +121,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   calendar.render();
   console.log("✅ Calendario renderizado correctamente");
 
-  // === 💬 Mensajes de éxito/error ===
+  // === 💬 Mensajes de estado ===
   function showMessage(text, type = "success") {
     const messageBox = document.createElement("div");
     messageBox.className = `alert alert-${type} text-center position-fixed top-0 start-50 translate-middle-x mt-3`;
@@ -163,13 +166,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const title = titleInput.value.trim();
     const description = descriptionInput.value.trim();
     const location = locationInput.value.trim();
-    const start = startInput.value;
-    const end = endInput.value;
+    const date = startDateInput.value;
+    const startTime = startTimeInput.value;
+    const endTime = endTimeInput.value;
 
-    if (!title || !start || !end) {
-      showMessage("Por favor completa todos los campos", "danger");
+    if (!title || !date || !startTime || !endTime) {
+      showMessage("Por favor completa todos los campos obligatorios", "danger");
       return;
     }
+
+    const start = `${date}T${startTime}`;
+    const end = `${date}T${endTime}`;
 
     let image_base64 = null;
     if (imageInput.files.length > 0) {
