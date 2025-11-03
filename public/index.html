@@ -136,7 +136,7 @@
       const loginLink = document.getElementById("login-link");
 
       if (usuario) {
-        bienvenida.textContent = `👋 Bienvenido, ${usuario.name}!`;
+        bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
         userName.textContent = usuario.name;
         loginLink.style.display = "none";
       }
@@ -147,7 +147,7 @@
           e.preventDefault();
           localStorage.removeItem("usuario");
           const msg = document.createElement("div");
-          msg.textContent = "👋 Has cerrado sesión correctamente.";
+          msg.textContent = "Has cerrado sesión correctamente.";
           msg.style.position = "fixed";
           msg.style.top = "20px";
           msg.style.left = "50%";
@@ -179,11 +179,11 @@
               if (data.success && Array.isArray(data.data)) {
                 successCallback(data.data);
               } else {
-                console.warn("⚠️ No se encontraron eventos o formato incorrecto");
+                console.warn("No se encontraron eventos o formato incorrecto");
                 successCallback([]);
               }
             } catch (err) {
-              console.error("❌ Error al cargar eventos:", err);
+              console.error("Error al cargar eventos:", err);
               failureCallback(err);
             }
           },
@@ -192,12 +192,12 @@
             const e = info.event;
             document.getElementById("modalTitle").textContent = e.title || "Evento sin título";
             document.getElementById("modalDesc").textContent = e.extendedProps.description
-              ? `📝 ${e.extendedProps.description}`
+              ? `${e.extendedProps.description}`
               : "Sin descripción.";
             document.getElementById("modalLoc").textContent = e.extendedProps.location
-              ? `📍 ${e.extendedProps.location}`
+              ? `${e.extendedProps.location}`
               : "Ubicación no especificada.";
-            document.getElementById("modalDate").textContent = `🗓️ ${new Date(e.start).toLocaleDateString("es-ES")}`;
+            document.getElementById("modalDate").textContent = `${new Date(e.start).toLocaleDateString("es-ES")}`;
             document.getElementById("eventViewModal").style.display = "flex";
           }
         });

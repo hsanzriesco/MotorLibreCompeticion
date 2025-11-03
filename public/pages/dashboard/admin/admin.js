@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       eventModal.hide();
       calendar.refetchEvents();
     } catch (error) {
-      console.error("❌ Error al eliminar evento:", error);
+      console.error("Error al eliminar evento:", error);
       showMessage("Error al eliminar evento", "danger");
     }
   });

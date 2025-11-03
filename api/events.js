@@ -101,7 +101,7 @@ export default async function handler(req, res) {
       .status(405)
       .json({ success: false, message: `Método ${req.method} no permitido.` });
   } catch (error) {
-    console.error("❌ Error general en /api/events:", error);
+    console.error("Error general en /api/events:", error);
     return res
       .status(500)
       .json({ success: false, message: "Error interno del servidor." });
@@ -128,7 +128,7 @@ async function parseBody(req) {
     // Si viene como texto (por seguridad)
     return JSON.parse(raw.toString());
   } catch (err) {
-    console.error("❌ Error parseando el body:", err);
+    console.error(" Error parseando el body:", err);
     return {};
   }
 }
