@@ -2,13 +2,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const calendarEl = document.getElementById("calendar");
   if (!calendarEl) {
-    console.error("❌ No se encontró el elemento #calendar");
+    console.error("No se encontró el elemento #calendar");
     return;
   }
 
   const eventModalEl = document.getElementById("eventModal");
   if (!eventModalEl) {
-    console.error("❌ No se encontró el modal con id #eventModal");
+    console.error("No se encontró el modal con id #eventModal");
     return;
   }
 
@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       }));
     } catch (error) {
-      console.error("❌ Error al cargar eventos:", error);
+      console.error("Error al cargar eventos:", error);
       return [];
     }
   }
@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!data.success) throw new Error(data.message);
 
-      showMessage("🗑️ Evento eliminado correctamente");
+      showMessage("Evento eliminado correctamente");
       eventModal.hide();
       calendar.refetchEvents();
     } catch (error) {
@@ -192,11 +192,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!data.success) throw new Error(data.message);
 
-      showMessage(id ? "✅ Evento actualizado" : "✅ Evento creado");
+      showMessage(id ? "Evento actualizado" : "✅ Evento creado");
       eventModal.hide();
       calendar.refetchEvents();
     } catch (error) {
-      console.error("❌ Error al guardar evento:", error);
+      console.error("Error al guardar evento:", error);
       showMessage("Error al guardar evento", "danger");
     }
   });
