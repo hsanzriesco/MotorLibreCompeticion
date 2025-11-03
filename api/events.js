@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 
-// Configura la conexión al pool de PostgreSQL
+// Conexión al pool de PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -13,15 +13,14 @@ export default async function handler(req, res) {
     // === 🟢 GET: Obtener todos los eventos ===
     if (req.method === "GET") {
       const result = await pool.query(
-        `SELECT id, title, description, location, start, "end", image_base64 
-         FROM events 
+        `SELECT id, title, description, location, start, "end", image_base64
+         FROM events
          ORDER BY start ASC`
       );
-
       return res.status(200).json({ success: true, data: result.rows });
     }
 
-    // === 🟡 POST: Crear nuevo evento ===
+    // === 🟡 POST: Crear evento ===
     if (req.method === "POST") {
       const { title, description, location, start, end, image_base64 } = req.body;
 
@@ -41,7 +40,7 @@ export default async function handler(req, res) {
       return res.status(201).json({ success: true, data: result.rows[0] });
     }
 
-    // === 🟠 PUT: Actualizar evento existente ===
+    // === 🟠 PUT: Actualizar evento ===
     if (req.method === "PUT") {
       if (!id) {
         return res
@@ -50,12 +49,6 @@ export default async function handler(req, res) {
       }
 
       const { title, description, location, start, end, image_base64 } = req.body;
-
-      if (!title || !start || !end) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Faltan campos obligatorios" });
-      }
 
       const result = await pool.query(
         `UPDATE events
@@ -71,9 +64,7 @@ export default async function handler(req, res) {
       );
 
       if (result.rows.length === 0) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Evento no encontrado" });
+        return res.status(404).json({ success: false, message: "Evento no encontrado" });
       }
 
       return res.status(200).json({ success: true, data: result.rows[0] });
@@ -87,14 +78,15 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Falta el ID del evento" });
       }
 
-      await pool.query("DELETE FROM events WHERE id = $1", [id]);
+      const result = await pool.query("DELETE FROM events WHERE id = $1 RETURNING *", [id]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: "Evento no encontrado" });
+      }
 
-      return res
-        .status(200)
-        .json({ success: true, message: "Evento eliminado correctamente" });
+      return res.status(200).json({ success: true, message: "Evento eliminado correctamente" });
     }
 
-    // === 🚫 Método no permitido ===
+    // 🚫 Método no permitido
     res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
     return res
       .status(405)
@@ -102,8 +94,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("❌ Error en /api/events:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Error interno del servidor" });
+    return res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 }
