@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("✅ Admin.js cargado correctamente");
 
   const calendarEl = document.getElementById("calendar");
   if (!calendarEl) {
@@ -60,7 +59,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // === 🗓️ Inicializar calendario ===
-  console.log("🗓️ Inicializando FullCalendar...");
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
@@ -70,7 +68,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Seleccionar día vacío
     select: (info) => {
-      console.log("📅 Día seleccionado:", info.startStr);
       selectedEvent = null;
       form.reset();
 
@@ -83,7 +80,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       deleteEventBtn.style.display = "none";
 
       eventModal.show();
-      console.log("✅ Modal abierto para nuevo evento");
     },
 
     // Clic en evento existente
@@ -119,7 +115,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   calendar.render();
-  console.log("✅ Calendario renderizado correctamente");
 
   // === 💬 Mensajes de estado ===
   function showMessage(text, type = "success") {
