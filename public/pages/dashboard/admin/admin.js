@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-	// ==== VERIFICAR ADMIN ====
 	const usuario = JSON.parse(sessionStorage.getItem("usuario"));
 	if (!usuario || usuario.role !== "admin") {
 		alert("❌ Acceso denegado. Solo administradores pueden acceder.");
@@ -7,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		return;
 	}
 
-	// ==== BOTÓN CERRAR SESIÓN ====
 	const logoutBtn = document.getElementById("logout-btn");
 	if (logoutBtn) {
 		logoutBtn.addEventListener("click", (e) => {
@@ -17,11 +15,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	}
 
-	// ==== CALENDARIO ====
 	const calendarEl = document.getElementById("calendar");
 	let calendar;
 	let selectedEvent = null;
-	let selectedDate = null; // Guardamos la fecha seleccionada
+	let selectedDate = null;
 
 	if (calendarEl) {
 		calendar = new FullCalendar.Calendar(calendarEl, {
@@ -31,7 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			editable: false,
 			height: "auto",
 
-			// === Cargar eventos desde la API ===
 			events: async (fetchInfo, successCallback, failureCallback) => {
 				try {
 					const res = await fetch("/api/events");
@@ -48,21 +44,19 @@ document.addEventListener("DOMContentLoaded", () => {
 				}
 			},
 
-			// === Seleccionar día para nuevo evento ===
 			select: (info) => {
-				selectedDate = info.startStr.split("T")[0]; // Solo la fecha
+				selectedDate = info.startStr.split("T")[0];
 				openModal({
 					id: "",
 					title: "",
 					description: "",
 					location: "",
-					start: `${selectedDate}T00:00`, // Fecha seleccionada sin hora
+					start: `${selectedDate}T00:00`,
 					end: `${selectedDate}T01:00`,
 					image_url: "",
 				});
 			},
 
-			// === Clic en evento existente ===
 			eventClick: (info) => {
 				const e = info.event;
 				selectedDate = e.startStr.split("T")[0];
@@ -81,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		calendar.render();
 	}
 
-	// ==== MODAL ====
 	const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
 	const saveBtn = document.getElementById("saveEventBtn");
 	const deleteBtn = document.getElementById("deleteEventBtn");
@@ -101,16 +94,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		descriptionInput.value = eventData.description || "";
 		locationInput.value = eventData.location || "";
 
-		// Mostrar solo las horas, no la fecha (fecha fijada)
 		if (selectedDate) {
 			startInput.type = "time";
 			endInput.type = "time";
-
-			// Limpiamos la hora por defecto
 			startInput.value = "";
 			endInput.value = "";
 		} else {
-			// Si se abre para editar evento existente
 			startInput.type = "datetime-local";
 			endInput.type = "datetime-local";
 			startInput.value = eventData.start ? eventData.start.slice(0, 16) : "";
@@ -121,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		eventModal.show();
 	}
 
-	// ==== GUARDAR / ACTUALIZAR EVENTO ====
 	saveBtn.addEventListener("click", async () => {
 		const id = document.getElementById("eventId").value;
 		const title = document.getElementById("title").value.trim();
@@ -129,38 +117,40 @@ document.addEventListener("DOMContentLoaded", () => {
 		const location = document.getElementById("location").value.trim();
 		let startTime = document.getElementById("start").value;
 		let endTime = document.getElementById("end").value;
-		const imageFile = document.getElementById("image").files[0];
 
 		if (!title || !startTime || !endTime) {
 			alert("⚠️ Completa todos los campos obligatorios.");
 			return;
 		}
 
-		// Si se seleccionó un día, concatenamos la fecha fija
 		let start = startTime.includes("T")
 			? startTime
 			: `${selectedDate}T${startTime}`;
 		let end = endTime.includes("T") ? endTime : `${selectedDate}T${endTime}`;
 
-		const formData = new FormData();
-		formData.append("title", title);
-		formData.append("description", description);
-		formData.append("location", location);
-		formData.append("start", start);
-		formData.append("end", end);
-		if (imageFile) formData.append("image", imageFile);
+		// 🔄 Enviar JSON en lugar de FormData
+		const body = JSON.stringify({
+			title,
+			description,
+			location,
+			start,
+			end,
+			image_base64: null,
+		});
 
 		try {
 			let res;
 			if (id) {
 				res = await fetch(`/api/events/${id}`, {
 					method: "PUT",
-					body: formData,
+					headers: { "Content-Type": "application/json" },
+					body,
 				});
 			} else {
 				res = await fetch("/api/events", {
 					method: "POST",
-					body: formData,
+					headers: { "Content-Type": "application/json" },
+					body,
 				});
 			}
 
@@ -178,11 +168,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
-	// ==== ELIMINAR EVENTO ====
 	deleteBtn.addEventListener("click", async () => {
 		const id = document.getElementById("eventId").value;
 		if (!id) return;
-
 		if (!confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
 
 		try {
