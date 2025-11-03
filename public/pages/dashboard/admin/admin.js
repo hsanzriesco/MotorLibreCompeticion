@@ -1,21 +1,13 @@
 document.addEventListener("DOMContentLoaded", async () => {
-
   const calendarEl = document.getElementById("calendar");
-  if (!calendarEl) {
-    console.error("No se encontró el elemento #calendar");
-    return;
-  }
+  if (!calendarEl) return;
 
   const eventModalEl = document.getElementById("eventModal");
-  if (!eventModalEl) {
-    console.error("No se encontró el modal con id #eventModal");
-    return;
-  }
+  if (!eventModalEl) return;
 
   const eventModal = new bootstrap.Modal(eventModalEl);
   const form = document.getElementById("eventForm");
 
-  // Campos del formulario
   const titleInput = document.getElementById("title");
   const descriptionInput = document.getElementById("description");
   const locationInput = document.getElementById("location");
@@ -30,16 +22,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let selectedEvent = null;
 
-  // === 🟢 Obtener eventos del servidor ===
+  // === Cargar eventos desde la API ===
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
       if (!res.ok) throw new Error("Error al obtener eventos");
       const json = await res.json();
 
-      if (!json.success || !Array.isArray(json.data)) {
-        throw new Error("La respuesta del servidor no es válida");
-      }
+      if (!json.success || !Array.isArray(json.data)) throw new Error("Respuesta no válida");
 
       return json.data.map((e) => ({
         id: e.id,
@@ -52,13 +42,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           image_base64: e.image_base64,
         },
       }));
-    } catch (error) {
-      console.error("Error al cargar eventos:", error);
+    } catch {
       return [];
     }
   }
 
-  // === 🗓️ Inicializar calendario ===
+  // === Inicializar FullCalendar ===
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
@@ -66,7 +55,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     height: "auto",
     locale: "es",
 
-    // Seleccionar día vacío
     select: (info) => {
       selectedEvent = null;
       form.reset();
@@ -82,7 +70,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       eventModal.show();
     },
 
-    // Clic en evento existente
     eventClick: (info) => {
       const event = info.event;
       selectedEvent = event;
@@ -115,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   calendar.render();
 
-  // === 💬 Mensajes de estado ===
+  // === Mostrar mensajes (alertas visuales) ===
   function showMessage(text, type = "success") {
     const messageBox = document.createElement("div");
     messageBox.className = `alert alert-${type} text-center position-fixed top-0 start-50 translate-middle-x mt-3`;
@@ -126,7 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => messageBox.remove(), 3000);
   }
 
-  // === 🗑️ Eliminar evento ===
+  // === Eliminar evento ===
   deleteEventBtn.addEventListener("click", async () => {
     if (!selectedEvent || !selectedEvent.id) {
       showMessage("No hay evento seleccionado", "danger");
@@ -136,25 +123,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!confirm("¿Seguro que deseas eliminar este evento?")) return;
 
     try {
-      const res = await fetch(`/api/events?id=${selectedEvent.id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
 
-      if (!res.ok) throw new Error("Error al eliminar el evento");
       const data = await res.json();
+      if (!data.success) throw new Error();
 
-      if (!data.success) throw new Error(data.message);
-
-      showMessage("Evento eliminado correctamente");
+      showMessage("🗑️ Evento eliminado correctamente");
       eventModal.hide();
       calendar.refetchEvents();
-    } catch (error) {
-      console.error("Error al eliminar evento:", error);
+    } catch {
       showMessage("Error al eliminar evento", "danger");
     }
   });
 
-  // === 💾 Guardar evento ===
+  // === Guardar o actualizar evento ===
   saveEventBtn.addEventListener("click", async () => {
     const id = eventIdInput.value;
     const title = titleInput.value.trim();
@@ -187,27 +170,42 @@ document.addEventListener("DOMContentLoaded", async () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Error al guardar evento");
+      if (!res.ok) throw new Error();
       const data = await res.json();
+      if (!data.success) throw new Error();
 
-      if (!data.success) throw new Error(data.message);
-
-      showMessage(id ? "Evento actualizado" : "✅ Evento creado");
+      showMessage(id ? "✅ Evento actualizado" : "✅ Evento creado");
       eventModal.hide();
       calendar.refetchEvents();
-    } catch (error) {
-      console.error("Error al guardar evento:", error);
+    } catch {
       showMessage("Error al guardar evento", "danger");
     }
   });
 
-  // === 📷 Convertir imagen a Base64 ===
+  // === Convertir imagen a base64 ===
   function toBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result);
       reader.onerror = (error) => reject(error);
+    });
+  }
+
+  // === 🔒 Cerrar sesión ===
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      // Elimina posibles tokens o sesiones
+      localStorage.removeItem("authToken");
+      sessionStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+
+      // Redirige al inicio o login
+      window.location.href = "../../../index.html";
     });
   }
 });
