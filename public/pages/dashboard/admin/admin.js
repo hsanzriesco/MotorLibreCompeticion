@@ -84,7 +84,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Clic en evento existente
     eventClick: (info) => {
-      console.log("📝 Evento seleccionado:", info.event.id);
       const event = info.event;
       selectedEvent = event;
 
