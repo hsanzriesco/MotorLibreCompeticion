@@ -1,9 +1,16 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  const calendarEl = document.getElementById("calendar");
-  if (!calendarEl) return;
+  // === 🚫 VERIFICAR SESIÓN ===
+  const usuario = JSON.parse(localStorage.getItem("usuario")) || JSON.parse(sessionStorage.getItem("usuario"));
+  if (!usuario || usuario.role !== "admin") {
+    alert("❌ Acceso denegado. Inicia sesión como administrador.");
+    window.location.href = "/pages/auth/login/login.html";
+    return;
+  }
 
+  // === ELEMENTOS DEL DOM ===
+  const calendarEl = document.getElementById("calendar");
   const eventModalEl = document.getElementById("eventModal");
-  if (!eventModalEl) return;
+  if (!calendarEl || !eventModalEl) return;
 
   const eventModal = new bootstrap.Modal(eventModalEl);
   const form = document.getElementById("eventForm");
@@ -22,13 +29,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let selectedEvent = null;
 
-  // === Cargar eventos desde la API ===
+  // === 🔁 FUNCIONES ===
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
       if (!res.ok) throw new Error("Error al obtener eventos");
       const json = await res.json();
-
       if (!json.success || !Array.isArray(json.data)) throw new Error("Respuesta no válida");
 
       return json.data.map((e) => ({
@@ -47,7 +53,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // === Inicializar FullCalendar ===
+  function showMessage(text, type = "success") {
+    const messageBox = document.createElement("div");
+    messageBox.className = `alert alert-${type} text-center position-fixed top-0 start-50 translate-middle-x mt-3`;
+    messageBox.style.zIndex = "2000";
+    messageBox.textContent = text;
+    document.body.appendChild(messageBox);
+    setTimeout(() => messageBox.remove(), 3000);
+  }
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
+  // === 🗓️ INICIALIZAR CALENDARIO ===
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
@@ -58,15 +82,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     select: (info) => {
       selectedEvent = null;
       form.reset();
-
       const date = info.startStr.split("T")[0];
       startDateInput.value = date;
       startTimeInput.value = "00:00";
       endTimeInput.value = "00:00";
-
       eventIdInput.value = "";
       deleteEventBtn.style.display = "none";
-
       eventModal.show();
     },
 
@@ -102,42 +123,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   calendar.render();
 
-  // === Mostrar mensajes (alertas visuales) ===
-  function showMessage(text, type = "success") {
-    const messageBox = document.createElement("div");
-    messageBox.className = `alert alert-${type} text-center position-fixed top-0 start-50 translate-middle-x mt-3`;
-    messageBox.style.zIndex = "2000";
-    messageBox.style.width = "fit-content";
-    messageBox.textContent = text;
-    document.body.appendChild(messageBox);
-    setTimeout(() => messageBox.remove(), 3000);
-  }
-
-  // === Eliminar evento ===
-  deleteEventBtn.addEventListener("click", async () => {
-    if (!selectedEvent || !selectedEvent.id) {
-      showMessage("No hay evento seleccionado", "danger");
-      return;
-    }
-
-    if (!confirm("¿Seguro que deseas eliminar este evento?")) return;
-
-    try {
-      const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-
-      const data = await res.json();
-      if (!data.success) throw new Error();
-
-      showMessage("🗑️ Evento eliminado correctamente");
-      eventModal.hide();
-      calendar.refetchEvents();
-    } catch {
-      showMessage("Error al eliminar evento", "danger");
-    }
-  });
-
-  // === Guardar o actualizar evento ===
+  // === 💾 GUARDAR / ACTUALIZAR EVENTO ===
   saveEventBtn.addEventListener("click", async () => {
     const id = eventIdInput.value;
     const title = titleInput.value.trim();
@@ -170,7 +156,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error();
       const data = await res.json();
       if (!data.success) throw new Error();
 
@@ -182,30 +167,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // === Convertir imagen a base64 ===
-  function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  }
+  // === 🗑️ ELIMINAR EVENTO ===
+  deleteEventBtn.addEventListener("click", async () => {
+    if (!selectedEvent || !selectedEvent.id) {
+      showMessage("No hay evento seleccionado", "danger");
+      return;
+    }
 
-  // === 🔒 Cerrar sesión ===
+    if (!confirm("¿Seguro que deseas eliminar este evento?")) return;
+
+    try {
+      const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error();
+
+      showMessage("🗑️ Evento eliminado correctamente");
+      eventModal.hide();
+      calendar.refetchEvents();
+    } catch {
+      showMessage("Error al eliminar evento", "danger");
+    }
+  });
+
+  // === 🔒 CERRAR SESIÓN ===
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
       e.preventDefault();
 
-      // Elimina posibles tokens o sesiones
-      localStorage.removeItem("authToken");
-      sessionStorage.removeItem("authToken");
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("user");
+      // 🧹 Borrar cualquier tipo de sesión o usuario guardado
+      localStorage.removeItem("usuario");
+      sessionStorage.removeItem("usuario");
+      localStorage.clear();
+      sessionStorage.clear();
 
-      // Redirige al inicio o login
-      window.location.href = "../../../index.html";
+      // 🔐 Redirigir al login
+      window.location.href = "/pages/auth/login/login.html";
     });
   }
 });
