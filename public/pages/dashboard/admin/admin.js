@@ -1,166 +1,191 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const calendarEl = document.getElementById("calendar");
   const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
-  const eventForm = document.getElementById("eventForm");
+  const form = document.getElementById("eventForm");
+
+  const titleInput = document.getElementById("title");
+  const descriptionInput = document.getElementById("description");
+  const locationInput = document.getElementById("location");
+  const startInput = document.getElementById("start");
+  const endInput = document.getElementById("end");
+  const imageInput = document.getElementById("image");
+  const eventIdInput = document.getElementById("eventId");
+
   const saveEventBtn = document.getElementById("saveEventBtn");
   const deleteEventBtn = document.getElementById("deleteEventBtn");
 
   let selectedEvent = null;
 
-  // ✅ Cargar eventos desde la API
+  // === 🟢 1. Cargar eventos desde el servidor ===
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
-      const result = await res.json();
+      if (!res.ok) throw new Error("Error al obtener eventos");
+      const json = await res.json();
 
-      // 🧠 Si la API devuelve { success, data: [...] }
-      const data = Array.isArray(result) ? result : result.data;
-
-      if (!Array.isArray(data)) {
-        console.warn("⚠️ No se encontraron eventos válidos en la API");
-        return [];
+      // Asegurar que sea un array de eventos
+      if (!json.success || !Array.isArray(json.data)) {
+        throw new Error("La respuesta del servidor no es válida");
       }
 
-      return data.map(event => ({
-        id: event.id,
-        title: event.title,
-        start: event.start,
-        end: event.end,
-        description: event.description,
-        location: event.location,
-        image: event.image
+      return json.data.map((e) => ({
+        id: e.id,
+        title: e.title,
+        start: e.start,
+        end: e.end,
+        extendedProps: {
+          description: e.description,
+          location: e.location,
+          image_base64: e.image_base64,
+        },
       }));
-    } catch (err) {
-      console.error("Error al cargar eventos:", err);
+    } catch (error) {
+      console.error("Error al cargar eventos:", error);
       return [];
     }
   }
 
-  const events = await fetchEvents();
-
-  // ✅ Inicializar FullCalendar
+  // === 🗓️ 2. Inicializar FullCalendar ===
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
-    editable: false,
+    height: "auto",
     locale: "es",
-    headerToolbar: {
-      left: "prev,next today",
-      center: "title",
-      right: "dayGridMonth,timeGridWeek"
-    },
 
-    // 🟢 Crear nuevo evento
     select: (info) => {
       selectedEvent = null;
-      eventForm.reset();
+      form.reset();
 
-      // Obtener fecha seleccionada
-      const selectedDate = info.startStr.split("T")[0];
-      document.getElementById("start-date").value = selectedDate;
-      document.getElementById("start-time").value = "";
-      document.getElementById("end-time").value = "";
+      // Establecer fecha seleccionada sin permitir modificarla (solo hora)
+      const date = info.startStr.split("T")[0];
+      startInput.value = `${date}T00:00`;
+      endInput.value = `${date}T00:00`;
+      startInput.readOnly = true;
+      endInput.readOnly = false;
 
-      document.getElementById("eventId").value = "";
       eventModal.show();
     },
 
-    // 🟢 Editar evento existente
     eventClick: (info) => {
-      selectedEvent = info.event;
+      const event = info.event;
+      selectedEvent = event;
 
-      document.getElementById("eventId").value = selectedEvent.id || "";
-      document.getElementById("title").value = selectedEvent.title || "";
-      document.getElementById("description").value = selectedEvent.extendedProps.description || "";
-      document.getElementById("location").value = selectedEvent.extendedProps.location || "";
-
-      const start = new Date(selectedEvent.start);
-      const end = selectedEvent.end ? new Date(selectedEvent.end) : null;
-
-      document.getElementById("start-date").value = start.toISOString().split("T")[0];
-      document.getElementById("start-time").value = start.toISOString().slice(11, 16);
-      document.getElementById("end-time").value = end ? end.toISOString().slice(11, 16) : "";
-
+      eventIdInput.value = event.id;
+      titleInput.value = event.title;
+      descriptionInput.value = event.extendedProps.description || "";
+      locationInput.value = event.extendedProps.location || "";
+      startInput.value = event.start
+        ? new Date(event.start).toISOString().slice(0, 16)
+        : "";
+      endInput.value = event.end
+        ? new Date(event.end).toISOString().slice(0, 16)
+        : "";
+      startInput.readOnly = true;
+      endInput.readOnly = false;
       eventModal.show();
     },
 
-    events: events,
+    events: async (info, successCallback) => {
+      const events = await fetchEvents();
+      successCallback(events);
+    },
   });
 
   calendar.render();
 
-  // 🟢 Guardar evento
-  saveEventBtn.addEventListener("click", async () => {
-    const id = document.getElementById("eventId").value;
-    const title = document.getElementById("title").value.trim();
-    const description = document.getElementById("description").value.trim();
-    const location = document.getElementById("location").value.trim();
-    const date = document.getElementById("start-date").value;
-    const startTime = document.getElementById("start-time").value;
-    const endTime = document.getElementById("end-time").value;
-    const image = document.getElementById("image").files[0];
+  // === 🧠 3. Función para mostrar mensaje tipo "bienvenido" ===
+  function showMessage(text, type = "success") {
+    const messageBox = document.createElement("div");
+    messageBox.className = `alert alert-${type} text-center fixed-top mt-3 mx-auto`;
+    messageBox.style.width = "fit-content";
+    messageBox.style.zIndex = "9999";
+    messageBox.textContent = text;
+    document.body.appendChild(messageBox);
+    setTimeout(() => messageBox.remove(), 3000);
+  }
 
-    if (!title || !date || !startTime || !endTime) {
-      alert("Por favor completa todos los campos obligatorios.");
+  // === 🔴 4. Eliminar evento ===
+  deleteEventBtn.addEventListener("click", async () => {
+    if (!selectedEvent) {
+      showMessage("No hay evento seleccionado", "danger");
       return;
     }
 
-    const start = `${date}T${startTime}`;
-    const end = `${date}T${endTime}`;
-
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("location", location);
-    formData.append("start", start);
-    formData.append("end", end);
-    if (image) formData.append("image", image);
+    if (!confirm("¿Seguro que deseas eliminar este evento?")) return;
 
     try {
-      let res;
-      if (id) {
-        res = await fetch(`/api/events/${id}`, { method: "PUT", body: formData });
-      } else {
-        res = await fetch("/api/events", { method: "POST", body: formData });
-      }
+      const res = await fetch(`/api/events?id=${selectedEvent.id}`, {
+        method: "DELETE",
+      });
 
-      if (!res.ok) throw new Error(`Error ${res.status}`);
+      if (!res.ok) throw new Error("Error al eliminar el evento");
 
-      showMessage(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito");
-      eventModal.hide();
+      showMessage("✅ Evento eliminado correctamente");
       calendar.refetchEvents();
-    } catch (err) {
-      console.error("❌ Error al guardar evento:", err);
-      showMessage("❌ Error al guardar evento", true);
+      eventModal.hide();
+    } catch (error) {
+      console.error("❌ Error al eliminar evento:", error);
+      showMessage("Error al eliminar evento", "danger");
     }
   });
 
-  // 🟢 Eliminar evento
-  deleteEventBtn.addEventListener("click", async () => {
-    const id = document.getElementById("eventId").value;
-    if (!id) return;
-    if (!confirm("¿Seguro que quieres eliminar este evento?")) return;
+  // === 💾 5. Guardar (crear/editar) evento ===
+  saveEventBtn.addEventListener("click", async () => {
+    const title = titleInput.value.trim();
+    const description = descriptionInput.value.trim();
+    const location = locationInput.value.trim();
+    const start = startInput.value;
+    const end = endInput.value;
+    const id = eventIdInput.value;
+
+    if (!title || !start || !end) {
+      showMessage("Por favor completa todos los campos obligatorios", "danger");
+      return;
+    }
+
+    let image_base64 = null;
+    if (imageInput.files.length > 0) {
+      const file = imageInput.files[0];
+      image_base64 = await toBase64(file);
+    }
+
+    const payload = {
+      title,
+      description,
+      location,
+      start,
+      end,
+      image_base64,
+    };
 
     try {
-      const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
+        method: id ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-      showMessage("🗑️ Evento eliminado correctamente");
-      eventModal.hide();
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const result = await res.json();
+
+      if (!result.success) throw new Error(result.message);
+
+      showMessage(id ? "✅ Evento actualizado" : "✅ Evento creado");
       calendar.refetchEvents();
-    } catch (err) {
-      console.error("❌ Error al eliminar evento:", err);
-      showMessage("❌ Error al eliminar evento", true);
+      eventModal.hide();
+    } catch (error) {
+      console.error("❌ Error al guardar evento:", error);
+      showMessage("Error al guardar evento", "danger");
     }
   });
 
-  // 🟢 Mensajes flotantes estilo “Bienvenido”
-  function showMessage(text, error = false) {
-    const msg = document.createElement("div");
-    msg.className = `alert ${error ? "alert-danger" : "alert-success"} text-center fw-bold position-fixed top-0 start-50 translate-middle-x mt-3`;
-    msg.style.zIndex = "9999";
-    msg.innerHTML = text;
-    document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 3000);
+  // === 🧩 Convertir imagen a Base64 ===
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
   }
 });
