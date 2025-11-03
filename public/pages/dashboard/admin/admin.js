@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
 	// ==== VERIFICAR ADMIN ====
-	// Usamos sessionStorage para que la sesión se cierre al cerrar la pestaña.
 	const usuario = JSON.parse(sessionStorage.getItem("usuario"));
 	if (!usuario || usuario.role !== "admin") {
 		alert("❌ Acceso denegado. Solo administradores pueden acceder.");
@@ -9,13 +8,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 
 	// ==== BOTÓN CERRAR SESIÓN ====
-	// El botón de cerrar sesión ahora está en el menú hamburguesa (offcanvas),
-	// pero sigue teniendo el ID 'logout-btn' por lo que el JS sigue funcionando.
 	const logoutBtn = document.getElementById("logout-btn");
 	if (logoutBtn) {
 		logoutBtn.addEventListener("click", (e) => {
 			e.preventDefault();
-			// Eliminar la sesión
 			sessionStorage.removeItem("usuario");
 			window.location.href = "/pages/auth/login/login.html";
 		});
@@ -117,29 +113,18 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 
-		const formData = new FormData();
-		formData.append("title", title);
-		formData.append("description", description);
-		formData.append("location", location);
-		formData.append("start", start);
-		formData.append("end", end);
-		if (imageFile) formData.append("image", imageFile);
+		// Convertir imagen a Base64
+		let image_base64 = null;
+		if (imageFile) {
+			image_base64 = await toBase64(imageFile);
+		}
 
 		try {
-			let res;
-			if (id) {
-				// 🔁 ACTUALIZAR EVENTO
-				res = await fetch(`/api/events/${id}`, {
-					method: "PUT",
-					body: formData,
-				});
-			} else {
-				// ➕ CREAR EVENTO
-				res = await fetch("/api/events", {
-					method: "POST",
-					body: formData,
-				});
-			}
+			const res = await fetch(`/api/events${id ? `?id=${id}` : ""}`, {
+				method: id ? "PUT" : "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title, description, location, start, end, image_base64 }),
+			});
 
 			const data = await res.json();
 			if (data.success) {
@@ -155,6 +140,15 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	function toBase64(file) {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = reject;
+		});
+	}
+
 	// ==== ELIMINAR EVENTO ====
 	deleteBtn.addEventListener("click", async () => {
 		const id = document.getElementById("eventId").value;
@@ -163,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!confirm("⚠️ ¿Seguro que deseas eliminar este evento?")) return;
 
 		try {
-			const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+			const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
 			const data = await res.json();
 			if (data.success) {
 				alert("🗑️ Evento eliminado correctamente.");
