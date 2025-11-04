@@ -1,229 +1,160 @@
-// admin.js (coloca en la misma carpeta que admin.html)
-document.addEventListener("DOMContentLoaded", () => {
-  // Protección de ruta: sesión en sessionStorage
-  const usuario = JSON.parse(sessionStorage.getItem("usuario"));
-  if (!usuario || usuario.role !== "admin") {
-    // si no hay sesión válida redirigimos
-    window.location.href = "/pages/auth/login/login.html";
-    return;
-  }
-
-  // Referencias DOM
+document.addEventListener("DOMContentLoaded", async () => {
   const calendarEl = document.getElementById("calendar");
-  const modalEl = document.getElementById("eventModal");
-  const eventModal = new bootstrap.Modal(modalEl, { backdrop: "static", keyboard: false });
+  const eventModalEl = document.getElementById("eventModal");
+  const eventModal = new bootstrap.Modal(eventModalEl);
   const eventForm = document.getElementById("eventForm");
-  const saveBtn = document.getElementById("saveEventBtn");
-  const deleteBtn = document.getElementById("deleteEventBtn");
+  const saveEventBtn = document.getElementById("saveEventBtn");
+  const deleteEventBtn = document.getElementById("deleteEventBtn");
   const logoutBtn = document.getElementById("logout-btn");
 
-  // Mensajes con el estilo "bienvenido"
-  function showMessage(text, type = "success") {
-    const box = document.createElement("div");
-    box.className = `custom-toast ${type} visible`;
-    box.textContent = text;
-    document.body.appendChild(box);
-    setTimeout(() => box.classList.remove("visible"), 2500);
-    setTimeout(() => box.remove(), 3000);
+  /* ✅ Alertas personalizadas (mismo diseño que las demás) */
+  function showAlert(message, type = "success") {
+    const alert = document.createElement("div");
+    alert.className = `custom-alert ${type}`;
+    alert.innerHTML = `<i class="bi bi-check-circle me-2"></i>${message}`;
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 4000);
   }
 
-  // Logout: borrar sessionStorage y redirigir
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      sessionStorage.removeItem("usuario");
-      // también por seguridad limpiar user keys habituales
-      localStorage.removeItem("usuario");
-      showMessage("👋 Sesión cerrada correctamente", "success");
-      setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 800);
-    });
-  }
+  /* ✅ Logout funcional */
+  logoutBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
+    showAlert("👋 Sesión cerrada correctamente", "success");
+    setTimeout(() => (window.location.href = "../../../index.html"), 1500);
+  });
 
-  // Función para obtener eventos desde la API
-  async function fetchEventsForCalendar(fetchInfo, successCallback, failureCallback) {
+  /* ✅ Cargar eventos del servidor */
+  async function fetchEvents() {
     try {
-      const res = await fetch("/api/events");
-      if (!res.ok) {
-        // si la API devuelve 500/400 -> pasar array vacío para que se muestre calendario
-        successCallback([]);
-        return;
-      }
-      const payload = await res.json();
-      // esperamos { success: true, data: [...] } o como tu API devuelva
-      const rows = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
-      // Normalizar eventos para FullCalendar
-      const events = rows.map(ev => ({
-        id: ev.id?.toString?.() || ev.id,
-        title: ev.title || "Sin título",
+      const response = await fetch("https://motor-libre-competicion.vercel.app/api/events");
+      if (!response.ok) throw new Error("Error al cargar eventos");
+      const data = await response.json();
+      if (!Array.isArray(data)) return [];
+      return data.map(ev => ({
+        id: ev.id,
+        title: ev.title,
         start: ev.start,
         end: ev.end,
         extendedProps: {
-          description: ev.description || "",
-          location: ev.location || "",
-          image: ev.image_base64 || ev.image || ev.image_url || ""
+          description: ev.description,
+          location: ev.location,
+          image: ev.image,
         }
       }));
-      successCallback(events);
-    } catch (err) {
-      // fallback vacío
-      successCallback([]);
+    } catch {
+      return [];
     }
   }
 
-  // Abre modal con datos (o vacío para crear)
-  function openModalWithData(data) {
-    // data.start expected as ISO 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS'
-    document.getElementById("eventId").value = data.id || "";
-    document.getElementById("title").value = data.title || "";
-    document.getElementById("description").value = data.description || "";
-    document.getElementById("location").value = data.location || "";
-
-    // Si nos pasan start con hora, dividimos; si solo fecha, lo usamos
-    if (data.start) {
-      const dt = data.start.split("T");
-      document.getElementById("start-date").value = dt[0];
-      document.getElementById("start-time").value = (dt[1] || "").slice(0,5);
-    } else {
-      document.getElementById("start-date").value = "";
-      document.getElementById("start-time").value = "";
-    }
-
-    if (data.end) {
-      const dt2 = data.end.split("T");
-      document.getElementById("end-time").value = (dt2[1] || "").slice(0,5);
-    } else {
-      document.getElementById("end-time").value = "";
-    }
-
-    // ocultar o mostrar botón eliminar
-    deleteBtn.style.display = data.id ? "inline-block" : "none";
-    // reset file input
-    const fileInput = document.getElementById("image");
-    if (fileInput) fileInput.value = "";
-
-    eventModal.show();
-  }
-
-  // Inicializa FullCalendar
-  let calendar;
-  if (calendarEl) {
-    calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: "dayGridMonth",
-      locale: "es",
-      selectable: true,
-      height: "auto",
-      events: fetchEventsForCalendar,
-      select: (info) => {
-        // Fecha seleccionada -> mostrar modal con fecha fijada (usuario escoge hora)
-        const dateOnly = info.startStr.split("T")[0];
-        openModalWithData({ start: dateOnly, end: dateOnly });
-      },
-      eventClick: (info) => {
-        const e = info.event;
-        openModalWithData({
-          id: e.id,
-          title: e.title,
-          description: e.extendedProps.description,
-          location: e.extendedProps.location,
-          start: e.start?.toISOString?.(),
-          end: e.end?.toISOString?.()
-        });
-      }
-    });
-    calendar.render();
-  }
-
-  // Guardar evento (crear o actualizar) — usa JSON con start = YYYY-MM-DDTHH:MM
-  async function handleSaveEvent() {
+  /* ✅ Guardar evento */
+  async function saveEvent() {
     const id = document.getElementById("eventId").value;
     const title = document.getElementById("title").value.trim();
     const description = document.getElementById("description").value.trim();
     const location = document.getElementById("location").value.trim();
-    const date = document.getElementById("start-date").value; // YYYY-MM-DD
-    const startTime = document.getElementById("start-time").value; // HH:MM
-    const endTime = document.getElementById("end-time").value; // HH:MM
-    const imageFile = document.getElementById("image")?.files?.[0];
+    const date = document.getElementById("start-date").value;
+    const startTime = document.getElementById("start-time").value;
+    const endTime = document.getElementById("end-time").value;
 
     if (!title || !date || !startTime || !endTime) {
-      showMessage("⚠️ Completa los campos obligatorios", "error");
+      showAlert("⚠️ Por favor, completa los campos obligatorios.", "error");
       return;
     }
 
-    // Construir ISO-like strings: YYYY-MM-DDTHH:MM
     const start = `${date}T${startTime}`;
     const end = `${date}T${endTime}`;
-
-    // Si API soporta imagenes por ahora no la mandamos (para evitar problemas).
-    // Si quieres subida, lo cambiamos a FormData y el endpoint debe soportarlo.
-    const payload = { title, description, location, start, end };
+    const eventData = { title, description, location, start, end };
 
     try {
-      const url = id ? `/api/events/${id}` : "/api/events";
       const method = id ? "PUT" : "POST";
+      const url = id
+        ? `https://motor-libre-competicion.vercel.app/api/events/${id}`
+        : "https://motor-libre-competicion.vercel.app/api/events";
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(eventData),
       });
 
-      // si la API devuelve HTML de error en lugar de JSON, manejamos
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error("Respuesta no JSON del servidor"); }
-
-      if (!res.ok || !data.success) {
-        throw new Error(data?.message || `Error ${res.status}`);
-      }
+      if (!res.ok) throw new Error("Error al guardar evento");
 
       eventModal.hide();
-      showMessage(id ? "✅ Evento actualizado" : "🎉 Evento creado", "success");
+      showAlert(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito");
       calendar.refetchEvents();
-    } catch (err) {
-      showMessage("❌ Error al guardar evento", "error");
-      console.error("Error guardar evento:", err);
+    } catch {
+      showAlert("❌ Error al guardar el evento.", "error");
     }
   }
 
-  // Eliminar evento
-  async function handleDeleteEvent() {
+  /* ✅ Eliminar evento con alerta del mismo diseño */
+  async function deleteEvent() {
     const id = document.getElementById("eventId").value;
     if (!id) return;
 
-    // Mostrar confirmación con tu estilo
     const confirmBox = document.createElement("div");
-    confirmBox.className = "custom-alert";
-    confirmBox.style = "position:fixed;top:20px;right:20px;z-index:99999;";
+    confirmBox.className = "custom-alert confirm";
     confirmBox.innerHTML = `
-      <div style="font-weight:700;margin-bottom:8px;">¿Eliminar evento?</div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button id="confirmYes" class="btn btn-danger btn-sm">Sí</button>
-        <button id="confirmNo" class="btn btn-secondary btn-sm">No</button>
+      <p>🗑️ ¿Seguro que deseas eliminar este evento?</p>
+      <div class="mt-3 text-end">
+        <button id="confirmDelete" class="btn btn-danger btn-sm me-2">Sí, eliminar</button>
+        <button id="cancelDelete" class="btn btn-secondary btn-sm">Cancelar</button>
       </div>
     `;
     document.body.appendChild(confirmBox);
 
-    document.getElementById("confirmNo").addEventListener("click", () => confirmBox.remove());
-    document.getElementById("confirmYes").addEventListener("click", async () => {
+    document.getElementById("cancelDelete").addEventListener("click", () => confirmBox.remove());
+    document.getElementById("confirmDelete").addEventListener("click", async () => {
       confirmBox.remove();
       try {
-        const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch { throw new Error("Respuesta no JSON"); }
-
-        if (!res.ok || !data.success) throw new Error(data?.message || `Error ${res.status}`);
-
+        const res = await fetch(`https://motor-libre-competicion.vercel.app/api/events/${id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("Error al eliminar evento");
         eventModal.hide();
-        showMessage("🗑️ Evento eliminado", "success");
+        showAlert("🗑️ Evento eliminado correctamente");
         calendar.refetchEvents();
-      } catch (err) {
-        showMessage("❌ No se pudo eliminar el evento", "error");
-        console.error("Error eliminar evento:", err);
+      } catch {
+        showAlert("❌ No se pudo eliminar el evento.", "error");
       }
     });
   }
 
-  // Conectar botones
-  if (saveBtn) saveBtn.addEventListener("click", handleSaveEvent);
-  if (deleteBtn) deleteBtn.addEventListener("click", handleDeleteEvent);
+  /* ✅ Inicializar calendario */
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: "dayGridMonth",
+    selectable: true,
+    editable: true,
+    locale: "es",
+    events: fetchEvents,
+
+    select: (info) => {
+      document.getElementById("eventId").value = "";
+      eventForm.reset();
+      document.getElementById("start-date").value = info.startStr;
+      eventModalEl.querySelector(".modal-dialog").classList.add("custom-modal");
+      eventModal.show();
+    },
+
+    eventClick: (info) => {
+      const ev = info.event;
+      document.getElementById("eventId").value = ev.id;
+      document.getElementById("title").value = ev.title;
+      document.getElementById("description").value = ev.extendedProps.description || "";
+      document.getElementById("location").value = ev.extendedProps.location || "";
+      document.getElementById("start-date").value = ev.startStr.split("T")[0];
+      document.getElementById("start-time").value = ev.startStr.split("T")[1]?.substring(0, 5) || "";
+      document.getElementById("end-time").value = ev.endStr?.split("T")[1]?.substring(0, 5) || "";
+      eventModalEl.querySelector(".modal-dialog").classList.add("custom-modal");
+      eventModal.show();
+    },
+  });
+
+  calendar.render();
+
+  /* ✅ Botones */
+  saveEventBtn.addEventListener("click", saveEvent);
+  deleteEventBtn.addEventListener("click", deleteEvent);
 });
