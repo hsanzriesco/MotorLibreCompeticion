@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const deleteEventBtn = document.getElementById("deleteEventBtn");
   const logoutBtn = document.getElementById("logout-btn");
 
-  // ✅ Mostrar alertas estilo “Bienvenido”
+  // ✅ Alerta personalizada
   function showAlert(message, type = "success") {
     const alert = document.createElement("div");
     alert.className = `custom-alert ${type}`;
@@ -15,23 +15,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => alert.remove(), 4000);
   }
 
-  // ✅ Logout funcional
+  // ✅ Logout funcional y completo
   logoutBtn.addEventListener("click", (e) => {
     e.preventDefault();
     localStorage.removeItem("user");
     sessionStorage.removeItem("user");
-    showAlert("Sesión cerrada correctamente", "success");
+    showAlert("Sesión cerrada correctamente 👋", "success");
     setTimeout(() => (window.location.href = "../../../index.html"), 1500);
   });
 
-  // ✅ Cargar eventos del servidor
+  // ✅ Obtener eventos desde el servidor
   async function fetchEvents() {
     try {
-      const response = await fetch("https://motor-libre-competicion.vercel.app/api/events");
+      const response = await fetch("/api/events");
       if (!response.ok) throw new Error("Error al cargar eventos");
       const data = await response.json();
       if (!Array.isArray(data)) return [];
-      return data.map((ev) => ({
+      return data.map(ev => ({
         id: ev.id,
         title: ev.title,
         start: ev.start,
@@ -40,14 +40,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           description: ev.description,
           location: ev.location,
           image: ev.image,
-        },
+        }
       }));
     } catch {
       return [];
     }
   }
 
-  // ✅ Guardar evento (crear o actualizar)
+  // ✅ Guardar o actualizar evento
   async function saveEvent() {
     const id = document.getElementById("eventId").value;
     const title = document.getElementById("title").value.trim();
@@ -68,9 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const method = id ? "PUT" : "POST";
-      const url = id
-        ? `https://motor-libre-competicion.vercel.app/api/events/${id}`
-        : "https://motor-libre-competicion.vercel.app/api/events";
+      const url = id ? `/api/events/${id}` : `/api/events`;
 
       const res = await fetch(url, {
         method,
@@ -81,45 +79,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!res.ok) throw new Error("Error al guardar evento");
 
       eventModal.hide();
-      showAlert(id ? "Evento actualizado correctamente" : "🎉 Evento creado con éxito");
+      showAlert(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito");
       calendar.refetchEvents();
     } catch {
       showAlert("❌ Error al guardar el evento.", "error");
     }
   }
 
-  // ✅ Eliminar evento con alerta personalizada tipo “confirmación”
+  // ✅ Eliminar evento con alerta personalizada
   async function deleteEvent() {
     const id = document.getElementById("eventId").value;
     if (!id) return;
 
-    // Crear contenedor de confirmación con estilo personalizado
     const confirmBox = document.createElement("div");
-    confirmBox.className = "custom-alert";
-    confirmBox.style.background = "rgba(20, 20, 20, 0.95)";
-    confirmBox.style.border = "1px solid #e50914";
-    confirmBox.style.color = "#fff";
-    confirmBox.style.textAlign = "center";
-    confirmBox.style.padding = "1.5rem";
-    confirmBox.style.minWidth = "260px";
-    confirmBox.style.boxShadow = "0 0 20px rgba(229, 9, 20, 0.5)";
+    confirmBox.className = "custom-alert question";
     confirmBox.innerHTML = `
-      <p class="mb-3">❓ ¿Seguro que deseas eliminar este evento?</p>
-      <div class="d-flex justify-content-center gap-3">
-        <button id="confirmDelete" class="btn btn-danger btn-sm px-3">Sí</button>
-        <button id="cancelDelete" class="btn btn-secondary btn-sm px-3">No</button>
+      <p>¿Seguro que deseas eliminar este evento?</p>
+      <div class="mt-3 text-end">
+        <button id="confirmDelete" class="btn btn-danger btn-sm me-2">Sí</button>
+        <button id="cancelDelete" class="btn btn-secondary btn-sm">No</button>
       </div>
     `;
     document.body.appendChild(confirmBox);
 
-    // Cancelar
     document.getElementById("cancelDelete").addEventListener("click", () => confirmBox.remove());
-
-    // Confirmar eliminación
     document.getElementById("confirmDelete").addEventListener("click", async () => {
       confirmBox.remove();
       try {
-        const res = await fetch(`https://motor-libre-competicion.vercel.app/api/events/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Error al eliminar evento");
         eventModal.hide();
         showAlert("🗑️ Evento eliminado correctamente");
@@ -158,6 +145,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   calendar.render();
 
+  // ✅ Listeners
   saveEventBtn.addEventListener("click", saveEvent);
   deleteEventBtn.addEventListener("click", deleteEvent);
 });
