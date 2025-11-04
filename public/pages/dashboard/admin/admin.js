@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const data = await res.json();
       if (!data.success) throw new Error();
 
-      showMessage(id ? "✅ Evento actualizado" : "✅ Evento creado");
+      showMessage(id ? "✅ Evento actualizado" : "Evento creado");
       eventModal.hide();
       calendar.refetchEvents();
     } catch {
