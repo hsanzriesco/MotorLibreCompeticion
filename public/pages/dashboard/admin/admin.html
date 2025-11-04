@@ -70,6 +70,31 @@
       border-color: #e50914;
       color: white;
     }
+
+    /* 🧱 Modal más grande */
+    #eventModal .modal-dialog {
+      max-width: 900px;
+    }
+
+    /* 🧱 Alerta estilo “Bienvenido” */
+    .custom-alert {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(229, 9, 20, 0.95);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+      z-index: 2000;
+      animation: fadeInOut 4s ease forwards;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(-10px); }
+      10%, 90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-10px); }
+    }
   </style>
 </head>
 
@@ -94,10 +119,10 @@
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-      <a href="./admin.html" class="d-block text-light mb-2">🗓️ Calendario</a>
-      <a href="./user/users.html" class="d-block text-light mb-2">👥 Gestionar Usuarios</a>
+      <a href="./admin.html" class="d-block text-light mb-2">Calendario</a>
+      <a href="./user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
       <hr class="border-secondary" />
-      <a href="../../../index.html" class="d-block text-light mb-2">🏠 Volver al Inicio</a>
+      <a href="../../../index.html" class="d-block text-light mb-2">Volver al Inicio</a>
       <a href="#" id="logout-btn" class="d-block text-danger">
         <i class="bi bi-box-arrow-right"></i> Cerrar sesión
       </a>
@@ -114,10 +139,10 @@
 
   <!-- ✅ MODAL PARA CREAR / EDITAR EVENTOS -->
   <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-danger">
-          <h5 class="modal-title">🗓️ Evento</h5>
+          <h5 class="modal-title">Evento</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -131,7 +156,7 @@
 
             <div class="mb-3">
               <label for="description" class="form-label">Descripción</label>
-              <textarea id="description" class="form-control" rows="2"></textarea>
+              <textarea id="description" class="form-control" rows="3"></textarea>
             </div>
 
             <div class="mb-3">
@@ -140,15 +165,15 @@
             </div>
 
             <div class="row">
-              <div class="col-6 mb-3">
+              <div class="col-md-4 mb-3">
                 <label for="start-date" class="form-label">Fecha *</label>
                 <input type="date" id="start-date" class="form-control" readonly />
               </div>
-              <div class="col-3 mb-3">
+              <div class="col-md-4 mb-3">
                 <label for="start-time" class="form-label">Inicio *</label>
                 <input type="time" id="start-time" class="form-control" required />
               </div>
-              <div class="col-3 mb-3">
+              <div class="col-md-4 mb-3">
                 <label for="end-time" class="form-label">Fin *</label>
                 <input type="time" id="end-time" class="form-control" required />
               </div>
