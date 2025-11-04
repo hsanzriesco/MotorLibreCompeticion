@@ -1,8 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   const usuario = JSON.parse(sessionStorage.getItem("usuario"));
   if (!usuario || usuario.role !== "admin") {
-    alert("❌ Acceso denegado. Solo administradores pueden acceder.");
-    window.location.href = "/pages/auth/login/login.html";
+    showAlert("❌ Acceso denegado. Solo administradores pueden acceder.", "error");
+    setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 2000);
     return;
   }
 
@@ -17,6 +17,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const userPassword = document.getElementById("userPassword");
   const userRole = document.getElementById("userRole");
 
+  // ✅ Sistema unificado de alertas (igual que en admin.js)
+  function showAlert(message, type = "success") {
+    const alert = document.createElement("div");
+    alert.className = `custom-alert ${type}`;
+    alert.innerHTML = `<i class="bi bi-check-circle me-2"></i>${message}`;
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 4000);
+  }
+
+  // ✅ Cargar usuarios
   async function cargarUsuarios() {
     try {
       const res = await fetch("/api/userList");
@@ -43,11 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
         usersTableBody.innerHTML = `<tr><td colspan="6">⚠️ ${data.message}</td></tr>`;
       }
     } catch (err) {
-      console.error("❌ Error al cargar usuarios:", err);
       usersTableBody.innerHTML = `<tr><td colspan="6">⚠️ Error de conexión: ${err.message}</td></tr>`;
     }
   }
 
+  // ✅ Abrir modal para agregar usuario
   btnAddUser.addEventListener("click", () => {
     userForm.reset();
     userId.value = "";
@@ -55,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     userModal.show();
   });
 
+  // ✅ Editar o eliminar usuario
   usersTableBody.addEventListener("click", async (e) => {
     const button = e.target.closest("button");
     if (!button) return;
@@ -78,22 +89,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (action === "delete") {
-      if (!confirm("⚠️ ¿Seguro que deseas eliminar este usuario?")) return;
-      try {
-        const res = await fetch(`/api/userList?id=${id}`, { method: "DELETE" });
-        const data = await res.json();
-        if (data.success) {
-          alert("✅ Usuario eliminado correctamente.");
-          cargarUsuarios();
-        } else {
-          alert(`❌ ${data.message}`);
+      // ✅ Confirmación personalizada al eliminar
+      const confirmBox = document.createElement("div");
+      confirmBox.className = "custom-alert";
+      confirmBox.innerHTML = `
+        <p>¿Seguro que deseas eliminar este usuario?</p>
+        <div class="mt-2 text-end">
+          <button id="confirmDeleteUser" class="btn btn-danger btn-sm me-2">Sí</button>
+          <button id="cancelDeleteUser" class="btn btn-secondary btn-sm">No</button>
+        </div>
+      `;
+      document.body.appendChild(confirmBox);
+
+      document.getElementById("cancelDeleteUser").addEventListener("click", () => confirmBox.remove());
+      document.getElementById("confirmDeleteUser").addEventListener("click", async () => {
+        confirmBox.remove();
+        try {
+          const res = await fetch(`/api/userList?id=${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (data.success) {
+            showAlert("🗑️ Usuario eliminado correctamente");
+            cargarUsuarios();
+          } else {
+            showAlert(`❌ ${data.message}`, "error");
+          }
+        } catch {
+          showAlert("❌ Error de conexión al eliminar usuario.", "error");
         }
-      } catch (err) {
-        alert("❌ Error de conexión al eliminar usuario.");
-      }
+      });
     }
   });
 
+  // ✅ Guardar (crear o actualizar usuario)
   userForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
@@ -112,14 +139,16 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
+
       if (data.success) {
         userModal.hide();
+        showAlert(userId.value ? "✅ Usuario actualizado correctamente" : "🎉 Usuario creado con éxito");
         cargarUsuarios();
       } else {
-        alert("❌ Error: " + data.message);
+        showAlert("❌ Error: " + data.message, "error");
       }
     } catch (err) {
-      alert("❌ Error de conexión al guardar usuario.");
+      showAlert("❌ Error de conexión al guardar usuario.", "error");
     }
   });
 
