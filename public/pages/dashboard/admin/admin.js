@@ -53,55 +53,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // === 💬 ALERTA PERSONALIZADA ===
   function showMessage(text, type = "success") {
     const messageBox = document.createElement("div");
     messageBox.className = `alert alert-${type} text-center position-fixed top-0 start-50 translate-middle-x mt-3`;
     messageBox.style.zIndex = "2000";
-    messageBox.style.backgroundColor = type === "danger" ? "#e50914" : "#1db954";
-    messageBox.style.color = "white";
-    messageBox.style.border = "none";
-    messageBox.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
-    messageBox.style.borderRadius = "10px";
-    messageBox.style.padding = "10px 20px";
     messageBox.textContent = text;
     document.body.appendChild(messageBox);
-    setTimeout(() => messageBox.remove(), 2500);
-  }
-
-  // === 💬 MODAL DE CONFIRMACIÓN ===
-  function showConfirm(message, onConfirm) {
-    const confirmModal = document.createElement("div");
-    confirmModal.className = "modal fade";
-    confirmModal.innerHTML = `
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-danger" style="background-color:#111; color:white;">
-          <div class="modal-header border-danger">
-            <h5 class="modal-title text-danger">⚠️ Confirmación</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body text-center">
-            <p>${message}</p>
-          </div>
-          <div class="modal-footer border-danger justify-content-center">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-danger" id="confirmBtn">Eliminar</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(confirmModal);
-
-    const modal = new bootstrap.Modal(confirmModal);
-    modal.show();
-
-    confirmModal.querySelector("#confirmBtn").addEventListener("click", () => {
-      modal.hide();
-      setTimeout(() => confirmModal.remove(), 300);
-      onConfirm();
-    });
-
-    confirmModal.addEventListener("hidden.bs.modal", () => confirmModal.remove());
+    setTimeout(() => messageBox.remove(), 3000);
   }
 
   function toBase64(file) {
@@ -209,26 +167,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // === 🗑️ ELIMINAR EVENTO (nuevo estilo) ===
-  deleteEventBtn.addEventListener("click", () => {
+  // === 🗑️ ELIMINAR EVENTO ===
+  deleteEventBtn.addEventListener("click", async () => {
     if (!selectedEvent || !selectedEvent.id) {
       showMessage("No hay evento seleccionado", "danger");
       return;
     }
 
-    showConfirm("¿Seguro que deseas eliminar este evento?", async () => {
-      try {
-        const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
-        const data = await res.json();
-        if (!data.success) throw new Error();
+    if (!confirm("¿Seguro que deseas eliminar este evento?")) return;
 
-        showMessage("🗑️ Evento eliminado correctamente");
-        eventModal.hide();
-        calendar.refetchEvents();
-      } catch {
-        showMessage("Error al eliminar evento", "danger");
-      }
-    });
+    try {
+      const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error();
+
+      showMessage("🗑️ Evento eliminado correctamente");
+      eventModal.hide();
+      calendar.refetchEvents();
+    } catch {
+      showMessage("Error al eliminar evento", "danger");
+    }
   });
 
   // === 🔒 CERRAR SESIÓN ===
@@ -236,10 +194,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
       e.preventDefault();
+
+      // 🧹 Borrar cualquier tipo de sesión o usuario guardado
+      localStorage.removeItem("usuario");
+      sessionStorage.removeItem("usuario");
       localStorage.clear();
       sessionStorage.clear();
-      showMessage("🔒 Sesión cerrada correctamente");
-      setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 1500);
+
+      // 🔐 Redirigir al login
+      window.location.href = "/pages/auth/login/login.html";
     });
   }
 });
