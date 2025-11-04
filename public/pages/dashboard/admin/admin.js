@@ -1,160 +1,245 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  const calendarEl = document.getElementById("calendar");
-  const eventModalEl = document.getElementById("eventModal");
-  const eventModal = new bootstrap.Modal(eventModalEl);
-  const eventForm = document.getElementById("eventForm");
-  const saveEventBtn = document.getElementById("saveEventBtn");
-  const deleteEventBtn = document.getElementById("deleteEventBtn");
-  const logoutBtn = document.getElementById("logout-btn");
-
-  /* ✅ Alertas personalizadas (mismo diseño que las demás) */
-  function showAlert(message, type = "success") {
-    const alert = document.createElement("div");
-    alert.className = `custom-alert ${type}`;
-    alert.innerHTML = `<i class="bi bi-check-circle me-2"></i>${message}`;
-    document.body.appendChild(alert);
-    setTimeout(() => alert.remove(), 4000);
+  // === 🚫 VERIFICAR SESIÓN ===
+  const usuario = JSON.parse(localStorage.getItem("usuario")) || JSON.parse(sessionStorage.getItem("usuario"));
+  if (!usuario || usuario.role !== "admin") {
+    alert("❌ Acceso denegado. Inicia sesión como administrador.");
+    window.location.href = "/pages/auth/login/login.html";
+    return;
   }
 
-  /* ✅ Logout funcional */
-  logoutBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    localStorage.removeItem("user");
-    sessionStorage.removeItem("user");
-    showAlert("👋 Sesión cerrada correctamente", "success");
-    setTimeout(() => (window.location.href = "../../../index.html"), 1500);
-  });
+  // === ELEMENTOS DEL DOM ===
+  const calendarEl = document.getElementById("calendar");
+  const eventModalEl = document.getElementById("eventModal");
+  if (!calendarEl || !eventModalEl) return;
 
-  /* ✅ Cargar eventos del servidor */
+  const eventModal = new bootstrap.Modal(eventModalEl);
+  const form = document.getElementById("eventForm");
+
+  const titleInput = document.getElementById("title");
+  const descriptionInput = document.getElementById("description");
+  const locationInput = document.getElementById("location");
+  const startDateInput = document.getElementById("start-date");
+  const startTimeInput = document.getElementById("start-time");
+  const endTimeInput = document.getElementById("end-time");
+  const imageInput = document.getElementById("image");
+  const eventIdInput = document.getElementById("eventId");
+
+  const saveEventBtn = document.getElementById("saveEventBtn");
+  const deleteEventBtn = document.getElementById("deleteEventBtn");
+
+  let selectedEvent = null;
+
+  // === 🔁 FUNCIONES ===
   async function fetchEvents() {
     try {
-      const response = await fetch("https://motor-libre-competicion.vercel.app/api/events");
-      if (!response.ok) throw new Error("Error al cargar eventos");
-      const data = await response.json();
-      if (!Array.isArray(data)) return [];
-      return data.map(ev => ({
-        id: ev.id,
-        title: ev.title,
-        start: ev.start,
-        end: ev.end,
+      const res = await fetch("/api/events");
+      if (!res.ok) throw new Error("Error al obtener eventos");
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.data)) throw new Error("Respuesta no válida");
+
+      return json.data.map((e) => ({
+        id: e.id,
+        title: e.title,
+        start: e.start,
+        end: e.end,
         extendedProps: {
-          description: ev.description,
-          location: ev.location,
-          image: ev.image,
-        }
+          description: e.description,
+          location: e.location,
+          image_base64: e.image_base64,
+        },
       }));
     } catch {
       return [];
     }
   }
 
-  /* ✅ Guardar evento */
-  async function saveEvent() {
-    const id = document.getElementById("eventId").value;
-    const title = document.getElementById("title").value.trim();
-    const description = document.getElementById("description").value.trim();
-    const location = document.getElementById("location").value.trim();
-    const date = document.getElementById("start-date").value;
-    const startTime = document.getElementById("start-time").value;
-    const endTime = document.getElementById("end-time").value;
-
-    if (!title || !date || !startTime || !endTime) {
-      showAlert("⚠️ Por favor, completa los campos obligatorios.", "error");
-      return;
-    }
-
-    const start = `${date}T${startTime}`;
-    const end = `${date}T${endTime}`;
-    const eventData = { title, description, location, start, end };
-
-    try {
-      const method = id ? "PUT" : "POST";
-      const url = id
-        ? `https://motor-libre-competicion.vercel.app/api/events/${id}`
-        : "https://motor-libre-competicion.vercel.app/api/events";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(eventData),
-      });
-
-      if (!res.ok) throw new Error("Error al guardar evento");
-
-      eventModal.hide();
-      showAlert(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito");
-      calendar.refetchEvents();
-    } catch {
-      showAlert("❌ Error al guardar el evento.", "error");
-    }
+  // === 💬 ALERTA PERSONALIZADA ===
+  function showMessage(text, type = "success") {
+    const messageBox = document.createElement("div");
+    messageBox.className = `alert alert-${type} text-center position-fixed top-0 start-50 translate-middle-x mt-3`;
+    messageBox.style.zIndex = "2000";
+    messageBox.style.backgroundColor = type === "danger" ? "#e50914" : "#1db954";
+    messageBox.style.color = "white";
+    messageBox.style.border = "none";
+    messageBox.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+    messageBox.style.borderRadius = "10px";
+    messageBox.style.padding = "10px 20px";
+    messageBox.textContent = text;
+    document.body.appendChild(messageBox);
+    setTimeout(() => messageBox.remove(), 2500);
   }
 
-  /* ✅ Eliminar evento con alerta del mismo diseño */
-  async function deleteEvent() {
-    const id = document.getElementById("eventId").value;
-    if (!id) return;
-
-    const confirmBox = document.createElement("div");
-    confirmBox.className = "custom-alert confirm";
-    confirmBox.innerHTML = `
-      <p>🗑️ ¿Seguro que deseas eliminar este evento?</p>
-      <div class="mt-3 text-end">
-        <button id="confirmDelete" class="btn btn-danger btn-sm me-2">Sí, eliminar</button>
-        <button id="cancelDelete" class="btn btn-secondary btn-sm">Cancelar</button>
+  // === 💬 MODAL DE CONFIRMACIÓN ===
+  function showConfirm(message, onConfirm) {
+    const confirmModal = document.createElement("div");
+    confirmModal.className = "modal fade";
+    confirmModal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger" style="background-color:#111; color:white;">
+          <div class="modal-header border-danger">
+            <h5 class="modal-title text-danger">⚠️ Confirmación</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            <p>${message}</p>
+          </div>
+          <div class="modal-footer border-danger justify-content-center">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="confirmBtn">Eliminar</button>
+          </div>
+        </div>
       </div>
     `;
-    document.body.appendChild(confirmBox);
+    document.body.appendChild(confirmModal);
 
-    document.getElementById("cancelDelete").addEventListener("click", () => confirmBox.remove());
-    document.getElementById("confirmDelete").addEventListener("click", async () => {
-      confirmBox.remove();
-      try {
-        const res = await fetch(`https://motor-libre-competicion.vercel.app/api/events/${id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) throw new Error("Error al eliminar evento");
-        eventModal.hide();
-        showAlert("🗑️ Evento eliminado correctamente");
-        calendar.refetchEvents();
-      } catch {
-        showAlert("❌ No se pudo eliminar el evento.", "error");
-      }
+    const modal = new bootstrap.Modal(confirmModal);
+    modal.show();
+
+    confirmModal.querySelector("#confirmBtn").addEventListener("click", () => {
+      modal.hide();
+      setTimeout(() => confirmModal.remove(), 300);
+      onConfirm();
+    });
+
+    confirmModal.addEventListener("hidden.bs.modal", () => confirmModal.remove());
+  }
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
     });
   }
 
-  /* ✅ Inicializar calendario */
+  // === 🗓️ INICIALIZAR CALENDARIO ===
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
-    editable: true,
+    editable: false,
+    height: "auto",
     locale: "es",
-    events: fetchEvents,
 
     select: (info) => {
-      document.getElementById("eventId").value = "";
-      eventForm.reset();
-      document.getElementById("start-date").value = info.startStr;
-      eventModalEl.querySelector(".modal-dialog").classList.add("custom-modal");
+      selectedEvent = null;
+      form.reset();
+      const date = info.startStr.split("T")[0];
+      startDateInput.value = date;
+      startTimeInput.value = "00:00";
+      endTimeInput.value = "00:00";
+      eventIdInput.value = "";
+      deleteEventBtn.style.display = "none";
       eventModal.show();
     },
 
     eventClick: (info) => {
-      const ev = info.event;
-      document.getElementById("eventId").value = ev.id;
-      document.getElementById("title").value = ev.title;
-      document.getElementById("description").value = ev.extendedProps.description || "";
-      document.getElementById("location").value = ev.extendedProps.location || "";
-      document.getElementById("start-date").value = ev.startStr.split("T")[0];
-      document.getElementById("start-time").value = ev.startStr.split("T")[1]?.substring(0, 5) || "";
-      document.getElementById("end-time").value = ev.endStr?.split("T")[1]?.substring(0, 5) || "";
-      eventModalEl.querySelector(".modal-dialog").classList.add("custom-modal");
+      const event = info.event;
+      selectedEvent = event;
+
+      eventIdInput.value = event.id;
+      titleInput.value = event.title;
+      descriptionInput.value = event.extendedProps.description || "";
+      locationInput.value = event.extendedProps.location || "";
+
+      if (event.start) {
+        const startDate = new Date(event.start);
+        startDateInput.value = startDate.toISOString().split("T")[0];
+        startTimeInput.value = startDate.toTimeString().slice(0, 5);
+      }
+
+      if (event.end) {
+        const endDate = new Date(event.end);
+        endTimeInput.value = endDate.toTimeString().slice(0, 5);
+      }
+
+      deleteEventBtn.style.display = "inline-block";
       eventModal.show();
+    },
+
+    events: async (info, successCallback) => {
+      const events = await fetchEvents();
+      successCallback(events);
     },
   });
 
   calendar.render();
 
-  /* ✅ Botones */
-  saveEventBtn.addEventListener("click", saveEvent);
-  deleteEventBtn.addEventListener("click", deleteEvent);
+  // === 💾 GUARDAR / ACTUALIZAR EVENTO ===
+  saveEventBtn.addEventListener("click", async () => {
+    const id = eventIdInput.value;
+    const title = titleInput.value.trim();
+    const description = descriptionInput.value.trim();
+    const location = locationInput.value.trim();
+    const date = startDateInput.value;
+    const startTime = startTimeInput.value;
+    const endTime = endTimeInput.value;
+
+    if (!title || !date || !startTime || !endTime) {
+      showMessage("Por favor completa todos los campos obligatorios", "danger");
+      return;
+    }
+
+    const start = `${date}T${startTime}`;
+    const end = `${date}T${endTime}`;
+
+    let image_base64 = null;
+    if (imageInput.files.length > 0) {
+      const file = imageInput.files[0];
+      image_base64 = await toBase64(file);
+    }
+
+    const payload = { title, description, location, start, end, image_base64 };
+
+    try {
+      const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
+        method: id ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error();
+
+      showMessage(id ? "✅ Evento actualizado" : "✅ Evento creado");
+      eventModal.hide();
+      calendar.refetchEvents();
+    } catch {
+      showMessage("Error al guardar evento", "danger");
+    }
+  });
+
+  // === 🗑️ ELIMINAR EVENTO (nuevo estilo) ===
+  deleteEventBtn.addEventListener("click", () => {
+    if (!selectedEvent || !selectedEvent.id) {
+      showMessage("No hay evento seleccionado", "danger");
+      return;
+    }
+
+    showConfirm("¿Seguro que deseas eliminar este evento?", async () => {
+      try {
+        const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!data.success) throw new Error();
+
+        showMessage("🗑️ Evento eliminado correctamente");
+        eventModal.hide();
+        calendar.refetchEvents();
+      } catch {
+        showMessage("Error al eliminar evento", "danger");
+      }
+    });
+  });
+
+  // === 🔒 CERRAR SESIÓN ===
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.clear();
+      sessionStorage.clear();
+      showMessage("🔒 Sesión cerrada correctamente");
+      setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 1500);
+    });
+  }
 });
