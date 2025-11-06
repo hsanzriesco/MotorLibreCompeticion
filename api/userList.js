@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     // ✅ OBTENER TODOS LOS USUARIOS (GET)
     if (req.method === "GET") {
       const result = await pool.query(
-        "SELECT id, name, email, role, created_at FROM users ORDER BY id ASC"
+        "SELECT name, email, role, created_at FROM users ORDER BY id ASC"
       );
       return res.status(200).json({ success: true, data: result.rows });
     }
