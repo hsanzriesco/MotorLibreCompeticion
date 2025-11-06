@@ -156,3 +156,73 @@ main p {
   background-color: #facc15; /* Amarillo */
   color: #1f2937;
 }
+
+/* 💡 Estilo mejorado para el modal de eventos */
+.bright-modal .modal-content {
+  background: #f8f9fa;
+  color: #212529;
+  border-radius: 15px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+  padding: 10px 15px;
+}
+
+.bright-modal .modal-header {
+  background: linear-gradient(90deg, #e50914, #b00610);
+  color: white;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+.bright-modal .modal-title {
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.bright-modal .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.bright-modal .modal-body {
+  background-color: #fff;
+  padding: 20px;
+}
+
+.bright-modal .form-label {
+  color: #111;
+  font-weight: 500;
+}
+
+.bright-modal .form-control,
+.bright-modal .form-select {
+  background-color: #f1f1f1;
+  color: #111;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.bright-modal .form-control:focus,
+.bright-modal .form-select:focus {
+  border-color: #e50914;
+  box-shadow: 0 0 0 0.2rem rgba(229, 9, 20, 0.25);
+}
+
+.bright-modal .modal-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  border-radius: 0 0 12px 12px;
+}
+
+.bright-modal .btn-danger {
+  background-color: #e50914;
+  border: none;
+}
+
+.bright-modal .btn-danger:hover {
+  background-color: #ff1a1a;
+}
+
+.bright-modal .btn-secondary {
+  background-color: #6c757d;
+  border: none;
+}
