@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  // === 🚫 VERIFICAR SESIÓN ===
+  // === VERIFICAR SESIÓN ===
   const usuario =
     JSON.parse(localStorage.getItem("usuario")) ||
     JSON.parse(sessionStorage.getItem("usuario"));
@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let selectedEvent = null;
 
-  // === ✨ ALERTA SIMPLE Y BONITA ===
+  // === ALERTA SIMPLE Y BONITA ===
   function showAlert(message, type = "success") {
     const alert = document.createElement("div");
     alert.className = `simple-alert ${type}`;
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 3000);
   }
 
-  // === ⚠️ CONFIRMACIÓN SIMPLE ===
+  // === CONFIRMACIÓN SIMPLE ===
   function showConfirm(message, onConfirm) {
     const confirmBox = document.createElement("div");
     confirmBox.className = "confirm-overlay";
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // === 🔁 CARGAR EVENTOS ===
+  // === CARGAR EVENTOS ===
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // === 🗓️ CALENDARIO ===
+  // === CALENDARIO ===
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
@@ -151,7 +151,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   calendar.render();
 
-  // === 💾 GUARDAR / ACTUALIZAR EVENTO ===
+  // === GUARDAR / ACTUALIZAR EVENTO ===
   saveEventBtn.addEventListener("click", async () => {
     const id = eventIdInput.value;
     const title = titleInput.value.trim();
@@ -194,7 +194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // === 🗑️ ELIMINAR EVENTO ===
+  // === ELIMINAR EVENTO ===
   deleteEventBtn.addEventListener("click", async () => {
     if (!selectedEvent || !selectedEvent.id) {
       showAlert("No hay evento seleccionado", "danger");

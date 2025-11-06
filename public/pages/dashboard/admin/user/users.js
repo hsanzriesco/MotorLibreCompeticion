@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const usuario = JSON.parse(sessionStorage.getItem("usuario"));
     if (!usuario || usuario.role !== "admin") {
-        alert("❌ Acceso denegado. Solo administradores pueden acceder.");
+        alert("Acceso denegado. Solo administradores pueden acceder.");
         window.location.href = "/pages/auth/login/login.html";
         return;
     }
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 usersTableBody.innerHTML = `<tr><td colspan="6">${data.message}</td></tr>`;
             }
         } catch (err) {
-            console.error("❌ Error al cargar usuarios:", err);
+            console.error("Error al cargar usuarios:", err);
             usersTableBody.innerHTML = `<tr><td colspan="6">Error de conexión: ${err.message}</td></tr>`;
         }
     }
@@ -155,10 +155,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 userModal.hide();
                 cargarUsuarios();
             } else {
-                alert("❌ Error: " + data.message);
+                alert("Error: " + data.message);
             }
         } catch (err) {
-            alert("❌ Error de conexión al guardar usuario.");
+            alert("Error de conexión al guardar usuario.");
         }
     });
 
