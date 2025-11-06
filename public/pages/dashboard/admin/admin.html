@@ -47,6 +47,7 @@
       background-color: #111;
       color: white;
       border: 1px solid #e50914;
+      box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
     }
 
     .btn-danger {
@@ -69,6 +70,15 @@
       background-color: #222;
       border-color: #e50914;
       color: white;
+      box-shadow: 0 0 5px rgba(229, 9, 20, 0.5);
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    .border-danger {
+      border-color: #e50914 !important;
     }
   </style>
 </head>
@@ -81,7 +91,13 @@
     </a>
 
     <div class="d-flex align-items-center">
-      <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+      <button
+        class="btn btn-dark border border-secondary"
+        type="button"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasMenu"
+        aria-controls="offcanvasMenu"
+      >
         <i class="bi bi-list"></i>
       </button>
     </div>
@@ -114,57 +130,114 @@
 
   <!-- ✅ MODAL PARA CREAR / EDITAR EVENTOS -->
   <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-danger">
-          <h5 class="modal-title">Evento</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title fw-bold text-light">
+            📅 Gestión de Evento
+          </h5>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"
+          ></button>
         </div>
+
         <div class="modal-body">
           <form id="eventForm">
             <input type="hidden" id="eventId" />
 
             <div class="mb-3">
               <label for="title" class="form-label">Título *</label>
-              <input type="text" id="title" class="form-control" required />
+              <input
+                type="text"
+                id="title"
+                class="form-control"
+                placeholder="Ej: Carrera en Montmeló"
+                required
+              />
             </div>
 
             <div class="mb-3">
               <label for="description" class="form-label">Descripción</label>
-              <textarea id="description" class="form-control" rows="2"></textarea>
+              <textarea
+                id="description"
+                class="form-control"
+                rows="3"
+                placeholder="Detalles del evento..."
+              ></textarea>
             </div>
 
             <div class="mb-3">
               <label for="location" class="form-label">Ubicación</label>
-              <input type="text" id="location" class="form-control" />
+              <input
+                type="text"
+                id="location"
+                class="form-control"
+                placeholder="Ej: Circuito Ricardo Tormo"
+              />
             </div>
 
-            <div class="row">
-              <div class="col-6 mb-3">
-                <label for="start-date" class="form-label">Fecha *</label>
-                <input type="date" id="start-date" class="form-control" readonly />
-              </div>
-              <div class="col-3 mb-3">
-                <label for="start-time" class="form-label">Inicio *</label>
-                <input type="time" id="start-time" class="form-control" required />
-              </div>
-              <div class="col-3 mb-3">
-                <label for="end-time" class="form-label">Fin *</label>
-                <input type="time" id="end-time" class="form-control" required />
+            <!-- 🗓️ FECHA Y HORAS -->
+            <div
+              class="mb-3 p-3 rounded-3 border border-danger bg-dark bg-opacity-50"
+            >
+              <label for="start-date" class="form-label fw-semibold"
+                >Fecha *</label
+              >
+              <input
+                type="date"
+                id="start-date"
+                class="form-control mb-3"
+                readonly
+              />
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="start-time" class="form-label"
+                    >Hora de inicio *</label
+                  >
+                  <input
+                    type="time"
+                    id="start-time"
+                    class="form-control"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="end-time" class="form-label">Hora de fin *</label>
+                  <input
+                    type="time"
+                    id="end-time"
+                    class="form-control"
+                    required
+                  />
+                </div>
               </div>
             </div>
 
             <div class="mb-3">
               <label for="image" class="form-label">Imagen (opcional)</label>
-              <input type="file" id="image" class="form-control" accept="image/*" />
+              <input
+                type="file"
+                id="image"
+                class="form-control"
+                accept="image/*"
+              />
             </div>
           </form>
         </div>
 
         <div class="modal-footer border-danger">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button id="deleteEventBtn" type="button" class="btn btn-outline-danger me-auto">Eliminar</button>
-          <button id="saveEventBtn" type="button" class="btn btn-danger">Guardar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cerrar
+          </button>
+          <button id="deleteEventBtn" type="button" class="btn btn-outline-danger me-auto">
+            <i class="bi bi-trash"></i> Eliminar
+          </button>
+          <button id="saveEventBtn" type="button" class="btn btn-danger">
+            <i class="bi bi-save"></i> Guardar
+          </button>
         </div>
       </div>
     </div>
