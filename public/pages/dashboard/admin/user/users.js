@@ -37,7 +37,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 data.data.forEach((user) => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td>${user.id}</td>
                         <td>${user.name}</td>
                         <td>${user.email}</td>
                         <td>${user.role}</td>
@@ -49,11 +48,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     usersTableBody.appendChild(tr);
                 });
             } else {
-                usersTableBody.innerHTML = `<tr><td colspan="6">⚠️ ${data.message}</td></tr>`;
+                usersTableBody.innerHTML = `<tr><td colspan="6">${data.message}</td></tr>`;
             }
         } catch (err) {
             console.error("❌ Error al cargar usuarios:", err);
-            usersTableBody.innerHTML = `<tr><td colspan="6">⚠️ Error de conexión: ${err.message}</td></tr>`;
+            usersTableBody.innerHTML = `<tr><td colspan="6">Error de conexión: ${err.message}</td></tr>`;
         }
     }
 
@@ -70,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
             deleteConfirmModal.hide(); // Ocultamos el modal
 
             if (data.success) {
-                alert("✅ Usuario eliminado correctamente.");
+                alert("Usuario eliminado correctamente.");
                 cargarUsuarios();
             } else {
                 alert(`❌ ${data.message}`);

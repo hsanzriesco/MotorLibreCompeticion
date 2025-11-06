@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       return res.status(201).json({ success: true, data: result.rows[0] });
     }
 
-    // ✅ ACTUALIZAR USUARIO (PUT) - NO DEVUELVE ID ni PASSWORD
+    // ACTUALIZAR USUARIO (PUT)
     if (req.method === "PUT") {
       const { id, name, email, password, role } = req.body;
 
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: result.rows[0] });
     }
 
-    // ✅ ELIMINAR USUARIO (DELETE)
+    // ELIMINAR USUARIO
     if (req.method === "DELETE") {
       const { id } = req.query;
       if (!id) {

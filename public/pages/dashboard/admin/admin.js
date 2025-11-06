@@ -1,9 +1,13 @@
 document.addEventListener("DOMContentLoaded", async () => {
   // === 🚫 VERIFICAR SESIÓN ===
-  const usuario = JSON.parse(localStorage.getItem("usuario")) || JSON.parse(sessionStorage.getItem("usuario"));
+  const usuario =
+    JSON.parse(localStorage.getItem("usuario")) ||
+    JSON.parse(sessionStorage.getItem("usuario"));
   if (!usuario || usuario.role !== "admin") {
-    alert("❌ Acceso denegado. Inicia sesión como administrador.");
-    window.location.href = "/pages/auth/login/login.html";
+    showCustomAlert("❌ Acceso denegado. Inicia sesión como administrador.", "error");
+    setTimeout(() => {
+      window.location.href = "/pages/auth/login/login.html";
+    }, 1500);
     return;
   }
 
@@ -29,14 +33,66 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let selectedEvent = null;
 
-  // === 🔁 FUNCIONES ===
+  // === 🌈 FUNCIÓN GLOBAL DE ALERTAS PERSONALIZADAS ===
+  function showCustomAlert(message, type = "success") {
+    const alertBox = document.createElement("div");
+    alertBox.className = `custom-alert ${type}`;
+    alertBox.innerHTML = `
+      <div class="alert-content">
+        ${
+          type === "success"
+            ? '<i class="bi bi-check-circle-fill"></i>'
+            : type === "error"
+            ? '<i class="bi bi-x-circle-fill"></i>'
+            : '<i class="bi bi-exclamation-triangle-fill"></i>'
+        }
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(alertBox);
+
+    setTimeout(() => {
+      alertBox.classList.add("show");
+    }, 50);
+
+    setTimeout(() => {
+      alertBox.classList.remove("show");
+      setTimeout(() => alertBox.remove(), 300);
+    }, 3500);
+  }
+
+  // === ⚠️ ALERTA DE CONFIRMACIÓN PERSONALIZADA ===
+  function showConfirmAlert(message, onConfirm) {
+    const confirmBox = document.createElement("div");
+    confirmBox.className = "custom-confirm";
+    confirmBox.innerHTML = `
+      <div class="confirm-content">
+        <p>${message}</p>
+        <div class="buttons">
+          <button id="confirmYes" class="btn btn-danger">Sí</button>
+          <button id="confirmNo" class="btn btn-secondary">No</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(confirmBox);
+
+    document.getElementById("confirmNo").addEventListener("click", () => {
+      confirmBox.remove();
+    });
+
+    document.getElementById("confirmYes").addEventListener("click", () => {
+      confirmBox.remove();
+      onConfirm();
+    });
+  }
+
+  // === 🔁 CARGAR EVENTOS ===
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
       if (!res.ok) throw new Error("Error al obtener eventos");
       const json = await res.json();
-      if (!json.success || !Array.isArray(json.data)) throw new Error("Respuesta no válida");
-
+      if (!json.success || !Array.isArray(json.data)) throw new Error("Datos inválidos");
       return json.data.map((e) => ({
         id: e.id,
         title: e.title,
@@ -49,17 +105,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       }));
     } catch {
+      showCustomAlert("Error al cargar los eventos", "error");
       return [];
     }
-  }
-
-  function showMessage(text, type = "success") {
-    const messageBox = document.createElement("div");
-    messageBox.className = `alert alert-${type} text-center position-fixed top-0 start-50 translate-middle-x mt-3`;
-    messageBox.style.zIndex = "2000";
-    messageBox.textContent = text;
-    document.body.appendChild(messageBox);
-    setTimeout(() => messageBox.remove(), 3000);
   }
 
   function toBase64(file) {
@@ -71,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // === 🗓️ INICIALIZAR CALENDARIO ===
+  // === 🗓️ CALENDARIO ===
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
@@ -82,10 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     select: (info) => {
       selectedEvent = null;
       form.reset();
-      const date = info.startStr.split("T")[0];
-      startDateInput.value = date;
-      startTimeInput.value = "00:00";
-      endTimeInput.value = "00:00";
+      startDateInput.value = info.startStr.split("T")[0];
       eventIdInput.value = "";
       deleteEventBtn.style.display = "none";
       eventModal.show();
@@ -134,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const endTime = endTimeInput.value;
 
     if (!title || !date || !startTime || !endTime) {
-      showMessage("Por favor completa todos los campos obligatorios", "danger");
+      showCustomAlert("Por favor completa todos los campos obligatorios", "error");
       return;
     }
 
@@ -155,38 +200,37 @@ document.addEventListener("DOMContentLoaded", async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
       if (!data.success) throw new Error();
 
-      showMessage(id ? "✅ Evento actualizado" : "Evento creado");
+      showCustomAlert(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito", "success");
       eventModal.hide();
       calendar.refetchEvents();
     } catch {
-      showMessage("Error al guardar evento", "danger");
+      showCustomAlert("❌ Error al guardar evento", "error");
     }
   });
 
   // === 🗑️ ELIMINAR EVENTO ===
   deleteEventBtn.addEventListener("click", async () => {
     if (!selectedEvent || !selectedEvent.id) {
-      showMessage("No hay evento seleccionado", "danger");
+      showCustomAlert("No hay evento seleccionado", "error");
       return;
     }
 
-    if (!confirm("¿Seguro que deseas eliminar este evento?")) return;
+    showConfirmAlert("¿Seguro que deseas eliminar este evento?", async () => {
+      try {
+        const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!data.success) throw new Error();
 
-    try {
-      const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!data.success) throw new Error();
-
-      showMessage("🗑️ Evento eliminado correctamente");
-      eventModal.hide();
-      calendar.refetchEvents();
-    } catch {
-      showMessage("Error al eliminar evento", "danger");
-    }
+        showCustomAlert("🗑️ Evento eliminado correctamente", "success");
+        eventModal.hide();
+        calendar.refetchEvents();
+      } catch {
+        showCustomAlert("Error al eliminar evento", "error");
+      }
+    });
   });
 
   // === 🔒 CERRAR SESIÓN ===
@@ -194,15 +238,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
       e.preventDefault();
-
-      // 🧹 Borrar cualquier tipo de sesión o usuario guardado
-      localStorage.removeItem("usuario");
-      sessionStorage.removeItem("usuario");
-      localStorage.clear();
-      sessionStorage.clear();
-
-      // 🔐 Redirigir al login
-      window.location.href = "/pages/auth/login/login.html";
+      showConfirmAlert("¿Deseas cerrar sesión?", () => {
+        localStorage.clear();
+        sessionStorage.clear();
+        showCustomAlert("👋 Sesión cerrada correctamente", "success");
+        setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 1200);
+      });
     });
   }
 });
