@@ -17,7 +17,7 @@ pool = global._pgPool;
 
 export default async function handler(req, res) {
   try {
-    // ✅ OBTENER TODOS LOS USUARIOS (GET)
+    // ✅ OBTENER TODOS LOS USUARIOS (GET) - NO DEVUELVE ID
     if (req.method === "GET") {
       const result = await pool.query(
         "SELECT name, email, role, created_at FROM users ORDER BY id ASC"
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: result.rows });
     }
 
-    // ✅ CREAR NUEVO USUARIO (POST)
+    // ✅ CREAR NUEVO USUARIO (POST) - NO DEVUELVE PASSWORD
     if (req.method === "POST") {
       const { name, email, password, role } = req.body;
       if (!name || !email || !password) {
@@ -39,14 +39,14 @@ export default async function handler(req, res) {
       const result = await pool.query(
         `INSERT INTO users (name, email, password, role)
          VALUES ($1, $2, $3, $4)
-         RETURNING id, name, email, role, created_at`,
+         RETURNING name, email, role, created_at`, // <-- ID y PASSWORD excluidos
         [name, email, hashedPassword, role || "user"]
       );
 
       return res.status(201).json({ success: true, data: result.rows[0] });
     }
 
-    // ✅ ACTUALIZAR USUARIO (PUT)
+    // ✅ ACTUALIZAR USUARIO (PUT) - NO DEVUELVE ID ni PASSWORD
     if (req.method === "PUT") {
       const { id, name, email, password, role } = req.body;
 
@@ -65,8 +65,8 @@ export default async function handler(req, res) {
             role = COALESCE($3, role),
             password = COALESCE($4, password)
         WHERE id = $5
-        RETURNING id, name, email, role, created_at
-      `;
+        RETURNING name, email, role, created_at 
+      `; // <-- ID y PASSWORD excluidos
 
       const result = await pool.query(query, [
         name || null,
@@ -75,6 +75,10 @@ export default async function handler(req, res) {
         hashedPassword,
         id,
       ]);
+
+      if (result.rowCount === 0) {
+         return res.status(404).json({ success: false, message: "Usuario no encontrado para actualizar" });
+      }
 
       return res.status(200).json({ success: true, data: result.rows[0] });
     }
@@ -88,7 +92,12 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Falta el ID del usuario" });
       }
 
-      await pool.query("DELETE FROM users WHERE id = $1", [id]);
+      const result = await pool.query("DELETE FROM users WHERE id = $1", [id]);
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ success: false, message: "Usuario no encontrado para eliminar" });
+      }
+
       return res
         .status(200)
         .json({ success: true, message: "Usuario eliminado correctamente" });
