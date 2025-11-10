@@ -1,71 +1,108 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
-
-  let alertContainer = document.querySelector(".alert-container");
-  if (!alertContainer) {
-    alertContainer = document.createElement("div");
-    alertContainer.classList.add("alert-container");
-    document.body.appendChild(alertContainer);
-  }
-
-  function showAlert(message, type = "success") {
-    const alert = document.createElement("div");
-    alert.className = `custom-alert ${type}`;
-    alert.textContent = message;
-    alertContainer.appendChild(alert);
-
-    setTimeout(() => alert.classList.add("visible"), 50);
-    setTimeout(() => {
-      alert.classList.remove("visible");
-      setTimeout(() => alert.remove(), 400);
-    }, 3000);
-  }
+  if (!form) return;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
+    // ✅ Cambiamos email → username
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+
+    if (!usernameInput || !passwordInput) {
+      console.error("❌ No se encontraron los campos del formulario.");
+      return;
+    }
+
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
 
     if (!username || !password) {
-      showAlert("Todos los campos son obligatorios.", "error");
+      showMessage("Por favor, completa todos los campos.", "error");
       return;
     }
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/loginUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // ✅ Enviamos username en lugar de email
         body: JSON.stringify({ username, password }),
       });
 
-      const result = await res.json();
-
-      if (res.status === 401) {
-        showAlert("Nombre de usuario o contraseña incorrectos.", "error");
+      const text = await res.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        console.error("Respuesta no JSON:", text);
+        showMessage("Error inesperado del servidor.", "error");
         return;
       }
 
       if (result.success) {
-        showAlert("Inicio de sesión exitoso.", "success");
+        const user = result.user;
 
-        // Guardamos el usuario en localStorage (nombre)
-        localStorage.setItem("user", JSON.stringify(result.user));
+        // Guardamos el usuario en sessionStorage
+        sessionStorage.setItem("usuario", JSON.stringify(user));
 
-        // Redirigir según el tipo de usuario
+        showMessage(`Bienvenido, ${user.name}!`, "success");
+
+        // Redirección según el rol
         setTimeout(() => {
-          if (result.user.role === "admin") {
-            window.location.href = "../../admin/admin.html";
+          if (user.role === "admin") {
+            window.location.href = "/pages/dashboard/admin/admin.html";
           } else {
-            window.location.href = "../../user/user.html";
+            window.location.href = "/index.html";
           }
-        }, 1200);
+        }, 1500);
       } else {
-        showAlert(result.message || "Error al iniciar sesión.", "error");
+        showMessage(result.message || "Credenciales incorrectas.", "error");
       }
-    } catch (err) {
-      console.error(err);
-      showAlert("Error al conectar con el servidor.", "error");
+    } catch (error) {
+      console.error("Error en login:", error);
+      showMessage("Error de conexión con el servidor.", "error");
     }
   });
 });
+
+// ✅ función para mostrar mensaje bonito en pantalla
+function showMessage(message, type = "info") {
+  let msgBox = document.getElementById("messageBox");
+  if (!msgBox) {
+    msgBox = document.createElement("div");
+    msgBox.id = "messageBox";
+    msgBox.style.position = "fixed";
+    msgBox.style.top = "20px";
+    msgBox.style.left = "50%";
+    msgBox.style.transform = "translateX(-50%)";
+    msgBox.style.padding = "15px 25px";
+    msgBox.style.borderRadius = "10px";
+    msgBox.style.fontWeight = "bold";
+    msgBox.style.zIndex = "9999";
+    msgBox.style.transition = "opacity 0.5s ease";
+    document.body.appendChild(msgBox);
+  }
+
+  msgBox.textContent = message;
+
+  switch (type) {
+    case "success":
+      msgBox.style.backgroundColor = "#28a745";
+      msgBox.style.color = "#fff";
+      break;
+    case "error":
+      msgBox.style.backgroundColor = "#dc3545";
+      msgBox.style.color = "#fff";
+      break;
+    default:
+      msgBox.style.backgroundColor = "#ffc107";
+      msgBox.style.color = "#000";
+  }
+
+  msgBox.style.opacity = "1";
+
+  setTimeout(() => {
+    msgBox.style.opacity = "0";
+  }, 2500);
+}
