@@ -95,6 +95,7 @@ main p {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -120,7 +121,8 @@ main p {
 
 /* Espacio entre el navbar y el contenido principal */
 .main-content {
-  padding-top: 100px; /* ajusta según la altura real del navbar */
+  padding-top: 100px;
+  /* ajusta según la altura real del navbar */
 }
 
 /* ==== Mensajes tipo "Bienvenido" ==== */
@@ -128,12 +130,13 @@ main p {
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: #22c55e; /* Verde tipo Tailwind */
+  background-color: #22c55e;
+  /* Verde tipo Tailwind */
   color: white;
   padding: 14px 22px;
   border-radius: 12px;
   font-weight: 600;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -149,10 +152,12 @@ main p {
 }
 
 .custom-alert.error {
-  background-color: #ef4444; /* Rojo para errores */
+  background-color: #ef4444;
+  /* Rojo para errores */
 }
 
 .custom-alert.warning {
-  background-color: #facc15; /* Amarillo */
+  background-color: #facc15;
+  /* Amarillo */
   color: #1f2937;
 }

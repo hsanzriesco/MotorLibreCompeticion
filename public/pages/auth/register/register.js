@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("registerForm");
 
-  // Contenedor para alertas
   let alertContainer = document.querySelector(".alert-container");
   if (!alertContainer) {
     alertContainer = document.createElement("div");
@@ -9,40 +8,33 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(alertContainer);
   }
 
-  // Mostrar alertas simples
   function showAlert(message, type = "success") {
     const alert = document.createElement("div");
     alert.className = `custom-alert ${type}`;
     alert.textContent = message;
     alertContainer.appendChild(alert);
 
-    setTimeout(() => alert.classList.add("show"), 50);
+    setTimeout(() => alert.classList.add("visible"), 50);
     setTimeout(() => {
-      alert.classList.remove("show");
-      setTimeout(() => alert.remove(), 300);
+      alert.classList.remove("visible");
+      setTimeout(() => alert.remove(), 400);
     }, 3000);
   }
 
-  // Validación de contraseña segura
   function validatePassword(password) {
     const lengthOK = password.length >= 8 && password.length <= 12;
     const upperCaseOK = /[A-Z]/.test(password);
     const numberOK = /[0-9]/.test(password);
     const symbolOK = /[^A-Za-z0-9]/.test(password);
 
-    if (!lengthOK)
-      return "La contraseña debe tener entre 8 y 12 caracteres.";
-    if (!upperCaseOK)
-      return "Debe contener al menos una letra mayúscula.";
-    if (!numberOK)
-      return "Debe incluir al menos un número.";
-    if (!symbolOK)
-      return "Debe incluir al menos un símbolo.";
+    if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
+    if (!upperCaseOK) return "Debe incluir al menos una letra mayúscula.";
+    if (!numberOK) return "Debe incluir al menos un número.";
+    if (!symbolOK) return "Debe incluir al menos un símbolo.";
 
     return null;
   }
 
-  // Enviar formulario
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -87,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
           window.location.href = "../login/login.html";
         }, 1500);
       } else {
-        showAlert(result.message, "error");
+        showAlert(result.message || "Error al crear usuario.", "error");
       }
     } catch (err) {
       console.error(err);
