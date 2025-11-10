@@ -11,11 +11,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body; // ✅ cambiamos email → username
 
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: "Faltan datos" });
+    }
+
+    // ✅ buscamos por nombre de usuario en lugar de email
     const { rows } = await pool.query(
-      "SELECT id, name, email, role, password FROM users WHERE email=$1 AND password=$2",
-      [email, password]
+      "SELECT id, name, email, role, password FROM users WHERE name = $1 AND password = $2",
+      [username, password]
     );
 
     if (rows.length === 0) {
@@ -24,13 +29,18 @@ export default async function handler(req, res) {
 
     const user = rows[0];
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Inicio de sesión correcto",
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error("Error en loginUser:", error);
-    res.status(500).json({ success: false, message: "Error interno del servidor" });
+    return res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 }
