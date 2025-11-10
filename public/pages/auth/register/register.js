@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("registerForm");
 
+  // Crear contenedor para alertas si no existe
   let alertContainer = document.querySelector(".alert-container");
   if (!alertContainer) {
     alertContainer = document.createElement("div");
@@ -8,31 +9,40 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(alertContainer);
   }
 
+  // Función para mostrar mensajes personalizados
   function showAlert(message, type = "success") {
     const alert = document.createElement("div");
     alert.className = `custom-alert ${type}`;
     alert.textContent = message;
     alertContainer.appendChild(alert);
 
+    // Mostrar con animación
     setTimeout(() => alert.classList.add("visible"), 50);
+
+    // Desaparecer luego de 3 segundos
     setTimeout(() => {
       alert.classList.remove("visible");
       setTimeout(() => alert.remove(), 400);
     }, 3000);
   }
 
+  // Función para validar la contraseña (tomada de 1.js)
   function validatePassword(password) {
     const lengthOK = password.length >= 8 && password.length <= 12;
     const upperCaseOK = /[A-Z]/.test(password);
     const numberOK = /[0-9]/.test(password);
     const symbolOK = /[^A-Za-z0-9]/.test(password);
 
-    if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
-    if (!upperCaseOK) return "Debe incluir al menos una letra mayúscula.";
-    if (!numberOK) return "Debe incluir al menos un número.";
-    if (!symbolOK) return "Debe incluir al menos un símbolo.";
+    if (!lengthOK)
+      return "La contraseña debe tener entre 8 y 12 caracteres.";
+    if (!upperCaseOK)
+      return "La contraseña debe contener al menos una letra mayúscula.";
+    if (!numberOK)
+      return "La contraseña debe incluir al menos un número.";
+    if (!symbolOK)
+      return "La contraseña debe incluir al menos un símbolo.";
 
-    return null;
+    return null; // Todo correcto
   }
 
   form.addEventListener("submit", async (e) => {
@@ -41,21 +51,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = document.getElementById("username").value.trim();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
-    const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-    if (!name || !email || !password || !confirmPassword) {
-      showAlert("Todos los campos son obligatorios.", "error");
+    // Verificación de campos vacíos (con el estilo de alerta de 2.js)
+    if (!name || !email || !password) {
+      showAlert("⚠️ Todos los campos son obligatorios.", "error");
       return;
     }
 
-    if (password !== confirmPassword) {
-      showAlert("Las contraseñas no coinciden.", "error");
-      return;
-    }
-
+    // Validar contraseña antes de enviar (tomado de 1.js)
     const passwordError = validatePassword(password);
     if (passwordError) {
-      showAlert(passwordError, "error");
+      // Usa el mensaje de error de validación de 1.js, prefiero agregarle el emoji de 2.js.
+      showAlert(`⚠️ ${passwordError}`, "error");
       return;
     }
 
@@ -69,21 +76,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await res.json();
 
       if (res.status === 409) {
-        showAlert("El nombre o correo ya están en uso.", "error");
+        // Usuario existente (con el estilo de alerta de 2.js)
+        showAlert("⚠️ El nombre o correo ya están en uso.", "error");
         return;
       }
 
       if (result.success) {
-        showAlert("Usuario creado con éxito.", "success");
+        // Éxito (con el estilo de alerta de 2.js)
+        showAlert("✅ Usuario creado con éxito", "success");
         setTimeout(() => {
           window.location.href = "../login/login.html";
         }, 1500);
       } else {
-        showAlert(result.message || "Error al crear usuario.", "error");
+        // Error del servidor (con el estilo de alerta de 2.js)
+        showAlert(`⚠️ ${result.message}`, "error");
       }
     } catch (err) {
       console.error(err);
-      showAlert("Error al conectar con el servidor.", "error");
+      // Error de conexión (con el estilo de alerta de 2.js)
+      showAlert("❌ Error al conectar con el servidor.", "error");
     }
   });
 });
