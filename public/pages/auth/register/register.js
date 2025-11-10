@@ -9,24 +9,21 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(alertContainer);
   }
 
-  // Función para mostrar mensajes personalizados
+  // Función para mostrar alertas personalizadas
   function showAlert(message, type = "success") {
     const alert = document.createElement("div");
     alert.className = `custom-alert ${type}`;
     alert.textContent = message;
     alertContainer.appendChild(alert);
 
-    // Mostrar con animación
-    setTimeout(() => alert.classList.add("visible"), 50);
-
-    // Desaparecer luego de 3 segundos
+    setTimeout(() => alert.classList.add("show"), 50);
     setTimeout(() => {
-      alert.classList.remove("visible");
-      setTimeout(() => alert.remove(), 400);
+      alert.classList.remove("show");
+      setTimeout(() => alert.remove(), 300);
     }, 3000);
   }
 
-  // Función para validar la contraseña (tomada de 1.js)
+  // Validar complejidad de la contraseña
   function validatePassword(password) {
     const lengthOK = password.length >= 8 && password.length <= 12;
     const upperCaseOK = /[A-Z]/.test(password);
@@ -36,36 +33,44 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!lengthOK)
       return "La contraseña debe tener entre 8 y 12 caracteres.";
     if (!upperCaseOK)
-      return "La contraseña debe contener al menos una letra mayúscula.";
+      return "Debe contener al menos una letra mayúscula.";
     if (!numberOK)
-      return "La contraseña debe incluir al menos un número.";
+      return "Debe incluir al menos un número.";
     if (!symbolOK)
-      return "La contraseña debe incluir al menos un símbolo.";
+      return "Debe incluir al menos un símbolo.";
 
-    return null; // Todo correcto
+    return null;
   }
 
+  // Enviar formulario
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const name = document.getElementById("username").value.trim();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-    // Verificación de campos vacíos (con el estilo de alerta de 2.js)
-    if (!name || !email || !password) {
+    // Verificar campos vacíos
+    if (!name || !email || !password || !confirmPassword) {
       showAlert("⚠️ Todos los campos son obligatorios.", "error");
       return;
     }
 
-    // Validar contraseña antes de enviar (tomado de 1.js)
+    // Confirmar contraseñas iguales
+    if (password !== confirmPassword) {
+      showAlert("⚠️ Las contraseñas no coinciden.", "error");
+      return;
+    }
+
+    // Validar complejidad
     const passwordError = validatePassword(password);
     if (passwordError) {
-      // Usa el mensaje de error de validación de 1.js, prefiero agregarle el emoji de 2.js.
       showAlert(`⚠️ ${passwordError}`, "error");
       return;
     }
 
+    // Enviar al servidor
     try {
       const res = await fetch("/api/createUser", {
         method: "POST",
@@ -76,24 +81,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await res.json();
 
       if (res.status === 409) {
-        // Usuario existente (con el estilo de alerta de 2.js)
         showAlert("⚠️ El nombre o correo ya están en uso.", "error");
         return;
       }
 
       if (result.success) {
-        // Éxito (con el estilo de alerta de 2.js)
         showAlert("✅ Usuario creado con éxito", "success");
         setTimeout(() => {
           window.location.href = "../login/login.html";
         }, 1500);
       } else {
-        // Error del servidor (con el estilo de alerta de 2.js)
         showAlert(`⚠️ ${result.message}`, "error");
       }
     } catch (err) {
       console.error(err);
-      // Error de conexión (con el estilo de alerta de 2.js)
       showAlert("❌ Error al conectar con el servidor.", "error");
     }
   });
