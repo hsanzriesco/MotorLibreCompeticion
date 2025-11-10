@@ -1,104 +1,71 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("loginForm");
-  if (!form) return;
+  const form = document.getElementById("loginForm");
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  let alertContainer = document.querySelector(".alert-container");
+  if (!alertContainer) {
+    alertContainer = document.createElement("div");
+    alertContainer.classList.add("alert-container");
+    document.body.appendChild(alertContainer);
+  }
 
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
+  function showAlert(message, type = "success") {
+    const alert = document.createElement("div");
+    alert.className = `custom-alert ${type}`;
+    alert.textContent = message;
+    alertContainer.appendChild(alert);
 
-    if (!emailInput || !passwordInput) {
-      console.error("❌ No se encontraron los campos del formulario.");
-      return;
-    }
+    setTimeout(() => alert.classList.add("visible"), 50);
+    setTimeout(() => {
+      alert.classList.remove("visible");
+      setTimeout(() => alert.remove(), 400);
+    }, 3000);
+  }
 
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    if (!email || !password) {
-      showMessage("⚠️ Por favor, completa todos los campos.", "error");
-      return;
-    }
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-    try {
-      const res = await fetch("/api/loginUser", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    if (!username || !password) {
+      showAlert("Todos los campos son obligatorios.", "error");
+      return;
+    }
 
-      const text = await res.text();
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        console.error("Respuesta no JSON:", text);
-        showMessage("❌ Error inesperado del servidor.", "error");
-        return;
-      }
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-      if (result.success) {
-        const user = result.user;
-        // ⭐ CAMBIO CLAVE: Usar sessionStorage
-        sessionStorage.setItem("usuario", JSON.stringify(user));
-        showMessage(`👋 Bienvenido, ${user.name}!`, "success");
+      const result = await res.json();
 
-        // Redirección según el rol
-        setTimeout(() => {
-          if (user.role === "admin") {
-            window.location.href = "/pages/dashboard/admin/admin.html";
-          } else {
-            window.location.href = "/index.html"; // usuario normal → index
-          }
-        }, 1500);
-      } else {
-        showMessage("❌ " + result.message, "error");
-      }
-    } catch (error) {
-      console.error("Error en login:", error);
-      showMessage("⚠️ Error de conexión con el servidor.", "error");
-    }
-  });
+      if (res.status === 401) {
+        showAlert("Nombre de usuario o contraseña incorrectos.", "error");
+        return;
+      }
+
+      if (result.success) {
+        showAlert("Inicio de sesión exitoso.", "success");
+
+        // Guardamos el usuario en localStorage (nombre)
+        localStorage.setItem("user", JSON.stringify(result.user));
+
+        // Redirigir según el tipo de usuario
+        setTimeout(() => {
+          if (result.user.role === "admin") {
+            window.location.href = "../../admin/admin.html";
+          } else {
+            window.location.href = "../../user/user.html";
+          }
+        }, 1200);
+      } else {
+        showAlert(result.message || "Error al iniciar sesión.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert("Error al conectar con el servidor.", "error");
+    }
+  });
 });
-
-// ✅ función para mostrar mensaje bonito en pantalla (sin cambios)
-function showMessage(message, type = "info") {
-  let msgBox = document.getElementById("messageBox");
-  if (!msgBox) {
-    msgBox = document.createElement("div");
-    msgBox.id = "messageBox";
-    msgBox.style.position = "fixed";
-    msgBox.style.top = "20px";
-    msgBox.style.left = "50%";
-    msgBox.style.transform = "translateX(-50%)";
-    msgBox.style.padding = "15px 25px";
-    msgBox.style.borderRadius = "10px";
-    msgBox.style.fontWeight = "bold";
-    msgBox.style.zIndex = "9999";
-    msgBox.style.transition = "opacity 0.5s ease";
-    document.body.appendChild(msgBox);
-  }
-
-  msgBox.textContent = message;
-
-  switch (type) {
-    case "success":
-      msgBox.style.backgroundColor = "#28a745";
-      msgBox.style.color = "#fff";
-      break;
-    case "error":
-      msgBox.style.backgroundColor = "#dc3545";
-      msgBox.style.color = "#fff";
-      break;
-    default:
-      msgBox.style.backgroundColor = "#ffc107";
-      msgBox.style.color = "#000";
-  }
-
-  msgBox.style.opacity = "1";
-
-  setTimeout(() => {
-    msgBox.style.opacity = "0";
-  }, 2500);
-}
