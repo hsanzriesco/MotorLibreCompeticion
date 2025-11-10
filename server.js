@@ -1,5 +1,3 @@
-// ⚙️ server.js (Modificado y Final)
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
