@@ -511,3 +511,130 @@ main p {
   box-shadow: 0 0 25px rgba(229, 9, 20, 0.25);
   border: 1px solid rgba(229, 9, 20, 0.3);
 }
+
+.custom-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #22c55e;
+  color: white;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(-15px);
+  transition: all 0.3s ease;
+}
+
+.custom-alert.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.custom-alert.error {
+  background-color: #ef4444;
+}
+
+/* ==== Estilos específicos del registro ==== */
+
+.register-section {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 120px; /* 👉 Evita que el navbar tape el formulario */
+  background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
+}
+
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 20px;
+}
+
+.form-box {
+  background: rgba(20, 20, 20, 0.9);
+  border: 2px solid #e50914;
+  border-radius: 15px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 0 25px rgba(229, 9, 20, 0.3);
+  animation: fadeIn 1s ease;
+}
+
+.form-box h2 {
+  color: #e50914;
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 25px;
+}
+
+.form-box label {
+  display: block;
+  color: #ccc;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.form-box input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background-color: #1a1a1a;
+  color: #f5f5f5;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-box input:focus {
+  border-color: #e50914;
+  outline: none;
+  box-shadow: 0 0 8px rgba(229, 9, 20, 0.4);
+}
+
+.form-box button {
+  background-color: #e50914;
+  color: white;
+  font-weight: 600;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.form-box button:hover {
+  background-color: #ff0a1e;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
+}
+
+.switch-link {
+  text-align: center;
+  margin-top: 10px;
+  color: #ccc;
+}
+
+.switch-link a {
+  color: #e50914;
+  text-decoration: none;
+}
+
+.switch-link a:hover {
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
