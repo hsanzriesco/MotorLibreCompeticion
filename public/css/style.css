@@ -1,43 +1,83 @@
-/* ====== Motor Libre Competición - Estilo Global ====== */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
+/* === style.css === */
+/* 🎨 Tema global */
+:root {
+  --rojo: #e50914;
+  --rojo-claro: #ff1a1a;
+  --negro: #0b0b0b;
+  --gris-oscuro: #1a1a1a;
+  --gris: #2a2a2a;
+  --blanco: #f1f1f1;
+}
 
 body {
-  font-family: 'Orbitron', sans-serif;
-  background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
-  color: #f5f5f5;
+  background-color: var(--negro);
+  color: var(--blanco);
+  font-family: "Poppins", sans-serif;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
 }
 
-/* Colores base */
-:root {
-  --rojo: #e50914;
-  --negro: #0a0a0a;
-  --gris: #1b1b1b;
-  --blanco: #f5f5f5;
+/* Links */
+a {
+  color: var(--rojo);
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+a:hover {
+  color: var(--rojo-claro);
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-thumb {
+/* Botones */
+.btn-danger {
   background-color: var(--rojo);
-  border-radius: 10px;
+  border: none;
+  transition: all 0.3s ease;
 }
-::-webkit-scrollbar-track {
-  background: #111;
+
+.btn-danger:hover {
+  background-color: var(--rojo-claro);
+}
+
+/* Formularios */
+.form-control,
+.form-select {
+  background-color: var(--gris);
+  color: var(--blanco);
+  border: 1px solid #333;
+}
+
+.form-control:focus {
+  border-color: var(--rojo);
+  box-shadow: 0 0 5px rgba(229, 9, 20, 0.6);
+}
+
+/* Secciones */
+section {
+  background: rgba(15, 15, 15, 0.95);
+  border: 1px solid rgba(229, 9, 20, 0.3);
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 1200px;
+  box-shadow: 0 0 25px rgba(229, 9, 20, 0.2);
+}
+
+/* Títulos */
+h1, h2, h3, h4 {
+  color: var(--rojo);
+  font-weight: 600;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+  section {
+    margin: 1rem;
+    padding: 1.2rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
 }
