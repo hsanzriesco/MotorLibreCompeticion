@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  // === VERIFICAR SESIÓN ===
+  // === 🚫 VERIFICAR SESIÓN ===
   const usuario =
     JSON.parse(localStorage.getItem("usuario")) ||
     JSON.parse(sessionStorage.getItem("usuario"));
   if (!usuario || usuario.role !== "admin") {
-    showAlert("❌ Acceso denegado. Inicia sesión como administrador.", "danger");
+    showCustomAlert("❌ Acceso denegado. Inicia sesión como administrador.", "error");
     setTimeout(() => {
       window.location.href = "/pages/auth/login/login.html";
     }, 1500);
@@ -33,43 +33,60 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let selectedEvent = null;
 
-  // === ALERTA SIMPLE Y BONITA ===
-  function showAlert(message, type = "success") {
-    const alert = document.createElement("div");
-    alert.className = `simple-alert ${type}`;
-    alert.textContent = message;
-    document.body.appendChild(alert);
+  // === 🌈 FUNCIÓN GLOBAL DE ALERTAS PERSONALIZADAS ===
+  function showCustomAlert(message, type = "success") {
+    const alertBox = document.createElement("div");
+    alertBox.className = `custom-alert ${type}`;
+    alertBox.innerHTML = `
+      <div class="alert-content">
+        ${
+          type === "success"
+            ? '<i class="bi bi-check-circle-fill"></i>'
+            : type === "error"
+            ? '<i class="bi bi-x-circle-fill"></i>'
+            : '<i class="bi bi-exclamation-triangle-fill"></i>'
+        }
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(alertBox);
 
-    setTimeout(() => alert.classList.add("show"), 50);
     setTimeout(() => {
-      alert.classList.remove("show");
-      setTimeout(() => alert.remove(), 300);
-    }, 3000);
+      alertBox.classList.add("show");
+    }, 50);
+
+    setTimeout(() => {
+      alertBox.classList.remove("show");
+      setTimeout(() => alertBox.remove(), 300);
+    }, 3500);
   }
 
-  // === CONFIRMACIÓN SIMPLE ===
-  function showConfirm(message, onConfirm) {
+  // === ⚠️ ALERTA DE CONFIRMACIÓN PERSONALIZADA ===
+  function showConfirmAlert(message, onConfirm) {
     const confirmBox = document.createElement("div");
-    confirmBox.className = "confirm-overlay";
+    confirmBox.className = "custom-confirm";
     confirmBox.innerHTML = `
-      <div class="confirm-box">
+      <div class="confirm-content">
         <p>${message}</p>
-        <div class="d-flex justify-content-center gap-2 mt-3">
-          <button class="btn btn-danger btn-sm" id="yesBtn">Sí</button>
-          <button class="btn btn-secondary btn-sm" id="noBtn">No</button>
+        <div class="buttons">
+          <button id="confirmYes" class="btn btn-danger">Sí</button>
+          <button id="confirmNo" class="btn btn-secondary">No</button>
         </div>
       </div>
     `;
     document.body.appendChild(confirmBox);
 
-    confirmBox.querySelector("#noBtn").addEventListener("click", () => confirmBox.remove());
-    confirmBox.querySelector("#yesBtn").addEventListener("click", () => {
+    document.getElementById("confirmNo").addEventListener("click", () => {
+      confirmBox.remove();
+    });
+
+    document.getElementById("confirmYes").addEventListener("click", () => {
       confirmBox.remove();
       onConfirm();
     });
   }
 
-  // === CARGAR EVENTOS ===
+  // === 🔁 CARGAR EVENTOS ===
   async function fetchEvents() {
     try {
       const res = await fetch("/api/events");
@@ -88,7 +105,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       }));
     } catch {
-      showAlert("Error al cargar los eventos", "danger");
+      showCustomAlert("Error al cargar los eventos", "error");
       return [];
     }
   }
@@ -102,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // === CALENDARIO ===
+  // === 🗓️ CALENDARIO ===
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     selectable: true,
@@ -151,7 +168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   calendar.render();
 
-  // === GUARDAR / ACTUALIZAR EVENTO ===
+  // === 💾 GUARDAR / ACTUALIZAR EVENTO ===
   saveEventBtn.addEventListener("click", async () => {
     const id = eventIdInput.value;
     const title = titleInput.value.trim();
@@ -162,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const endTime = endTimeInput.value;
 
     if (!title || !date || !startTime || !endTime) {
-      showAlert("Por favor completa todos los campos obligatorios", "danger");
+      showCustomAlert("Por favor completa todos los campos obligatorios", "error");
       return;
     }
 
@@ -186,32 +203,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       const data = await res.json();
       if (!data.success) throw new Error();
 
-      showAlert(id ? "Evento actualizado correctamente" : "Evento creado con éxito");
+      showCustomAlert(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito", "success");
       eventModal.hide();
       calendar.refetchEvents();
     } catch {
-      showAlert("Error al guardar evento", "danger");
+      showCustomAlert("❌ Error al guardar evento", "error");
     }
   });
 
-  // === ELIMINAR EVENTO ===
+  // === 🗑️ ELIMINAR EVENTO ===
   deleteEventBtn.addEventListener("click", async () => {
     if (!selectedEvent || !selectedEvent.id) {
-      showAlert("No hay evento seleccionado", "danger");
+      showCustomAlert("No hay evento seleccionado", "error");
       return;
     }
 
-    showConfirm("¿Seguro que deseas eliminar este evento?", async () => {
+    showConfirmAlert("¿Seguro que deseas eliminar este evento?", async () => {
       try {
         const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
         const data = await res.json();
         if (!data.success) throw new Error();
 
-        showAlert("Evento eliminado correctamente");
+        showCustomAlert("🗑️ Evento eliminado correctamente", "success");
         eventModal.hide();
         calendar.refetchEvents();
       } catch {
-        showAlert("Error al eliminar evento", "danger");
+        showCustomAlert("Error al eliminar evento", "error");
       }
     });
   });
@@ -221,10 +238,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      showConfirm("¿Deseas cerrar sesión?", () => {
+      showConfirmAlert("¿Deseas cerrar sesión?", () => {
         localStorage.clear();
         sessionStorage.clear();
-        showAlert("Sesión cerrada correctamente");
+        showCustomAlert("👋 Sesión cerrada correctamente", "success");
         setTimeout(() => (window.location.href = "/pages/auth/login/login.html"), 1200);
       });
     });
