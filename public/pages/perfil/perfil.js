@@ -1,7 +1,14 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const user = JSON.parse(sessionStorage.getItem("usuario"));
+
+  // ===========================
+  // CONTROL DE ACCESO
+  // ===========================
   if (!user) {
-    window.location.href = "../../../index.html";
+    showAlert("⚠️ Debes iniciar sesión para acceder a tu perfil.", "error");
+    setTimeout(() => {
+      window.location.href = "../../../pages/auth/login/login.html";
+    }, 2000);
     return;
   }
 
@@ -18,10 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       e.preventDefault();
 
       const newName = document.getElementById("newUsername").value.trim();
-      if (!newName) {
-        showAlert("Introduce un nombre válido", "error");
-        return;
-      }
+      if (!newName) return showAlert("Introduce un nombre válido", "error");
 
       try {
         const res = await fetch("/api/userActions/updateName", {
@@ -57,15 +61,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const newPassword = document.getElementById("newPassword").value.trim();
       const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-      if (!newPassword || !confirmPassword) {
-        showAlert("Completa todos los campos", "error");
-        return;
-      }
+      if (!newPassword || !confirmPassword)
+        return showAlert("Completa todos los campos", "error");
 
-      if (newPassword !== confirmPassword) {
-        showAlert("Las contraseñas no coinciden", "error");
-        return;
-      }
+      if (newPassword !== confirmPassword)
+        return showAlert("Las contraseñas no coinciden", "error");
 
       try {
         const res = await fetch("/api/userActions/updatePassword", {
@@ -99,10 +99,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const carName = document.getElementById("carName").value.trim();
       const carImage = document.getElementById("carImage").files[0];
 
-      if (!carName) {
-        showAlert("Introduce el nombre del coche", "error");
-        return;
-      }
+      if (!carName) return showAlert("Introduce el nombre del coche", "error");
 
       const formData = new FormData();
       formData.append("userId", user.id);
@@ -165,18 +162,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadCars();
 
   // ===========================
-  // ALERTAS BONITAS
+  // ALERTAS BONITAS UNIFICADAS
   // ===========================
   function showAlert(message, type = "info") {
     const alert = document.createElement("div");
     alert.className = `custom-alert ${type}`;
     alert.textContent = message;
-    document.body.appendChild(alert);
 
-    setTimeout(() => alert.classList.add("show"), 50);
+    Object.assign(alert.style, {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      padding: "16px 28px",
+      borderRadius: "10px",
+      fontWeight: "600",
+      zIndex: "9999",
+      opacity: "0",
+      transition: "opacity 0.4s ease, transform 0.4s ease",
+      backgroundColor:
+        type === "success"
+          ? "#28a745"
+          : type === "error"
+          ? "#dc3545"
+          : "#ffc107",
+      color: "#fff",
+      textAlign: "center",
+      boxShadow: "0 0 25px rgba(0,0,0,0.3)",
+    });
+
+    document.body.appendChild(alert);
+    setTimeout(() => (alert.style.opacity = "1"), 100);
+
     setTimeout(() => {
-      alert.classList.remove("show");
-      setTimeout(() => alert.remove(), 300);
-    }, 3000);
+      alert.style.opacity = "0";
+      setTimeout(() => alert.remove(), 500);
+    }, 2500);
   }
 });
