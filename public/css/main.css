@@ -1,94 +1,114 @@
-/* === main.css === */
-
-h1, h2, h3 {
-  color: var(--rojo);
-  text-shadow: 0 0 10px var(--rojo);
-}
-
-/* === Formularios === */
-.form-container {
-  background: #111;
-  padding: 40px 35px;
-  border-radius: 15px;
-  border: 1px solid var(--rojo);
-  box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
-  width: 90%;
-  max-width: 420px;
-  margin: 130px auto;
+/* ====== MAIN CONTENT Y FORMULARIOS ====== */
+main {
+  margin-top: 8vh;
   text-align: center;
+  animation: fadeIn 1.2s ease;
 }
 
-.form-container h2 {
-  margin-bottom: 25px;
+/* ====== Formularios ====== */
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 100px);
+  padding: 1rem;
+}
+
+.form-box {
+  background: rgba(10, 10, 10, 0.95);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
+  width: 380px;
+  text-align: center;
+  border: 1px solid rgba(229, 9, 20, 0.4);
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.form-box h2 {
   color: var(--rojo);
-  text-shadow: 0 0 10px var(--rojo);
+  margin-bottom: 1.8rem;
+  font-weight: 800;
+  text-shadow: 0 0 15px rgba(229, 9, 20, 0.9);
+  font-size: 1.8rem;
 }
 
-.form-container label {
+.form-box label {
   display: block;
   text-align: left;
-  margin-bottom: 8px;
-  color: #ccc;
-  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  color: #fff;
+  font-weight: 600;
 }
 
-.form-container input {
+.form-box input {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 18px;
-  border: none;
-  border-radius: 8px;
-  background: var(--gris);
-  color: var(--blanco);
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background-color: #1b1b1b;
+  color: white;
+  font-size: 0.95rem;
   outline: none;
   transition: 0.3s;
 }
 
-.form-container input:focus {
-  border: 1px solid var(--rojo);
+.form-box input:focus {
+  border-color: var(--rojo);
   box-shadow: 0 0 10px var(--rojo);
 }
 
-.form-container button {
-  width: 100%;
-  background: var(--rojo);
+.form-box button {
+  background-color: var(--rojo);
+  color: white;
+  font-weight: 700;
   border: none;
-  padding: 12px;
-  color: var(--blanco);
-  font-weight: bold;
+  padding: 0.9rem;
+  border-radius: 10px;
+  width: 100%;
+  cursor: pointer;
   font-size: 1rem;
-  border-radius: 8px;
-  transition: 0.3s;
+  transition: all 0.3s;
 }
 
-.form-container button:hover {
-  background: #e00000;
+.form-box button:hover {
+  background-color: #ff1a1a;
+  transform: scale(1.05);
   box-shadow: 0 0 15px var(--rojo);
 }
 
-.form-container p {
-  color: #aaa;
-  margin-top: 15px;
-  font-size: 0.9rem;
+.switch-link {
+  margin-top: 1.2rem;
+  color: #ccc;
+  font-size: 0.95rem;
 }
 
-.form-container a {
+.switch-link a {
   color: var(--rojo);
-  font-weight: bold;
+  text-decoration: none;
+  font-weight: 600;
 }
 
-/* === Responsive === */
-@media (max-width: 600px) {
-  .form-container {
-    margin-top: 100px;
-    padding: 25px 20px;
+.switch-link a:hover {
+  text-decoration: underline;
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 768px) {
+  .form-box {
+    width: 90%;
+    padding: 2rem 1.5rem;
+    border-radius: 18px;
+    box-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
   }
 
-  .form-container h2 {
-    font-size: 1.5rem;
+  .form-box h2 {
+    font-size: 1.6rem;
   }
 
-  .form-container input {
-    padding: 10px;
+  .form-box input,
+  .form-box button {
+    font-size: 0.95rem;
   }
 }
