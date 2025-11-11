@@ -1,111 +1,94 @@
 /* === main.css === */
-/* Fuente principal racing */
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap");
 
-/* ======= RESET ======= */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Orbitron", sans-serif;
-}
-
-body {
-  background: radial-gradient(circle at center, #111 0%, #000 100%);
-  color: #fff;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* ======= TITULOS ======= */
 h1, h2, h3 {
-  color: #ff0000;
-  text-shadow: 0 0 10px #ff0000;
-  letter-spacing: 1px;
+  color: var(--rojo);
+  text-shadow: 0 0 10px var(--rojo);
 }
 
-/* ======= FORMULARIOS ======= */
+/* === Formularios === */
 .form-container {
   background: #111;
-  padding: 40px 30px;
-  border: 1px solid #ff0000;
+  padding: 40px 35px;
   border-radius: 15px;
+  border: 1px solid var(--rojo);
   box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
   width: 90%;
   max-width: 420px;
-  margin-top: 120px;
+  margin: 130px auto;
   text-align: center;
 }
 
 .form-container h2 {
   margin-bottom: 25px;
-  font-size: 1.8rem;
-  color: #ff0000;
+  color: var(--rojo);
+  text-shadow: 0 0 10px var(--rojo);
+}
+
+.form-container label {
+  display: block;
+  text-align: left;
+  margin-bottom: 8px;
+  color: #ccc;
+  font-size: 0.9rem;
 }
 
 .form-container input {
   width: 100%;
   padding: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   border: none;
   border-radius: 8px;
-  background: #222;
-  color: #fff;
-  font-size: 1rem;
+  background: var(--gris);
+  color: var(--blanco);
   outline: none;
   transition: 0.3s;
 }
 
 .form-container input:focus {
-  border: 1px solid #ff0000;
-  box-shadow: 0 0 10px #ff0000;
+  border: 1px solid var(--rojo);
+  box-shadow: 0 0 10px var(--rojo);
 }
 
 .form-container button {
   width: 100%;
-  background: #ff0000;
+  background: var(--rojo);
   border: none;
   padding: 12px;
-  font-weight: 700;
-  color: #fff;
+  color: var(--blanco);
+  font-weight: bold;
+  font-size: 1rem;
   border-radius: 8px;
-  cursor: pointer;
   transition: 0.3s;
-  letter-spacing: 1px;
 }
 
 .form-container button:hover {
   background: #e00000;
-  box-shadow: 0 0 15px #ff0000;
+  box-shadow: 0 0 15px var(--rojo);
 }
 
-/* ======= LINKS ======= */
 .form-container p {
-  color: #bbb;
+  color: #aaa;
   margin-top: 15px;
   font-size: 0.9rem;
 }
 
 .form-container a {
-  color: #ff0000;
-  text-decoration: none;
+  color: var(--rojo);
   font-weight: bold;
 }
 
-.form-container a:hover {
-  text-shadow: 0 0 8px #ff0000;
-}
-
-/* ======= RESPONSIVE ======= */
+/* === Responsive === */
 @media (max-width: 600px) {
   .form-container {
-    width: 95%;
-    padding: 25px;
+    margin-top: 100px;
+    padding: 25px 20px;
   }
 
   .form-container h2 {
     font-size: 1.5rem;
+  }
+
+  .form-container input {
+    padding: 10px;
   }
 }

@@ -1,0 +1,55 @@
+/* === style.css === */
+/* Fuente racing */
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap");
+
+/* === Reset === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Orbitron", sans-serif;
+}
+
+body {
+  background: radial-gradient(circle at center, #0d0d0d 0%, #000 100%);
+  color: #fff;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* === Contenedor central === */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* === Colores base === */
+:root {
+  --rojo: #ff0000;
+  --negro: #0d0d0d;
+  --gris: #222;
+  --blanco: #ffffff;
+}
+
+/* === Scrollbar personalizada === */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--rojo);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #111;
+}
