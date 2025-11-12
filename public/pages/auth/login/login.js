@@ -64,12 +64,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function showMessage(message, type = "info") {
   let msgBox = document.getElementById("customAlertBox");
+  const container = document.getElementById("alertContainer");
+
+  if (!container) {
+    console.error("Contenedor de alerta (#alertContainer) no encontrado.");
+    return;
+  }
 
   if (!msgBox) {
     msgBox = document.createElement("div");
     msgBox.id = "customAlertBox";
     msgBox.classList.add("custom-alert");
-    document.body.appendChild(msgBox);
+    container.appendChild(msgBox);
   }
 
   msgBox.classList.remove("show");

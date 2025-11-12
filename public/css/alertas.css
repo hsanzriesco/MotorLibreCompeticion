@@ -1,36 +1,36 @@
 /* Estilos globales para alertas */
 .custom-alert {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
   background: #111;
   color: #fff;
   border: 1px solid #e50914;
   border-radius: 10px;
-  padding: 20px 30px;
-  box-shadow: 0 0 30px rgba(229, 9, 20, 0.5);
-  font-size: 1rem;
+  padding: 8px 15px;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+  font-size: 0.9rem;
   text-align: center;
   opacity: 0;
   z-index: 4000;
   transition: all 0.3s ease;
-  min-width: 300px;
-  max-width: 90%;
+  display: inline-block;
 }
+
 .custom-alert.show {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  transform: scale(1);
 }
+
 .custom-alert.success {
   border-color: #00c851;
 }
+
 .custom-alert.error {
   border-color: #ff4444;
 }
+
 .custom-alert.warning {
   border-color: #ffbb33;
 }
+
 .custom-alert.info {
   border-color: #33b5e5;
 }
@@ -86,13 +86,16 @@
   background: #e50914;
   color: #fff;
 }
+
 .modal-btn-yes:hover {
   background: #ff1a1a;
 }
+
 .modal-btn-no {
   background: #444;
   color: #ddd;
 }
+
 .modal-btn-no:hover {
   background: #555;
 }
