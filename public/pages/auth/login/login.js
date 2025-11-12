@@ -5,12 +5,11 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // ✅ Cambiamos email → username
     const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
 
     if (!usernameInput || !passwordInput) {
-      console.error("❌ No se encontraron los campos del formulario.");
+      console.error("No se encontraron los campos del formulario.");
       return;
     }
 
@@ -18,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = passwordInput.value.trim();
 
     if (!username || !password) {
-      showMessage("Por favor, completa todos los campos.", "error");
+      showAlert("Por favor, completa todos los campos.", "error");
       return;
     }
 
@@ -26,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/loginUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // ✅ Enviamos username en lugar de email
         body: JSON.stringify({ username, password }),
       });
 
@@ -36,19 +34,16 @@ document.addEventListener("DOMContentLoaded", () => {
         result = JSON.parse(text);
       } catch {
         console.error("Respuesta no JSON:", text);
-        showMessage("Error inesperado del servidor.", "error");
+        showAlert("Error inesperado del servidor.", "error");
         return;
       }
 
       if (result.success) {
         const user = result.user;
-
-        // Guardamos el usuario en sessionStorage
         sessionStorage.setItem("usuario", JSON.stringify(user));
 
-        showMessage(`Bienvenido, ${user.name}!`, "success");
+        showAlert(`Bienvenido, ${user.name}!`, "success");
 
-        // Redirección según el rol
         setTimeout(() => {
           if (user.role === "admin") {
             window.location.href = "/pages/dashboard/admin/admin.html";
@@ -57,11 +52,11 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }, 1500);
       } else {
-        showMessage(result.message || "Credenciales incorrectas.", "error");
+        showAlert(result.message || "Credenciales incorrectas.", "error");
       }
     } catch (error) {
       console.error("Error en login:", error);
-      showMessage("Error de conexión con el servidor.", "error");
+      showAlert("Error de conexión con el servidor.", "error");
     }
   });
 });
