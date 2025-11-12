@@ -1,83 +1,48 @@
-/* === style.css === */
-/* 🎨 Tema global */
-:root {
-  --rojo: #e50914;
-  --rojo-claro: #ff1a1a;
-  --negro: #0b0b0b;
-  --gris-oscuro: #1a1a1a;
-  --gris: #2a2a2a;
-  --blanco: #f1f1f1;
+/* ======== NAVBAR.CSS ======== */
+
+.navbar {
+  background-color: #000 !important;
+  border-bottom: 2px solid #dc3545 !important;
 }
 
-body {
-  background-color: var(--negro);
-  color: var(--blanco);
-  font-family: "Poppins", sans-serif;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
+.navbar-brand img {
+  height: 70px;
 }
 
-/* Links */
-a {
-  color: var(--rojo);
-  text-decoration: none;
-  transition: color 0.3s ease;
+.navbar .btn {
+  border: 1px solid #555;
+  color: white;
 }
 
-a:hover {
-  color: var(--rojo-claro);
+.navbar .btn:hover {
+  background-color: #dc3545;
+  color: white;
 }
 
-/* Botones */
-.btn-danger {
-  background-color: var(--rojo);
-  border: none;
-  transition: all 0.3s ease;
+/* Offcanvas */
+.offcanvas {
+  background-color: #111;
+  color: white;
 }
 
-.btn-danger:hover {
-  background-color: var(--rojo-claro);
+.offcanvas .offcanvas-header {
+  border-bottom: 1px solid #333;
 }
 
-/* Formularios */
-.form-control,
-.form-select {
-  background-color: var(--gris);
-  color: var(--blanco);
-  border: 1px solid #333;
+.offcanvas a {
+  color: white;
+  font-weight: 500;
 }
 
-.form-control:focus {
-  border-color: var(--rojo);
-  box-shadow: 0 0 5px rgba(229, 9, 20, 0.6);
+.offcanvas a:hover {
+  color: #dc3545;
 }
 
-/* Secciones */
-section {
-  background: rgba(15, 15, 15, 0.95);
-  border: 1px solid rgba(229, 9, 20, 0.3);
-  border-radius: 15px;
-  padding: 2rem;
-  margin: 2rem auto;
-  max-width: 1200px;
-  box-shadow: 0 0 25px rgba(229, 9, 20, 0.2);
+/* Login icon */
+#login-icon {
+  color: white;
 }
 
-/* Títulos */
-h1, h2, h3, h4 {
-  color: var(--rojo);
-  font-weight: 600;
-}
-
-/* Responsividad */
-@media (max-width: 768px) {
-  section {
-    margin: 1rem;
-    padding: 1.2rem;
-  }
-
-  h1 {
-    font-size: 1.6rem;
-  }
+#login-icon:hover {
+  color: #dc3545;
 }
