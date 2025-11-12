@@ -1,12 +1,9 @@
-// ✅ /api/userList.js — versión corregida para Vercel (ESM compatible)
 import pkg from "pg";
 import bcrypt from "bcryptjs";
 
 const { Pool } = pkg;
-
 let pool;
 
-// ✅ Reutilizamos el pool si ya existe (evita errores en Vercel)
 if (!global._pgPool) {
   global._pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -17,7 +14,6 @@ pool = global._pgPool;
 
 export default async function handler(req, res) {
   try {
-    // ✅ OBTENER TODOS LOS USUARIOS (GET) — AHORA INCLUYE ID
     if (req.method === "GET") {
       const result = await pool.query(
         "SELECT id, name, email, role, created_at FROM users ORDER BY id ASC"
@@ -25,7 +21,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: result.rows });
     }
 
-    // ✅ CREAR NUEVO USUARIO (POST)
     if (req.method === "POST") {
       const { name, email, password, role } = req.body;
       if (!name || !email || !password) {
@@ -35,7 +30,6 @@ export default async function handler(req, res) {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-
       const result = await pool.query(
         `INSERT INTO users (name, email, password, role)
          VALUES ($1, $2, $3, $4)
@@ -46,10 +40,8 @@ export default async function handler(req, res) {
       return res.status(201).json({ success: true, data: result.rows[0] });
     }
 
-    // ✅ ACTUALIZAR USUARIO (PUT)
     if (req.method === "PUT") {
       const { id, name, email, password, role } = req.body;
-
       if (!id) {
         return res
           .status(400)
@@ -57,7 +49,6 @@ export default async function handler(req, res) {
       }
 
       const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
-
       const query = `
         UPDATE users
         SET name = COALESCE($1, name),
@@ -85,7 +76,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: result.rows[0] });
     }
 
-    // ✅ ELIMINAR USUARIO
     if (req.method === "DELETE") {
       const { id } = req.query;
       if (!id) {
@@ -95,7 +85,6 @@ export default async function handler(req, res) {
       }
 
       const result = await pool.query("DELETE FROM users WHERE id = $1", [id]);
-
       if (result.rowCount === 0) {
         return res
           .status(404)
@@ -107,18 +96,15 @@ export default async function handler(req, res) {
         .json({ success: true, message: "Usuario eliminado correctamente" });
     }
 
-    // ❌ MÉTODO NO PERMITIDO
     res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
     return res
       .status(405)
       .json({ success: false, message: `Método ${req.method} no permitido` });
   } catch (error) {
-    console.error("❌ ERROR CRÍTICO EN /api/userList:", error);
-
     return res.status(500).json({
       success: false,
       message: "Error interno del servidor o de conexión a la base de datos.",
-      error: error.message || "Error desconocido. Revisa logs de Vercel.",
+      error: error.message || "Error desconocido.",
     });
   }
 }
