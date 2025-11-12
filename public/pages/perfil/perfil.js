@@ -1,11 +1,16 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const user = JSON.parse(sessionStorage.getItem("usuario"));
+
+  // ===========================
+  // CONTROL DE ACCESO
+  // ===========================
   if (!user) {
-    sessionStorage.setItem("alerta", "Debes iniciar sesión para acceder a tu perfil.");
-    window.location.href = "../../../index.html";
+    showAlert("⚠️ Debes iniciar sesión para acceder a tu perfil.", "error");
+    setTimeout(() => {
+      window.location.href = "../../../pages/auth/login/login.html";
+    }, 2000);
     return;
   }
-
 
   // Mostrar nombre actual del usuario
   const usernameDisplay = document.getElementById("usernameDisplay");
