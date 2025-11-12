@@ -1,15 +1,16 @@
-// Mostrar alerta superior centrada (sin animaciones)
-function showAlert(message, type = "info", duration = 3000) {
+// Mostrar alerta superior centrada estilo "Bienvenido"
+function showAlert(message, type = "info") {
   const alert = document.createElement("div");
   alert.className = `custom-alert ${type}`;
   alert.textContent = message;
   document.body.appendChild(alert);
 
-  // Eliminar automáticamente después del tiempo indicado
-  setTimeout(() => alert.remove(), duration);
+  setTimeout(() => {
+    alert.remove();
+  }, 3000);
 }
 
-// Mostrar confirmación (centrada en el medio de la página)
+// Mostrar confirmación centrada en pantalla
 function showConfirm(message, onConfirm) {
   const modal = document.createElement("div");
   modal.classList.add("modal-confirm");
@@ -27,12 +28,9 @@ function showConfirm(message, onConfirm) {
   document.body.appendChild(modal);
 
   modal.querySelector(".modal-btn-yes").onclick = () => {
-    onConfirm?.(true);
+    onConfirm?.();
     modal.remove();
   };
 
-  modal.querySelector(".modal-btn-no").onclick = () => {
-    onConfirm?.(false);
-    modal.remove();
-  };
+  modal.querySelector(".modal-btn-no").onclick = () => modal.remove();
 }
