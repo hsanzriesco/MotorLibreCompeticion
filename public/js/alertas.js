@@ -1,18 +1,15 @@
-// Mostrar alerta superior (bajo el navbar)
+// Mostrar alerta superior centrada
 function showAlert(message, type = "info", duration = 3000) {
   const alert = document.createElement("div");
   alert.className = `custom-alert ${type}`;
   alert.textContent = message;
   document.body.appendChild(alert);
 
-  setTimeout(() => alert.classList.add("show"), 10);
-  setTimeout(() => {
-    alert.classList.remove("show");
-    setTimeout(() => alert.remove(), 300);
-  }, duration);
+  // Eliminar automáticamente tras un tiempo
+  setTimeout(() => alert.remove(), duration);
 }
 
-// Mostrar confirmación centrada en pantalla
+// Mostrar confirmación centrada (sin animación)
 function showConfirm(message, onConfirm) {
   const modal = document.createElement("div");
   modal.classList.add("modal-confirm");

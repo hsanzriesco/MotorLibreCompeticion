@@ -1,33 +1,26 @@
-/* === ALERTAS GLOBALES === */
+/* === ALERTAS SIMPLES, CENTRADAS Y ESTÁTICAS === */
 
 .custom-alert {
   position: fixed;
-  top: 80px;
+  top: 70px;
   /* justo debajo del navbar */
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(25, 25, 25, 0.95);
+  background: #1a1a1a;
   color: #fff;
-  border-radius: 12px;
-  padding: 14px 24px;
+  border-radius: 10px;
+  padding: 12px 24px;
   font-size: 15px;
   font-weight: 500;
   border: 1px solid #e50914;
-  box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.3);
   z-index: 5000;
-  opacity: 0;
-  transition: all 0.4s ease;
   text-align: center;
-  min-width: 250px;
+  white-space: normal;
   max-width: 80%;
-  word-wrap: break-word;
 }
 
-.custom-alert.show {
-  opacity: 1;
-}
-
-/* Colores */
+/* Colores según tipo */
 .custom-alert.success {
   border-color: #00c851;
 }
@@ -44,7 +37,7 @@
   border-color: #ffbb33;
 }
 
-/* === MODAL DE CONFIRMACIÓN === */
+/* === MODAL DE CONFIRMACIÓN (CENTRADO) === */
 .modal-confirm {
   position: fixed;
   top: 0;
@@ -88,7 +81,6 @@
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.3s ease;
 }
 
 .modal-btn-yes {
