@@ -1,4 +1,4 @@
-/* === ALERTAS SIMPLES, CENTRADAS Y ESTÁTICAS === */
+/* === ALERTAS CENTRADAS Y SIN ANIMACIONES === */
 
 .custom-alert {
   position: fixed;
@@ -20,7 +20,7 @@
   max-width: 80%;
 }
 
-/* Colores según tipo */
+/* Tipos de alerta */
 .custom-alert.success {
   border-color: #00c851;
 }
@@ -37,7 +37,7 @@
   border-color: #ffbb33;
 }
 
-/* === MODAL DE CONFIRMACIÓN (CENTRADO) === */
+/* === MODAL CONFIRMACIÓN (en el centro de la página) === */
 .modal-confirm {
   position: fixed;
   top: 0;
