@@ -43,4 +43,5 @@ export default async function handler(req, res) {
     console.error("Error en loginUser:", error);
     return res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
+
 }
