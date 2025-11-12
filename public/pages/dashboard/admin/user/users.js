@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    // ✅ Referencias del DOM
     const usersTableBody = document.getElementById("usersTableBody");
     const userModal = new bootstrap.Modal(document.getElementById("userModal"));
     const userForm = document.getElementById("userForm");
@@ -18,90 +17,56 @@ document.addEventListener("DOMContentLoaded", () => {
     const userPassword = document.getElementById("userPassword");
     const userRole = document.getElementById("userRole");
 
-    // ✅ Modal de confirmación de eliminación
-    const deleteConfirmModalElement = document.getElementById("deleteConfirmModal");
-    const deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalElement);
-    const btnConfirmDelete = document.getElementById("btnConfirmDelete");
-    const userToDeleteName = document.getElementById("userToDeleteName");
-
-    let userIdToDelete = null; // ID temporal del usuario a eliminar
-
-    // ✅ Función de alertas visuales
-    function showAlert(message, type = "error") {
-        const alert = document.createElement("div");
-        alert.className = `custom-alert ${type}`;
-        alert.innerHTML = `<div class="alert-content">${message}</div>`;
-        document.body.appendChild(alert);
-        setTimeout(() => alert.classList.add("show"), 50);
-        setTimeout(() => {
-            alert.classList.remove("show");
-            setTimeout(() => alert.remove(), 300);
-        }, 2500);
-    }
-
-    // ✅ Cargar todos los usuarios
     async function cargarUsuarios() {
         try {
             const res = await fetch("/api/userList");
             if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
             const data = await res.json();
 
-            usersTableBody.innerHTML = "";
-
-            if (data.success && data.data.length > 0) {
+            if (data.success) {
+                usersTableBody.innerHTML = "";
                 data.data.forEach((user) => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td>${user.name}</td>
-                        <td>${user.email}</td>
-                        <td>${user.role}</td>
-                        <td>${new Date(user.created_at).toLocaleString()}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-light me-2" data-id="${user.id}" data-action="edit">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" data-id="${user.id}" data-action="delete">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>`;
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td>${user.role}</td>
+            <td>${new Date(user.created_at).toLocaleString()}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-light me-2" data-id="${user.id}" data-action="edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" data-id="${user.id}" data-action="delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>`;
                     usersTableBody.appendChild(tr);
                 });
             } else {
-                usersTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-light">${data.message || "No hay usuarios registrados."}</td></tr>`;
+                usersTableBody.innerHTML = `<tr><td colspan="6">${data.message}</td></tr>`;
             }
         } catch (err) {
             console.error("Error al cargar usuarios:", err);
-            usersTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error de conexión: ${err.message}</td></tr>`;
+            usersTableBody.innerHTML = `<tr><td colspan="6">Error de conexión: ${err.message}</td></tr>`;
         }
     }
 
-    // ✅ Eliminar usuario (confirmado)
-    async function eliminarUsuario() {
-        if (!userIdToDelete) return;
-
-        const id = userIdToDelete;
-        userIdToDelete = null;
-
+    async function eliminarUsuario(id) {
         try {
             const res = await fetch(`/api/userList?id=${id}`, { method: "DELETE" });
             const data = await res.json();
-            deleteConfirmModal.hide();
 
             if (data.success) {
                 showAlert("Usuario eliminado correctamente.", "success");
                 cargarUsuarios();
             } else {
-                showAlert(data.message || "No se pudo eliminar el usuario.", "error");
+                showAlert(data.message || "Error al eliminar usuario.", "error");
             }
         } catch (err) {
-            deleteConfirmModal.hide();
             showAlert("Error de conexión al eliminar usuario.", "error");
         }
     }
 
-    btnConfirmDelete.addEventListener("click", eliminarUsuario);
-
-    // ✅ Abrir modal para crear usuario nuevo
     btnAddUser.addEventListener("click", () => {
         userForm.reset();
         userId.value = "";
@@ -109,58 +74,37 @@ document.addEventListener("DOMContentLoaded", () => {
         userModal.show();
     });
 
-    // ✅ Escuchar clicks en los botones de editar / eliminar
     usersTableBody.addEventListener("click", async (e) => {
         const button = e.target.closest("button");
         if (!button) return;
-
         const id = button.dataset.id;
         const action = button.dataset.action;
 
         if (action === "edit") {
-            try {
-                const res = await fetch("/api/userList");
-                const { data } = await res.json();
-                const user = data.find((u) => u.id == id);
-                if (!user) return showAlert("Usuario no encontrado.", "error");
+            const res = await fetch("/api/userList");
+            const { data } = await res.json();
+            const user = data.find((u) => u.id == id);
+            if (!user) return showAlert("Usuario no encontrado.", "error");
 
-                userId.value = user.id;
-                userName.value = user.name;
-                userEmail.value = user.email;
-                userPassword.value = "";
-                userRole.value = user.role;
+            userId.value = user.id;
+            userName.value = user.name;
+            userEmail.value = user.email;
+            userPassword.value = "";
+            userRole.value = user.role;
 
-                document.querySelector("#userModal .modal-title").textContent = "Editar Usuario";
-                userModal.show();
-            } catch (err) {
-                showAlert("Error al obtener los datos del usuario.", "error");
-            }
+            document.querySelector("#userModal .modal-title").textContent = "Editar Usuario";
+            userModal.show();
         }
 
         if (action === "delete") {
-            try {
-                const res = await fetch("/api/userList");
-                const { data } = await res.json();
-                const user = data.find((u) => u.id == id);
-
-                if (!user) {
-                    showAlert("Usuario no encontrado para eliminar.", "error");
-                    return;
-                }
-
-                userIdToDelete = id;
-                userToDeleteName.textContent = user.name;
-                deleteConfirmModal.show();
-            } catch (err) {
-                showAlert("Error al buscar el usuario.", "error");
-            }
+            showConfirm(`¿Seguro que deseas eliminar a "${button.closest("tr").children[0].textContent}"?`, (confirmado) => {
+                if (confirmado) eliminarUsuario(id);
+            });
         }
     });
 
-    // ✅ Guardar usuario (crear o editar)
     userForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-
         const payload = {
             id: userId.value,
             name: userName.value,
@@ -168,7 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
             password: userPassword.value || undefined,
             role: userRole.value,
         };
-
         const method = userId.value ? "PUT" : "POST";
 
         try {
@@ -177,21 +120,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
-
             const data = await res.json();
-
             if (data.success) {
                 userModal.hide();
-                showAlert("Usuario guardado correctamente.", "success");
                 cargarUsuarios();
+                showAlert("Usuario guardado correctamente.", "success");
             } else {
-                showAlert("Error: " + data.message, "error");
+                showAlert(data.message || "Error al guardar usuario.", "error");
             }
         } catch (err) {
             showAlert("Error de conexión al guardar usuario.", "error");
         }
     });
 
-    // ✅ Cargar usuarios al iniciar
     cargarUsuarios();
 });

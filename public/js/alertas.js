@@ -1,5 +1,5 @@
-// Mostrar alerta centrada
-function showAlert(message, type = "info") {
+// Mostrar alerta superior (bajo el navbar)
+function showAlert(message, type = "info", duration = 3000) {
   const alert = document.createElement("div");
   alert.className = `custom-alert ${type}`;
   alert.textContent = message;
@@ -9,10 +9,10 @@ function showAlert(message, type = "info") {
   setTimeout(() => {
     alert.classList.remove("show");
     setTimeout(() => alert.remove(), 300);
-  }, 2500);
+  }, duration);
 }
 
-// Mostrar confirmación tipo modal
+// Mostrar confirmación centrada en pantalla
 function showConfirm(message, onConfirm) {
   const modal = document.createElement("div");
   modal.classList.add("modal-confirm");
@@ -30,9 +30,12 @@ function showConfirm(message, onConfirm) {
   document.body.appendChild(modal);
 
   modal.querySelector(".modal-btn-yes").onclick = () => {
-    onConfirm?.();
+    onConfirm?.(true);
     modal.remove();
   };
 
-  modal.querySelector(".modal-btn-no").onclick = () => modal.remove();
+  modal.querySelector(".modal-btn-no").onclick = () => {
+    onConfirm?.(false);
+    modal.remove();
+  };
 }
