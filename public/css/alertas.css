@@ -1,103 +1,35 @@
-/* Estilos globales para alertas */
 .custom-alert {
-  /* Eliminamos posicionamiento fijo y centrado */
-  background: #111;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1c1c1c;
+  padding: 18px 28px;
+  border-radius: 12px;
+  font-weight: 600;
   color: #fff;
-  border: 1px solid #e50914;
-  border-radius: 10px;
-  padding: 8px 15px;
-  box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
-  font-size: 0.9rem;
   text-align: center;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
   opacity: 0;
-  z-index: 4000;
-  transition: all 0.3s ease;
-  /* Crucial para ajuste al texto */
-  display: inline-block;
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 .custom-alert.show {
   opacity: 1;
-  transform: scale(1);
 }
 
 .custom-alert.success {
-  border-color: #00c851;
+  background-color: #28a745;
+  border: 2px solid #1e7e34;
 }
 
 .custom-alert.error {
-  border-color: #ff4444;
-}
-
-.custom-alert.warning {
-  border-color: #ffbb33;
+  background-color: #dc3545;
+  border: 2px solid #b52a37;
 }
 
 .custom-alert.info {
-  border-color: #33b5e5;
-}
-
-/* Confirmaciones tipo modal */
-.modal-confirm {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 4500;
-}
-
-.modal-confirm-content {
-  background: #111;
-  color: white;
-  border: 1px solid #e50914;
-  border-radius: 10px;
-  padding: 25px 35px;
-  text-align: center;
-  box-shadow: 0 0 30px rgba(229, 9, 20, 0.5);
-  width: 90%;
-  max-width: 400px;
-}
-
-.modal-confirm-content p {
-  font-size: 1.05rem;
-  margin-bottom: 20px;
-}
-
-.modal-confirm-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-
-.modal-confirm-buttons button {
-  padding: 8px 20px;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-}
-
-.modal-btn-yes {
-  background: #e50914;
-  color: #fff;
-}
-
-.modal-btn-yes:hover {
-  background: #ff1a1a;
-}
-
-.modal-btn-no {
-  background: #444;
-  color: #ddd;
-}
-
-.modal-btn-no:hover {
-  background: #555;
+  background-color: #ffc107;
+  border: 2px solid #d39e00;
 }

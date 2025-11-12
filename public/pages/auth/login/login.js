@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    // ✅ Cambiamos email → username
     const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
 
@@ -25,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/loginUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // ✅ Enviamos username en lugar de email
         body: JSON.stringify({ username, password }),
       });
 
@@ -41,10 +43,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (result.success) {
         const user = result.user;
 
+        // Guardamos el usuario en sessionStorage
         sessionStorage.setItem("usuario", JSON.stringify(user));
 
         showMessage(`Bienvenido, ${user.name}!`, "success");
 
+        // Redirección según el rol
         setTimeout(() => {
           if (user.role === "admin") {
             window.location.href = "/pages/dashboard/admin/admin.html";
@@ -62,46 +66,43 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// ✅ función para mostrar mensaje bonito en pantalla
 function showMessage(message, type = "info") {
-  let msgBox = document.getElementById("customAlertBox");
-  const container = document.getElementById("alertContainer");
-
-  if (!container) {
-    console.error("Contenedor de alerta (#alertContainer) no encontrado.");
-    return;
-  }
-
+  let msgBox = document.getElementById("messageBox");
   if (!msgBox) {
     msgBox = document.createElement("div");
-    msgBox.id = "customAlertBox";
-    msgBox.classList.add("custom-alert");
-    container.appendChild(msgBox);
+    msgBox.id = "messageBox";
+    msgBox.style.position = "fixed";
+    msgBox.style.top = "20px";
+    msgBox.style.left = "50%";
+    msgBox.style.transform = "translateX(-50%)";
+    msgBox.style.padding = "15px 25px";
+    msgBox.style.borderRadius = "10px";
+    msgBox.style.fontWeight = "bold";
+    msgBox.style.zIndex = "9999";
+    msgBox.style.transition = "opacity 0.5s ease";
+    document.body.appendChild(msgBox);
   }
-
-  msgBox.classList.remove("show");
-  msgBox.classList.remove("success", "error", "warning", "info");
 
   msgBox.textContent = message;
 
   switch (type) {
     case "success":
-      msgBox.classList.add("success");
+      msgBox.style.backgroundColor = "#28a745";
+      msgBox.style.color = "#fff";
       break;
     case "error":
-      msgBox.classList.add("error");
-      break;
-    case "warning":
-      msgBox.classList.add("warning");
+      msgBox.style.backgroundColor = "#dc3545";
+      msgBox.style.color = "#fff";
       break;
     default:
-      msgBox.classList.add("info");
+      msgBox.style.backgroundColor = "#ffc107";
+      msgBox.style.color = "#000";
   }
 
-  setTimeout(() => {
-    msgBox.classList.add("show");
-  }, 10);
+  msgBox.style.opacity = "1";
 
   setTimeout(() => {
-    msgBox.classList.remove("show");
+    msgBox.style.opacity = "0";
   }, 2500);
 }
