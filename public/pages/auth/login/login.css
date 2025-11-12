@@ -106,29 +106,3 @@ body {
 .switch-link a:hover {
   text-decoration: underline;
 }
-
-/* Alertas */
-.custom-alert {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #22c55e;
-  color: white;
-  padding: 14px 22px;
-  border-radius: 12px;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  z-index: 9999;
-  opacity: 0;
-  transform: translateY(-15px);
-  transition: all 0.3s ease;
-}
-
-.custom-alert.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.custom-alert.error {
-  background-color: #ef4444;
-}
