@@ -1,5 +1,6 @@
 /* Estilos globales para alertas */
 .custom-alert {
+  /* Eliminamos posicionamiento fijo y centrado */
   background: #111;
   color: #fff;
   border: 1px solid #e50914;
@@ -11,6 +12,7 @@
   opacity: 0;
   z-index: 4000;
   transition: all 0.3s ease;
+  /* Crucial para ajuste al texto */
   display: inline-block;
 }
 
