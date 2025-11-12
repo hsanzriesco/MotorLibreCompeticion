@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // ✅ Cambiamos email → username
     const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
 
@@ -26,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/loginUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // ✅ Enviamos username en lugar de email
         body: JSON.stringify({ username, password }),
       });
 
@@ -43,12 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (result.success) {
         const user = result.user;
 
-        // Guardamos el usuario en sessionStorage
         sessionStorage.setItem("usuario", JSON.stringify(user));
 
         showMessage(`Bienvenido, ${user.name}!`, "success");
 
-        // Redirección según el rol
         setTimeout(() => {
           if (user.role === "admin") {
             window.location.href = "/pages/dashboard/admin/admin.html";
@@ -65,3 +61,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+function showMessage(message, type = "info") {
+  let msgBox = document.getElementById("customAlertBox");
+
+  if (!msgBox) {
+    msgBox = document.createElement("div");
+    msgBox.id = "customAlertBox";
+    msgBox.classList.add("custom-alert");
+    document.body.appendChild(msgBox);
+  }
+
+  msgBox.classList.remove("show");
+  msgBox.classList.remove("success", "error", "warning", "info");
+
+  msgBox.textContent = message;
+
+  switch (type) {
+    case "success":
+      msgBox.classList.add("success");
+      break;
+    case "error":
+      msgBox.classList.add("error");
+      break;
+    case "warning":
+      msgBox.classList.add("warning");
+      break;
+    default:
+      msgBox.classList.add("info");
+  }
+
+  setTimeout(() => {
+    msgBox.classList.add("show");
+  }, 10);
+
+  setTimeout(() => {
+    msgBox.classList.remove("show");
+  }, 2500);
+}
