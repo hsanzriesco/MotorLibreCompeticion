@@ -1,14 +1,30 @@
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
 
-    // === ❌ ELIMINACIÓN DE LA LÓGICA DE ALERTA LOCAL ===
-    // let alertContainer = document.querySelector(".alert-container");
-    // if (!alertContainer) {
-    //   alertContainer = document.createElement("div");
-    //   alertContainer.classList.add("alert-container");
-    //   document.body.appendChild(alertContainer);
-    // }
-    // function showAlert(message, type = "success") { ... }
+    // === NUEVOS ELEMENTOS PARA EL TOGGLE ===
+    const passwordInput = document.getElementById("password");
+    const confirmPasswordInput = document.getElementById("confirmPassword");
+    const togglePassword = document.getElementById("togglePassword");
+    const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
+
+    // Función genérica para alternar la visibilidad
+    function setupPasswordToggle(inputElement, iconElement) {
+        iconElement.addEventListener('click', () => {
+            // Alterna el tipo de input
+            const type = inputElement.getAttribute('type') === 'password' ? 'text' : 'password';
+            inputElement.setAttribute('type', type);
+            
+            // Alterna el icono
+            iconElement.classList.toggle('bi-eye');
+            iconElement.classList.toggle('bi-eye-slash');
+        });
+    }
+
+    // Configurar los toggles para ambos campos
+    setupPasswordToggle(passwordInput, togglePassword);
+    setupPasswordToggle(confirmPasswordInput, toggleConfirmPassword);
+    // ======================================
+    
 
     function validatePassword(password) {
         const lengthOK = password.length >= 8 && password.length <= 12;
@@ -28,24 +44,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const name = document.getElementById("username").value.trim();
         const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value.trim();
-        const confirmPassword = document.getElementById("confirmPassword").value.trim();
+        
+        // Obtenemos los valores de los inputs (ya que los tenemos referenciados arriba)
+        const password = passwordInput.value.trim();
+        const confirmPassword = confirmPasswordInput.value.trim();
 
         if (!name || !email || !password || !confirmPassword) {
-            // USO DE LA ALERTA GLOBAL
             mostrarAlerta("Todos los campos son obligatorios.", "error"); 
             return;
         }
 
         if (password !== confirmPassword) {
-            // USO DE LA ALERTA GLOBAL
             mostrarAlerta("Las contraseñas no coinciden.", "error");
             return;
         }
 
         const passwordError = validatePassword(password);
         if (passwordError) {
-            // USO DE LA ALERTA GLOBAL
             mostrarAlerta(passwordError, "error");
             return;
         }
@@ -60,23 +75,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await res.json();
 
             if (res.status === 409) {
-                // USO DE LA ALERTA GLOBAL
                 mostrarAlerta("El nombre o correo ya están en uso.", "error");
                 return;
             }
 
             if (result.success) {
-                // USO DE LA ALERTA GLOBAL
                 mostrarAlerta("🎉 Usuario creado con éxito", "exito");
                 setTimeout(() => {
                     window.location.href = "../login/login.html";
                 }, 1500);
             } else {
-                // USO DE LA ALERTA GLOBAL
                 mostrarAlerta(result.message || "Error desconocido al registrar.", "error");
             }
         } catch {
-            // USO DE LA ALERTA GLOBAL
             mostrarAlerta("❌ Error al conectar con el servidor.", "error");
         }
     });
