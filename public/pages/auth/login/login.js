@@ -5,12 +5,12 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        // ✅ Cambiamos email → username
+        // Cambiamos email → username
         const usernameInput = document.getElementById("username");
         const passwordInput = document.getElementById("password");
 
         if (!usernameInput || !passwordInput) {
-            console.error("❌ No se encontraron los campos del formulario.");
+            console.error("No se encontraron los campos del formulario.");
             return;
         }
 
@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch("/api/loginUser", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                // ✅ Enviamos username en lugar de email
+                // Enviamos username en lugar de email
                 body: JSON.stringify({ username, password }),
             });
 
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionStorage.setItem("usuario", JSON.stringify(user));
 
                 // USO DE LA ALERTA GLOBAL
-                mostrarAlerta(`✅ Bienvenido, ${user.name}!`, "exito");
+                mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
                 // Redirección según el rol
                 setTimeout(() => {
@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             console.error("Error en login:", error);
             // USO DE LA ALERTA GLOBAL
-            mostrarAlerta("❌ Error de conexión con el servidor.", "error");
+            mostrarAlerta("Error de conexión con el servidor.", "error");
         }
     });
 });

@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ===========================
     if (!user) {
         // USO DE LA ALERTA GLOBAL: mostrarAlerta(mensaje, tipo, duracion)
-        mostrarAlerta("⚠️ Debes iniciar sesión para acceder a tu perfil.", "error", 2000); 
+        mostrarAlerta("Debes iniciar sesión para acceder a tu perfil.", "error", 2000); 
         setTimeout(() => {
             // Ajusta esta ruta si es necesario, basándome en la estructura actual
             window.location.href = "/pages/auth/login/login.html"; 

@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (result.success) {
-                mostrarAlerta("🎉 Usuario creado con éxito", "exito");
+                mostrarAlerta("Usuario creado con éxito", "exito");
                 setTimeout(() => {
                     window.location.href = "../login/login.html";
                 }, 1500);

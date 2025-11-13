@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // === 🚫 VERIFICAR SESIÓN ===
+    // === VERIFICAR SESIÓN ===
     const usuario =
         JSON.parse(localStorage.getItem("usuario")) ||
         JSON.parse(sessionStorage.getItem("usuario"));
@@ -34,10 +34,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let selectedEvent = null;
 
-    // === ❌ FUNCIÓN DE ALERTA LOCAL ELIMINADA ===
+    // === FUNCIÓN DE ALERTA LOCAL ELIMINADA ===
     // Se utilizará la función global `mostrarAlerta` del archivo `alertas.js`.
 
-    // === ⚠️ ALERTA DE CONFIRMACIÓN PERSONALIZADA (SE MANTIENE LOCALMENTE) ===
+    // === ALERTA DE CONFIRMACIÓN PERSONALIZADA (SE MANTIENE LOCALMENTE) ===
     function showConfirmAlert(message, onConfirm) {
         let confirmBox = document.getElementById('customConfirmContainer').querySelector('.custom-confirm');
         if (!confirmBox) {
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, { once: true });
     }
 
-    // === 🔁 CARGAR EVENTOS ===
+    // === CARGAR EVENTOS ===
     async function fetchEvents() {
         try {
             const res = await fetch("/api/events");
@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // === 🗓️ CALENDARIO ===
+    // === CALENDARIO ===
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         selectable: true,
@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     calendar.render();
 
-    // === 💾 GUARDAR / ACTUALIZAR EVENTO ===
+    // === GUARDAR / ACTUALIZAR EVENTO ===
     saveEventBtn.addEventListener("click", async () => {
         const id = eventIdInput.value;
         const title = titleInput.value.trim();
@@ -189,16 +189,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!data.success) throw new Error();
 
             // USO DE LA ALERTA GLOBAL
-            mostrarAlerta(id ? "✅ Evento actualizado correctamente" : "🎉 Evento creado con éxito", "exito"); 
+            mostrarAlerta(id ? "Evento actualizado correctamente" : "🎉 Evento creado con éxito", "exito"); 
             eventModal.hide();
             calendar.refetchEvents();
         } catch {
             // USO DE LA ALERTA GLOBAL
-            mostrarAlerta("❌ Error al guardar evento", "error");
+            mostrarAlerta("Error al guardar evento", "error");
         }
     });
 
-    // === 🗑️ ELIMINAR EVENTO ===
+    // === ELIMINAR EVENTO ===
     deleteEventBtn.addEventListener("click", async () => {
         if (!selectedEvent || !selectedEvent.id) {
             // USO DE LA ALERTA GLOBAL
@@ -213,7 +213,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (!data.success) throw new Error();
 
                 // USO DE LA ALERTA GLOBAL
-                mostrarAlerta("🗑️ Evento eliminado correctamente", "exito"); 
+                mostrarAlerta("Evento eliminado correctamente", "exito"); 
                 eventModal.hide();
                 calendar.refetchEvents();
             } catch {
@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    // === 🔒 CERRAR SESIÓN ===
+    // === CERRAR SESIÓN ===
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
@@ -232,7 +232,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 localStorage.clear();
                 sessionStorage.clear();
                 // USO DE LA ALERTA GLOBAL
-                mostrarAlerta("👋 Sesión cerrada correctamente", "exito"); 
+                mostrarAlerta("Sesión cerrada correctamente", "exito"); 
                 // Cerrar el offcanvas antes de redirigir (si está abierto)
                 const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
                 if (offcanvasMenu) {
