@@ -1,80 +1,120 @@
 body {
-  background-color: #111;
-  color: white;
-  padding-top: 100px;
-  /* Espacio para el navbar fijo */
+    background-color: #111;
+    color: white;
+    padding-top: 100px; /* Espacio para el navbar fijo */
 }
 
 /* Tarjeta de perfil */
 .profile-card {
-  background-color: #1c1c1c;
-  border: 1px solid #e50914;
-  /* Borde rojo distintivo */
-  border-radius: 12px;
-  padding: 30px;
-  margin: 30px auto;
-  max-width: 500px;
-  box-shadow: 0 4px 20px rgba(229, 9, 20, 0.3);
+    background-color: #1c1c1c;
+    border: 1px solid #e50914; /* Borde rojo distintivo */
+    border-radius: 12px;
+    padding: 30px;
+    margin: 30px auto;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(229, 9, 20, 0.3);
 }
+
+/* NUEVO: Tarjeta de Garaje */
+.garage-card {
+    background-color: #1c1c1c;
+    border: 1px solid #e50914;
+    border-radius: 12px;
+    padding: 30px;
+    margin: 30px auto;
+    max-width: 900px; /* Más ancho para mostrar coches */
+    box-shadow: 0 4px 20px rgba(229, 9, 20, 0.3);
+}
+
+/* Estilos de la tarjeta de cada coche */
+.car-item {
+    background-color: #2b2b2b;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.car-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(229, 9, 20, 0.5);
+}
+
+.car-image-container {
+    height: 150px;
+    overflow: hidden;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.car-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.car-details h5 {
+    color: #e50914;
+    font-weight: 700;
+}
+
 
 /* Estilos de formulario */
 .form-label {
-  color: #f8d7da;
-  /* Color rojo claro */
-  font-weight: 600;
+    color: #f8d7da;
+    font-weight: 600;
 }
 
 .form-control:read-only {
-  background-color: #2b2b2b;
-  border-color: #444;
+    background-color: #2b2b2b;
+    border-color: #444;
 }
 
 .form-control {
-  background-color: #222;
-  border: 1px solid #444;
-  color: white;
+    background-color: #222;
+    border: 1px solid #444;
+    color: white;
 }
 
 .form-control:focus {
-  background-color: #222;
-  border-color: #e50914;
-  color: white;
-  box-shadow: 0 0 0 0.25rem rgba(229, 9, 20, 0.5);
+    background-color: #222;
+    border-color: #e50914;
+    color: white;
+    box-shadow: 0 0 0 0.25rem rgba(229, 9, 20, 0.5);
 }
 
 /* Estilos de botones */
 .btn-danger {
-  background-color: #e50914;
-  border: none;
+    background-color: #e50914;
+    border: none;
 }
 
 .btn-danger:hover {
-  background-color: #ff1a1a;
+    background-color: #ff1a1a;
 }
 
 .btn-outline-danger {
-  color: #e50914;
-  border-color: #e50914;
+    color: #e50914;
+    border-color: #e50914;
 }
 
 .btn-outline-danger:hover {
-  background-color: #e50914;
-  color: white;
+    background-color: #e50914;
+    color: white;
 }
 
 /* Modal de Contraseña (Estilo personalizado para destacar) */
 .modal-content-custom {
-  background-color: #111;
-  color: white;
-  border: 1px solid #e50914;
+    background-color: #111;
+    color: white;
+    border: 1px solid #e50914;
 }
 
-.modal-header,
-.modal-footer {
-  border-color: #444;
+.modal-header, .modal-footer {
+    border-color: #444;
 }
-
 .btn-close {
-  filter: invert(1);
-  /* Hace que la X sea blanca */
+    filter: invert(1); /* Hace que la X sea blanca */
 }

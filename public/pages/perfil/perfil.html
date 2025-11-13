@@ -58,7 +58,7 @@
     </div>
 
     <main class="container">
-        <section class="profile-card">
+        <section class="profile-card mb-5">
             <h2 class="text-center mb-4">⚙️ Configuración de Perfil</h2>
 
             <form id="profile-form">
@@ -91,6 +91,20 @@
                 </button>
             </div>
         </section>
+
+        <section class="garage-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">🚗 Mi Garaje</h2>
+                <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#carModal">
+                    <i class="bi bi-plus-circle"></i> Añadir Coche
+                </button>
+            </div>
+
+            <div id="car-list" class="row">
+                <p id="no-cars-message" class="text-center text-muted">Aún no tienes coches en tu garaje.</p>
+            </div>
+        </section>
+
     </main>
 
     <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true">
@@ -106,6 +120,7 @@
                             <label for="current-password" class="form-label">Contraseña Actual</label>
                             <input type="password" class="form-control" id="current-password" required>
                         </div>
+
                         <div class="mb-3">
                             <label for="new-password" class="form-label">Nueva Contraseña</label>
                             <input type="password" class="form-control" id="new-password" required>
@@ -123,6 +138,56 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="carModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content-custom">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title text-light" id="carModalTitle">Añadir Coche</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="car-form">
+                        <input type="hidden" id="car-id">
+
+                        <div class="mb-3">
+                            <label for="car-name" class="form-label">Nombre del Coche *</label>
+                            <input type="text" class="form-control" id="car-name" required placeholder="Ej: BMW M3">
+                        </div>
+                        <div class="mb-3">
+                            <label for="car-model" class="form-label">Modelo</label>
+                            <input type="text" class="form-control" id="car-model" placeholder="Ej: E46">
+                        </div>
+                        <div class="mb-3">
+                            <label for="car-year" class="form-label">Año</label>
+                            <input type="number" class="form-control" id="car-year" min="1900" max="2099"
+                                placeholder="Ej: 2004">
+                        </div>
+                        <div class="mb-3">
+                            <label for="car-description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="car-description" rows="3"
+                                placeholder="Modificaciones, historial, etc."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="car-photo" class="form-label">Foto (URL)</label>
+                            <input type="text" class="form-control" id="car-photo" placeholder="URL de la imagen">
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button id="delete-car-btn" type="button" class="btn btn-outline-danger"
+                                style="display:none;">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                            <button type="submit" class="btn btn-danger ms-auto">
+                                <i class="bi bi-save"></i> Guardar Coche
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script src="../../js/alertas.js"></script>
     <script src="./perfil.js"></script>

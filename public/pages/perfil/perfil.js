@@ -1,121 +1,120 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Elementos del DOM
-    const profileForm = document.getElementById('profile-form');
-    const passwordForm = document.getElementById('password-form');
-    const userNameElement = document.getElementById('user-name');
-    const loginIcon = document.getElementById('login-icon');
-    const logoutBtn = document.getElementById('logout-btn');
+body {
+    background-color: #111;
+    color: white;
+    padding-top: 100px; /* Espacio para el navbar fijo */
+}
 
-    // 2. Comprobación de autenticación y Carga Inicial
-    const user = JSON.parse(localStorage.getItem('usuario'));
+/* Tarjeta de perfil */
+.profile-card {
+    background-color: #1c1c1c;
+    border: 1px solid #e50914; /* Borde rojo distintivo */
+    border-radius: 12px;
+    padding: 30px;
+    margin: 30px auto;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(229, 9, 20, 0.3);
+}
 
-    if (!user || !user.id || !user.email) {
-        // Si no hay usuario o faltan datos esenciales, redirigir al login
-        mostrarAlerta("Sesión no válida o expirada. Por favor, inicia sesión.", 'error', 2000);
-        setTimeout(() => {
-            window.location.href = '../auth/login/login.html';
-        }, 2000);
-        return; // Detiene la ejecución del script
-    }
+/* NUEVO: Tarjeta de Garaje */
+.garage-card {
+    background-color: #1c1c1c;
+    border: 1px solid #e50914;
+    border-radius: 12px;
+    padding: 30px;
+    margin: 30px auto;
+    max-width: 900px; /* Más ancho para mostrar coches */
+    box-shadow: 0 4px 20px rgba(229, 9, 20, 0.3);
+}
 
-    // Muestra datos en el NavBar
-    userNameElement.textContent = user.name;
-    loginIcon.style.display = 'none';
+/* Estilos de la tarjeta de cada coche */
+.car-item {
+    background-color: #2b2b2b;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    transition: transform 0.2s;
+    cursor: pointer;
+}
 
-    // Llena los campos del formulario
-    document.getElementById('user-id').value = user.id;
-    document.getElementById('profile-name').value = user.name;
-    document.getElementById('profile-email').value = user.email;
+.car-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(229, 9, 20, 0.5);
+}
+
+.car-image-container {
+    height: 150px;
+    overflow: hidden;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.car-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.car-details h5 {
+    color: #e50914;
+    font-weight: 700;
+}
 
 
-    // 3. Manejo de Cierre de Sesión (Logout)
-    logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem("usuario");
+/* Estilos de formulario */
+.form-label {
+    color: #f8d7da;
+    font-weight: 600;
+}
 
-        mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
+.form-control:read-only {
+    background-color: #2b2b2b;
+    border-color: #444;
+}
 
-        // Cierra el offcanvas (si está abierto)
-        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-        if (offcanvasMenu) {
-            offcanvasMenu.hide();
-        }
+.form-control {
+    background-color: #222;
+    border: 1px solid #444;
+    color: white;
+}
 
-        setTimeout(() => {
-            window.location.href = "../auth/login/login.html";
-        }, 1500);
-    });
+.form-control:focus {
+    background-color: #222;
+    border-color: #e50914;
+    color: white;
+    box-shadow: 0 0 0 0.25rem rgba(229, 9, 20, 0.5);
+}
 
-    // 4. Manejo de Actualización de Perfil (Nombre)
-    profileForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+/* Estilos de botones */
+.btn-danger {
+    background-color: #e50914;
+    border: none;
+}
 
-        const id = document.getElementById('user-id').value;
-        const newName = document.getElementById('profile-name').value.trim();
-        const email = document.getElementById('profile-email').value; // El email no cambia
+.btn-danger:hover {
+    background-color: #ff1a1a;
+}
 
-        if (newName === user.name) {
-            mostrarAlerta("No hay cambios que guardar.", 'info');
-            return;
-        }
+.btn-outline-danger {
+    color: #e50914;
+    border-color: #e50914;
+}
 
-        try {
-            // Simulación de llamada a la API
-            // En una aplicación real, usarías 'fetch' aquí:
-            // const response = await fetch('/api/user/updateProfile', { ... });
+.btn-outline-danger:hover {
+    background-color: #e50914;
+    color: white;
+}
 
-            // Suponiendo que la API devuelve éxito:
+/* Modal de Contraseña (Estilo personalizado para destacar) */
+.modal-content-custom {
+    background-color: #111;
+    color: white;
+    border: 1px solid #e50914;
+}
 
-            // Actualizar LocalStorage
-            user.name = newName;
-            localStorage.setItem('usuario', JSON.stringify(user));
-            userNameElement.textContent = newName;
-
-            mostrarAlerta("Perfil actualizado correctamente.", 'success');
-
-        } catch (error) {
-            mostrarAlerta("Error al actualizar el perfil. Intenta de nuevo.", 'error');
-        }
-    });
-
-    // 5. Manejo de Cambio de Contraseña
-    passwordForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const currentPassword = document.getElementById('current-password').value;
-        const newPassword = document.getElementById('new-password').value;
-        const confirmNewPassword = document.getElementById('confirm-new-password').value;
-        const userId = document.getElementById('user-id').value;
-
-        if (newPassword !== confirmNewPassword) {
-            mostrarAlerta("La nueva contraseña y la confirmación no coinciden.", 'error');
-            return;
-        }
-
-        // La validación de longitud de contraseña debe ir aquí (ej. > 6 caracteres)
-
-        try {
-            // Simulación de llamada a la API
-            // const response = await fetch('/api/user/changePassword', { 
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ userId, currentPassword, newPassword })
-            // });
-
-            // Simulación: Si la contraseña actual es '1234' -> Éxito
-            if (currentPassword === '1234') {
-                mostrarAlerta("Contraseña cambiada exitosamente.", 'success');
-                // Cerrar modal
-                const modalElement = document.getElementById('passwordModal');
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                modal.hide();
-                passwordForm.reset();
-            } else {
-                mostrarAlerta("Error: La contraseña actual es incorrecta.", 'error');
-            }
-
-        } catch (error) {
-            mostrarAlerta("Error al intentar cambiar la contraseña.", 'error');
-        }
-    });
-});
+.modal-header, .modal-footer {
+    border-color: #444;
+}
+.btn-close {
+    filter: invert(1); /* Hace que la X sea blanca */
+}
