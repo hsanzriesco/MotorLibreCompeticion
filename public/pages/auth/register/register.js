@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
 
-    // === NUEVOS ELEMENTOS PARA EL TOGGLE ===
+    // === ELEMENTOS PARA EL TOGGLE DE CONTRASEÑA ===
     const passwordInput = document.getElementById("password");
     const confirmPasswordInput = document.getElementById("confirmPassword");
     const togglePassword = document.getElementById("togglePassword");
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Configurar los toggles para ambos campos
     setupPasswordToggle(passwordInput, togglePassword);
     setupPasswordToggle(confirmPasswordInput, toggleConfirmPassword);
-    // ======================================
+    // ==============================================
     
 
     function validatePassword(password) {
@@ -44,23 +44,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const name = document.getElementById("username").value.trim();
         const email = document.getElementById("email").value.trim();
-        
-        // Obtenemos los valores de los inputs (ya que los tenemos referenciados arriba)
         const password = passwordInput.value.trim();
         const confirmPassword = confirmPasswordInput.value.trim();
 
         if (!name || !email || !password || !confirmPassword) {
+            // ✅ Uso de alerta global
             mostrarAlerta("Todos los campos son obligatorios.", "error"); 
             return;
         }
 
         if (password !== confirmPassword) {
+            // ✅ Uso de alerta global
             mostrarAlerta("Las contraseñas no coinciden.", "error");
             return;
         }
 
         const passwordError = validatePassword(password);
         if (passwordError) {
+            // ✅ Uso de alerta global
             mostrarAlerta(passwordError, "error");
             return;
         }
@@ -75,19 +76,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await res.json();
 
             if (res.status === 409) {
+                // ✅ Uso de alerta global
                 mostrarAlerta("El nombre o correo ya están en uso.", "error");
                 return;
             }
 
             if (result.success) {
-                mostrarAlerta("Usuario creado con éxito", "exito");
+                // ✅ Uso de alerta global
+                mostrarAlerta("🎉 Usuario creado con éxito", "exito");
                 setTimeout(() => {
                     window.location.href = "../login/login.html";
                 }, 1500);
             } else {
+                // ✅ Uso de alerta global
                 mostrarAlerta(result.message || "Error desconocido al registrar.", "error");
             }
         } catch {
+            // ✅ Uso de alerta global
             mostrarAlerta("❌ Error al conectar con el servidor.", "error");
         }
     });

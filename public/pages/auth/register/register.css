@@ -12,16 +12,19 @@ body {
     flex-direction: column;
 }
 
-/* === NUEVOS ESTILOS PARA EL TOGGLE DE CONTRASEÑA === */
+/* === ESTILOS PARA EL TOGGLE DE CONTRASEÑA === */
 .password-wrapper {
-    position: relative; /* Contenedor para posicionar el icono */
-    margin-bottom: 12px; /* Margen que antes estaba en el input */
+    position: relative;
+    /* Contenedor para posicionar el icono */
+    margin-bottom: 12px;
+    /* Margen que antes estaba en el input */
 }
 
 .password-wrapper input {
     /* Ajustamos el padding derecho para que el texto no quede debajo del icono */
-    padding-right: 35px !important; 
-    margin-bottom: 0 !important; /* El margen ahora está en el wrapper */
+    padding-right: 35px !important;
+    margin-bottom: 0 !important;
+    /* El margen ahora está en el wrapper */
 }
 
 .password-wrapper i {
@@ -30,7 +33,8 @@ body {
     right: 10px;
     transform: translateY(-50%);
     cursor: pointer;
-    color: #e50914; /* Color del ícono rojo */
+    color: #e50914;
+    /* Color del ícono rojo */
     font-size: 1.1rem;
     transition: color 0.2s;
 }
@@ -38,11 +42,11 @@ body {
 .password-wrapper i:hover {
     color: #ff1a1a;
 }
-/* === FIN NUEVOS ESTILOS === */
+
+/* === FIN ESTILOS TOGGLE === */
 
 
 .form-container {
-    /* Estilo del main.css original */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -53,7 +57,6 @@ body {
 }
 
 .form-box {
-    /* Estilo del main.css original */
     background-color: rgba(20, 20, 20, 0.9);
     border: 1px solid #e50914;
     box-shadow: 0 0 25px rgba(229, 9, 20, 0.3);
@@ -65,7 +68,6 @@ body {
 }
 
 .form-box h2 {
-    /* Estilo del main.css original */
     color: #e50914;
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
@@ -75,7 +77,6 @@ body {
 }
 
 .form-box label {
-    /* Estilo del main.css original */
     display: block;
     text-align: left;
     margin-top: 5px;
@@ -86,11 +87,11 @@ body {
 }
 
 .form-box input {
-    /* Estilo del main.css original */
     width: 100%;
     padding: 8px 10px;
     margin-top: 3px;
     margin-bottom: 12px;
+    /* Este margen ahora es irrelevante para el input, solo para los inputs fuera de .password-wrapper */
     border-radius: 6px;
     border: 1px solid #333;
     background-color: #222;
@@ -101,13 +102,11 @@ body {
 }
 
 .form-box input:focus {
-    /* Estilo del main.css original */
     border-color: #e50914;
     box-shadow: 0 0 6px rgba(229, 9, 20, 0.5);
 }
 
 .form-box button {
-    /* Estilo del main.css original */
     background-color: #e50914;
     color: white;
     font-weight: 700;
@@ -122,27 +121,23 @@ body {
 }
 
 .form-box button:hover {
-    /* Estilo del main.css original */
     background-color: #ff1a1a;
     box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
 }
 
 .switch-link {
-    /* Estilo del main.css original */
     margin-top: 10px;
     color: #ccc;
     font-size: 0.9rem;
 }
 
 .switch-link a {
-    /* Estilo del main.css original */
     color: #e50914;
     text-decoration: none;
     font-weight: 600;
 }
 
 .switch-link a:hover {
-    /* Estilo del main.css original */
     text-decoration: underline;
 }
 
