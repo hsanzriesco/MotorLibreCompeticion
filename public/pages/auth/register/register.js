@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("registerForm");
 
-  // Crear contenedor para alertas si no existe
   let alertContainer = document.querySelector(".alert-container");
   if (!alertContainer) {
     alertContainer = document.createElement("div");
@@ -9,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(alertContainer);
   }
 
-  // Función para mostrar alertas personalizadas
   function showAlert(message, type = "success") {
     const alert = document.createElement("div");
     alert.className = `custom-alert ${type}`;
@@ -23,26 +21,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 3000);
   }
 
-  // Validar complejidad de la contraseña
   function validatePassword(password) {
     const lengthOK = password.length >= 8 && password.length <= 12;
     const upperCaseOK = /[A-Z]/.test(password);
     const numberOK = /[0-9]/.test(password);
     const symbolOK = /[^A-Za-z0-9]/.test(password);
 
-    if (!lengthOK)
-      return "La contraseña debe tener entre 8 y 12 caracteres.";
-    if (!upperCaseOK)
-      return "Debe contener al menos una letra mayúscula.";
-    if (!numberOK)
-      return "Debe incluir al menos un número.";
-    if (!symbolOK)
-      return "Debe incluir al menos un símbolo.";
-
+    if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
+    if (!upperCaseOK) return "Debe contener al menos una letra mayúscula.";
+    if (!numberOK) return "Debe incluir al menos un número.";
+    if (!symbolOK) return "Debe incluir al menos un símbolo.";
     return null;
   }
 
-  // Enviar formulario
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -51,26 +42,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("password").value.trim();
     const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-    // Verificar campos vacíos
     if (!name || !email || !password || !confirmPassword) {
-      showAlert("⚠️ Todos los campos son obligatorios.", "error");
+      showAlert("Todos los campos son obligatorios.", "error");
       return;
     }
 
-    // Confirmar contraseñas iguales
     if (password !== confirmPassword) {
-      showAlert("⚠️ Las contraseñas no coinciden.", "error");
+      showAlert("Las contraseñas no coinciden.", "error");
       return;
     }
 
-    // Validar complejidad
     const passwordError = validatePassword(password);
     if (passwordError) {
-      showAlert(`⚠️ ${passwordError}`, "error");
+      showAlert(passwordError, "error");
       return;
     }
 
-    // Enviar al servidor
     try {
       const res = await fetch("/api/createUser", {
         method: "POST",
@@ -81,21 +68,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await res.json();
 
       if (res.status === 409) {
-        showAlert("⚠️ El nombre o correo ya están en uso.", "error");
+        showAlert("El nombre o correo ya están en uso.", "error");
         return;
       }
 
       if (result.success) {
-        showAlert("✅ Usuario creado con éxito", "success");
+        showAlert("Usuario creado con éxito", "success");
         setTimeout(() => {
           window.location.href = "../login/login.html";
         }, 1500);
       } else {
-        showAlert(`⚠️ ${result.message}`, "error");
+        showAlert(result.message, "error");
       }
-    } catch (err) {
-      console.error(err);
-      showAlert("❌ Error al conectar con el servidor.", "error");
+    } catch {
+      showAlert("Error al conectar con el servidor.", "error");
     }
   });
 });
