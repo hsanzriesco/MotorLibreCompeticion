@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // Importación de bcryptjs
+import bcrypt from "bcryptjs"; // Usando bcryptjs
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -14,9 +14,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log("--- REGISTRO INICIADO ---");
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
+      console.error("Error 400: Campos requeridos faltantes.");
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
     
@@ -39,26 +41,31 @@ export default async function handler(req, res) {
     );
 
     if (existingUser.rows.length > 0) {
+      console.error("Error 409: Usuario o correo ya existe.");
       return res.status(409).json({
         success: false,
         message: "El nombre o correo ya están registrados.",
       });
     }
 
-    // Generar Hash
+    // Generar Hash y registrar su longitud
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+    console.log(`Hash generado exitosamente. Longitud: ${hashedPassword.length}`);
     
     const result = await pool.query(
       "INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
       [name, email, hashedPassword, "user"] 
     );
+    console.log(`Usuario ${name} insertado en DB con ID: ${result.rows[0].id}`);
 
     return res.status(201).json({
       success: true,
       user: result.rows[0],
     });
   } catch (error) {
-    console.error("Error en createUser:", error);
+    console.error("### FALLO CRÍTICO EN CREATEUSER ###");
+    console.error("Detalle del error:", error); // Esto mostrará el error exacto (ej. error de DB)
+    
     if (error.code === '23505') { 
         return res.status(409).json({
             success: false,
