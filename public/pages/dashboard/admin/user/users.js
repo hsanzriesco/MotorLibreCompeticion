@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (data.success) {
                 // USO DE ALERTA GLOBAL
-                mostrarAlerta("🗑️ Usuario eliminado correctamente.", "exito"); 
+                mostrarAlerta("Usuario eliminado correctamente.", "exito"); 
                 cargarUsuarios();
             } else {
                 // USO DE ALERTA GLOBAL
@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 userModal.show();
             } catch (err) {
                 // USO DE ALERTA GLOBAL
-                mostrarAlerta("❌ Error al cargar datos del usuario.", "error"); 
+                mostrarAlerta("Error al cargar datos del usuario.", "error"); 
             }
         }
 
@@ -158,11 +158,11 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Validar que si es un nuevo usuario, la contraseña no esté vacía
         if (!userId.value && !payload.password) {
-            return mostrarAlerta("⚠️ Para crear un nuevo usuario, la contraseña es obligatoria.", "aviso");
+            return mostrarAlerta("Para crear un nuevo usuario, la contraseña es obligatoria.", "aviso");
         }
 
         const method = userId.value ? "PUT" : "POST";
-        const successMessage = userId.value ? "✅ Usuario actualizado correctamente." : "🎉 Usuario creado con éxito.";
+        const successMessage = userId.value ? "Usuario actualizado correctamente." : "🎉 Usuario creado con éxito.";
 
         try {
             const res = await fetch("/api/userList", {
@@ -179,11 +179,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 mostrarAlerta(successMessage, "exito"); 
             } else {
                 // USO DE ALERTA GLOBAL
-                mostrarAlerta(data.message || "❌ Error al guardar usuario.", "error"); 
+                mostrarAlerta(data.message || "Error al guardar usuario.", "error"); 
             }
         } catch (err) {
             // USO DE ALERTA GLOBAL
-            mostrarAlerta("❌ Error de conexión al guardar usuario.", "error"); 
+            mostrarAlerta("Error de conexión al guardar usuario.", "error"); 
         }
     });
 
