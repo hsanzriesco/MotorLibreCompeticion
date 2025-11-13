@@ -8,11 +8,8 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   <link rel="icon" type="image/png" href="./img/imagen-tfg.png">
   <link rel="stylesheet" href="./css/style.css">
-
   <link rel="stylesheet" href="./css/alertas.css">
 
   <style>
@@ -21,57 +18,14 @@
       color: white;
     }
 
-    #calendar {
-      max-width: 900px;
-      margin: 50px auto;
-      background: #1c1c1c;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-    }
-
-    .modal-event {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-    }
-
-    .modal-event-content {
-      background: #1c1c1c;
-      color: white;
-      padding: 25px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 450px;
-      box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
-    }
-
-    .close-modal {
-      background: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      margin-top: 15px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .close-modal:hover {
-      background: #e60000;
+    main {
+      padding-top: 100px; /* Espacio para el navbar */
     }
   </style>
 </head>
 
 <body>
-  <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
+  <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
     <a href="./index.html" class="navbar-brand d-flex align-items-center">
       <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
     </a>
@@ -94,7 +48,7 @@
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-      <a href="./index.html" class="d-block text-light mb-2">
+      <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
         <i class="bi bi-calendar-event"></i> Calendario
       </a>
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
@@ -108,18 +62,7 @@
   <main class="text-center mt-5">
     <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
     <h4 id="bienvenida" class="mt-3 text-danger"></h4>
-    <div id="calendar"></div>
-  </main>
-
-  <div id="eventViewModal" class="modal-event" style="display: none;">
-    <div class="modal-event-content">
-      <h4 id="modalTitle"></h4>
-      <p id="modalDesc"></p>
-      <p id="modalLoc"></p>
-      <p id="modalDate"></p>
-      <button class="close-modal" id="closeModalBtn">Cerrar</button>
-    </div>
-  </div>
+    </main>
 
   <script src="./js/alertas.js"></script>
 
@@ -140,52 +83,17 @@
         e.preventDefault();
         localStorage.removeItem("usuario");
 
-        // *** REEMPLAZO POR LA FUNCIÓN DE ALERTA GLOBAL ***
-        mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500); // Usamos 'error' (rojo) y duración de 1.5s
+        mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
 
-        // Cierra el offcanvas (si está abierto)
         const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
         if (offcanvasMenu) {
           offcanvasMenu.hide();
         }
 
-        // Esperamos un poco más para que la alerta se muestre antes de redirigir
         setTimeout(() => {
           window.location.href = "./pages/auth/login/login.html";
-        }, 1500); // Redirige después de que la alerta se haya mostrado/desaparecido
+        }, 1500);
 
-      });
-
-      // CALENDARIO
-      const calendarEl = document.getElementById("calendar");
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        locale: "es",
-        events: async (fetchInfo, successCallback, failureCallback) => {
-          try {
-            const res = await fetch("/api/events");
-            const data = await res.json();
-            if (data.success && Array.isArray(data.data)) successCallback(data.data);
-            else successCallback([]);
-          } catch (err) {
-            failureCallback(err);
-            // Opcional: Mostrar alerta si falla la carga de eventos
-            mostrarAlerta("Error al cargar los eventos del calendario.", 'error');
-          }
-        },
-        eventClick: (info) => {
-          const e = info.event;
-          document.getElementById("modalTitle").textContent = e.title;
-          document.getElementById("modalDesc").textContent = e.extendedProps.description || "Sin descripción.";
-          document.getElementById("modalLoc").textContent = e.extendedProps.location || "Ubicación no especificada.";
-          document.getElementById("modalDate").textContent = new Date(e.start).toLocaleDateString("es-ES");
-          document.getElementById("eventViewModal").style.display = "flex";
-        },
-      });
-      calendar.render();
-
-      document.getElementById("closeModalBtn").addEventListener("click", () => {
-        document.getElementById("eventViewModal").style.display = "none";
       });
     });
   </script>
