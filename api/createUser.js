@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // Usando bcryptjs
+import bcrypt from "bcryptjs"; // Usando bcryptjs para compatibilidad con Vercel
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Generar Hash y registrar su longitud
+    // Generar Hash
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     console.log(`Hash generado exitosamente. Longitud: ${hashedPassword.length}`);
     
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("### FALLO CRÍTICO EN CREATEUSER ###");
-    console.error("Detalle del error:", error); // Esto mostrará el error exacto (ej. error de DB)
+    console.error("Detalle del error:", error); 
     
     if (error.code === '23505') { 
         return res.status(409).json({

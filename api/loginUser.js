@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // Usando bcryptjs
+import bcrypt from "bcryptjs"; // Usando bcryptjs para compatibilidad con Vercel
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -35,7 +35,6 @@ export default async function handler(req, res) {
 
     const user = rows[0];
     
-    
     // Log del hash de la DB para depuración
     console.log(`Usuario encontrado. Hash en DB (primeros 10 chars): ${user.password_hash ? user.password_hash.substring(0, 10) : 'NULL/Undefined'}`);
 
@@ -67,7 +66,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("### FALLO CRÍTICO EN LOGINUSER ###");
-    console.error("Detalle del error:", error); // Esto mostrará el error exacto (ej. fallo de bcrypt.compare)
+    console.error("Detalle del error:", error);
     return res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 }
