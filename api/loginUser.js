@@ -35,6 +35,7 @@ export default async function handler(req, res) {
 
     const user = rows[0];
     
+    
     // Log del hash de la DB para depuración
     console.log(`Usuario encontrado. Hash en DB (primeros 10 chars): ${user.password_hash ? user.password_hash.substring(0, 10) : 'NULL/Undefined'}`);
 
