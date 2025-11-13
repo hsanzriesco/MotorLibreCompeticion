@@ -1,5 +1,6 @@
-import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // Usando bcryptjs para compatibilidad con Vercel
+// Usamos require() para Node.js/CommonJS para mayor compatibilidad en Vercel
+const { Pool } = require("pg");
+const bcrypt = require("bcryptjs"); 
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -49,6 +50,7 @@ export default async function handler(req, res) {
     }
 
     // Generar Hash
+    console.log("bcrypt.hash tipo:", typeof bcrypt.hash); // Depuración de carga
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     console.log(`Hash generado exitosamente. Longitud: ${hashedPassword.length}`);
     

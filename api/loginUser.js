@@ -1,13 +1,16 @@
-import { Pool } from "pg";
-// import bcrypt from "bcryptjs"; // NO USAMOS ESTA SINTAXIS PARA MAYOR COMPATIBILIDAD
+// loginUser.js
+const { Pool } = require("pg"); // Usar require para pg
+const bcrypt = require('bcryptjs'); // Usar require para bcryptjs
 
-const bcrypt = require('bcryptjs'); // ✅ Usamos require() para asegurar la carga en Vercel
+// Convertimos la importación de pg a require también para consistencia
+// const { Pool } = require("pg"); 
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
+// Nota: Vercel soporta 'export default async function' incluso con require
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Método no permitido" });
@@ -15,7 +18,6 @@ export default async function handler(req, res) {
 
   try {
     console.log("--- LOGIN INICIADO ---");
-    // Log para confirmar que bcrypt está disponible
     console.log("bcrypt.compare tipo:", typeof bcrypt.compare);
 
     const { username, password } = req.body;
@@ -24,7 +26,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan datos" });
     }
 
-    // Buscamos el usuario por nombre y recuperamos el hash
     const { rows } = await pool.query(
       "SELECT id, name, email, role, password_hash FROM users WHERE name = $1",
       [username]
@@ -37,16 +38,13 @@ export default async function handler(req, res) {
 
     const user = rows[0];
 
-    // Log del hash de la DB para depuración
     console.log(`Usuario encontrado. Hash en DB (primeros 10 chars): ${user.password_hash ? user.password_hash.substring(0, 10) : 'NULL/Undefined'}`);
 
-    // Verificación para usuarios con hash nulo (usuarios antiguos)
     if (!user.password_hash) {
       console.error(`Error de Datos: Hash de usuario ${username} es nulo o inválido.`);
       return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
-    // Comparamos la contraseña en texto plano con el hash guardado
     const match = await bcrypt.compare(password, user.password_hash);
 
     if (!match) {
@@ -54,7 +52,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
-    // Éxito
     console.log(`LOGIN EXITOSO para ${username}.`);
     return res.status(200).json({
       success: true,
