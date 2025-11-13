@@ -13,9 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCarId = null;
 
     // 2. Comprobación de autenticación y Carga Inicial
+    // Ahora lee correctamente de localStorage, gracias a la corrección en login.js
     const user = JSON.parse(localStorage.getItem('usuario'));
 
-    // ESTE ES EL BLOQUE QUE FALLABA SI EL LOGIN NO GUARDABA ID o EMAIL
     if (!user || !user.id || !user.email) {
         console.error("Fallo de autenticación: El objeto 'usuario' en localStorage no tiene ID o Email.");
         mostrarAlerta("Sesión no válida o expirada. Por favor, inicia sesión.", 'error', 2000);
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 5. Manejo de Cambio de Contraseña
+    // 5. Manejo de Cambio de Contraseña (Requiere Contraseña Actual)
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarAlerta("La nueva contraseña y la confirmación no coinciden.", 'error');
             return;
         }
-        if (newPassword.length < 4) { // Poner una longitud mínima decente
+        if (newPassword.length < 4) { 
             mostrarAlerta("La nueva contraseña debe tener al menos 4 caracteres.", 'error');
             return;
         }

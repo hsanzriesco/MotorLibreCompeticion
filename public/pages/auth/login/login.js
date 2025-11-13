@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        // Cambiamos email → username
         const usernameInput = document.getElementById("username");
         const passwordInput = document.getElementById("password");
 
@@ -18,7 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = passwordInput.value.trim();
 
         if (!username || !password) {
-            // USO DE LA ALERTA GLOBAL
             mostrarAlerta("Por favor, completa todos los campos.", "aviso");
             return;
         }
@@ -27,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch("/api/loginUser", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                // Enviamos username en lugar de email
                 body: JSON.stringify({ username, password }),
             });
 
@@ -37,7 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 result = JSON.parse(text);
             } catch {
                 console.error("Respuesta no JSON:", text);
-                // USO DE LA ALERTA GLOBAL
                 mostrarAlerta("Error inesperado del servidor.", "error");
                 return;
             }
@@ -45,39 +41,32 @@ document.addEventListener("DOMContentLoaded", () => {
             if (result.success) {
                 const user = result.user;
 
-                // 🚨 ¡CORRECCIÓN CRÍTICA!
-                // Usar localStorage.setItem en lugar de sessionStorage.setItem
-                // para que la sesión sea leída correctamente por perfil.js.
-                // Además, aseguramos las claves 'id' y 'email' si no vienen directamente.
+                // 🚨 CORRECCIÓN CLAVE: Usamos localStorage para persistencia y compatibilidad con perfil.js
+                // Asegúrate de que user contiene {id, name, email}
                 localStorage.setItem("usuario", JSON.stringify({
                     id: user.id,
                     name: user.name,
-                    email: user.email // Asumimos que el backend proporciona el email
+                    email: user.email
                 }));
 
 
-                // USO DE LA ALERTA GLOBAL
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
-                // Redirección según el rol
+                // Redirección según el rol y la estructura de carpetas
                 setTimeout(() => {
                     if (user.role === "admin") {
-                        // Cambiado a la ruta de dashboard de admin
-                        window.location.href = "/pages/dashboard/admin/admin.html";
+                        // RUTA CORREGIDA: Va a /pages/dashboard/admin/user/admin.html
+                        window.location.href = "../../dashboard/admin/user/admin.html";
                     } else {
-                        // 🚨 ¡MODIFICACIÓN!
-                        // Redirigimos al perfil después del login para el usuario normal
-                        // ya que la lógica de perfil está lista para gestionar esto.
-                        window.location.href = "../perfil/perfil.html"; 
+                        // Redirige al perfil inmediatamente después del login exitoso
+                        window.location.href = "../perfil/perfil.html";
                     }
                 }, 1500);
             } else {
-                // USO DE LA ALERTA GLOBAL
                 mostrarAlerta(result.message || "Credenciales incorrectas.", "error");
             }
         } catch (error) {
             console.error("Error en login:", error);
-            // USO DE LA ALERTA GLOBAL
             mostrarAlerta("Error de conexión con el servidor.", "error");
         }
     });
