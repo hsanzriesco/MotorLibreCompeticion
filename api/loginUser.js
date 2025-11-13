@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // ✅ USAMOS bcryptjs
+import bcrypt from "bcryptjs"; // Importación de bcryptjs
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan datos" });
     }
 
-    // ✅ Solo buscamos por nombre y traemos el hash
+    // Buscamos el usuario por nombre y recuperamos el hash
     const { rows } = await pool.query(
       "SELECT id, name, email, role, password_hash FROM users WHERE name = $1",
       [username]
@@ -29,22 +29,21 @@ export default async function handler(req, res) {
     }
 
     const user = rows[0];
-
-    // ✅ ⚠️ Verificación para evitar error 500 por valor nulo
+    
+    // Verificación para usuarios con hash nulo (usuarios antiguos)
     if (!user.password_hash) {
-      // Bloquear acceso a usuarios con hash nulo/inválido
-      console.error(`Usuario ${username} no tiene hash válido. Posible usuario antiguo.`);
-      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+        console.error(`Usuario ${username} no tiene hash válido. Acceso denegado.`);
+        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
-
-    // ✅ Comparamos el texto plano con el hash
+    
+    // Comparamos la contraseña en texto plano con el hash guardado
     const match = await bcrypt.compare(password, user.password_hash);
-
+    
     if (!match) {
-      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
-    // Éxito
+    // Inicio de sesión exitoso
     return res.status(200).json({
       success: true,
       message: "Inicio de sesión correcto",
@@ -56,8 +55,7 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
-    // Si el error 500 sigue ocurriendo aquí, es un problema de bcryptjs, Vercel o la DB.
-    console.error("❌ Error en loginUser:", error);
+    console.error("Error en loginUser:", error);
     return res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 }
