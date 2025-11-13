@@ -1,17 +1,13 @@
-// loginUser.js
-const { Pool } = require("pg"); // Usar require para pg
-const bcrypt = require('bcryptjs'); // Usar require para bcryptjs
-
-// Convertimos la importación de pg a require también para consistencia
-// const { Pool } = require("pg"); 
+import { Pool } from "pg"; // <-- Usar import
+import bcrypt from "bcryptjs"; // <-- Usar import
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-// Nota: Vercel soporta 'export default async function' incluso con require
 export default async function handler(req, res) {
+  // ... (El resto del código de login es el mismo)
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Método no permitido" });
   }
