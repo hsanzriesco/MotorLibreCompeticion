@@ -29,6 +29,60 @@
             min-height: 100vh;
         }
 
+        /* ESTILOS COPIADOS DE INDEX.HTML PARA EL CALENDARIO */
+        #calendar {
+            max-width: 900px;
+            /* <--- Clave para centrar y limitar ancho */
+            margin: 50px auto;
+            /* <--- Clave para centrar */
+            background: #1c1c1c;
+            /* Fondo oscuro similar */
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+
+        /* ESTILOS COPIADOS DE INDEX.HTML PARA LA MODAL DE VISUALIZACIÓN */
+        .modal-event {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-event-content {
+            background: #1c1c1c;
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+
+        .close-modal {
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            margin-top: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .close-modal:hover {
+            background: #e60000;
+        }
+
+        /* FIN DE ESTILOS COPIADOS */
+
         .admin-section {
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid rgba(229, 9, 20, 0.5);
@@ -38,12 +92,6 @@
             margin: 1rem auto;
             width: 95%;
             max-width: 1200px;
-        }
-
-        #calendar {
-            background: rgba(30, 30, 30, 0.8);
-            border-radius: 10px;
-            padding: 10px;
         }
 
         .modal-content {
@@ -84,9 +132,6 @@
             border-color: #e50914 !important;
         }
 
-        /* ❌ ELIMINACIÓN DE ESTILOS OBSOLETOS DE ALERTA */
-        /* .custom-alert, .custom-confirm, .confirm-content, etc. */
-        
         /* MANTENEMOS SOLO LOS ESTILOS DEL CUSTOM-CONFIRM */
         .custom-confirm {
             position: fixed;
@@ -95,7 +140,7 @@
             width: 100%;
             height: 100%;
             background: rgba(15, 15, 15, 0.9);
-            display: none; /* Por defecto oculto, lo mostrará el JS */
+            display: none;
             align-items: center;
             justify-content: center;
             z-index: 3500;
@@ -163,10 +208,21 @@
     <main>
         <section class="admin-section">
             <h2 class="text-center mb-4">Gestión de Eventos</h2>
-            <div id="calendar"></div>
         </section>
+
+        <div id="calendar"></div>
     </main>
-    
+
+    <div id="eventViewModal" class="modal-event" style="display: none;">
+        <div class="modal-event-content">
+            <h4 id="modalTitle"></h4>
+            <p id="modalDesc"></p>
+            <p id="modalLoc"></p>
+            <p id="modalDate"></p>
+            <button class="close-modal" id="closeModalBtn">Cerrar</button>
+        </div>
+    </div>
+
     <div id="customConfirmContainer"></div>
 
     <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
@@ -185,17 +241,20 @@
 
                         <div class="mb-3">
                             <label for="title" class="form-label">Título *</label>
-                            <input type="text" id="title" class="form-control" placeholder="Ej: Carrera en Montmeló" required />
+                            <input type="text" id="title" class="form-control" placeholder="Ej: Carrera en Montmeló"
+                                required />
                         </div>
 
                         <div class="mb-3">
                             <label for="description" class="form-label">Descripción</label>
-                            <textarea id="description" class="form-control" rows="3" placeholder="Detalles del evento..."></textarea>
+                            <textarea id="description" class="form-control" rows="3"
+                                placeholder="Detalles del evento..."></textarea>
                         </div>
 
                         <div class="mb-3">
                             <label for="location" class="form-label">Ubicación</label>
-                            <input type="text" id="location" class="form-control" placeholder="Ej: Circuito Ricardo Tormo" />
+                            <input type="text" id="location" class="form-control"
+                                placeholder="Ej: Circuito Ricardo Tormo" />
                         </div>
 
                         <div class="mb-3 p-3 rounded-3 border border-danger bg-dark bg-opacity-50">
@@ -238,6 +297,14 @@
 
     <script src="../../../js/alertas.js"></script>
     <script src="./admin.js"></script>
+    <script>
+        // Lógica de cierre de la modal de visualización (eventViewModal)
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById("closeModalBtn").addEventListener("click", () => {
+                document.getElementById("eventViewModal").style.display = "none";
+            });
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
