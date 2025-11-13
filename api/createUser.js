@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       console.error("Error 400: Campos requeridos faltantes.");
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
-
+    
     // ATENCIÓN: Se usa la columna 'password' para almacenar el texto plano.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     // Se inserta la contraseña en texto plano
     const result = await pool.query(
       "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-      [name, email, password, "user"]
+      [name, email, password, "user"] 
     );
     console.log(`Usuario ${name} insertado en DB.`);
 
@@ -58,13 +58,13 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("### FALLO CRÍTICO EN CREATEUSER ###");
-    console.error("Detalle del error:", error);
-
-    if (error.code === '23505') {
-      return res.status(409).json({
-        success: false,
-        message: "El nombre o correo ya están registrados."
-      });
+    console.error("Detalle del error:", error); 
+    
+    if (error.code === '23505') { 
+        return res.status(409).json({
+            success: false,
+            message: "El nombre o correo ya están registrados."
+        });
     }
     return res.status(500).json({
       success: false,
