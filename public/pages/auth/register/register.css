@@ -1,20 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* Estilos para el formulario de Registro/Login */
+body {
+    overflow: hidden;
+    /* Bloquea el desplazamiento vertical y horizontal */
+}
 
+/* Opcional: Si quieres mantener el ancho, pero en este caso es suficiente con 'body' */
+/* html {
+    overflow: hidden;
+    height: 100%;
+} */
 .form-container {
     /* Estilo del main.css original */
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 1rem;
-    
+
     /* Adaptaciones para compactar y evitar scroll */
     /* La altura se calcula restando la altura del navbar (aprox. 80px) */
     /* Se usa 'min-height' para que crezca si el contenido no cabe. */
-    height: calc(100vh - 80px); /* Ajuste clave para evitar el scroll innecesario */
-    min-height: 500px; /* Altura mínima para asegurar visibilidad */
-    padding: 20px 20px; /* Reducir padding superior/inferior */
+    height: calc(100vh - 80px);
+    /* Ajuste clave para evitar el scroll innecesario */
+    min-height: 500px;
+    /* Altura mínima para asegurar visibilidad */
+    padding: 20px 20px;
+    /* Reducir padding superior/inferior */
 }
 
 .form-box {
@@ -34,9 +45,11 @@
     border: 1px solid #e50914;
     box-shadow: 0 0 25px rgba(229, 9, 20, 0.3);
     border-radius: 12px;
-    padding: 30px; /* Reducir padding interno */
+    padding: 30px;
+    /* Reducir padding interno */
     width: 100%;
-    max-width: 400px; /* Reducir un poco el max-width */
+    max-width: 400px;
+    /* Reducir un poco el max-width */
 }
 
 .form-box h2 {
@@ -49,7 +62,8 @@
 
     /* Adaptaciones para compactar */
     font-weight: 700;
-    margin-bottom: 20px; /* Reducir margen inferior */
+    margin-bottom: 20px;
+    /* Reducir margen inferior */
     text-shadow: 0 0 10px rgba(229, 9, 20, 0.7);
 }
 
@@ -60,12 +74,15 @@
     margin-bottom: 0.4rem;
     color: #fff;
     font-weight: 600;
-    
+
     /* Adaptaciones para compactar */
-    margin-top: 5px; /* Reducir margen superior */
+    margin-top: 5px;
+    /* Reducir margen superior */
     color: #ccc;
-    margin-bottom: 3px; /* Asegurar menor espacio entre label y input */
-    font-size: 0.95rem; /* Opcional: reducir ligeramente el tamaño de fuente */
+    margin-bottom: 3px;
+    /* Asegurar menor espacio entre label y input */
+    font-size: 0.95rem;
+    /* Opcional: reducir ligeramente el tamaño de fuente */
 }
 
 .form-box input {
@@ -80,11 +97,13 @@
     font-size: 0.95rem;
     outline: none;
     transition: 0.3s;
-    
+
     /* Adaptaciones para compactar */
-    padding: 8px 10px; /* Reducir padding interno del input */
+    padding: 8px 10px;
+    /* Reducir padding interno del input */
     margin-top: 3px;
-    margin-bottom: 12px; /* Reducir margen inferior */
+    margin-bottom: 12px;
+    /* Reducir margen inferior */
     border-radius: 6px;
     background-color: #222;
     transition: all 0.2s ease;
@@ -111,10 +130,12 @@
     cursor: pointer;
     font-size: 1rem;
     transition: all 0.3s;
-    
+
     /* Adaptaciones para compactar */
-    padding: 10px; /* Reducir padding del botón */
-    margin-top: 15px; /* Reducir margen superior */
+    padding: 10px;
+    /* Reducir padding del botón */
+    margin-top: 15px;
+    /* Reducir margen superior */
     border-radius: 6px;
 }
 
@@ -125,7 +146,8 @@
     box-shadow: 0 0 15px #e50914;
 
     /* Adaptaciones del nuevo CSS */
-    transform: scale(1); /* Se deja el del main.css si no se quiere el transform */
+    transform: scale(1);
+    /* Se deja el del main.css si no se quiere el transform */
     box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
 }
 
@@ -134,10 +156,12 @@
     margin-top: 1.2rem;
     color: #ccc;
     font-size: 0.95rem;
-    
+
     /* Adaptaciones para compactar */
-    margin-top: 10px; /* Reducir margen superior */
-    font-size: 0.9rem; /* Opcional: reducir ligeramente el tamaño de fuente */
+    margin-top: 10px;
+    /* Reducir margen superior */
+    font-size: 0.9rem;
+    /* Opcional: reducir ligeramente el tamaño de fuente */
 }
 
 .switch-link a {
@@ -156,21 +180,26 @@
 @media (max-width: 768px) {
     .form-container {
         /* Se usa auto/min-height para que crezca si el navbar es grande o el contenido más grande */
-        height: auto; 
-        min-height: calc(100vh - 80px); /* Asegurar que ocupe casi toda la pantalla en móvil */
-        padding-top: 3rem; /* Reducir padding superior */
-        padding-bottom: 3rem; /* Reducir padding inferior */
+        height: auto;
+        min-height: calc(100vh - 80px);
+        /* Asegurar que ocupe casi toda la pantalla en móvil */
+        padding-top: 3rem;
+        /* Reducir padding superior */
+        padding-bottom: 3rem;
+        /* Reducir padding inferior */
     }
 
     .form-box {
         width: 90%;
-        padding: 1.5rem 1.2rem; /* Reducir padding interno */
+        padding: 1.5rem 1.2rem;
+        /* Reducir padding interno */
         border-radius: 18px;
         box-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
     }
 
     .form-box h2 {
-        font-size: 1.5rem; /* Reducir tamaño de título */
+        font-size: 1.5rem;
+        /* Reducir tamaño de título */
         margin-bottom: 15px;
     }
 
@@ -178,8 +207,9 @@
     .form-box button {
         font-size: 0.9rem;
     }
-    
+
     .form-box button {
-        padding: 10px; /* Ajustar padding del botón en móvil */
+        padding: 10px;
+        /* Ajustar padding del botón en móvil */
     }
 }
