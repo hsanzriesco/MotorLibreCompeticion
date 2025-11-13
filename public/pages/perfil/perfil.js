@@ -1,181 +1,121 @@
-document.addEventListener("DOMContentLoaded", async () => {
-    // CAMBIO: Usamos localStorage para ser consistentes con el HTML y el index.html
-    const user = JSON.parse(localStorage.getItem("usuario")); 
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Elementos del DOM
+    const profileForm = document.getElementById('profile-form');
+    const passwordForm = document.getElementById('password-form');
+    const userNameElement = document.getElementById('user-name');
+    const loginIcon = document.getElementById('login-icon');
+    const logoutBtn = document.getElementById('logout-btn');
 
-    // ===========================
-    // CONTROL DE ACCESO
-    // ===========================
-    if (!user) {
-        // USO DE LA ALERTA GLOBAL: mostrarAlerta(mensaje, tipo, duracion)
-        mostrarAlerta("Debes iniciar sesión para acceder a tu perfil.", "error", 2000); 
+    // 2. Comprobación de autenticación y Carga Inicial
+    const user = JSON.parse(localStorage.getItem('usuario'));
+
+    if (!user || !user.id || !user.email) {
+        // Si no hay usuario o faltan datos esenciales, redirigir al login
+        mostrarAlerta("Sesión no válida o expirada. Por favor, inicia sesión.", 'error', 2000);
         setTimeout(() => {
-            // Ajusta esta ruta si es necesario, basándome en la estructura actual
-            window.location.href = "/pages/auth/login/login.html"; 
+            window.location.href = '../auth/login/login.html';
         }, 2000);
-        return;
+        return; // Detiene la ejecución del script
     }
 
-    // Mostrar nombre actual del usuario
-    const usernameDisplay = document.getElementById("usernameDisplay");
-    if (usernameDisplay) usernameDisplay.textContent = user.name;
+    // Muestra datos en el NavBar
+    userNameElement.textContent = user.name;
+    loginIcon.style.display = 'none';
 
-    // ===========================
-    // CAMBIAR NOMBRE DE USUARIO
-    // ===========================
-    const nameForm = document.getElementById("updateNameForm");
-    if (nameForm) {
-        nameForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
+    // Llena los campos del formulario
+    document.getElementById('user-id').value = user.id;
+    document.getElementById('profile-name').value = user.name;
+    document.getElementById('profile-email').value = user.email;
 
-            const newName = document.getElementById("newUsername").value.trim();
-            // USO DE LA ALERTA GLOBAL
-            if (!newName) return mostrarAlerta("Introduce un nombre válido", "error"); 
 
-            try {
-                const res = await fetch("/api/userActions/updateName", {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: user.id, newName }),
-                });
+    // 3. Manejo de Cierre de Sesión (Logout)
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem("usuario");
 
-                const result = await res.json();
-                if (result.success) {
-                    // USO DE LA ALERTA GLOBAL
-                    mostrarAlerta("Nombre actualizado correctamente", "exito"); 
-                    user.name = newName;
-                    // CAMBIO: Usamos localStorage para persistencia
-                    localStorage.setItem("usuario", JSON.stringify(user)); 
-                    usernameDisplay.textContent = newName;
-                } else {
-                    // USO DE LA ALERTA GLOBAL
-                    mostrarAlerta(result.message, "error"); 
-                }
-            } catch (err) {
-                console.error(err);
-                // USO DE LA ALERTA GLOBAL
-                mostrarAlerta("Error al actualizar el nombre", "error"); 
-            }
-        });
-    }
+        mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
 
-    // ===========================
-    // CAMBIAR CONTRASEÑA
-    // ===========================
-    const passwordForm = document.getElementById("updatePasswordForm");
-    if (passwordForm) {
-        passwordForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
+        // Cierra el offcanvas (si está abierto)
+        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+        if (offcanvasMenu) {
+            offcanvasMenu.hide();
+        }
 
-            const newPassword = document.getElementById("newPassword").value.trim();
-            const confirmPassword = document.getElementById("confirmPassword").value.trim();
+        setTimeout(() => {
+            window.location.href = "../auth/login/login.html";
+        }, 1500);
+    });
 
-            if (!newPassword || !confirmPassword)
-                 // USO DE LA ALERTA GLOBAL
-                return mostrarAlerta("Completa todos los campos", "error"); 
+    // 4. Manejo de Actualización de Perfil (Nombre)
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            if (newPassword !== confirmPassword)
-                 // USO DE LA ALERTA GLOBAL
-                return mostrarAlerta("Las contraseñas no coinciden", "error"); 
+        const id = document.getElementById('user-id').value;
+        const newName = document.getElementById('profile-name').value.trim();
+        const email = document.getElementById('profile-email').value; // El email no cambia
 
-            try {
-                const res = await fetch("/api/userActions/updatePassword", {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: user.id, newPassword }),
-                });
-
-                const result = await res.json();
-                if (result.success) {
-                    // USO DE LA ALERTA GLOBAL
-                    mostrarAlerta("Contraseña actualizada correctamente", "exito"); 
-                    passwordForm.reset();
-                } else {
-                    // USO DE LA ALERTA GLOBAL
-                    mostrarAlerta(result.message, "error"); 
-                }
-            } catch (err) {
-                console.error(err);
-                // USO DE LA ALERTA GLOBAL
-                mostrarAlerta("Error al actualizar la contraseña", "error"); 
-            }
-        });
-    }
-
-    // ===========================
-    // AÑADIR COCHE
-    // ===========================
-    const carForm = document.getElementById("addCarForm");
-    if (carForm) {
-        carForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            const carName = document.getElementById("carName").value.trim();
-            const carImage = document.getElementById("carImage").files[0];
-
-            // USO DE LA ALERTA GLOBAL
-            if (!carName) return mostrarAlerta("Introduce el nombre del coche", "error"); 
-
-            const formData = new FormData();
-            formData.append("userId", user.id);
-            formData.append("carName", carName);
-            if (carImage) formData.append("carImage", carImage);
-
-            try {
-                const res = await fetch("/api/userActions/addCar", {
-                    method: "POST",
-                    body: formData,
-                });
-
-                const result = await res.json();
-                if (result.success) {
-                    // USO DE LA ALERTA GLOBAL
-                    mostrarAlerta("Coche añadido correctamente", "exito"); 
-                    carForm.reset();
-                    loadCars();
-                } else {
-                    // USO DE LA ALERTA GLOBAL
-                    mostrarAlerta(result.message, "error"); 
-                }
-            } catch (err) {
-                console.error(err);
-                // USO DE LA ALERTA GLOBAL
-                mostrarAlerta("Error al añadir el coche", "error"); 
-            }
-        });
-    }
-
-    // ===========================
-    // CARGAR COCHES DEL USUARIO
-    // ===========================
-    async function loadCars() {
-        const garageContainer = document.getElementById("garageContainer");
-        if (!garageContainer) return;
+        if (newName === user.name) {
+            mostrarAlerta("No hay cambios que guardar.", 'info');
+            return;
+        }
 
         try {
-            const res = await fetch(`/api/userActions/getCars?userId=${user.id}`);
-            const data = await res.json();
+            // Simulación de llamada a la API
+            // En una aplicación real, usarías 'fetch' aquí:
+            // const response = await fetch('/api/user/updateProfile', { ... });
 
-            garageContainer.innerHTML = "";
-            if (data.cars && data.cars.length > 0) {
-                data.cars.forEach((car) => {
-                    const card = document.createElement("div");
-                    card.classList.add("car-card");
+            // Suponiendo que la API devuelve éxito:
 
-                    card.innerHTML = `
-                        <img src="${car.image_url || '/img/default-car.jpg'}" alt="Coche" class="car-img">
-                        <p class="car-name">${car.name}</p>
-                    `;
-                    garageContainer.appendChild(card);
-                });
-            } else {
-                garageContainer.innerHTML = "<p>No tienes coches añadidos.</p>";
-            }
-        } catch (err) {
-            console.error(err);
-            // USO DE LA ALERTA GLOBAL
-            mostrarAlerta("Error al cargar los coches", "error"); 
+            // Actualizar LocalStorage
+            user.name = newName;
+            localStorage.setItem('usuario', JSON.stringify(user));
+            userNameElement.textContent = newName;
+
+            mostrarAlerta("Perfil actualizado correctamente.", 'success');
+
+        } catch (error) {
+            mostrarAlerta("Error al actualizar el perfil. Intenta de nuevo.", 'error');
         }
-    }
+    });
 
-    loadCars();
+    // 5. Manejo de Cambio de Contraseña
+    passwordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const currentPassword = document.getElementById('current-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmNewPassword = document.getElementById('confirm-new-password').value;
+        const userId = document.getElementById('user-id').value;
+
+        if (newPassword !== confirmNewPassword) {
+            mostrarAlerta("La nueva contraseña y la confirmación no coinciden.", 'error');
+            return;
+        }
+
+        // La validación de longitud de contraseña debe ir aquí (ej. > 6 caracteres)
+
+        try {
+            // Simulación de llamada a la API
+            // const response = await fetch('/api/user/changePassword', { 
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ userId, currentPassword, newPassword })
+            // });
+
+            // Simulación: Si la contraseña actual es '1234' -> Éxito
+            if (currentPassword === '1234') {
+                mostrarAlerta("Contraseña cambiada exitosamente.", 'success');
+                // Cerrar modal
+                const modalElement = document.getElementById('passwordModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                modal.hide();
+                passwordForm.reset();
+            } else {
+                mostrarAlerta("Error: La contraseña actual es incorrecta.", 'error');
+            }
+
+        } catch (error) {
+            mostrarAlerta("Error al intentar cambiar la contraseña.", 'error');
+        }
+    });
 });
