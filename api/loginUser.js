@@ -1,5 +1,7 @@
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // Usando bcryptjs para compatibilidad con Vercel
+// import bcrypt from "bcryptjs"; // NO USAMOS ESTA SINTAXIS PARA MAYOR COMPATIBILIDAD
+
+const bcrypt = require('bcryptjs'); // ✅ Usamos require() para asegurar la carga en Vercel
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -14,7 +16,7 @@ export default async function handler(req, res) {
   try {
     console.log("--- LOGIN INICIADO ---");
     // Log para confirmar que bcrypt está disponible
-    console.log("bcrypt.compare tipo:", typeof bcrypt.compare); 
+    console.log("bcrypt.compare tipo:", typeof bcrypt.compare);
 
     const { username, password } = req.body;
 
@@ -34,22 +36,22 @@ export default async function handler(req, res) {
     }
 
     const user = rows[0];
-    
+
     // Log del hash de la DB para depuración
     console.log(`Usuario encontrado. Hash en DB (primeros 10 chars): ${user.password_hash ? user.password_hash.substring(0, 10) : 'NULL/Undefined'}`);
 
     // Verificación para usuarios con hash nulo (usuarios antiguos)
     if (!user.password_hash) {
-        console.error(`Error de Datos: Hash de usuario ${username} es nulo o inválido.`);
-        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+      console.error(`Error de Datos: Hash de usuario ${username} es nulo o inválido.`);
+      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
-    
+
     // Comparamos la contraseña en texto plano con el hash guardado
     const match = await bcrypt.compare(password, user.password_hash);
-    
+
     if (!match) {
-        console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
-        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+      console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
+      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
     // Éxito
