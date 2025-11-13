@@ -45,8 +45,16 @@ document.addEventListener("DOMContentLoaded", () => {
             if (result.success) {
                 const user = result.user;
 
-                // Guardamos el usuario en sessionStorage
-                sessionStorage.setItem("usuario", JSON.stringify(user));
+                // 🚨 ¡CORRECCIÓN CRÍTICA!
+                // Usar localStorage.setItem en lugar de sessionStorage.setItem
+                // para que la sesión sea leída correctamente por perfil.js.
+                // Además, aseguramos las claves 'id' y 'email' si no vienen directamente.
+                localStorage.setItem("usuario", JSON.stringify({
+                    id: user.id,
+                    name: user.name,
+                    email: user.email // Asumimos que el backend proporciona el email
+                }));
+
 
                 // USO DE LA ALERTA GLOBAL
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
@@ -54,9 +62,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Redirección según el rol
                 setTimeout(() => {
                     if (user.role === "admin") {
+                        // Cambiado a la ruta de dashboard de admin
                         window.location.href = "/pages/dashboard/admin/admin.html";
                     } else {
-                        window.location.href = "/index.html";
+                        // 🚨 ¡MODIFICACIÓN!
+                        // Redirigimos al perfil después del login para el usuario normal
+                        // ya que la lógica de perfil está lista para gestionar esto.
+                        window.location.href = "../perfil/perfil.html"; 
                     }
                 }, 1500);
             } else {

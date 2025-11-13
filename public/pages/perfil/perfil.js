@@ -13,11 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCarId = null;
 
     // 2. Comprobación de autenticación y Carga Inicial
-    // Obtiene el objeto 'usuario' del localStorage
     const user = JSON.parse(localStorage.getItem('usuario'));
 
+    // ESTE ES EL BLOQUE QUE FALLABA SI EL LOGIN NO GUARDABA ID o EMAIL
     if (!user || !user.id || !user.email) {
-        // Muestra alerta si la sesión no es válida y redirige al login
+        console.error("Fallo de autenticación: El objeto 'usuario' en localStorage no tiene ID o Email.");
         mostrarAlerta("Sesión no válida o expirada. Por favor, inicia sesión.", 'error', 2000);
         setTimeout(() => {
             window.location.href = '../auth/login/login.html';
@@ -25,11 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    // Configura el NavBar
+    // Si la autenticación pasa, procede:
     userNameElement.textContent = user.name;
     loginIcon.style.display = 'none';
 
-    // Llena los campos del formulario de perfil
     document.getElementById('user-id').value = user.id;
     document.getElementById('profile-name').value = user.name;
     document.getElementById('profile-email').value = user.email;
@@ -91,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentCarId = null;
         
         if (car) {
-            // Modo Edición
             document.getElementById('carModalTitle').textContent = 'Editar Coche';
             document.getElementById('car-id').value = car.id;
             document.getElementById('car-name').value = car.car_name;
@@ -102,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentCarId = car.id;
             deleteCarBtn.style.display = 'block';
         } else {
-            // Modo Añadir
             document.getElementById('carModalTitle').textContent = 'Añadir Coche';
             deleteCarBtn.style.display = 'none';
         }
@@ -110,13 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Event listener para abrir modal en modo Añadir
     document.querySelector('.garage-card .btn-danger').addEventListener('click', (e) => {
-        // Asegura que solo se ejecute para el botón de añadir y no para los coches existentes
         if (e.currentTarget.id === '') { 
              openCarModal();
         }
     });
 
-    // Cargar coches al inicio
     loadCars();
     
     // --- Fin Funciones del Garaje ---
@@ -156,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // SIMULACIÓN: Aquí iría la llamada fetch para actualizar el nombre
         try {
-            // Actualizar LocalStorage
             user.name = newName;
             localStorage.setItem('usuario', JSON.stringify(user));
             userNameElement.textContent = newName;
@@ -192,10 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // SIMULACIÓN: Validación contra una contraseña "conocida" (ej: '1234')
             if (currentPassword === '1234') { 
-                // En una app real, aquí se llamaría a la API con currentPassword y newPassword
                 mostrarAlerta("Contraseña cambiada exitosamente.", 'success');
                 
-                // Cerrar modal
                 const modalElement = document.getElementById('passwordModal');
                 const modal = bootstrap.Modal.getInstance(modalElement);
                 modal.hide();
@@ -213,9 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
     carForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Recolección de datos del coche
         const carData = {
-            id: currentCarId || Date.now(), // Usa timestamp como ID temporal si es nuevo
+            id: currentCarId || Date.now(), 
             user_id: user.id,
             car_name: document.getElementById('car-name').value,
             model: document.getElementById('car-model').value,
@@ -227,24 +218,19 @@ document.addEventListener('DOMContentLoaded', () => {
         let storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
 
         if (currentCarId) {
-            // Modo Editar
             const index = storedCars.findIndex(c => c.id === currentCarId);
             if (index !== -1) {
-                // SIMULACIÓN: Guardar en localStorage
                 storedCars[index] = carData;
             }
             mostrarAlerta("Coche actualizado correctamente.", 'success');
         } else {
-            // Modo Añadir
-            // SIMULACIÓN: Guardar en localStorage
             storedCars.push(carData);
             mostrarAlerta("Coche añadido correctamente.", 'success');
         }
         
         localStorage.setItem('user_cars', JSON.stringify(storedCars));
-        loadCars(); // Recargar la lista de coches
+        loadCars(); 
 
-        // Cerrar modal
         const modalElement = document.getElementById('carModal');
         const modal = bootstrap.Modal.getInstance(modalElement);
         modal.hide();
@@ -258,14 +244,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (confirmDelete) {
             let storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
-            // SIMULACIÓN: Filtrar el coche a eliminar
             storedCars = storedCars.filter(c => c.id !== currentCarId);
             localStorage.setItem('user_cars', JSON.stringify(storedCars));
             
             loadCars();
             mostrarAlerta("Coche eliminado correctamente.", 'error');
             
-            // Cerrar modal
             const modalElement = document.getElementById('carModal');
             const modal = bootstrap.Modal.getInstance(modalElement);
             modal.hide();
