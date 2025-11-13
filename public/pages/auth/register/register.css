@@ -12,11 +12,11 @@ body {
     flex-direction: column;
 }
 
-/* Opcional: Si quieres mantener el ancho, pero en este caso es suficiente con 'body' */
-/* html {
-    overflow: hidden;
-    height: 100%;
+/* Si tu CSS contenía estilos para la alerta local, puedes dejar esta regla */
+/* .alert-container {
+    display: none;
 } */
+
 .form-container {
     /* Estilo del main.css original */
     display: flex;

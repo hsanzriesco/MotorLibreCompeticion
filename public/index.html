@@ -13,6 +13,8 @@
   <link rel="icon" type="image/png" href="./img/imagen-tfg.png">
   <link rel="stylesheet" href="./css/style.css">
 
+  <link rel="stylesheet" href="./css/alertas.css">
+
   <style>
     body {
       background-color: #111;
@@ -69,7 +71,6 @@
 </head>
 
 <body>
-  <!-- NAVBAR -->
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3">
     <a href="./index.html" class="navbar-brand d-flex align-items-center">
       <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
@@ -87,7 +88,6 @@
     </div>
   </nav>
 
-  <!-- MENÚ HAMBURGUESA -->
   <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
     <div class="offcanvas-header border-bottom border-secondary">
       <h5 class="offcanvas-title">Menú</h5>
@@ -102,14 +102,12 @@
     </div>
   </div>
 
-  <!-- CONTENIDO PRINCIPAL -->
   <main class="text-center mt-5">
     <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
     <h4 id="bienvenida" class="mt-3 text-danger"></h4>
     <div id="calendar"></div>
   </main>
 
-  <!-- MODAL EVENTOS -->
   <div id="eventViewModal" class="modal-event" style="display: none;">
     <div class="modal-event-content">
       <h4 id="modalTitle"></h4>
@@ -119,6 +117,8 @@
       <button class="close-modal" id="closeModalBtn">Cerrar</button>
     </div>
   </div>
+
+  <script src="./js/alertas.js"></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
@@ -136,22 +136,21 @@
       document.getElementById("logout-btn").addEventListener("click", (e) => {
         e.preventDefault();
         localStorage.removeItem("usuario");
-        const msg = document.createElement("div");
-        msg.textContent = "Has cerrado sesión correctamente.";
-        msg.style.position = "fixed";
-        msg.style.top = "20px";
-        msg.style.left = "50%";
-        msg.style.transform = "translateX(-50%)";
-        msg.style.backgroundColor = "#dc3545";
-        msg.style.color = "white";
-        msg.style.padding = "10px 20px";
-        msg.style.borderRadius = "10px";
-        msg.style.zIndex = "9999";
-        document.body.appendChild(msg);
+
+        // *** REEMPLAZO POR LA FUNCIÓN DE ALERTA GLOBAL ***
+        mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500); // Usamos 'error' (rojo) y duración de 1.5s
+
+        // Cierra el offcanvas (si está abierto)
+        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+        if (offcanvasMenu) {
+          offcanvasMenu.hide();
+        }
+
+        // Esperamos un poco más para que la alerta se muestre antes de redirigir
         setTimeout(() => {
-          msg.remove();
           window.location.href = "./pages/auth/login/login.html";
-        }, 1500);
+        }, 1500); // Redirige después de que la alerta se haya mostrado/desaparecido
+
       });
 
       // CALENDARIO
@@ -165,7 +164,11 @@
             const data = await res.json();
             if (data.success && Array.isArray(data.data)) successCallback(data.data);
             else successCallback([]);
-          } catch (err) { failureCallback(err); }
+          } catch (err) {
+            failureCallback(err);
+            // Opcional: Mostrar alerta si falla la carga de eventos
+            mostrarAlerta("Error al cargar los eventos del calendario.", 'error');
+          }
         },
         eventClick: (info) => {
           const e = info.event;

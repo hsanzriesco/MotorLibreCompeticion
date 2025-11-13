@@ -1,87 +1,83 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("registerForm");
+    const form = document.getElementById("registerForm");
 
-  let alertContainer = document.querySelector(".alert-container");
-  if (!alertContainer) {
-    alertContainer = document.createElement("div");
-    alertContainer.classList.add("alert-container");
-    document.body.appendChild(alertContainer);
-  }
+    // === ❌ ELIMINACIÓN DE LA LÓGICA DE ALERTA LOCAL ===
+    // let alertContainer = document.querySelector(".alert-container");
+    // if (!alertContainer) {
+    //   alertContainer = document.createElement("div");
+    //   alertContainer.classList.add("alert-container");
+    //   document.body.appendChild(alertContainer);
+    // }
+    // function showAlert(message, type = "success") { ... }
 
-  function showAlert(message, type = "success") {
-    const alert = document.createElement("div");
-    alert.className = `custom-alert ${type}`;
-    alert.textContent = message;
-    alertContainer.appendChild(alert);
+    function validatePassword(password) {
+        const lengthOK = password.length >= 8 && password.length <= 12;
+        const upperCaseOK = /[A-Z]/.test(password);
+        const numberOK = /[0-9]/.test(password);
+        const symbolOK = /[^A-Za-z0-9]/.test(password);
 
-    setTimeout(() => alert.classList.add("show"), 50);
-    setTimeout(() => {
-      alert.classList.remove("show");
-      setTimeout(() => alert.remove(), 300);
-    }, 3000);
-  }
-
-  function validatePassword(password) {
-    const lengthOK = password.length >= 8 && password.length <= 12;
-    const upperCaseOK = /[A-Z]/.test(password);
-    const numberOK = /[0-9]/.test(password);
-    const symbolOK = /[^A-Za-z0-9]/.test(password);
-
-    if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
-    if (!upperCaseOK) return "Debe contener al menos una letra mayúscula.";
-    if (!numberOK) return "Debe incluir al menos un número.";
-    if (!symbolOK) return "Debe incluir al menos un símbolo.";
-    return null;
-  }
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const name = document.getElementById("username").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const confirmPassword = document.getElementById("confirmPassword").value.trim();
-
-    if (!name || !email || !password || !confirmPassword) {
-      showAlert("Todos los campos son obligatorios.", "error");
-      return;
+        if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
+        if (!upperCaseOK) return "Debe contener al menos una letra mayúscula.";
+        if (!numberOK) return "Debe incluir al menos un número.";
+        if (!symbolOK) return "Debe incluir al menos un símbolo.";
+        return null;
     }
 
-    if (password !== confirmPassword) {
-      showAlert("Las contraseñas no coinciden.", "error");
-      return;
-    }
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      showAlert(passwordError, "error");
-      return;
-    }
+        const name = document.getElementById("username").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-    try {
-      const res = await fetch("/api/createUser", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
+        if (!name || !email || !password || !confirmPassword) {
+            // USO DE LA ALERTA GLOBAL
+            mostrarAlerta("Todos los campos son obligatorios.", "error"); 
+            return;
+        }
 
-      const result = await res.json();
+        if (password !== confirmPassword) {
+            // USO DE LA ALERTA GLOBAL
+            mostrarAlerta("Las contraseñas no coinciden.", "error");
+            return;
+        }
 
-      if (res.status === 409) {
-        showAlert("El nombre o correo ya están en uso.", "error");
-        return;
-      }
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            // USO DE LA ALERTA GLOBAL
+            mostrarAlerta(passwordError, "error");
+            return;
+        }
 
-      if (result.success) {
-        showAlert("Usuario creado con éxito", "success");
-        setTimeout(() => {
-          window.location.href = "../login/login.html";
-        }, 1500);
-      } else {
-        showAlert(result.message, "error");
-      }
-    } catch {
-      showAlert("Error al conectar con el servidor.", "error");
-    }
-  });
+        try {
+            const res = await fetch("/api/createUser", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password }),
+            });
+
+            const result = await res.json();
+
+            if (res.status === 409) {
+                // USO DE LA ALERTA GLOBAL
+                mostrarAlerta("El nombre o correo ya están en uso.", "error");
+                return;
+            }
+
+            if (result.success) {
+                // USO DE LA ALERTA GLOBAL
+                mostrarAlerta("🎉 Usuario creado con éxito", "exito");
+                setTimeout(() => {
+                    window.location.href = "../login/login.html";
+                }, 1500);
+            } else {
+                // USO DE LA ALERTA GLOBAL
+                mostrarAlerta(result.message || "Error desconocido al registrar.", "error");
+            }
+        } catch {
+            // USO DE LA ALERTA GLOBAL
+            mostrarAlerta("❌ Error al conectar con el servidor.", "error");
+        }
+    });
 });
