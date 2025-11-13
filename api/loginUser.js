@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // ✅ CAMBIADO a bcryptjs para entornos Vercel
+import bcrypt from "bcryptjs"; // ✅ USAMOS bcryptjs
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -18,35 +18,33 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan datos" });
     }
 
-    // 1. Buscamos el usuario por nombre y recuperamos el HASH
+    // ✅ Solo buscamos por nombre y traemos el hash
     const { rows } = await pool.query(
       "SELECT id, name, email, role, password_hash FROM users WHERE name = $1",
       [username]
     );
 
-    // Si el usuario no existe
     if (rows.length === 0) {
       return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
     const user = rows[0];
-    
-    // 2. Verificación de seguridad: Aseguramos que el usuario tiene un hash
+
+    // ✅ ⚠️ Verificación para evitar error 500 por valor nulo
     if (!user.password_hash) {
-        // Esto indica un usuario creado antes de la implementación de bcrypt
-        console.error(`Usuario ${username} no tiene hash. Acceso denegado.`);
-        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
-    }
-    
-    // 3. Comparamos la contraseña en texto plano con el hash guardado
-    const match = await bcrypt.compare(password, user.password_hash);
-    
-    if (!match) {
-        // Contraseña incorrecta
-        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+      // Bloquear acceso a usuarios con hash nulo/inválido
+      console.error(`Usuario ${username} no tiene hash válido. Posible usuario antiguo.`);
+      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
-    // Inicio de sesión exitoso
+    // ✅ Comparamos el texto plano con el hash
+    const match = await bcrypt.compare(password, user.password_hash);
+
+    if (!match) {
+      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+    }
+
+    // Éxito
     return res.status(200).json({
       success: true,
       message: "Inicio de sesión correcto",
@@ -58,8 +56,8 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
+    // Si el error 500 sigue ocurriendo aquí, es un problema de bcryptjs, Vercel o la DB.
     console.error("❌ Error en loginUser:", error);
-    // Un error 500 aquí puede ser un fallo de bcryptjs o un problema de DB/conexión
     return res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 }

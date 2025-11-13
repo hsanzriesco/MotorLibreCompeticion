@@ -1,12 +1,12 @@
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // ✅ CAMBIADO a bcryptjs para entornos Vercel
+import bcrypt from "bcryptjs"; // ✅ USAMOS bcryptjs
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-const saltRounds = 10; // Factor de coste para el hash (cuanto más alto, más lento y seguro)
+const saltRounds = 10;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -19,15 +19,14 @@ export default async function handler(req, res) {
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
-    
-    // ⚠️ ATENCIÓN: Se recomienda que esta migración (CREATE TABLE) se haga
-    // fuera del handler. Si la dejas, asegúrate de cambiar 'password' a 'password_hash'
+
+    // ⚠️ Mantenemos la creación de tabla aquí, pero ya corregida a password_hash
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) UNIQUE,
         email VARCHAR(100) UNIQUE,
-        password_hash TEXT NOT NULL,  // Usar TEXT para el hash y nombre 'password_hash'
+        password_hash TEXT NOT NULL,  
         role VARCHAR(50) DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -46,13 +45,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // 1. ✅ Hashear la contraseña antes de guardarla
+    // ✅ Generar Hash
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-    
+
     const result = await pool.query(
-      // 2. ✅ Usamos 'password_hash' en lugar de 'password'
       "INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-      [name, email, hashedPassword, "user"] // 3. ✅ Guardamos el hash
+      [name, email, hashedPassword, "user"] // ✅ Guardar el hash
     );
 
     return res.status(201).json({
@@ -61,12 +59,11 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("❌ Error en createUser:", error);
-    // Verificar si el error es de duplicado (ej. código 23505 en PostgreSQL)
-    if (error.code === '23505') {
-        return res.status(409).json({
-            success: false,
-            message: "El nombre o correo ya están registrados."
-        });
+    if (error.code === '23505') { // Error de clave duplicada en PostgreSQL
+      return res.status(409).json({
+        success: false,
+        message: "El nombre o correo ya están registrados."
+      });
     }
     return res.status(500).json({
       success: false,
