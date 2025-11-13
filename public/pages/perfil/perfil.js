@@ -13,18 +13,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCarId = null;
 
     // 2. Comprobación de autenticación y Carga Inicial
-    // Ahora lee correctamente de localStorage, gracias a la corrección en login.js
-    const user = JSON.parse(localStorage.getItem('usuario'));
+    // 🚨 LEE DESDE sessionStorage
+    const user = JSON.parse(sessionStorage.getItem('usuario'));
 
     if (!user || !user.id || !user.email) {
-        console.error("Fallo de autenticación: El objeto 'usuario' en localStorage no tiene ID o Email.");
+        console.error("Fallo de autenticación: La sesión en sessionStorage no tiene ID o Email.");
         mostrarAlerta("Sesión no válida o expirada. Por favor, inicia sesión.", 'error', 2000);
         setTimeout(() => {
             window.location.href = '../auth/login/login.html';
         }, 2000);
         return;
     }
-    
+
     // Si la autenticación pasa, procede:
     userNameElement.textContent = user.name;
     loginIcon.style.display = 'none';
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('profile-name').value = user.name;
     document.getElementById('profile-email').value = user.email;
 
-    // --- Funciones del Garaje ---
+    // --- Funciones del Garaje (Nota: El garaje sigue usando localStorage para guardar COCHES) ---
 
     const renderCar = (car) => {
         const defaultImg = 'https://via.placeholder.com/300x150?text=Sin+Foto';
@@ -53,13 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const loadCars = async () => {
-        // SIMULACIÓN: Datos iniciales de ejemplo
+        // SIMULACIÓN: Los coches SÍ deben persistir. Solo la sesión debe ser temporal.
         const initialCars = [
             { id: 1, car_name: 'Mazda RX-7', model: 'FD3S', year: 1999, description: 'Motor rotativo 13B', photo_url: 'https://cdn.motor1.com/images/mgl/z940y/s4/1993-2002-mazda-rx-7.jpg' },
             { id: 2, car_name: 'Nissan Skyline', model: 'R34 GT-R', year: 2000, description: 'Motor RB26DETT', photo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Nissan_Skyline_R34_GT-R_%28front-left%29.jpg/1200px-Nissan_Skyline_R34_GT-R_%28front-left%29.jpg' },
         ];
-        
-        // Carga desde localStorage para simular la persistencia
+
+        // Carga desde localStorage. Mantenemos localStorage para guardar el "Garaje"
         const storedCars = JSON.parse(localStorage.getItem('user_cars')) || initialCars;
 
 
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 carList.innerHTML += renderCar(car);
             });
         }
-        
+
         // Re-añadir listeners para abrir el modo Edición al hacer click
         carList.querySelectorAll('.car-item').forEach(item => {
             item.addEventListener('click', () => {
@@ -81,14 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 openCarModal(car);
             });
         });
-        
+
         localStorage.setItem('user_cars', JSON.stringify(storedCars));
     };
 
     const openCarModal = (car = null) => {
         carForm.reset();
         currentCarId = null;
-        
+
         if (car) {
             document.getElementById('carModalTitle').textContent = 'Editar Coche';
             document.getElementById('car-id').value = car.id;
@@ -104,26 +104,27 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteCarBtn.style.display = 'none';
         }
     };
-    
+
     // Event listener para abrir modal en modo Añadir
     document.querySelector('.garage-card .btn-danger').addEventListener('click', (e) => {
-        if (e.currentTarget.id === '') { 
-             openCarModal();
+        if (e.currentTarget.id === '') {
+            openCarModal();
         }
     });
 
     loadCars();
-    
+
     // --- Fin Funciones del Garaje ---
 
 
     // 3. Manejo de Cierre de Sesión (Logout)
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        localStorage.removeItem("usuario");
+        // 🚨 LIMPIA sessionStorage
+        sessionStorage.removeItem("usuario");
 
         mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
-        
+
         // Cierra el offcanvas de forma segura
         const offcanvasMenu = document.getElementById('offcanvasMenu');
         if (offcanvasMenu && typeof bootstrap !== 'undefined') {
@@ -143,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const newName = document.getElementById('profile-name').value.trim();
-        
+
         if (newName === user.name) {
             mostrarAlerta("No hay cambios que guardar.", 'info');
             return;
@@ -152,11 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // SIMULACIÓN: Aquí iría la llamada fetch para actualizar el nombre
         try {
             user.name = newName;
-            localStorage.setItem('usuario', JSON.stringify(user));
+            // 🚨 ACTUALIZA sessionStorage
+            sessionStorage.setItem('usuario', JSON.stringify(user));
             userNameElement.textContent = newName;
 
             mostrarAlerta("Perfil actualizado correctamente.", 'success');
-            
+
         } catch (error) {
             mostrarAlerta("Error al actualizar el perfil. Intenta de nuevo.", 'error');
         }
@@ -169,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentPassword = document.getElementById('current-password').value;
         const newPassword = document.getElementById('new-password').value;
         const confirmNewPassword = document.getElementById('confirm-new-password').value;
-        
+
         if (!currentPassword) {
             mostrarAlerta("Debes introducir la Contraseña Actual.", 'error');
             return;
@@ -178,16 +180,16 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarAlerta("La nueva contraseña y la confirmación no coinciden.", 'error');
             return;
         }
-        if (newPassword.length < 4) { 
+        if (newPassword.length < 4) {
             mostrarAlerta("La nueva contraseña debe tener al menos 4 caracteres.", 'error');
             return;
         }
 
         try {
             // SIMULACIÓN: Validación contra una contraseña "conocida" (ej: '1234')
-            if (currentPassword === '1234') { 
+            if (currentPassword === '1234') {
                 mostrarAlerta("Contraseña cambiada exitosamente.", 'success');
-                
+
                 const modalElement = document.getElementById('passwordModal');
                 const modal = bootstrap.Modal.getInstance(modalElement);
                 modal.hide();
@@ -195,18 +197,18 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 mostrarAlerta("Error: La contraseña actual es incorrecta o los datos no coinciden.", 'error');
             }
-            
+
         } catch (error) {
             mostrarAlerta("Error al intentar cambiar la contraseña.", 'error');
         }
     });
-    
+
     // 6. Manejo de Envío de Formulario de Coche (Añadir/Editar)
     carForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const carData = {
-            id: currentCarId || Date.now(), 
+            id: currentCarId || Date.now(),
             user_id: user.id,
             car_name: document.getElementById('car-name').value,
             model: document.getElementById('car-model').value,
@@ -227,29 +229,30 @@ document.addEventListener('DOMContentLoaded', () => {
             storedCars.push(carData);
             mostrarAlerta("Coche añadido correctamente.", 'success');
         }
-        
+
+        // Mantenemos localStorage para guardar el Garaje (los coches)
         localStorage.setItem('user_cars', JSON.stringify(storedCars));
-        loadCars(); 
+        loadCars();
 
         const modalElement = document.getElementById('carModal');
         const modal = bootstrap.Modal.getInstance(modalElement);
         modal.hide();
     });
-    
+
     // 7. Manejo de Eliminación de Coche
     deleteCarBtn.addEventListener('click', () => {
         if (!currentCarId) return;
-        
+
         const confirmDelete = confirm("¿Estás seguro de que quieres eliminar este coche de tu garaje?");
-        
+
         if (confirmDelete) {
             let storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
             storedCars = storedCars.filter(c => c.id !== currentCarId);
             localStorage.setItem('user_cars', JSON.stringify(storedCars));
-            
+
             loadCars();
             mostrarAlerta("Coche eliminado correctamente.", 'error');
-            
+
             const modalElement = document.getElementById('carModal');
             const modal = bootstrap.Modal.getInstance(modalElement);
             modal.hide();

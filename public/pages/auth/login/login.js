@@ -41,9 +41,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (result.success) {
                 const user = result.user;
 
-                // 🚨 CORRECCIÓN CLAVE: Usamos localStorage para persistencia y compatibilidad con perfil.js
-                // Asegúrate de que user contiene {id, name, email}
-                localStorage.setItem("usuario", JSON.stringify({
+                // 🚨 CORRECCIÓN FINAL: Usamos sessionStorage. La sesión se cerrará al cerrar la pestaña.
+                sessionStorage.setItem("usuario", JSON.stringify({
                     id: user.id,
                     name: user.name,
                     email: user.email
@@ -58,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         // RUTA CORREGIDA: Va a /pages/dashboard/admin/user/admin.html
                         window.location.href = "../../dashboard/admin/user/admin.html";
                     } else {
-                        // Redirige al perfil inmediatamente después del login exitoso
+                        // RUTA CORREGIDA: Redirige al perfil.
                         window.location.href = "../perfil/perfil.html";
                     }
                 }, 1500);
