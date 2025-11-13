@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import bcrypt from "bcrypt"; // 1. ✅ Importamos bcrypt
+import bcrypt from "bcryptjs"; // ✅ CAMBIADO a bcryptjs para entornos Vercel
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -18,9 +18,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan datos" });
     }
 
-    // 2. ✅ Buscamos el usuario por nombre y recuperamos el HASH
+    // 1. Buscamos el usuario por nombre y recuperamos el HASH
     const { rows } = await pool.query(
-      // Ya NO se compara la contraseña en la DB. Solicitamos el hash (password_hash)
       "SELECT id, name, email, role, password_hash FROM users WHERE name = $1",
       [username]
     );
@@ -32,13 +31,14 @@ export default async function handler(req, res) {
 
     const user = rows[0];
     
-    // 3. ⚠️ Verificación de seguridad: Aseguramos que el usuario tiene un hash
+    // 2. Verificación de seguridad: Aseguramos que el usuario tiene un hash
     if (!user.password_hash) {
+        // Esto indica un usuario creado antes de la implementación de bcrypt
         console.error(`Usuario ${username} no tiene hash. Acceso denegado.`);
         return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
     
-    // 4. ✅ Comparamos la contraseña en texto plano con el hash guardado
+    // 3. Comparamos la contraseña en texto plano con el hash guardado
     const match = await bcrypt.compare(password, user.password_hash);
     
     if (!match) {
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("❌ Error en loginUser:", error);
-    // Un error 500 aquí puede indicar un fallo en bcrypt o en la conexión a la DB
+    // Un error 500 aquí puede ser un fallo de bcryptjs o un problema de DB/conexión
     return res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 }

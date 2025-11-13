@@ -1,12 +1,12 @@
 import { Pool } from "pg";
-import bcrypt from "bcrypt"; // Importamos bcrypt
+import bcrypt from "bcryptjs"; // ✅ CAMBIADO a bcryptjs para entornos Vercel
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-const saltRounds = 10; //Factor de coste para el hash (cuanto más alto, más lento y seguro)
+const saltRounds = 10; // Factor de coste para el hash (cuanto más alto, más lento y seguro)
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) UNIQUE,
         email VARCHAR(100) UNIQUE,
-        password_hash TEXT NOT NULL,  // CAMBIADO: Usar TEXT para el hash y nombre 'password_hash'
+        password_hash TEXT NOT NULL,  // Usar TEXT para el hash y nombre 'password_hash'
         role VARCHAR(50) DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -60,7 +60,14 @@ export default async function handler(req, res) {
       user: result.rows[0],
     });
   } catch (error) {
-    console.error("Error en createUser:", error);
+    console.error("❌ Error en createUser:", error);
+    // Verificar si el error es de duplicado (ej. código 23505 en PostgreSQL)
+    if (error.code === '23505') {
+        return res.status(409).json({
+            success: false,
+            message: "El nombre o correo ya están registrados."
+        });
+    }
     return res.status(500).json({
       success: false,
       message: "Error interno del servidor",
