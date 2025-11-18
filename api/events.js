@@ -1,5 +1,4 @@
-// Usamos require en lugar de import para mayor compatibilidad en este entorno
-const { Pool } = require("pg");
+import { Pool } from "pg";
 
 // Conexión al pool PostgreSQL
 const pool = new Pool({
