@@ -13,9 +13,10 @@ export default async function handler(req, res) {
     // === 🟢 GET: Obtener todos los eventos ===
     if (req.method === "GET") {
       const result = await pool.query(
-        `SELECT id, title, description, location, start, "end", image_base64
-         FROM events
-         ORDER BY start ASC`
+        // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
+        `SELECT id, title, description, location, start, "end", image_url
+         FROM events
+         ORDER BY start ASC`
       );
 
       return res.status(200).json({ success: true, data: result.rows });
@@ -24,7 +25,8 @@ export default async function handler(req, res) {
     // === 🟡 POST: Crear nuevo evento ===
     if (req.method === "POST") {
       const body = await parseBody(req);
-      const { title, description, location, start, end, image_base64 } = body;
+      // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
+      const { title, description, location, start, end, image_url } = body;
 
       if (!title || !start || !end) {
         return res.status(400).json({
@@ -34,10 +36,11 @@ export default async function handler(req, res) {
       }
 
       const result = await pool.query(
-        `INSERT INTO events (title, description, location, start, "end", image_base64)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
-        [title, description, location, start, end, image_base64 || null]
+        // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
+        `INSERT INTO events (title, description, location, start, "end", image_url)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [title, description, location, start, end, image_url || null]
       );
 
       return res.status(201).json({ success: true, data: result.rows[0] });
@@ -51,7 +54,8 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Falta el ID del evento." });
 
       const body = await parseBody(req);
-      const { title, description, location, start, end, image_base64 } = body;
+      // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
+      const { title, description, location, start, end, image_url } = body;
 
       if (!title || !start || !end) {
         return res.status(400).json({
@@ -62,15 +66,16 @@ export default async function handler(req, res) {
 
       const result = await pool.query(
         `UPDATE events
-         SET title = $1,
-             description = $2,
-             location = $3,
-             start = $4,
-             "end" = $5,
-             image_base64 = COALESCE($6, image_base64)
-         WHERE id = $7
-         RETURNING *`,
-        [title, description, location, start, end, image_base64 || null, id]
+         SET title = $1,
+             description = $2,
+             location = $3,
+             start = $4,
+             "end" = $5,
+            // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
+             image_url = COALESCE($6, image_url)
+         WHERE id = $7
+         RETURNING *`,
+        [title, description, location, start, end, image_url || null, id]
       );
 
       if (result.rows.length === 0) {
