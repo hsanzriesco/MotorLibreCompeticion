@@ -79,3 +79,89 @@
     font-size: 1.3rem;
     flex-shrink: 0;
 }
+
+/* =========================================================
+   CONFIRMACIÓN ESTILO NEGRO & ROJO (USADA POR mostrarConfirmacion)
+   - No requiere archivo nuevo; está aquí para mantener todo en 1 CSS
+   ========================================================= */
+.confirmacion-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .20s ease;
+}
+
+.confirmacion-overlay.mostrar {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.confirmacion-box {
+    background: #0f0f0f;
+    border: 2px solid #e50914;
+    padding: 22px 26px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 420px;
+    width: 92%;
+    box-shadow: 0 8px 30px rgba(229, 9, 20, .25);
+    transform: translateY(-8px) scale(.96);
+    transition: transform .22s ease, opacity .22s ease;
+    color: #fff;
+}
+
+.confirmacion-overlay.mostrar .confirmacion-box {
+    transform: translateY(0) scale(1);
+}
+
+/* Título en rojo */
+.confirmacion-box h4 {
+    margin: 0 0 8px 0;
+    color: #e50914;
+}
+
+/* Texto */
+.confirmacion-box p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+/* Botones */
+.confirmacion-btns {
+    margin-top: 18px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.confirm-btn {
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    min-width: 90px;
+}
+
+.confirm-yes {
+    background: #e50914;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(229, 9, 20, .18);
+}
+
+.confirm-no {
+    background: #262626;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}

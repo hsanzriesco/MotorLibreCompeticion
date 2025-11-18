@@ -100,12 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =======================
        Añadir coche
     ======================= */
-    openAddCarBtn.addEventListener('click', () => {
-        openCarModal(null);
-        new bootstrap.Modal(document.getElementById('carModal')).show();
-    });
-
-    function openCarModal(car) {
+    openCarModal = (car) => {
         carForm.reset();
         currentCarId = null;
 
@@ -122,7 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('carModalTitle').textContent = 'Añadir coche';
             deleteCarBtn.style.display = 'none';
         }
-    }
+    };
+
+    openAddCarBtn.addEventListener('click', () => {
+        openCarModal(null);
+        new bootstrap.Modal(document.getElementById('carModal')).show();
+    });
 
     /* ======================
        Guardar coche
@@ -159,18 +159,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ======================
-       Eliminar coche → SIN confirm()
+       Eliminar coche → usa mostrarConfirmacion
     ====================== */
-    deleteCarBtn.addEventListener('click', () => {
+    deleteCarBtn.addEventListener('click', async () => {
         if (!currentCarId) return;
 
-        // NO confirm() — usamos alerta moderna
-        mostrarAlerta("Coche eliminado", "error");
+        const confirmar = await mostrarConfirmacion('¿Seguro que quieres eliminar este coche?');
+        if (!confirmar) {
+            mostrarAlerta('Eliminación cancelada', 'info');
+            return;
+        }
 
         let storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
         storedCars = storedCars.filter(c => c.id !== currentCarId);
         localStorage.setItem('user_cars', JSON.stringify(storedCars));
         loadCars();
+
+        mostrarAlerta('Coche eliminado', 'exito');
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
         if (modal) modal.hide();
