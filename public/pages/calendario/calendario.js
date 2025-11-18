@@ -4,14 +4,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modalImage = document.getElementById("modalImage");
 
     // Lógica para obtener el usuario de localStorage (ajustar si usas sessionStorage)
-    const stored = localStorage.getItem('usuario'); 
+    const stored = localStorage.getItem('usuario');
     let usuario = null;
     try {
         if (stored) usuario = JSON.parse(stored);
-    } catch (e) { 
+    } catch (e) {
         console.error("Error al parsear usuario:", e);
     }
-    
+
     const userName = document.getElementById("user-name");
     const loginIcon = document.getElementById("login-icon");
 
@@ -23,10 +23,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 2. Lógica de Cerrar Sesión
     document.getElementById("logout-btn").addEventListener("click", (e) => {
         e.preventDefault();
-        
-        localStorage.removeItem("usuario"); 
 
-        // asumiendo que mostrarAlerta está definido en alerts.js y es accesible
+        localStorage.removeItem("usuario");
+
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
         }
@@ -37,7 +36,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         setTimeout(() => {
-            // Redirección al login
             window.location.href = "../auth/login/login.html";
         }, 1500);
     });
@@ -48,7 +46,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         locale: "es",
-        // Fuente de eventos desde la API
         events: async (fetchInfo, successCallback, failureCallback) => {
             try {
                 const res = await fetch("/api/events");
@@ -62,34 +59,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
         },
-        // Manejo del click en un evento
         eventClick: (info) => {
             const e = info.event;
-            const extendedProps = e.extendedProps; // Propiedades extendidas
+            const extendedProps = e.extendedProps;
 
             document.getElementById("modalTitle").textContent = e.title;
             document.getElementById("modalDesc").textContent = extendedProps.description || "Sin descripción.";
             document.getElementById("modalLoc").textContent = extendedProps.location || "Ubicación no especificada.";
             document.getElementById("modalDate").textContent = new Date(e.start).toLocaleDateString("es-ES");
 
-            // ⭐ LÓGICA CLAVE: MOSTRAR/OCULTAR IMAGEN ⭐
             const imageUrl = extendedProps.image_url;
-            
+
             if (imageUrl) {
                 modalImage.src = imageUrl;
                 modalImageContainer.style.display = "block"; // Mostrar el contenedor
             } else {
-                modalImage.src = ""; // Limpiar el src
+                modalImage.src = "";
                 modalImageContainer.style.display = "none"; // Ocultar el contenedor
             }
 
-            document.getElementById("eventViewModal").style.display = "flex";
+            // ⭐ CAMBIO CLAVE: Usar la API de Bootstrap para mostrar el modal ⭐
+            const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
+            eventModal.show();
         },
     });
     calendar.render();
 
-    // 4. Cierre del Modal
-    document.getElementById("closeModalBtn").addEventListener("click", () => {
-        document.getElementById("eventViewModal").style.display = "none";
-    });
+    // 4. El botón de cerrar del modal ahora funciona automáticamente con Bootstrap
+    // No necesitas este event listener si el botón de cerrar tiene data-bs-dismiss="modal"
+    // document.getElementById("closeModalBtn").addEventListener("click", () => {
+    //     document.getElementById("eventViewModal").style.display = "none";
+    // });
 });
