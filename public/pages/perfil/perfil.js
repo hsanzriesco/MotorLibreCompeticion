@@ -1,501 +1,196 @@
-/**
- * perfil.js - Frontend
- * Usa:
- *  - GET    /api/carGarage?user_id=...
- *  - POST   /api/carGarage
- *  - PUT    /api/carGarage
- *  - DELETE /api/carGarage?id=...
- *  - PUT    /api/usersList    (actualizar perfil / contraseña)
- *
- * Requiere:
- *  - alertas.js -> mostrarAlerta(msg, tipo)
- *  - Bootstrap para modales ya existentes
- */
+/* perfil.js - compacto (usa API en Vercel)
+   Endpoints (asumidos):
+   GET    /api/carGarage?user_id=ID
+   POST   /api/carGarage        (body JSON)
+   PUT    /api/carGarage        (body JSON)
+   DELETE /api/carGarage        (body JSON { id })
+   PUT    /api/usersList        (body JSON para actualizar user / password)
+*/
+(() => {
+    const API = 'https://motor-libre-competicion.vercel.app/api/carGarage';
+    const USERS_API = '/api/usersList'; // tu endpoint de usuarios (server.js ya enrutó usersList)
+    const $ = id => document.getElementById(id);
 
-document.addEventListener('DOMContentLoaded', () => {
+    // elementos
+    const carList = $('car-list'), noCarsMessage = $('no-cars-message');
+    const carForm = $('car-form'), deleteCarBtn = $('delete-car-btn'), openAddCarBtn = $('open-add-car-btn');
+    const profileForm = $('profile-form'), passwordForm = $('password-form');
+    const userNameElement = $('user-name'), loginIcon = $('login-icon'), logoutBtn = $('logout-btn');
 
-    const profileForm = document.getElementById('profile-form');
-    const passwordForm = document.getElementById('password-form');
-    const carForm = document.getElementById('car-form');
-    const carList = document.getElementById('car-list');
-    const userNameElement = document.getElementById('user-name');
-    const loginIcon = document.getElementById('login-icon');
-    const logoutBtn = document.getElementById('logout-btn');
-    const noCarsMessage = document.getElementById('no-cars-message');
-    const deleteCarBtn = document.getElementById('delete-car-btn');
-    const openAddCarBtn = document.getElementById('open-add-car-btn');
-
+    // estado
     let currentCarId = null;
-
-    /* ===========================
-       1) CARGAR USUARIO (sessionStorage)
-       =========================== */
     const stored = sessionStorage.getItem('usuario');
-    if (!stored) {
-        mostrarAlerta("Sesión expirada. Inicia sesión.", 'error');
-        setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
-        return;
-    }
+    if (!stored) { mostrarAlerta('Sesión expirada. Inicia sesión.', 'error'); setTimeout(() => location.href = '../auth/login/login.html', 1200); return; }
+    const user = JSON.parse(stored);
+    userNameElement.textContent = user.name || 'Usuario'; if (loginIcon) loginIcon.style.display = 'none';
+    $('user-id').value = user.id || ''; $('profile-name').value = user.name || ''; $('profile-email').value = user.email || '';
 
-    let user;
-    try {
-        user = JSON.parse(stored);
-    } catch (err) {
-        sessionStorage.removeItem('usuario');
-        mostrarAlerta("Sesión corrupta. Vuelve a iniciar sesión.", 'error');
-        setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
-        return;
-    }
+    // util
+    const h = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const request = async (url, opts = {}) => {
+        try {
+            const res = await fetch(url, opts);
+            const ct = res.headers.get('content-type') || '';
+            const body = ct.includes('application/json') ? await res.json() : null;
+            if (!res.ok) throw { status: res.status, body };
+            return body;
+        } catch (err) { throw err; }
+    };
 
-    // Mostrar en navbar
-    userNameElement.textContent = user.name || 'Usuario';
-    if (loginIcon) loginIcon.style.display = 'none';
-
-    // Rellenar formulario
-    document.getElementById('user-id').value = user.id || '';
-    document.getElementById('profile-name').value = user.name || '';
-    document.getElementById('profile-email').value = user.email || '';
-
-    /* ===========================
-       Helper: escapeHtml
-       =========================== */
-    function escapeHtml(s) {
-        return String(s || '').replace(/[&<>"']/g, c => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-        }[c]));
-    }
-
-    /* ===========================
-       Render de un coche
-       =========================== */
-    function renderCar(car) {
-        const defaultImg = 'https://via.placeholder.com/300x150?text=Sin+Foto';
-        return `
-      <div class="col-12 col-md-6" data-car-id="${car.id}">
-        <div class="car-item" data-car-id="${car.id}" style="cursor:pointer;">
-          <div class="car-image-container" style="width:120px;">
-            <img src="${escapeHtml(car.photo_url) || defaultImg}" alt="${escapeHtml(car.car_name)}" style="width:100%; border-radius:6px;" />
-          </div>
-          <div class="car-details" style="padding-left:12px;">
-            <h6 class="mb-1" style="color:#e50914;">${escapeHtml(car.car_name)}</h6>
-            <p class="mb-0 text-muted">${escapeHtml(car.model || 'Modelo N/A')} (${car.year || 'Año N/A'})</p>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-
-    /* ===========================
-       2) CARGAR COCHES DESDE API (Neon)
-       GET /api/carGarage?user_id=...
-       =========================== */
+    /* ---------- CARGAR COCHES ---------- */
     async function loadCars() {
         try {
-            const resp = await fetch(`/api/carGarage?user_id=${encodeURIComponent(user.id)}`);
-            if (!resp.ok) throw new Error('Error al obtener coches');
-            const data = await resp.json();
-
+            const data = await request(`${API}?user_id=${encodeURIComponent(user.id)}`);
             carList.innerHTML = '';
-
-            if (!data.cars || !data.cars.length) {
-                noCarsMessage.style.display = 'block';
-                return;
-            }
+            const cars = (data && data.cars) ? data.cars : (Array.isArray(data) ? data : []);
+            if (!cars.length) { noCarsMessage.style.display = 'block'; return; }
             noCarsMessage.style.display = 'none';
-
-            data.cars.forEach(car => carList.innerHTML += renderCar(car));
-
-            // Asignar click para abrir modal de edición
-            carList.querySelectorAll('.car-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const el = item.closest('[data-car-id]');
-                    const id = parseInt(el.dataset.carId);
-                    const car = data.cars.find(c => c.id === id);
-                    openCarModal(car);
-                    new bootstrap.Modal(document.getElementById('carModal')).show();
-                });
-            });
-
-        } catch (err) {
-            console.error(err);
-            mostrarAlerta('Error cargando coches desde el servidor.', 'error');
-            // fallback: muestra mensaje vacío
-            carList.innerHTML = '';
-            noCarsMessage.style.display = 'block';
+            cars.forEach(car => carList.insertAdjacentHTML('beforeend', renderCar(car)));
+            // attach click
+            carList.querySelectorAll('.car-item').forEach(el => el.addEventListener('click', () => {
+                const id = el.closest('[data-car-id]').dataset.carId;
+                const car = cars.find(c => String(c.id) === String(id));
+                openCarModal(car);
+                new bootstrap.Modal($('carModal')).show();
+            }));
+        } catch (e) {
+            console.error(e);
+            mostrarAlerta('No se pudieron cargar los coches.', 'error');
+            carList.innerHTML = ''; noCarsMessage.style.display = 'block';
         }
     }
 
-    // inicial
-    loadCars();
+    function renderCar(car) {
+        const img = h(car.photo_url) || 'https://via.placeholder.com/300x150?text=Sin+Foto';
+        return `<div class="col-12 col-md-6" data-car-id="${h(car.id)}">
+      <div class="car-item d-flex gap-2 align-items-center p-2" style="cursor:pointer">
+        <div style="width:90px"><img src="${img}" alt="${h(car.car_name)}" style="width:100%;border-radius:6px"></div>
+        <div>
+          <h6 class="mb-1" style="color:#e50914">${h(car.car_name)}</h6>
+          <p class="mb-0 text-muted">${h(car.model || 'Modelo N/A')} (${h(car.year || 'Año N/A')})</p>
+        </div>
+      </div></div>`;
+    }
 
-    /* ===========================
-       3) Abrir modal: Añadir / Editar coche
-       =========================== */
+    /* ---------- MODAL AÑADIR/EDITAR ---------- */
     function openCarModal(car) {
-        carForm.reset();
-        currentCarId = null;
-
+        carForm.reset(); currentCarId = null;
         if (car) {
-            document.getElementById('carModalTitle').textContent = 'Editar coche';
-            document.getElementById('car-id').value = car.id;
-            document.getElementById('car-name').value = car.car_name;
-            document.getElementById('car-model').value = car.model || '';
-            document.getElementById('car-year').value = car.year || '';
-            document.getElementById('car-photo').value = car.photo_url || '';
-            currentCarId = car.id;
-            deleteCarBtn.style.display = 'inline-block';
+            $('carModalTitle').textContent = 'Editar coche';
+            $('car-id').value = car.id; $('car-name').value = car.car_name || '';
+            $('car-model').value = car.model || ''; $('car-year').value = car.year || '';
+            $('car-photo').value = car.photo_url || ''; currentCarId = car.id; deleteCarBtn.style.display = 'inline-block';
         } else {
-            document.getElementById('carModalTitle').textContent = 'Añadir coche';
-            deleteCarBtn.style.display = 'none';
+            $('carModalTitle').textContent = 'Añadir coche'; deleteCarBtn.style.display = 'none';
         }
     }
+    openAddCarBtn.addEventListener('click', () => openCarModal(null));
 
-    openAddCarBtn.addEventListener('click', () => {
-        openCarModal(null);
-        new bootstrap.Modal(document.getElementById('carModal')).show();
-    });
-
-    /* ===========================
-       4) Guardar coche → POST / PUT
-       =========================== */
-    carForm.addEventListener('submit', async (e) => {
+    /* ---------- GUARDAR (POST/PUT) ---------- */
+    carForm.addEventListener('submit', async e => {
         e.preventDefault();
-
-        const carData = {
+        const payload = {
             id: currentCarId || null,
             user_id: user.id,
-            car_name: document.getElementById('car-name').value.trim(),
-            model: document.getElementById('car-model').value.trim(),
-            year: document.getElementById('car-year').value.trim() || null,
-            description: '',
-            photo_url: document.getElementById('car-photo').value.trim()
+            car_name: $('car-name').value.trim(),
+            model: $('car-model').value.trim(),
+            year: $('car-year').value.trim() || null,
+            photo_url: $('car-photo').value.trim() || null
         };
-
-        // Validaciones básicas
-        if (!carData.car_name) {
-            mostrarAlerta('El nombre del coche es obligatorio', 'advertencia');
-            return;
-        }
-
+        if (!payload.car_name) { mostrarAlerta('Nombre del coche obligatorio', 'advertencia'); return; }
         try {
-            let resp;
             if (currentCarId) {
-                // editar
-                resp = await fetch('/api/carGarage', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: carData.id,
-                        car_name: carData.car_name,
-                        model: carData.model,
-                        year: carData.year,
-                        description: carData.description,
-                        photo_url: carData.photo_url
-                    })
-                });
-                if (!resp.ok) throw new Error('Error actualizando coche');
+                await request(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 mostrarAlerta('Coche actualizado', 'exito');
             } else {
-                // crear
-                resp = await fetch('/api/carGarage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(carData)
-                });
-                if (!resp.ok) throw new Error('Error creando coche');
+                await request(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 mostrarAlerta('Coche añadido', 'exito');
             }
-
-            // refrescar lista
             await loadCars();
-
-            // cerrar modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
-            if (modal) modal.hide();
-
+            const modal = bootstrap.Modal.getInstance($('carModal')); if (modal) modal.hide();
         } catch (err) {
-            console.error(err);
-            mostrarAlerta('Error guardando coche en el servidor.', 'error');
+            console.error(err); mostrarAlerta('Error guardando coche', 'error');
         }
     });
 
-    /* ===========================
-       5) Confirmación visual (custom) - devuelve Promise<boolean>
-       no crea archivos extras, inyecta DOM y usa estilos MLC
-       =========================== */
+    /* ---------- CONFIRMACIÓN SIMPLE (inyectada) ---------- */
     function mostrarConfirmacion(mensaje = '¿Confirmar?') {
-        return new Promise((resolve) => {
-            // Si ya existe, no crear otra
-            if (document.getElementById('mlc-confirm-overlay')) {
-                resolve(false);
-                return;
-            }
-
+        return new Promise(resolve => {
+            if ($('mlc-confirm-overlay')) return resolve(false);
             const overlay = document.createElement('div');
             overlay.id = 'mlc-confirm-overlay';
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.display = 'flex';
-            overlay.style.alignItems = 'center';
-            overlay.style.justifyContent = 'center';
-            overlay.style.background = 'rgba(0,0,0,0.6)';
-            overlay.style.zIndex = '20000';
-
+            overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:20000;background:rgba(0,0,0,0.6)';
             const box = document.createElement('div');
-            box.style.background = '#0b0b0b';
-            box.style.border = '1px solid rgba(229,9,20,0.4)';
-            box.style.padding = '18px';
-            box.style.borderRadius = '12px';
-            box.style.width = '90%';
-            box.style.maxWidth = '420px';
-            box.style.boxShadow = '0 10px 30px rgba(229,9,20,0.12)';
-            box.style.color = '#fff';
-            box.style.textAlign = 'center';
-
-            const text = document.createElement('p');
-            text.style.margin = '0 0 14px 0';
-            text.style.fontSize = '1rem';
-            text.textContent = mensaje;
-
-            const btnRow = document.createElement('div');
-            btnRow.style.display = 'flex';
-            btnRow.style.gap = '12px';
-            btnRow.style.justifyContent = 'center';
-
-            const btnCancel = document.createElement('button');
-            btnCancel.className = 'btn';
-            btnCancel.textContent = 'Cancelar';
-            btnCancel.style.background = 'transparent';
-            btnCancel.style.border = '1px solid rgba(255,255,255,0.12)';
-            btnCancel.style.color = '#fff';
-            btnCancel.style.padding = '8px 14px';
-            btnCancel.style.borderRadius = '8px';
-
-            const btnConfirm = document.createElement('button');
-            btnConfirm.className = 'btn';
-            btnConfirm.textContent = 'Eliminar';
-            btnConfirm.style.background = '#e50914';
-            btnConfirm.style.border = '1px solid rgba(229,9,20,0.9)';
-            btnConfirm.style.color = '#fff';
-            btnConfirm.style.padding = '8px 14px';
-            btnConfirm.style.borderRadius = '8px';
-
-            btnRow.appendChild(btnCancel);
-            btnRow.appendChild(btnConfirm);
-            box.appendChild(text);
-            box.appendChild(btnRow);
-            overlay.appendChild(box);
-            document.body.appendChild(overlay);
-
-            // focus
-            btnConfirm.focus();
-
-            // handlers
-            function cleanup(res) {
-                overlay.remove();
-                resolve(!!res);
-            }
-
-            btnCancel.addEventListener('click', () => cleanup(false), { once: true });
-            btnConfirm.addEventListener('click', () => cleanup(true), { once: true });
-
-            // close on ESC
-            function onKey(e) {
-                if (e.key === 'Escape') {
-                    cleanup(false);
-                }
-            }
-            document.addEventListener('keydown', onKey, { once: true });
+            box.style.cssText = 'background:#0b0b0b;border:1px solid rgba(229,9,20,0.35);padding:18px;border-radius:10px;width:92%;max-width:420px;text-align:center;color:#fff';
+            box.innerHTML = `<p style="margin:0 0 14px">${mensaje}</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button id="mlc-cancel" class="btn">Cancelar</button>
+          <button id="mlc-yes" class="btn" style="background:#e50914;border-color:rgba(229,9,20,0.9);color:#fff">Eliminar</button>
+        </div>`;
+            overlay.appendChild(box); document.body.appendChild(overlay);
+            $('mlc-yes').focus();
+            const cleanup = (res) => {
+                overlay.remove(); resolve(res);
+            };
+            $('mlc-cancel').addEventListener('click', () => cleanup(false), { once: true });
+            $('mlc-yes').addEventListener('click', () => cleanup(true), { once: true });
+            document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { cleanup(false); document.removeEventListener('keydown', esc); } });
         });
     }
 
-    /* ===========================
-       6) Eliminar coche → usa confirmar (no alert())
-       DELETE /api/carGarage?id=...
-       =========================== */
+    /* ---------- ELIMINAR ---------- */
     deleteCarBtn.addEventListener('click', async () => {
         if (!currentCarId) return;
-
-        const confirmar = await mostrarConfirmacion('¿Seguro que quieres eliminar este coche?');
-        if (!confirmar) {
-            mostrarAlerta('Eliminación cancelada', 'info');
-            return;
-        }
-
+        const ok = await mostrarConfirmacion('¿Seguro que quieres eliminar este coche?');
+        if (!ok) { mostrarAlerta('Eliminación cancelada', 'info'); return; }
         try {
-            const resp = await fetch(`/api/carGarage?id=${encodeURIComponent(currentCarId)}`, {
-                method: 'DELETE'
-            });
-
-            if (!resp.ok) throw new Error('Error eliminando coche');
-
+            await request('/api/carGarage', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: currentCarId }) });
             mostrarAlerta('Coche eliminado', 'exito');
-
-            // refrescar lista
             await loadCars();
-
-            // cerrar modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
-            if (modal) modal.hide();
-
-        } catch (err) {
-            console.error(err);
-            mostrarAlerta('Error eliminando coche en el servidor.', 'error');
-        }
+            const modal = bootstrap.Modal.getInstance($('carModal')); if (modal) modal.hide();
+        } catch (err) { console.error(err); mostrarAlerta('Error eliminando coche', 'error'); }
     });
 
-    /* ===========================
-       7) Guardar perfil → PUT /api/usersList
-       (si falla, actualiza sessionStorage)
-       =========================== */
-    profileForm.addEventListener('submit', async (e) => {
+    /* ---------- PERFIL: guardar nombre/email ---------- */
+    profileForm.addEventListener('submit', async e => {
         e.preventDefault();
-
-        const newName = document.getElementById('profile-name').value.trim();
-        const newEmail = document.getElementById('profile-email').value.trim();
-
-        if (newName === (user.name || '') && newEmail === (user.email || '')) {
-            mostrarAlerta('No hay cambios que guardar.', 'info');
-            return;
-        }
-
-        const payload = {
-            id: user.id,
-            name: newName,
-            email: newEmail
-        };
-
+        const newName = $('profile-name').value.trim(), newEmail = $('profile-email').value.trim();
+        if (newName === (user.name || '') && newEmail === (user.email || '')) { mostrarAlerta('No hay cambios', 'info'); return; }
+        const payload = { id: user.id, name: newName, email: newEmail };
         try {
-            const resp = await fetch('/api/usersList', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (resp.ok) {
-                const json = await resp.json();
-                if (json && json.ok !== false) {
-                    // actualizar sesión y UI
-                    user.name = newName;
-                    user.email = newEmail;
-                    sessionStorage.setItem('usuario', JSON.stringify(user));
-                    userNameElement.textContent = newName;
-                    mostrarAlerta('Datos actualizados correctamente.', 'exito');
-                    return;
-                }
-            }
-
-            // fallback: actualizar localmente y avisar
-            user.name = newName;
-            user.email = newEmail;
-            sessionStorage.setItem('usuario', JSON.stringify(user));
-            userNameElement.textContent = newName;
-            mostrarAlerta('Datos actualizados localmente. No se actualizó en servidor.', 'info');
-
+            const res = await request(USERS_API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            // si backend confirma, actualizar sesión; si no, fallback local
+            user.name = newName; user.email = newEmail; sessionStorage.setItem('usuario', JSON.stringify(user)); userNameElement.textContent = newName;
+            mostrarAlerta('Datos actualizados correctamente', 'exito');
         } catch (err) {
-            console.error(err);
-            // fallback local
-            user.name = newName;
-            user.email = newEmail;
-            sessionStorage.setItem('usuario', JSON.stringify(user));
-            userNameElement.textContent = newName;
-            mostrarAlerta('Datos actualizados localmente. Error conexión servidor.', 'info');
+            console.error(err); user.name = newName; user.email = newEmail; sessionStorage.setItem('usuario', JSON.stringify(user)); userNameElement.textContent = newName;
+            mostrarAlerta('Actualizado localmente. Error servidor.', 'info');
         }
     });
 
-    /* ===========================
-       8) Cambio de contraseña
-       Intentamos actualizar en /api/usersList (PUT con password),
-       si no existe backend, queda en sessionStorage
-       =========================== */
-    document.getElementById('passwordModal').addEventListener('show.bs.modal', () => {
-        passwordForm.reset();
-    });
-
-    passwordForm.addEventListener('submit', async (e) => {
+    /* ---------- CAMBIO DE CONTRASEÑA ---------- */
+    document.getElementById('passwordModal').addEventListener('show.bs.modal', () => passwordForm.reset());
+    passwordForm.addEventListener('submit', async e => {
         e.preventDefault();
-
-        const actual = document.getElementById('current-password').value;
-        const nueva = document.getElementById('new-password').value;
-        const repetir = document.getElementById('confirm-new-password').value;
-
-        if (nueva !== repetir) {
-            mostrarAlerta('Las contraseñas no coinciden', 'error');
-            return;
-        }
-
-        if (!user.password) {
-            mostrarAlerta('Error interno: no hay contraseña para validar.', 'error');
-            return;
-        }
-
-        if (actual !== user.password) {
-            mostrarAlerta('Contraseña actual incorrecta', 'error');
-            return;
-        }
-
-        // Actualizar intentado en servidor
+        const actual = $('current-password').value, nueva = $('new-password').value, repetir = $('confirm-new-password').value;
+        if (nueva !== repetir) { mostrarAlerta('Las contraseñas no coinciden', 'error'); return; }
+        if (!user.password) { mostrarAlerta('No hay contraseña en sesión para validar', 'error'); return; }
+        if (actual !== user.password) { mostrarAlerta('Contraseña actual incorrecta', 'error'); return; }
         try {
-            const resp = await fetch('/api/usersList', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: user.id, password: nueva })
-            });
-
-            if (resp.ok) {
-                const json = await resp.json();
-                if (json && json.ok !== false) {
-                    user.password = nueva;
-                    sessionStorage.setItem('usuario', JSON.stringify(user));
-                    mostrarAlerta('Contraseña actualizada correctamente.', 'exito');
-                } else {
-                    // fallback local
-                    user.password = nueva;
-                    sessionStorage.setItem('usuario', JSON.stringify(user));
-                    mostrarAlerta('Contraseña actualizada localmente. No se actualizó en servidor.', 'info');
-                }
-            } else {
-                user.password = nueva;
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                mostrarAlerta('Contraseña actualizada localmente. Error servidor.', 'info');
-            }
+            await request(USERS_API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: user.id, password: nueva }) });
+            user.password = nueva; sessionStorage.setItem('usuario', JSON.stringify(user));
+            mostrarAlerta('Contraseña actualizada correctamente', 'exito');
         } catch (err) {
-            console.error(err);
-            user.password = nueva;
-            sessionStorage.setItem('usuario', JSON.stringify(user));
-            mostrarAlerta('Contraseña actualizada localmente. Error conexión.', 'info');
+            console.error(err); user.password = nueva; sessionStorage.setItem('usuario', JSON.stringify(user));
+            mostrarAlerta('Contraseña actualizada localmente. Error servidor.', 'info');
         }
-
-        const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
-        if (modal) modal.hide();
+        const modal = bootstrap.Modal.getInstance($('passwordModal')); if (modal) modal.hide();
     });
 
-    /* ===========================
-       9) Logout
-       =========================== */
-    logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        sessionStorage.clear();
-        mostrarAlerta('Sesión cerrada', 'exito');
-        setTimeout(() => window.location.href = '../auth/login/login.html', 700);
-    });
+    /* ---------- LOGOUT y menú inicio ---------- */
+    logoutBtn.addEventListener('click', e => { e.preventDefault(); sessionStorage.clear(); mostrarAlerta('Sesión cerrada', 'exito'); setTimeout(() => location.href = '../auth/login/login.html', 700); });
+    const menuInicio = $('menu-inicio'); if (menuInicio) menuInicio.addEventListener('click', ev => { ev.preventDefault(); if (user && user.role === 'admin') location.href = '/pages/dashboard/admin/admin.html'; else location.href = '/index.html'; });
 
-    /* ===========================
-       10) Menú inicio según rol
-       =========================== */
-    const menuInicio = document.getElementById('menu-inicio');
-    if (menuInicio) {
-        menuInicio.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            if (user && user.role === 'admin') {
-                window.location.href = '/pages/dashboard/admin/admin.html';
-            } else {
-                window.location.href = '/index.html';
-            }
-        });
-    }
-
-}); // DOMContentLoaded end
+    // cargar inicialmente
+    loadCars();
+})();
