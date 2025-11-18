@@ -4,6 +4,7 @@ const path = require('path');
 const cors = require('cors'); 
 
 // ⭐ 1. Importar los Handlers de la API (Usa rutas relativas correctas)
+// userAction.js NO está importado, por eso el frontend usa userList.js, que es correcto.
 const usersListHandler = require('./api/userList'); 
 const loginUserHandler = require('./api/loginUser'); 
 
@@ -15,8 +16,8 @@ app.use(cors());
 app.use(bodyParser.json()); // Necesario para leer req.body en POST/PUT
 app.use(express.urlencoded({ extended: true }));
 
-// 3. ⭐ ENRUTAMIENTO DE LA API (DEBE IR ANTES DE ARCHIVOS ESTÁTICOS) ⭐
-// Esto le dice a Express que use usersListHandler para TODOS los métodos CRUD en /api/usersList
+// 3. ⭐ ENRUTAMIENTO DE LA API
+// La actualización del usuario llega aquí y es manejada correctamente por userList.js
 app.all('/api/usersList', usersListHandler); 
 app.post('/api/loginUser', loginUserHandler); 
 // Si tienes un userDelete.js:
@@ -33,6 +34,3 @@ app.listen(PORT, () => {
     console.log(`✅ Servidor Express corriendo en: http://localhost:${PORT}`);
     console.log(`🔗 Link de usuarios: http://localhost:${PORT}/pages/dashboard/admin/user/users.html`);
 });
-
-// ⭐ ADICIONAL PARA VERCEL: Si no usas vercel.json, exporta el handler de Express:
-// module.exports = app;

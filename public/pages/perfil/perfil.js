@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadCars() {
         try {
+            // Nota: Se asume que /api/carGarage está implementado en otro lugar.
             const resp = await fetch(`/api/carGarage?user_id=${encodeURIComponent(user.id)}`);
             if (!resp.ok) throw new Error();
             const data = await resp.json();
@@ -133,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let resp;
 
             if (currentCarId) {
+                // Asume que la actualización de coche está en /api/carGarage (PUT)
                 resp = await fetch('/api/carGarage', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -148,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!resp.ok) throw 0;
                 mostrarAlerta('Coche actualizado', 'exito');
             } else {
+                // Asume que añadir coche está en /api/carGarage (POST) o en userAction (el problema de tu backend)
                 resp = await fetch('/api/carGarage', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -288,30 +291,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(payload)
             });
 
-            if (resp.ok) {
-                const json = await resp.json();
-                if (json && json.ok !== false) {
-                    user.name = newName;
-                    user.email = newEmail;
-                    sessionStorage.setItem('usuario', JSON.stringify(user));
-                    userNameElement.textContent = newName;
-                    mostrarAlerta('Datos actualizados.', 'exito');
-                    return;
-                }
+            const json = await resp.json(); // Leemos la respuesta
+
+            // 💡 CORRECCIÓN PRINCIPAL AQUÍ:
+            if (resp.ok && json && json.success === true) {
+                user.name = newName;
+                user.email = newEmail;
+                sessionStorage.setItem('usuario', JSON.stringify(user));
+                userNameElement.textContent = newName;
+                mostrarAlerta('Datos actualizados correctamente.', 'exito');
+                return;
             }
 
+            // Lógica de fallback si el servidor responde mal (aunque en teoría ya está actualizado)
             user.name = newName;
             user.email = newEmail;
             sessionStorage.setItem('usuario', JSON.stringify(user));
             userNameElement.textContent = newName;
-            mostrarAlerta('Datos actualizados localmente.', 'info');
+            mostrarAlerta('Error en la respuesta del servidor. Datos actualizados localmente.', 'info');
 
         } catch {
+            // Lógica de error de red
             user.name = newName;
             user.email = newEmail;
             sessionStorage.setItem('usuario', JSON.stringify(user));
             userNameElement.textContent = newName;
-            mostrarAlerta('Datos actualizados localmente.', 'info');
+            mostrarAlerta('Error de red. Datos actualizados localmente.', 'info');
         }
     });
 
@@ -332,10 +337,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!user.password) {
-            mostrarAlerta('Error interno.', 'error');
+            mostrarAlerta('Error interno. Contraseña anterior no disponible.', 'error');
             return;
         }
 
+        // ⚠️ ADVERTENCIA: Esta verificación es insegura, la contraseña no debería estar en sessionStorage
         if (actual !== user.password) {
             mostrarAlerta('Contraseña actual incorrecta', 'error');
             return;
@@ -354,26 +360,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ id: user.id, password: nueva })
             });
 
-            if (resp.ok) {
-                const json = await resp.json();
-                if (json && json.ok !== false) {
-                    user.password = nueva;
-                    sessionStorage.setItem('usuario', JSON.stringify(user));
-                    mostrarAlerta('Contraseña actualizada.', 'exito');
-                } else {
-                    user.password = nueva;
-                    sessionStorage.setItem('usuario', JSON.stringify(user));
-                    mostrarAlerta('Contraseña actualizada localmente.', 'info');
-                }
-            } else {
+            const json = await resp.json(); // Leemos la respuesta
+
+            // 💡 CORRECCIÓN PRINCIPAL AQUÍ:
+            if (resp.ok && json && json.success === true) {
                 user.password = nueva;
                 sessionStorage.setItem('usuario', JSON.stringify(user));
-                mostrarAlerta('Contraseña actualizada localmente.', 'info');
+                mostrarAlerta('Contraseña actualizada correctamente.', 'exito');
+            } else {
+                // Lógica de fallback si el servidor responde mal
+                user.password = nueva;
+                sessionStorage.setItem('usuario', JSON.stringify(user));
+                mostrarAlerta('Error en la respuesta del servidor. Contraseña actualizada localmente.', 'info');
             }
         } catch {
+            // Lógica de error de red
             user.password = nueva;
             sessionStorage.setItem('usuario', JSON.stringify(user));
-            mostrarAlerta('Contraseña actualizada localmente.', 'info');
+            mostrarAlerta('Error de red. Contraseña actualizada localmente.', 'info');
         }
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));

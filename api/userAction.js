@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
 
-// Necesario para que formidable pueda procesar archivos
+// ⚠️ Esta configuración (export const config = { ... }) es para Next.js/Vercel y no es necesaria en Express.
 export const config = {
   api: { bodyParser: false },
 };
@@ -16,6 +16,7 @@ export default async function handler(req, res) {
   const { method, url } = req;
 
   try {
+    // ⚠️ ESTAS RUTAS SON IGNORADAS POR TU FRONTEND
     // ===========================================================
     // 🔸 CAMBIAR NOMBRE DE USUARIO
     // ===========================================================
@@ -62,7 +63,11 @@ export default async function handler(req, res) {
           return res.status(500).json({ success: false, message: "Error al procesar archivo" });
         }
 
-        const { userId, carName } = fields;
+        // Nota: formidable devuelve arrays para fields en algunas configuraciones, 
+        // pero asumimos el primer elemento si es un array
+        const userId = Array.isArray(fields.userId) ? fields.userId[0] : fields.userId;
+        const carName = Array.isArray(fields.carName) ? fields.carName[0] : fields.carName;
+
         if (!userId || !carName)
           return res.status(400).json({ success: false, message: "Datos incompletos" });
 
