@@ -13,22 +13,15 @@ export default async function handler(req, res) {
     // === 🟢 GET: Obtener todos los eventos ===
     if (req.method === "GET") {
       const result = await pool.query(
-        // ⭐ CORREGIDO: Usando event_start y event_end para coincidir con la DB y evitar palabra reservada ⭐
-        `SELECT id, title, description, location, event_start, event_end, image_url
+        // ⭐ CORRECCIÓN CRÍTICA: Usamos AS para renombrar las columnas en SQL.
+        // Esto es más limpio y menos propenso a errores 500 en Vercel.
+        `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
          FROM events
-         ORDER BY event_start ASC`
+         ORDER BY start ASC`
       );
 
-      // Mapeamos los resultados para que FullCalendar siga esperando 'start' y 'end' en el JSON
-      const formattedData = result.rows.map(row => ({
-        ...row,
-        start: row.event_start, // Reasignamos event_start a 'start' para el frontend
-        end: row.event_end,     // Reasignamos event_end a 'end' para el frontend
-        event_start: undefined, // Eliminamos event_start
-        event_end: undefined    // Eliminamos event_end
-      }));
-
-      return res.status(200).json({ success: true, data: formattedData });
+      // Devolvemos el resultado tal cual, ya que SQL renombró las columnas.
+      return res.status(200).json({ success: true, data: result.rows });
     }
 
     // === 🟡 POST: Crear nuevo evento ===
@@ -44,7 +37,7 @@ export default async function handler(req, res) {
       }
 
       const result = await pool.query(
-        // ⭐ CORREGIDO: Usando event_start y event_end en el INSERT ⭐
+        // Usamos event_start y event_end para insertar en la DB
         `INSERT INTO events (title, description, location, event_start, event_end, image_url)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
@@ -83,8 +76,8 @@ export default async function handler(req, res) {
          SET title = $1,
              description = $2,
              location = $3,
-             event_start = $4,  // ⭐ CORREGIDO: Usando event_start ⭐
-             event_end = $5,    // ⭐ CORREGIDO: Usando event_end ⭐
+             event_start = $4,
+             event_end = $5,
              image_url = COALESCE($6, image_url)
          WHERE id = $7
          RETURNING *`,
@@ -127,7 +120,6 @@ export default async function handler(req, res) {
       .json({ success: false, message: `Método ${req.method} no permitido.` });
   } catch (error) {
     console.error("Error general en /api/events:", error);
-    // El error 500 ahora será menos probable si los nombres de columna son correctos
     return res
       .status(500)
       .json({ success: false, message: "Error interno del servidor." });

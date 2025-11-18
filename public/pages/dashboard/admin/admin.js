@@ -96,7 +96,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 extendedProps: {
                     description: e.description,
                     location: e.location,
-                    // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
                     image_url: e.image_url
                 }
             }));
@@ -184,7 +183,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // ⭐ ELIMINADA toda la lógica de conversión a Base64 ⭐
 
-        // ⭐ MODIFICADO: Envía image_url en lugar de image_base64 ⭐
         const payload = { title, description, location, start, end, image_url };
 
         try {
