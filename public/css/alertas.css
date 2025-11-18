@@ -1,61 +1,83 @@
-/* ========================================= */
-/* ESTILOS GLOBALES PARA ALERTAS Y NOTIFICACIONES */
-/* ========================================= */
-
+/* ===============================
+   CONTENEDOR DE LAS ALERTAS
+   =============================== */
 .alerta-container {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1050; /* Alto z-index para estar por encima de otros elementos */
-    max-width: 350px;
-    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 99999;
+    pointer-events: none; /* Para que no molesten al usuario */
 }
 
+
+/* ===============================
+   ALERTA BASE
+   =============================== */
 .alerta {
-    padding: 15px 20px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 12px 18px;
+    border-radius: 10px;
+
+    font-size: 15px;
     font-weight: 600;
-    opacity: 0; /* Por defecto invisible */
-    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-    transform: translateX(100%); /* Ocultar a la derecha */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: white;
+
+    opacity: 0;
+    transform: translateX(40px);
+    transition: all 0.35s ease;
+
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+
+    pointer-events: auto;
 }
 
+
+/* Cuando aparece */
 .alerta.mostrar {
     opacity: 1;
-    transform: translateX(0); /* Mostrar */
+    transform: translateX(0);
 }
 
-/* --- Tipos de Alerta --- */
 
-/* Éxito */
+/* ===============================
+   TIPOS DE ALERTA
+   =============================== */
+
+/* ÉXITO → VERDE */
 .alerta.exito {
-    background-color: #28a745; /* Verde Bootstrap */
-    border-left: 5px solid #1e7e34;
+    background: #28a745;
+    border-left: 6px solid #1f7a33;
 }
 
-/* Error */
+/* ERROR → ROJO */
 .alerta.error {
-    background-color: #dc3545; /* Rojo Bootstrap */
-    border-left: 5px solid #bd2130;
+    background: #dc3545;
+    border-left: 6px solid #a12732;
 }
 
-/* Advertencia/Warning */
+/* ADVERTENCIA → AMARILLO */
 .alerta.advertencia {
-    background-color: #ffc107; /* Amarillo Bootstrap */
-    color: #343a40; /* Texto oscuro para mejor contraste */
-    border-left: 5px solid #d39e00;
+    background: #ffc107;
+    color: #000;
+    border-left: 6px solid #b68b00;
 }
 
-/* Información */
+/* INFO → CELESTE */
 .alerta.info {
-    background-color: #007bff; /* Azul Bootstrap */
-    border-left: 5px solid #0056b3;
+    background: #0dcaf0;
+    border-left: 6px solid #0aa1c4;
 }
 
-/* Icono (Opcional, si usas Bootstrap Icons) */
+
+/* ===============================
+   ICONOS
+   =============================== */
 .alerta i {
-    margin-right: 8px;
+    font-size: 1.3rem;
 }
