@@ -71,7 +71,6 @@ export default async function handler(req, res) {
              location = $3,
              start = $4,
              "end" = $5,
-            // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
              image_url = COALESCE($6, image_url)
          WHERE id = $7
          RETURNING *`,
