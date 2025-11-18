@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
+
+body {
+    overflow: hidden;
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
+    color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* === ESTILOS PARA EL TOGGLE DE CONTRASEÑA === */
+.password-wrapper {
+    position: relative;
+    /* Contenedor para posicionar el icono */
+    margin-bottom: 12px;
+    /* Margen que antes estaba en el input */
+}
+
+.password-wrapper input {
+    /* Ajustamos el padding derecho para que el texto no quede debajo del icono */
+    padding-right: 35px !important;
+    margin-bottom: 0 !important;
+    /* El margen ahora está en el wrapper */
+}
+
+.password-wrapper i {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #e50914;
+    /* Color del ícono rojo */
+    font-size: 1.1rem;
+    transition: color 0.2s;
+}
+
+.password-wrapper i:hover {
+    color: #ff1a1a;
+}
+
+/* === FIN ESTILOS TOGGLE === */
+
+
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    height: calc(100vh - 80px);
+    min-height: 500px;
+    padding: 20px 20px;
+}
+
+.form-box {
+    background-color: rgba(20, 20, 20, 0.9);
+    border: 1px solid #e50914;
+    box-shadow: 0 0 25px rgba(229, 9, 20, 0.3);
+    border-radius: 12px;
+    padding: 30px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.form-box h2 {
+    color: #e50914;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(229, 9, 20, 0.7);
+    font-size: 1.8rem;
+}
+
+.form-box label {
+    display: block;
+    text-align: left;
+    margin-top: 5px;
+    color: #ccc;
+    margin-bottom: 3px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.form-box input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 3px;
+    margin-bottom: 12px;
+    /* Este margen ahora es irrelevante para el input, solo para los inputs fuera de .password-wrapper */
+    border-radius: 6px;
+    border: 1px solid #333;
+    background-color: #222;
+    color: white;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.form-box input:focus {
+    border-color: #e50914;
+    box-shadow: 0 0 6px rgba(229, 9, 20, 0.5);
+}
+
+.form-box button {
+    background-color: #e50914;
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 10px;
+    margin-top: 15px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.form-box button:hover {
+    background-color: #ff1a1a;
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
+}
+
+.switch-link {
+    margin-top: 10px;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.switch-link a {
+    color: #e50914;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.switch-link a:hover {
+    text-decoration: underline;
+}
+
+/* RESPONSIVE FORM */
+@media (max-width: 768px) {
+    .form-container {
+        height: auto;
+        min-height: calc(100vh - 80px);
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+
+    .form-box {
+        width: 90%;
+        padding: 1.5rem 1.2rem;
+        border-radius: 18px;
+        box-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
+    }
+
+    .form-box h2 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+
+    .form-box input,
+    .form-box button {
+        font-size: 0.9rem;
+    }
+
+    .form-box button {
+        padding: 10px;
+    }
+}

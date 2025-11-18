@@ -1,0 +1,48 @@
+/* ======== NAVBAR.CSS ======== */
+
+.navbar {
+  background-color: #000 !important;
+  border-bottom: 2px solid #dc3545 !important;
+}
+
+.navbar-brand img {
+  height: 70px;
+}
+
+.navbar .btn {
+  border: 1px solid #555;
+  color: white;
+}
+
+.navbar .btn:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Offcanvas */
+.offcanvas {
+  background-color: #111;
+  color: white;
+}
+
+.offcanvas .offcanvas-header {
+  border-bottom: 1px solid #333;
+}
+
+.offcanvas a {
+  color: white;
+  font-weight: 500;
+}
+
+.offcanvas a:hover {
+  color: #dc3545;
+}
+
+/* Login icon */
+#login-icon {
+  color: white;
+}
+
+#login-icon:hover {
+  color: #dc3545;
+}

@@ -1,0 +1,48 @@
+/* Estilos comunes del calendario FullCalendar */
+#calendar {
+    max-width: 900px;
+    margin: 50px auto;
+    background: #1c1c1c;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+/* Estilos de la Modal de Visualización de Eventos (Usada en calendario.html) */
+.modal-event {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-event-content {
+    background: #1c1c1c;
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+}
+
+.close-modal {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.close-modal:hover {
+    background: #e60000;
+}

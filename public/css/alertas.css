@@ -1,0 +1,61 @@
+/* ========================================= */
+/* ESTILOS GLOBALES PARA ALERTAS Y NOTIFICACIONES */
+/* ========================================= */
+
+.alerta-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050; /* Alto z-index para estar por encima de otros elementos */
+    max-width: 350px;
+    width: 90%;
+}
+
+.alerta {
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    opacity: 0; /* Por defecto invisible */
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transform: translateX(100%); /* Ocultar a la derecha */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.alerta.mostrar {
+    opacity: 1;
+    transform: translateX(0); /* Mostrar */
+}
+
+/* --- Tipos de Alerta --- */
+
+/* Éxito */
+.alerta.exito {
+    background-color: #28a745; /* Verde Bootstrap */
+    border-left: 5px solid #1e7e34;
+}
+
+/* Error */
+.alerta.error {
+    background-color: #dc3545; /* Rojo Bootstrap */
+    border-left: 5px solid #bd2130;
+}
+
+/* Advertencia/Warning */
+.alerta.advertencia {
+    background-color: #ffc107; /* Amarillo Bootstrap */
+    color: #343a40; /* Texto oscuro para mejor contraste */
+    border-left: 5px solid #d39e00;
+}
+
+/* Información */
+.alerta.info {
+    background-color: #007bff; /* Azul Bootstrap */
+    border-left: 5px solid #0056b3;
+}
+
+/* Icono (Opcional, si usas Bootstrap Icons) */
+.alerta i {
+    margin-right: 8px;
+}

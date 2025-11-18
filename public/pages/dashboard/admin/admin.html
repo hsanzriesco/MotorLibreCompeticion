@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel de Administrador - Motor Libre Competición</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../../../css/navbar.css" />
+    <link rel="stylesheet" href="../../../css/style.css" />
+    <link rel="icon" href="../../../img/imagen-tfg.png" type="image/png" />
+    <link rel="stylesheet" href="../../../css/alertas.css" />
+
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+        }
+
+        main {
+            margin-top: 80px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .admin-section {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(229, 9, 20, 0.5);
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.25);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem auto;
+            width: 95%;
+            max-width: 1200px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+
+        <a id="logo-link" href="./admin.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
+        </a>
+
+        <div class="d-flex align-items-center">
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú Administrador</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body">
+
+            <a href="./adminCalendario/adminCalendario.html" class="d-block text-light mb-2">
+                <i class="bi bi-calendar-event"></i> Gestión de Eventos
+            </a>
+
+            <a href="./user/users.html" class="d-block text-light mb-2">
+                <i class="bi bi-people"></i> Gestionar Usuarios
+            </a>
+
+            <hr class="border-secondary" />
+
+            <!-- ⭐ INICIO CON ID PARA REDIRECCIÓN ESPECIAL -->
+            <a id="menu-inicio" href="#" class="d-block text-light mb-2">
+                <i class="bi bi-house"></i> Inicio
+            </a>
+
+            <!-- ⭐ CERRAR SESIÓN -->
+            <a href="#" id="logout-btn" class="d-block text-danger">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </a>
+
+        </div>
+    </div>
+
+    <main>
+        <section class="admin-section text-center">
+            <h2 class="mb-4">Panel de Control de Administrador</h2>
+            <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
+        </section>
+    </main>
+
+    <script src="../../../js/alertas.js"></script>
+    <script src="../../../js/navbar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

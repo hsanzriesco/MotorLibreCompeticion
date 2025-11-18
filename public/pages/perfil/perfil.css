@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+:root {
+    --mlc-red: #e50914;
+    --mlc-dark: #0e0e0e;
+    --mlc-panel: rgba(20, 20, 20, 0.9);
+    --mlc-glow: rgba(229, 9, 20, 0.25);
+}
+
+/* Layout */
+body {
+    background: linear-gradient(180deg, #0b0b0b 0%, #111 100%);
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+.navbar-mlc {
+    background: #0f0f0f !important;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
+    border-bottom: none;
+    /* quitar línea debajo del navbar */
+}
+
+/* Main */
+.main-perfil {
+    margin-top: 90px;
+    max-width: 1200px;
+    padding: 30px 12px;
+}
+
+/* Card style */
+.card-mlc {
+    background: var(--mlc-panel);
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    box-shadow: 0 8px 30px var(--mlc-glow);
+    border-radius: 12px;
+    padding: 18px;
+}
+
+/* Inputs */
+.mlc-input {
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #ddd;
+    border-radius: 8px;
+    padding: 10px 12px;
+    transition: box-shadow .15s ease;
+}
+
+.mlc-input:focus {
+    outline: none;
+    box-shadow: 0 0 10px rgba(229, 9, 20, 0.25);
+    border-color: var(--mlc-red);
+    color: #fff;
+}
+
+/* Buttons */
+.btn-mlc-save {
+    background: var(--mlc-red);
+    color: white;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: none;
+}
+
+.btn-mlc-save:hover {
+    filter: brightness(.95);
+}
+
+.btn-mlc-add {
+    background: #1f8a3a;
+    color: #fff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    border: none;
+}
+
+.btn-mlc-outline {
+    background: transparent;
+    border: 1px solid rgba(229, 9, 20, 0.25);
+    color: #fff;
+    border-radius: 8px;
+}
+
+/* Modal */
+.modal-mlc {
+    background: linear-gradient(180deg, #0b0b0b, #111);
+    border-radius: 12px;
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    box-shadow: 0 20px 50px rgba(229, 9, 20, 0.15);
+    padding: 0;
+}
+
+/* Modal header tweaks */
+.modal-mlc .modal-header {
+    border-bottom: none;
+    padding: 16px 18px;
+    background: transparent;
+}
+
+/* small cards for cars */
+.car-item {
+    background: linear-gradient(180deg, #151515, #0f0f0f);
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.car-image-container img {
+    width: 100%;
+    max-width: 90px;
+    border-radius: 6px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-perfil {
+        padding: 20px;
+    }
+
+    .card-mlc {
+        padding: 14px;
+    }
+}
