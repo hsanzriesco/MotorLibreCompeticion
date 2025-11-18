@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = { id: user.id, name: newName, email: newEmail };
 
         try {
-            const resp = await fetch('/api/usersList', {
+            const resp = await fetch('/api/userList', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const resp = await fetch('/api/usersList', {
+            const resp = await fetch('/api/userList', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: user.id, password: nueva })
