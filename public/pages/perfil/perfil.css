@@ -20,7 +20,6 @@ body {
     background: #0f0f0f !important;
     box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
     border-bottom: none;
-    /* quitar línea debajo del navbar */
 }
 
 /* Main */
@@ -30,7 +29,7 @@ body {
     padding: 30px 12px;
 }
 
-/* Card style */
+/* Card */
 .card-mlc {
     background: var(--mlc-panel);
     border: 1px solid rgba(229, 9, 20, 0.35);
@@ -39,21 +38,36 @@ body {
     padding: 18px;
 }
 
-/* Inputs */
+/* Inputs — FIX GLOBAL */
+input,
+select,
+textarea,
+.form-control,
 .mlc-input {
-    background: #141414;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    color: #ddd;
-    border-radius: 8px;
-    padding: 10px 12px;
+    background: #0c0c0c !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
     transition: box-shadow .15s ease;
 }
 
+/* Prevent Bootstrap from turning inputs white */
+input:focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
 .mlc-input:focus {
-    outline: none;
-    box-shadow: 0 0 10px rgba(229, 9, 20, 0.25);
-    border-color: var(--mlc-red);
-    color: #fff;
+    background: #121212 !important;
+    color: #fff !important;
+    border-color: var(--mlc-red) !important;
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.35) !important;
+    outline: none !important;
+}
+
+/* Placeholder visible */
+::placeholder {
+    color: rgba(255, 255, 255, 0.55) !important;
 }
 
 /* Buttons */
@@ -94,14 +108,13 @@ body {
     padding: 0;
 }
 
-/* Modal header tweaks */
 .modal-mlc .modal-header {
     border-bottom: none;
     padding: 16px 18px;
     background: transparent;
 }
 
-/* small cards for cars */
+/* Car items */
 .car-item {
     background: linear-gradient(180deg, #151515, #0f0f0f);
     border-radius: 10px;
