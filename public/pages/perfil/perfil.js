@@ -58,11 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     };
 
-    function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function escapeHtml(s) { 
+        return String(s || '').replace(/[&<>"']/g, c => ({ 
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' 
+        }[c])); 
+    }
 
     function loadCars() {
         const storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
         carList.innerHTML = '';
+        
         if (!storedCars.length) {
             noCarsMessage.style.display = 'block';
         } else {
@@ -70,9 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
             storedCars.forEach(car => carList.innerHTML += renderCar(car));
         }
 
-        // Click to edit car
+        // Click para editar coche
         carList.querySelectorAll('.car-item').forEach(item => {
-            item.addEventListener('click', (e) => {
+            item.addEventListener('click', () => {
                 const el = item.closest('[data-car-id]');
                 const id = parseInt(el.dataset.carId);
                 const storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
@@ -82,12 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        localStorage.setItem('user_cars', JSON.stringify(JSON.parse(localStorage.getItem('user_cars') || '[]')));
+        localStorage.setItem('user_cars', JSON.stringify(storedCars));
     }
 
     loadCars();
 
-    // Open add car
+    // Abrir añadir coche
     openAddCarBtn.addEventListener('click', () => {
         openCarModal(null);
         new bootstrap.Modal(document.getElementById('carModal')).show();
@@ -96,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function openCarModal(car) {
         carForm.reset();
         currentCarId = null;
+
         if (car) {
             document.getElementById('carModalTitle').textContent = 'Editar coche';
             document.getElementById('car-id').value = car.id;
@@ -111,9 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Save car
+    // Guardar coche
     carForm.addEventListener('submit', (e) => {
         e.preventDefault();
+
         const carData = {
             id: currentCarId || Date.now(),
             user_id: user.id,
@@ -125,53 +132,57 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         let storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
+
         if (currentCarId) {
             const idx = storedCars.findIndex(c => c.id === currentCarId);
             if (idx !== -1) storedCars[idx] = carData;
-            mostrarAlerta('Coche actualizado', 'success');
+            mostrarAlerta('Coche actualizado', 'exito');
         } else {
             storedCars.push(carData);
-            mostrarAlerta('Coche añadido', 'success');
+            mostrarAlerta('Coche añadido', 'exito');
         }
+
         localStorage.setItem('user_cars', JSON.stringify(storedCars));
         loadCars();
+
         const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
         if (modal) modal.hide();
     });
 
-    // Delete car
+    // Eliminar coche
     deleteCarBtn.addEventListener('click', () => {
         if (!currentCarId) return;
         if (!confirm('¿Eliminar este coche?')) return;
+
         let storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
         storedCars = storedCars.filter(c => c.id !== currentCarId);
         localStorage.setItem('user_cars', JSON.stringify(storedCars));
         loadCars();
+
         mostrarAlerta('Coche eliminado', 'error');
+
         const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
         if (modal) modal.hide();
     });
 
-    // PROFILE: Save (name + email). Email change requires verification (contraseña actual)
+    // GUARDAR perfil
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+
         const newName = document.getElementById('profile-name').value.trim();
         const newEmail = document.getElementById('profile-email').value.trim();
 
-        // If nothing changed
         if (newName === (user.name || '') && newEmail === (user.email || '')) {
             mostrarAlerta('No hay cambios que guardar.', 'info');
             return;
         }
 
-        // If email changed -> ask for current password (verification)
         if (newEmail !== (user.email || '')) {
             const pwd = prompt('Para cambiar el correo introduce tu contraseña actual:');
             if (pwd === null) {
                 mostrarAlerta('Cambio de correo cancelado.', 'info');
                 return;
             }
-            // Compare with session password if exists
             if (!user.password) {
                 mostrarAlerta('No hay contraseña en sesión para verificar. Inicia sesión de nuevo.', 'error');
                 return;
@@ -180,25 +191,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 mostrarAlerta('Contraseña incorrecta. No se cambió el correo.', 'error');
                 return;
             }
-            // If you want, here you could call API to update email server-side.
         }
 
-        // Save locally in sessionStorage
         user.name = newName;
         user.email = newEmail;
         sessionStorage.setItem('usuario', JSON.stringify(user));
         userNameElement.textContent = newName;
 
-        mostrarAlerta('Datos actualizados correctamente.', 'success');
+        mostrarAlerta('Datos actualizados correctamente.', 'exito');
     });
 
-    // PASSWORD CHANGE: use modal, validate against session password
+    // CAMBIO DE CONTRASEÑA
     document.getElementById('passwordModal').addEventListener('show.bs.modal', () => {
         passwordForm.reset();
     });
 
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+
         const actual = document.getElementById('current-password').value;
         const nueva = document.getElementById('new-password').value;
         const repetir = document.getElementById('confirm-new-password').value;
@@ -218,25 +228,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Success: update sessionStorage
+        // Actualizamos localmente
         user.password = nueva;
         sessionStorage.setItem('usuario', JSON.stringify(user));
 
-        // Optional: attempt to update on server via PUT /api/userList (if exists)
         try {
             const res = await fetch('/api/userList', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: user.id, password: nueva })
             });
-            // If backend returns non-success, ignore but warn
+
             if (res.ok) {
                 const json = await res.json();
                 if (!json.success) {
-                    // server-side refused update; we still updated local session
                     mostrarAlerta('Contraseña actualizada localmente. No se actualizó en el servidor.', 'info');
                 } else {
-                    mostrarAlerta('Contraseña actualizada correctamente.', 'success');
+                    mostrarAlerta('Contraseña actualizada correctamente.', 'exito');
                 }
             } else {
                 mostrarAlerta('Contraseña actualizada localmente. No se pudo actualizar en servidor.', 'info');
@@ -253,11 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
         sessionStorage.clear();
-        mostrarAlerta('Sesión cerrada', 'success');
+        mostrarAlerta('Sesión cerrada', 'exito');
         setTimeout(() => window.location.href = '../auth/login/login.html', 700);
     });
 
-    // helper to ensure menu "Inicio" points depending on role (navbar.js already does similar)
+    // MENÚ inicio según rol
     const menuInicio = document.getElementById('menu-inicio');
     if (menuInicio) {
         menuInicio.addEventListener('click', (ev) => {
