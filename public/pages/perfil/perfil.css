@@ -142,3 +142,28 @@ textarea:focus,
         padding: 14px;
     }
 }
+
+
+/* FIX — Mejorar visibilidad de textos débiles */
+.card-mlc label,
+.card-mlc h3,
+.card-mlc h4,
+.card-mlc h5,
+.card-mlc p,
+.card-mlc span {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Títulos como "Datos personales" y "Mi Garaje" */
+.card-mlc .section-title,
+.card-mlc-title,
+.card-mlc h2 {
+    color: #fff !important;
+    font-weight: 700 !important;
+}
+
+/* Subtítulos tipo "Nombre", "Correo electrónico" */
+.form-group label,
+label {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
