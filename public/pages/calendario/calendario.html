@@ -26,8 +26,6 @@
             padding-top: 100px;
             /* Espacio para el navbar */
         }
-
-        /* Estilos de calendario y modal-event ELIMINADOS y movidos a calendario.css */
     </style>
 </head>
 
@@ -74,6 +72,12 @@
     <div id="eventViewModal" class="modal-event" style="display: none;">
         <div class="modal-event-content">
             <h4 id="modalTitle"></h4>
+
+            <div id="event-image-container" style="text-align: center; margin-bottom: 15px; display: none;">
+                <img id="modalImage" src="" alt="Imagen del evento"
+                    style="max-width: 100%; height: auto; border-radius: 8px;">
+            </div>
+
             <p id="modalDesc"></p>
             <p id="modalLoc"></p>
             <p id="modalDate"></p>
@@ -83,66 +87,7 @@
 
     <script src="../../js/alertas.js"></script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", async () => {
-            const usuario = JSON.parse(localStorage.getItem("usuario"));
-            const userName = document.getElementById("user-name");
-            const loginIcon = document.getElementById("login-icon");
-
-            if (usuario) {
-                userName.textContent = usuario.name;
-                loginIcon.style.display = "none";
-            }
-
-            document.getElementById("logout-btn").addEventListener("click", (e) => {
-                e.preventDefault();
-                localStorage.removeItem("usuario");
-
-                mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
-
-                const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-                if (offcanvasMenu) {
-                    offcanvasMenu.hide();
-                }
-
-                setTimeout(() => {
-                    // Redirección al login desde /pages/calendario/
-                    window.location.href = "../auth/login/login.html";
-                }, 1500);
-            });
-
-            // LÓGICA DE INICIALIZACIÓN DEL CALENDARIO
-            const calendarEl = document.getElementById("calendar");
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: "dayGridMonth",
-                locale: "es",
-                events: async (fetchInfo, successCallback, failureCallback) => {
-                    try {
-                        const res = await fetch("/api/events");
-                        const data = await res.json();
-                        if (data.success && Array.isArray(data.data)) successCallback(data.data);
-                        else successCallback([]);
-                    } catch (err) {
-                        failureCallback(err);
-                        mostrarAlerta("Error al cargar los eventos del calendario.", 'error');
-                    }
-                },
-                eventClick: (info) => {
-                    const e = info.event;
-                    document.getElementById("modalTitle").textContent = e.title;
-                    document.getElementById("modalDesc").textContent = e.extendedProps.description || "Sin descripción.";
-                    document.getElementById("modalLoc").textContent = e.extendedProps.location || "Ubicación no especificada.";
-                    document.getElementById("modalDate").textContent = new Date(e.start).toLocaleDateString("es-ES");
-                    document.getElementById("eventViewModal").style.display = "flex";
-                },
-            });
-            calendar.render();
-
-            document.getElementById("closeModalBtn").addEventListener("click", () => {
-                document.getElementById("eventViewModal").style.display = "none";
-            });
-        });
-    </script>
+    <script src="./calendario.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
