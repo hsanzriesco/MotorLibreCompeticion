@@ -23,7 +23,6 @@
             background-color: #111;
             color: #fff;
             padding-top: 80px;
-            /* Espacio para el navbar fijo */
         }
 
         /* Estilos ESPECÍFICOS de la modal de gestión de eventos (CRUD) */
@@ -145,7 +144,7 @@
                 </div>
 
                 <div class="modal-body">
-                    <form id="eventForm">
+                    <form id="eventForm" enctype="multipart/form-data">
                         <input type="hidden" id="eventId" />
                         <div class="mb-3">
                             <label for="title" class="form-label">Título *</label>
@@ -176,9 +175,21 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="mb-3">
-                            <label for="image" class="form-label">Imagen (opcional)</label>
-                            <input type="file" id="image" class="form-control" accept="image/*" />
+                            <label for="imageFile" class="form-label">Imagen (Subir Archivo)</label>
+                            <input type="file" id="imageFile" name="imageFile" class="form-control" accept="image/*" />
+
+                            <input type="hidden" id="imageURL" name="imageURL" />
+
+                            <div id="currentImageContainer" style="display: none; margin-top: 15px;">
+                                <p class="mb-1 text-secondary small">Imagen actual:</p>
+                                <img id="currentImagePreview" src="" alt="Previsualización" class="img-fluid rounded"
+                                    style="max-height: 200px;" />
+                                <button type="button" class="btn btn-sm btn-outline-warning mt-2" id="clearImageBtn">
+                                    <i class="bi bi-x-circle"></i> Quitar imagen
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

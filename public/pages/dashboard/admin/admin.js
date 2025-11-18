@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
 
-    // ===== VERIFICAR SESIÓN =====
+    // ===== VERIFICAR SESIÓN (Sin cambios) =====
     const storedUser = sessionStorage.getItem("usuario");
 
     let usuario = null;
@@ -12,10 +12,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // DEBUG: ver qué role llega realmente
-    console.log("DEBUG usuario cargado:", usuario);
-
-    // ===== PERMITIR SOLO ADMIN =====
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
         sessionStorage.removeItem("usuario");
         alert("Acceso denegado. Inicia sesión como administrador.");
@@ -25,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // ===== ELEMENTOS =====
+    // ===== ELEMENTOS DEL DOM (Actualizado para nuevos IDs de imagen) =====
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
     if (!calendarEl || !eventModalEl) return;
@@ -39,17 +35,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
     const endTimeInput = document.getElementById("end-time");
-    // ⭐ MODIFICADO: Asumo que ahora usarás un input de texto para la URL, NO un input de tipo file ⭐
-    // Si tu HTML usa el ID 'image', deberías cambiarlo a tipo texto
-    const imageURLInput = document.getElementById("image");
     const eventIdInput = document.getElementById("eventId");
+
+    // ⭐ ELEMENTOS DE IMAGEN MODIFICADOS Y CLAVE PARA LA SOLUCIÓN ⭐
+    const imageFileInput = document.getElementById("imageFile"); // input type="file"
+    const imageURLInput = document.getElementById("imageURL");   // input type="hidden"
+    const currentImagePreview = document.getElementById("currentImagePreview");
+    const currentImageContainer = document.getElementById("currentImageContainer");
+    const clearImageBtn = document.getElementById("clearImageBtn");
 
     const saveEventBtn = document.getElementById("saveEventBtn");
     const deleteEventBtn = document.getElementById("deleteEventBtn");
 
     let selectedEvent = null;
 
-    // ===== CONFIRMACIÓN (Sin cambios) =====
+    // ... (Función showConfirmAlert sin cambios) ...
     function showConfirmAlert(message, onConfirm) {
         let confirmBox = document.getElementById("customConfirmContainer").querySelector(".custom-confirm");
 
@@ -60,14 +60,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         confirmBox.innerHTML = `
-            <div class="confirm-content">
-                <p>${message}</p>
-                <div class="buttons">
-                    <button id="confirmYes" class="btn btn-danger">Sí</button>
-                    <button id="confirmNo" class="btn btn-secondary">No</button>
-                </div>
-            </div>
-        `;
+            <div class="confirm-content">
+                <p>${message}</p>
+                <div class="buttons">
+                    <button id="confirmYes" class="btn btn-danger">Sí</button>
+                    <button id="confirmNo" class="btn btn-secondary">No</button>
+                </div>
+            </div>
+        `;
         confirmBox.classList.add("show");
 
         document.getElementById("confirmNo").onclick = () => {
@@ -82,7 +82,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
     }
 
-    // ===== CARGAR EVENTOS =====
+
+    // ===== CARGAR EVENTOS (Sin cambios) =====
     async function fetchEvents() {
         try {
             const res = await fetch("/api/events");
@@ -99,15 +100,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                     image_url: e.image_url
                 }
             }));
-        } catch {
+        } catch(e) {
+            console.error("Error al obtener eventos:", e);
             alert("Error al cargar los eventos");
             return [];
         }
     }
-
-    // ⭐ ELIMINADO: La función toBase64 ya no es necesaria ⭐
-    // function toBase64(file) { ... }
-
 
     // ===== CALENDARIO =====
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -123,19 +121,38 @@ document.addEventListener("DOMContentLoaded", async () => {
             startDateInput.value = info.startStr.split("T")[0];
             eventIdInput.value = "";
             deleteEventBtn.style.display = "none";
+            
+            // Lógica de imagen al crear: limpiar todo
+            imageFileInput.value = ""; // Limpiar input file
+            imageURLInput.value = ""; // Limpiar campo hidden
+            currentImageContainer.style.display = "none"; // Ocultar previsualización
+
             eventModal.show();
         },
 
         eventClick: (info) => {
             const event = info.event;
             selectedEvent = event;
+            const extendedProps = event.extendedProps;
+            const currentURL = extendedProps.image_url || ""; // La URL de la base de datos
 
             eventIdInput.value = event.id;
             titleInput.value = event.title;
-            descriptionInput.value = event.extendedProps.description || "";
-            locationInput.value = event.extendedProps.location || "";
-            // ⭐ MODIFICADO: Carga el valor image_url en el input ⭐
-            imageURLInput.value = event.extendedProps.image_url || "";
+            descriptionInput.value = extendedProps.description || "";
+            locationInput.value = extendedProps.location || "";
+            
+            // ⭐ SOLUCIÓN DEL ERROR: Rellena el campo HIDDEN y vacía el FILE ⭐
+            imageURLInput.value = currentURL;
+            imageFileInput.value = ""; // Esto es lo único que el navegador permite: vacío
+
+            // Lógica para previsualizar la imagen existente
+            if (currentURL) {
+                currentImagePreview.src = currentURL;
+                currentImageContainer.style.display = 'block';
+            } else {
+                currentImagePreview.src = '';
+                currentImageContainer.style.display = 'none';
+            }
 
             if (event.start) {
                 const startDate = new Date(event.start);
@@ -160,20 +177,43 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     calendar.render();
 
-    // ===== GUARDAR EVENTO =====
+    // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN =====
+    
+    // Previsualizar nuevo archivo seleccionado (Usa URL.createObjectURL)
+    imageFileInput.addEventListener('change', function() {
+        const file = this.files[0];
+
+        if (file) {
+            const fileUrl = URL.createObjectURL(file);
+            currentImagePreview.src = fileUrl;
+            currentImageContainer.style.display = 'block';
+            // Marca el campo hidden para indicar que hay un archivo subido para evitar enviar la URL antigua
+            imageURLInput.value = 'FILE_UPLOADED'; 
+        } else if (imageURLInput.value === 'FILE_UPLOADED') {
+             // Si el usuario cancela la selección de archivo, vuelve al estado anterior
+             imageURLInput.value = ""; // Si no había URL antes, se vacía.
+             currentImageContainer.style.display = 'none';
+        }
+    });
+
+    // Botón para eliminar la imagen (deja el campo imageURLInput vacío)
+    clearImageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        imageURLInput.value = ""; // Borra la URL existente (el backend la pondrá a NULL)
+        imageFileInput.value = ""; // Limpia el input file
+        currentImageContainer.style.display = 'none';
+    });
+
+
+    // ===== GUARDAR EVENTO (Usa FormData) =====
     saveEventBtn.addEventListener("click", async () => {
         const id = eventIdInput.value;
-        const title = titleInput.value.trim();
-        const description = descriptionInput.value.trim();
-        const location = locationInput.value.trim();
         const date = startDateInput.value;
         const startTime = startTimeInput.value;
         const endTime = endTimeInput.value;
-        // ⭐ MODIFICADO: Captura el valor del nuevo input de URL ⭐
-        const image_url = imageURLInput.value.trim() || null;
-
-
-        if (!title || !date || !startTime || !endTime) {
+        
+        // Validación de campos obligatorios
+        if (!titleInput.value.trim() || !date || !startTime || !endTime) {
             alert("Completa todos los campos obligatorios");
             return;
         }
@@ -181,25 +221,43 @@ document.addEventListener("DOMContentLoaded", async () => {
         const start = `${date}T${startTime}`;
         const end = `${date}T${endTime}`;
 
-        // ⭐ ELIMINADA toda la lógica de conversión a Base64 ⭐
+        // ⭐ 1. Crear FormData para enviar archivos al backend ⭐
+        const formData = new FormData();
+        formData.append('title', titleInput.value.trim());
+        formData.append('description', descriptionInput.value.trim());
+        formData.append('location', locationInput.value.trim());
+        formData.append('start', start);
+        formData.append('end', end);
 
-        const payload = { title, description, location, start, end, image_url };
+        const file = imageFileInput.files[0];
+        const currentURL = imageURLInput.value;
+
+        // 2. Adjuntar imagen o URL
+        if (file) {
+            // Si hay un nuevo archivo subido
+            formData.append('imageFile', file);
+        } else if (currentURL && currentURL !== 'FILE_UPLOADED') {
+             // Si no hay nuevo archivo, pero hay una URL existente (edición sin cambio o sin imagen)
+             formData.append('imageURL', currentURL);
+        }
+        // Si no hay archivo ni currentURL, el campo imageURL no se adjunta y el backend lo pondrá a NULL.
 
         try {
             const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
                 method: id ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                // El navegador establece el Content-Type (multipart/form-data) automáticamente.
+                body: formData 
             });
 
             const data = await res.json();
-            if (!data.success) throw new Error();
+            if (!data.success) throw new Error(data.message || "Fallo en la respuesta del servidor.");
 
             alert(id ? "Evento actualizado correctamente" : "Evento creado correctamente");
             eventModal.hide();
             calendar.refetchEvents();
-        } catch {
-            alert("Error al guardar evento");
+        } catch (e) {
+            console.error("Error al guardar:", e);
+            alert("Error al guardar evento: " + e.message);
         }
     });
 
@@ -209,7 +267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert("No hay evento seleccionado");
             return;
         }
-
+        
         showConfirmAlert("¿Eliminar este evento?", async () => {
             try {
                 const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
