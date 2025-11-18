@@ -241,7 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             btnCancel.addEventListener('click', () => cleanup(false), { once: true });
             btnConfirm.addEventListener('click', () => cleanup(true), { once: true });
-
             document.addEventListener('keydown', e => { if (e.key === 'Escape') cleanup(false); }, { once: true });
         });
     }
@@ -339,6 +338,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (actual !== user.password) {
             mostrarAlerta('Contraseña actual incorrecta', 'error');
+            return;
+        }
+
+        const confirmar = await mostrarConfirmacion('¿Quieres actualizar tu contraseña?');
+        if (!confirmar) {
+            mostrarAlerta('Actualización cancelada', 'info');
             return;
         }
 
