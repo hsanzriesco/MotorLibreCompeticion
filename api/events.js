@@ -1,4 +1,5 @@
-import { Pool } from "pg";
+// Usamos require en lugar de import para mayor compatibilidad en este entorno
+const { Pool } = require("pg");
 
 // Conexión al pool PostgreSQL
 const pool = new Pool({
@@ -9,24 +10,27 @@ const pool = new Pool({
 export default async function handler(req, res) {
   const { id } = req.query;
 
+  // Si estás en un proyecto Next.js, Vercel requiere esta línea para manejar el body
+  // if (req.body) req.body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
   try {
     // === 🟢 GET: Obtener todos los eventos ===
     if (req.method === "GET") {
       const result = await pool.query(
-        // ⭐ CORRECCIÓN CRÍTICA: Usamos AS para renombrar las columnas en SQL.
-        // Esto es más limpio y menos propenso a errores 500 en Vercel.
+        // Utilizamos AS para renombrar las columnas en SQL.
         `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
-         FROM events
-         ORDER BY start ASC`
+         FROM events
+         ORDER BY start ASC`
       );
 
-      // Devolvemos el resultado tal cual, ya que SQL renombró las columnas.
       return res.status(200).json({ success: true, data: result.rows });
     }
 
     // === 🟡 POST: Crear nuevo evento ===
     if (req.method === "POST") {
-      const body = await parseBody(req);
+      // Usamos req.body directamente si Vercel/Next.js lo parseó.
+      // Si no, necesitamos la función parseBody (ver al final del archivo).
+      const body = req.body || await parseBody(req);
       const { title, description, location, start, end, image_url } = body;
 
       if (!title || !start || !end) {
@@ -37,14 +41,12 @@ export default async function handler(req, res) {
       }
 
       const result = await pool.query(
-        // Usamos event_start y event_end para insertar en la DB
         `INSERT INTO events (title, description, location, event_start, event_end, image_url)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
         [title, description, location, start, end, image_url || null]
       );
 
-      // Mapeamos el resultado para devolver 'start' y 'end' al frontend
       const newEvent = {
         ...result.rows[0],
         start: result.rows[0].event_start,
@@ -61,7 +63,7 @@ export default async function handler(req, res) {
           .status(400)
           .json({ success: false, message: "Falta el ID del evento." });
 
-      const body = await parseBody(req);
+      const body = req.body || await parseBody(req);
       const { title, description, location, start, end, image_url } = body;
 
       if (!title || !start || !end) {
@@ -73,14 +75,14 @@ export default async function handler(req, res) {
 
       const result = await pool.query(
         `UPDATE events
-         SET title = $1,
-             description = $2,
-             location = $3,
-             event_start = $4,
-             event_end = $5,
-             image_url = COALESCE($6, image_url)
-         WHERE id = $7
-         RETURNING *`,
+         SET title = $1,
+             description = $2,
+             location = $3,
+             event_start = $4,
+             event_end = $5,
+             image_url = COALESCE($6, image_url)
+         WHERE id = $7
+         RETURNING *`,
         [title, description, location, start, end, image_url || null, id]
       );
 
@@ -90,7 +92,6 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Evento no encontrado." });
       }
 
-      // Mapeamos el resultado para devolver 'start' y 'end' al frontend
       const updatedEvent = {
         ...result.rows[0],
         start: result.rows[0].event_start,
@@ -126,7 +127,7 @@ export default async function handler(req, res) {
   }
 }
 
-// 🔧 Función auxiliar para parsear body (compatible con JSON y texto)
+// 🔧 Función auxiliar para parsear body (compatible con JSON y texto) - MANTENLA
 async function parseBody(req) {
   try {
     const raw = await new Promise((resolve, reject) => {
