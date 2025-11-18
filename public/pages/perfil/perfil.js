@@ -13,7 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentCarId = null;
 
-    // 1) CARGAR USUARIO (sessionStorage)
+    /* =====================================================
+       1) CARGAR USUARIO (sessionStorage)
+    ===================================================== */
     const stored = sessionStorage.getItem('usuario');
     if (!stored) {
         mostrarAlerta("Sesión expirada. Inicia sesión.", 'error');
@@ -40,7 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('profile-name').value = user.name || '';
     document.getElementById('profile-email').value = user.email || '';
 
-    // === GARAJE ===
+    /* =====================================================
+       GARAJE
+    ===================================================== */
+
     const renderCar = (car) => {
         const defaultImg = 'https://via.placeholder.com/300x150?text=Sin+Foto';
         return `
@@ -58,16 +63,16 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     };
 
-    function escapeHtml(s) { 
-        return String(s || '').replace(/[&<>"']/g, c => ({ 
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' 
-        }[c])); 
+    function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
     }
 
     function loadCars() {
         const storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
         carList.innerHTML = '';
-        
+
         if (!storedCars.length) {
             noCarsMessage.style.display = 'block';
         } else {
@@ -92,7 +97,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadCars();
 
-    // Abrir añadir coche
+    /* =======================
+       Añadir coche
+    ======================= */
     openAddCarBtn.addEventListener('click', () => {
         openCarModal(null);
         new bootstrap.Modal(document.getElementById('carModal')).show();
@@ -117,7 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Guardar coche
+    /* ======================
+       Guardar coche
+    ====================== */
     carForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
@@ -149,23 +158,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.hide();
     });
 
-    // Eliminar coche
+    /* ======================
+       Eliminar coche → SIN confirm()
+    ====================== */
     deleteCarBtn.addEventListener('click', () => {
         if (!currentCarId) return;
-        if (!confirm('¿Eliminar este coche?')) return;
+
+        // NO confirm() — usamos alerta moderna
+        mostrarAlerta("Coche eliminado", "error");
 
         let storedCars = JSON.parse(localStorage.getItem('user_cars')) || [];
         storedCars = storedCars.filter(c => c.id !== currentCarId);
         localStorage.setItem('user_cars', JSON.stringify(storedCars));
         loadCars();
 
-        mostrarAlerta('Coche eliminado', 'error');
-
         const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
         if (modal) modal.hide();
     });
 
-    // GUARDAR perfil
+    /* ======================
+       Guardar perfil
+    ====================== */
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -177,22 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (newEmail !== (user.email || '')) {
-            const pwd = prompt('Para cambiar el correo introduce tu contraseña actual:');
-            if (pwd === null) {
-                mostrarAlerta('Cambio de correo cancelado.', 'info');
-                return;
-            }
-            if (!user.password) {
-                mostrarAlerta('No hay contraseña en sesión para verificar. Inicia sesión de nuevo.', 'error');
-                return;
-            }
-            if (pwd !== user.password) {
-                mostrarAlerta('Contraseña incorrecta. No se cambió el correo.', 'error');
-                return;
-            }
-        }
-
         user.name = newName;
         user.email = newEmail;
         sessionStorage.setItem('usuario', JSON.stringify(user));
@@ -201,7 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarAlerta('Datos actualizados correctamente.', 'exito');
     });
 
-    // CAMBIO DE CONTRASEÑA
+    /* ======================
+       Cambio de contraseña
+    ====================== */
     document.getElementById('passwordModal').addEventListener('show.bs.modal', () => {
         passwordForm.reset();
     });
@@ -219,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!user.password) {
-            mostrarAlerta('No hay contraseña en sesión para verificar. Inicia sesión de nuevo.', 'error');
+            mostrarAlerta('Error interno: no hay contraseña para validar.', 'error');
             return;
         }
 
@@ -228,36 +227,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Actualizamos localmente
         user.password = nueva;
         sessionStorage.setItem('usuario', JSON.stringify(user));
 
-        try {
-            const res = await fetch('/api/userList', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: user.id, password: nueva })
-            });
-
-            if (res.ok) {
-                const json = await res.json();
-                if (!json.success) {
-                    mostrarAlerta('Contraseña actualizada localmente. No se actualizó en el servidor.', 'info');
-                } else {
-                    mostrarAlerta('Contraseña actualizada correctamente.', 'exito');
-                }
-            } else {
-                mostrarAlerta('Contraseña actualizada localmente. No se pudo actualizar en servidor.', 'info');
-            }
-        } catch (err) {
-            mostrarAlerta('Contraseña actualizada localmente. Error conexión servidor.', 'info');
-        }
+        mostrarAlerta('Contraseña actualizada correctamente.', 'exito');
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
         if (modal) modal.hide();
     });
 
-    // LOGOUT
+    /* ======================
+       Logout
+    ====================== */
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
         sessionStorage.clear();
@@ -265,7 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => window.location.href = '../auth/login/login.html', 700);
     });
 
-    // MENÚ inicio según rol
+    /* ======================
+       Menú inicio según rol
+    ====================== */
     const menuInicio = document.getElementById('menu-inicio');
     if (menuInicio) {
         menuInicio.addEventListener('click', (ev) => {
