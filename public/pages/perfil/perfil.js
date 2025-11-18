@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!resp.ok) throw 0;
                 mostrarAlerta('Coche actualizado', 'exito');
             } else {
-                // Asume que añadir coche está en /api/carGarage (POST) o en userAction (el problema de tu backend)
+                // Asume que añadir coche está en /api/carGarage (POST)
                 resp = await fetch('/api/carGarage', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -169,7 +169,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function mostrarConfirmacion(mensaje = '¿Confirmar?') {
+    /**
+     * Muestra una ventana de confirmación centralizada con el estilo de la app (negro/rojo).
+     * @param {string} mensaje - Mensaje a mostrar.
+     * @param {string} [confirmText='Confirmar'] - Texto del botón de confirmación.
+     * @returns {Promise<boolean>} Resuelve a true si se confirma, false si se cancela.
+     */
+    function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             if (document.getElementById('mlc-confirm-overlay')) {
                 resolve(false);
@@ -221,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const btnConfirm = document.createElement('button');
             btnConfirm.className = 'btn';
-            btnConfirm.textContent = 'Eliminar';
+            btnConfirm.textContent = confirmText; // Usamos el texto dinámico
             btnConfirm.style.background = '#e50914';
             btnConfirm.style.border = '1px solid rgba(229,9,20,0.9)';
             btnConfirm.style.color = '#fff';
@@ -251,7 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteCarBtn.addEventListener('click', async () => {
         if (!currentCarId) return;
 
-        const confirmar = await mostrarConfirmacion('¿Seguro que quieres eliminar este coche?');
+        // Usamos 'Eliminar' como texto de confirmación
+        const confirmar = await mostrarConfirmacion('¿Seguro que quieres eliminar este coche?', 'Eliminar');
         if (!confirmar) {
             mostrarAlerta('Eliminación cancelada', 'info');
             return;
@@ -282,9 +289,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // ⭐ PASO 1: PEDIR CONFIRMACIÓN PARA GUARDAR CAMBIOS DE PERFIL
+        const confirmar = await mostrarConfirmacion('¿Quieres guardar los cambios de tu perfil?', 'Guardar');
+        if (!confirmar) {
+            mostrarAlerta('Guardado cancelado', 'info');
+            return;
+        }
+
         const payload = { id: user.id, name: newName, email: newEmail };
 
         try {
+            // RUTA SINGULAR: /api/userList
             const resp = await fetch('/api/userList', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -293,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const json = await resp.json(); // Leemos la respuesta
 
-            // 💡 CORRECCIÓN PRINCIPAL AQUÍ:
+            // Lógica de éxito en la BD
             if (resp.ok && json && json.success === true) {
                 user.name = newName;
                 user.email = newEmail;
@@ -347,13 +362,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const confirmar = await mostrarConfirmacion('¿Quieres actualizar tu contraseña?');
+        // ⭐ PASO 2: PEDIR CONFIRMACIÓN PARA ACTUALIZAR CONTRASEÑA
+        const confirmar = await mostrarConfirmacion('¿Quieres actualizar tu contraseña?', 'Actualizar');
         if (!confirmar) {
             mostrarAlerta('Actualización cancelada', 'info');
             return;
         }
 
         try {
+            // RUTA SINGULAR: /api/userList
             const resp = await fetch('/api/userList', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -362,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const json = await resp.json(); // Leemos la respuesta
 
-            // 💡 CORRECCIÓN PRINCIPAL AQUÍ:
+            // Lógica de éxito en la BD
             if (resp.ok && json && json.success === true) {
                 user.password = nueva;
                 sessionStorage.setItem('usuario', JSON.stringify(user));
