@@ -39,7 +39,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
     const endTimeInput = document.getElementById("end-time");
-    const imageInput = document.getElementById("image");
+    // ⭐ MODIFICADO: Asumo que ahora usarás un input de texto para la URL, NO un input de tipo file ⭐
+    // Si tu HTML usa el ID 'image', deberías cambiarlo a tipo texto
+    const imageURLInput = document.getElementById("image");
     const eventIdInput = document.getElementById("eventId");
 
     const saveEventBtn = document.getElementById("saveEventBtn");
@@ -47,7 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let selectedEvent = null;
 
-    // ===== CONFIRMACIÓN =====
+    // ===== CONFIRMACIÓN (Sin cambios) =====
     function showConfirmAlert(message, onConfirm) {
         let confirmBox = document.getElementById("customConfirmContainer").querySelector(".custom-confirm");
 
@@ -58,14 +60,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         confirmBox.innerHTML = `
-            <div class="confirm-content">
-                <p>${message}</p>
-                <div class="buttons">
-                    <button id="confirmYes" class="btn btn-danger">Sí</button>
-                    <button id="confirmNo" class="btn btn-secondary">No</button>
-                </div>
-            </div>
-        `;
+            <div class="confirm-content">
+                <p>${message}</p>
+                <div class="buttons">
+                    <button id="confirmYes" class="btn btn-danger">Sí</button>
+                    <button id="confirmNo" class="btn btn-secondary">No</button>
+                </div>
+            </div>
+        `;
         confirmBox.classList.add("show");
 
         document.getElementById("confirmNo").onclick = () => {
@@ -94,7 +96,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 extendedProps: {
                     description: e.description,
                     location: e.location,
-                    image_base64: e.image_base64
+                    // ⭐ MODIFICADO: Cambiado image_base64 a image_url ⭐
+                    image_url: e.image_url
                 }
             }));
         } catch {
@@ -103,14 +106,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    function toBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-        });
-    }
+    // ⭐ ELIMINADO: La función toBase64 ya no es necesaria ⭐
+    // function toBase64(file) { ... }
+
 
     // ===== CALENDARIO =====
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -137,6 +135,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             titleInput.value = event.title;
             descriptionInput.value = event.extendedProps.description || "";
             locationInput.value = event.extendedProps.location || "";
+            // ⭐ MODIFICADO: Carga el valor image_url en el input ⭐
+            imageURLInput.value = event.extendedProps.image_url || "";
 
             if (event.start) {
                 const startDate = new Date(event.start);
@@ -170,6 +170,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const date = startDateInput.value;
         const startTime = startTimeInput.value;
         const endTime = endTimeInput.value;
+        // ⭐ MODIFICADO: Captura el valor del nuevo input de URL ⭐
+        const image_url = imageURLInput.value.trim() || null;
+
 
         if (!title || !date || !startTime || !endTime) {
             alert("Completa todos los campos obligatorios");
@@ -179,13 +182,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const start = `${date}T${startTime}`;
         const end = `${date}T${endTime}`;
 
-        let image_base64 = null;
-        if (imageInput.files.length > 0) {
-            const file = imageInput.files[0];
-            image_base64 = await toBase64(file);
-        }
+        // ⭐ ELIMINADA toda la lógica de conversión a Base64 ⭐
 
-        const payload = { title, description, location, start, end, image_base64 };
+        // ⭐ MODIFICADO: Envía image_url en lugar de image_base64 ⭐
+        const payload = { title, description, location, start, end, image_url };
 
         try {
             const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
@@ -205,7 +205,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // ===== ELIMINAR EVENTO =====
+    // ===== ELIMINAR EVENTO (Sin cambios) =====
     deleteEventBtn.addEventListener("click", async () => {
         if (!selectedEvent || !selectedEvent.id) {
             alert("No hay evento seleccionado");
@@ -227,7 +227,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    // ===== LOGOUT =====
+    // ===== LOGOUT (Sin cambios) =====
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {

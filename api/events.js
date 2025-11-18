@@ -13,18 +13,28 @@ export default async function handler(req, res) {
     // === 🟢 GET: Obtener todos los eventos ===
     if (req.method === "GET") {
       const result = await pool.query(
-        `SELECT id, title, description, location, start, "end", image_base64
-         FROM events
-         ORDER BY start ASC`
+        // ⭐ CORREGIDO: Usando event_start y event_end para coincidir con la DB y evitar palabra reservada ⭐
+        `SELECT id, title, description, location, event_start, event_end, image_url
+         FROM events
+         ORDER BY event_start ASC`
       );
 
-      return res.status(200).json({ success: true, data: result.rows });
+      // Mapeamos los resultados para que FullCalendar siga esperando 'start' y 'end' en el JSON
+      const formattedData = result.rows.map(row => ({
+        ...row,
+        start: row.event_start, // Reasignamos event_start a 'start' para el frontend
+        end: row.event_end,     // Reasignamos event_end a 'end' para el frontend
+        event_start: undefined, // Eliminamos event_start
+        event_end: undefined    // Eliminamos event_end
+      }));
+
+      return res.status(200).json({ success: true, data: formattedData });
     }
 
     // === 🟡 POST: Crear nuevo evento ===
     if (req.method === "POST") {
       const body = await parseBody(req);
-      const { title, description, location, start, end, image_base64 } = body;
+      const { title, description, location, start, end, image_url } = body;
 
       if (!title || !start || !end) {
         return res.status(400).json({
@@ -34,13 +44,21 @@ export default async function handler(req, res) {
       }
 
       const result = await pool.query(
-        `INSERT INTO events (title, description, location, start, "end", image_base64)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
-        [title, description, location, start, end, image_base64 || null]
+        // ⭐ CORREGIDO: Usando event_start y event_end en el INSERT ⭐
+        `INSERT INTO events (title, description, location, event_start, event_end, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [title, description, location, start, end, image_url || null]
       );
 
-      return res.status(201).json({ success: true, data: result.rows[0] });
+      // Mapeamos el resultado para devolver 'start' y 'end' al frontend
+      const newEvent = {
+        ...result.rows[0],
+        start: result.rows[0].event_start,
+        end: result.rows[0].event_end,
+      };
+
+      return res.status(201).json({ success: true, data: newEvent });
     }
 
     // === 🟠 PUT: Actualizar evento ===
@@ -51,7 +69,7 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Falta el ID del evento." });
 
       const body = await parseBody(req);
-      const { title, description, location, start, end, image_base64 } = body;
+      const { title, description, location, start, end, image_url } = body;
 
       if (!title || !start || !end) {
         return res.status(400).json({
@@ -62,15 +80,15 @@ export default async function handler(req, res) {
 
       const result = await pool.query(
         `UPDATE events
-         SET title = $1,
-             description = $2,
-             location = $3,
-             start = $4,
-             "end" = $5,
-             image_base64 = COALESCE($6, image_base64)
-         WHERE id = $7
-         RETURNING *`,
-        [title, description, location, start, end, image_base64 || null, id]
+         SET title = $1,
+             description = $2,
+             location = $3,
+             event_start = $4,  // ⭐ CORREGIDO: Usando event_start ⭐
+             event_end = $5,    // ⭐ CORREGIDO: Usando event_end ⭐
+             image_url = COALESCE($6, image_url)
+         WHERE id = $7
+         RETURNING *`,
+        [title, description, location, start, end, image_url || null, id]
       );
 
       if (result.rows.length === 0) {
@@ -79,7 +97,14 @@ export default async function handler(req, res) {
           .json({ success: false, message: "Evento no encontrado." });
       }
 
-      return res.status(200).json({ success: true, data: result.rows[0] });
+      // Mapeamos el resultado para devolver 'start' y 'end' al frontend
+      const updatedEvent = {
+        ...result.rows[0],
+        start: result.rows[0].event_start,
+        end: result.rows[0].event_end,
+      };
+
+      return res.status(200).json({ success: true, data: updatedEvent });
     }
 
     // === 🔴 DELETE: Eliminar evento ===
@@ -102,6 +127,7 @@ export default async function handler(req, res) {
       .json({ success: false, message: `Método ${req.method} no permitido.` });
   } catch (error) {
     console.error("Error general en /api/events:", error);
+    // El error 500 ahora será menos probable si los nombres de columna son correctos
     return res
       .status(500)
       .json({ success: false, message: "Error interno del servidor." });

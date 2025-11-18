@@ -92,5 +92,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     calendar.render();
 
-    // 4. Se elimina el listener de 'closeModalBtn' ya que data-bs-dismiss="modal" lo maneja.
 });
