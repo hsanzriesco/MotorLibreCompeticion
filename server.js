@@ -3,11 +3,17 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const cors = require('cors'); 
 
-// ⭐ 1. Importar los Handlers de la API (Asegúrate que el archivo exista en ./api/)
-const usersListHandler = require('./api/userList'); 
-const loginUserHandler = require('./api/loginUser'); 
-// 💡 NUEVO: Importa el handler de coches. Asumimos que se llama carGarage.js
-const carGarageHandler = require('./api/userAction'); // O './api/carGarage' si lo renombraste
+// ⭐ 1. Importar los Handlers de la API
+// Si userList.js usa 'export default', require lo envuelve en la propiedad 'default'.
+const userListModule = require('./api/userList'); 
+const usersListHandler = userListModule.default || userListModule; // Accede al 'default' si existe
+
+const loginUserModule = require('./api/loginUser'); 
+const loginUserHandler = loginUserModule.default || loginUserModule;
+
+// Asumo que el handler de coches también necesita esta corrección si usa 'export default'
+const carGarageModule = require('./api/userAction'); 
+const carGarageHandler = carGarageModule.default || carGarageModule; 
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
@@ -17,15 +23,14 @@ app.use(cors());
 app.use(bodyParser.json()); 
 app.use(express.urlencoded({ extended: true }));
 
-// 3. ⭐ ENRUTAMIENTO DE LA API (Debe ir antes de archivos estáticos)
+// 3. ⭐ ENRUTAMIENTO DE LA API
 
-// Rutas de Usuario (GET, POST, PUT, DELETE)
+// ✅ Esta ruta debe dejar de dar 404 tras la corrección de importación
 app.all('/api/usersList', usersListHandler); 
 app.post('/api/loginUser', loginUserHandler); 
 
-// 💡 NUEVO: Ruta de Coches/Garaje
-// Esto permite que el frontend llame a /api/carGarage
-app.all('/api/carGarage', carGarageHandler); // Usamos 'app.all' para cubrir GET, POST, PUT, DELETE
+// Ruta de Coches/Garaje
+app.all('/api/carGarage', carGarageHandler); 
 
 // 4. Configuración de Rutas Estáticas
 app.use(express.static(path.join(__dirname, 'public')));
