@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
         }
 
+        // Asegúrate de que bootstrap sea globalmente accesible aquí
         const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
         if (offcanvasMenu) {
             offcanvasMenu.hide();
@@ -46,8 +47,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         locale: "es",
+        // Fuente de eventos desde la API
         events: async (fetchInfo, successCallback, failureCallback) => {
             try {
+                // Asegúrate de que la API /api/events devuelva la columna 'image_url'
                 const res = await fetch("/api/events");
                 const data = await res.json();
                 if (data.success && Array.isArray(data.data)) successCallback(data.data);
@@ -59,15 +62,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
         },
+        // Manejo del click en un evento
         eventClick: (info) => {
             const e = info.event;
             const extendedProps = e.extendedProps;
 
+            // Rellenar datos del modal
             document.getElementById("modalTitle").textContent = e.title;
             document.getElementById("modalDesc").textContent = extendedProps.description || "Sin descripción.";
             document.getElementById("modalLoc").textContent = extendedProps.location || "Ubicación no especificada.";
             document.getElementById("modalDate").textContent = new Date(e.start).toLocaleDateString("es-ES");
 
+            // ⭐ LÓGICA DE LA IMAGEN ⭐
+            // La URL DEBE estar en extendedProps.image_url
             const imageUrl = extendedProps.image_url;
 
             if (imageUrl) {
@@ -78,16 +85,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 modalImageContainer.style.display = "none"; // Ocultar el contenedor
             }
 
-            // ⭐ CAMBIO CLAVE: Usar la API de Bootstrap para mostrar el modal ⭐
+            // ⭐ USAR LA API DE BOOTSTRAP PARA EL MODAL RESPONSIVO ⭐
             const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
             eventModal.show();
         },
     });
     calendar.render();
 
-    // 4. El botón de cerrar del modal ahora funciona automáticamente con Bootstrap
-    // No necesitas este event listener si el botón de cerrar tiene data-bs-dismiss="modal"
-    // document.getElementById("closeModalBtn").addEventListener("click", () => {
-    //     document.getElementById("eventViewModal").style.display = "none";
-    // });
+    // 4. Se elimina el listener de 'closeModalBtn' ya que data-bs-dismiss="modal" lo maneja.
 });
