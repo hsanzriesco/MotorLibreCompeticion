@@ -47,21 +47,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
+    // ⭐ FUNCIÓN RENDERCAR ACTUALIZADA CON EL DISEÑO DE TARJETA MEJORADO ⭐
     function renderCar(car) {
         // Usar imagen de Cloudinary si existe, si no, usar la placeholder
-        const defaultImg = 'https://via.placeholder.com/300x150?text=Sin+Foto';
+        const defaultImg = 'https://via.placeholder.com/400x225?text=Sin+Foto'; // Placeholder 16:9
+        const imgSrc = escapeHtml(car.photo_url) || defaultImg;
+
         return `
-      <div class="col-12 col-md-6" data-car-id="${car.id}">
-        <div class="car-item" data-car-id="${car.id}" style="cursor:pointer;">
-          <div class="car-image-container" style="width:120px;">
-            <img src="${escapeHtml(car.photo_url) || defaultImg}" alt="${escapeHtml(car.car_name)}" style="width:100%; border-radius:6px; object-fit: cover; aspect-ratio: 1/1;" />
-          </div>
-          <div class="car-details" style="padding-left:12px;">
-            <h6 class="mb-1" style="color:#e50914;">${escapeHtml(car.car_name)}</h6>
-            <p class="mb-0 text-muted">${escapeHtml(car.model || 'Modelo N/A')} (${car.year || 'Año N/A'})</p>
-          </div>
-        </div>
-      </div>`;
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-car-id="${car.id}">
+            <div class="car-card" data-car-id="${car.id}" role="button" tabindex="0">
+                <div class="car-image-container">
+                    <img src="${imgSrc}" 
+                         alt="Foto de ${escapeHtml(car.car_name)}" 
+                         loading="lazy"
+                         onerror="this.onerror=null;this.src='${defaultImg}';" />
+                </div>
+                <div class="car-details-content">
+                    <div class="car-name-group">
+                        <h5 class="car-name">${escapeHtml(car.car_name)}</h5>
+                        <p class="car-model-year">
+                            ${escapeHtml(car.model || 'Modelo N/A')} (${car.year || 'Año N/A'})
+                        </p>
+                    </div>
+                    <button class="btn btn-edit-car">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     }
 
     async function loadCars() {
@@ -80,7 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
             noCarsMessage.style.display = 'none';
             data.cars.forEach(car => carList.innerHTML += renderCar(car));
 
-            carList.querySelectorAll('.car-item').forEach(item => {
+            // ⭐ EVENT LISTENER EN LA NUEVA CLASE .car-card ⭐
+            carList.querySelectorAll('.car-card').forEach(item => {
                 item.addEventListener('click', () => {
                     const el = item.closest('[data-car-id]');
                     const id = parseInt(el.dataset.carId);
@@ -454,28 +468,14 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.setItem('usuario', JSON.stringify(user));
             mostrarAlerta('Error de red. Contraseña actualizada localmente.', 'info');
         }
-
-        const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
-        if (modal) modal.hide();
     });
 
+    // Añadir lógica de cierre de sesión
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        sessionStorage.clear();
-        mostrarAlerta('Sesión cerrada', 'exito');
-        setTimeout(() => window.location.href = '../auth/login/login.html', 700);
+        sessionStorage.removeItem('usuario');
+        mostrarAlerta("Sesión cerrada. ¡Vuelve pronto!", 'info');
+        setTimeout(() => window.location.href = '/index.html', 1000);
     });
-
-    const menuInicio = document.getElementById('menu-inicio');
-    if (menuInicio) {
-        menuInicio.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            if (user && user.role === 'admin') {
-                window.location.href = '/pages/dashboard/admin/admin.html';
-            } else {
-                window.location.href = '/index.html';
-            }
-        });
-    }
 
 });

@@ -114,22 +114,117 @@ textarea:focus,
     background: transparent;
 }
 
-/* Car items */
+/* --- ESTILOS ANTIGUOS ELIMINADOS/REEMPLAZADOS --- */
+/* Eliminamos el estilo obsoleto para usar la nueva clase .car-card */
 .car-item {
-    background: linear-gradient(180deg, #151515, #0f0f0f);
-    border-radius: 10px;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    min-height: 120px;
+    display: none !important;
+}
+
+
+/* --- NUEVOS ESTILOS PARA MI GARAJE (Diseño de Tarjeta) --- */
+
+/* Estilo Base de las Tarjetas de Coche */
+.car-card {
+    position: relative;
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    height: 100%;
+    /* Hereda el estilo de tarjeta (borde rojo, sombra) pero con un fondo más oscuro para contraste */
+    background-color: var(--mlc-panel);
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+
+    /* Animación de hover sutil */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.car-card:hover {
+    transform: translateY(-3px);
+    /* Pequeño desplazamiento hacia arriba */
+    box-shadow: 0 10px 35px var(--mlc-glow);
+    background-color: rgba(20, 20, 20, 0.95);
+    /* Ligeramente más intenso */
+}
+
+/* Contenedor de la Imagen */
+.car-image-container {
+    width: 100%;
+    /* Relación de aspecto 16:9 - Ideal para fotos de coches */
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(229, 9, 20, 0.1);
+    /* Separador sutil */
 }
 
 .car-image-container img {
     width: 100%;
-    max-width: 90px;
+    height: 100%;
+    object-fit: cover;
+    /* Asegura que la imagen cubra el contenedor */
+    transition: transform 0.3s ease;
+    border-radius: 0 !important;
+    /* Asegura que no tenga borde de estilos anteriores */
+    max-width: unset !important;
+    /* Asegura el ancho completo */
+}
+
+/* Efecto zoom sutil en la imagen al hacer hover */
+.car-card:hover .car-image-container img {
+    transform: scale(1.05);
+}
+
+/* Contenido de los Detalles (Nombre, Modelo, Año) */
+.car-details-content {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.car-name {
+    color: var(--mlc-red) !important;
+    /* Rojo principal de MLC */
+    font-weight: 700;
+    margin-bottom: 2px;
+    font-size: 1.2rem;
+    line-height: 1.2;
+}
+
+.car-model-year {
+    color: rgba(255, 255, 255, 0.65) !important;
+    /* Gris claro para el texto secundario */
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    font-weight: 400;
+    /* No tan gruesa como el nombre */
+}
+
+/* Botón de Editar Flotante */
+.btn-edit-car {
+    /* Usamos el estilo btn-mlc-save de tu botón de guardar para el botón de editar */
+    background: var(--mlc-red);
+    color: white;
+    border: none;
     border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 1rem;
+    transition: opacity 0.2s, background-color 0.2s;
+    line-height: 1;
+    height: 35px;
+    width: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-edit-car:hover {
+    background: #c70812;
+    /* Rojo más oscuro en hover */
+    filter: none;
+    /* Desactivar el filtro del estilo global */
 }
 
 /* Responsive */
