@@ -1,41 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
 :root {
-    --mlc-red: #e50914;
-    --mlc-dark: #0e0e0e;
-    --mlc-panel: rgba(20, 20, 20, 0.9);
-    --mlc-glow: rgba(229, 9, 20, 0.25);
+    --mlc-red: #e50914;
+    --mlc-dark: #0e0e0e;
+    --mlc-panel: rgba(20, 20, 20, 0.9);
+    --mlc-glow: rgba(229, 9, 20, 0.25);
 }
 
 /* Layout */
 body {
-    background: linear-gradient(180deg, #0b0b0b 0%, #111 100%);
-    color: #fff;
-    font-family: 'Orbitron', sans-serif;
-    min-height: 100vh;
-    padding-bottom: 40px;
+    background: linear-gradient(180deg, #0b0b0b 0%, #111 100%);
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
 }
 
 .navbar-mlc {
-    background: #0f0f0f !important;
-    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
-    border-bottom: none;
+    background: #0f0f0f !important;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
+    border-bottom: none;
 }
 
 /* Main */
 .main-perfil {
-    margin-top: 90px;
-    max-width: 1200px;
-    padding: 30px 12px;
+    margin-top: 90px;
+    max-width: 1200px;
+    padding: 30px 12px;
 }
 
 /* Card */
 .card-mlc {
-    background: var(--mlc-panel);
-    border: 1px solid rgba(229, 9, 20, 0.35);
-    box-shadow: 0 8px 30px var(--mlc-glow);
-    border-radius: 12px;
-    padding: 18px;
+    background: var(--mlc-panel);
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    box-shadow: 0 8px 30px var(--mlc-glow);
+    border-radius: 12px;
+    padding: 18px;
 }
 
 /* Inputs — FIX GLOBAL */
@@ -44,12 +44,12 @@ select,
 textarea,
 .form-control,
 .mlc-input {
-    background: #0c0c0c !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #ffffff !important;
-    border-radius: 8px !important;
-    padding: 10px 12px !important;
-    transition: box-shadow .15s ease;
+    background: #0c0c0c !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    transition: box-shadow .15s ease;
 }
 
 /* Prevent Bootstrap from turning inputs white */
@@ -58,184 +58,165 @@ select:focus,
 textarea:focus,
 .form-control:focus,
 .mlc-input:focus {
-    background: #121212 !important;
-    color: #fff !important;
-    border-color: var(--mlc-red) !important;
-    box-shadow: 0 0 12px rgba(229, 9, 20, 0.35) !important;
-    outline: none !important;
+    background: #121212 !important;
+    color: #fff !important;
+    border-color: var(--mlc-red) !important;
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.35) !important;
+    outline: none !important;
 }
 
 /* Placeholder visible */
 ::placeholder {
-    color: rgba(255, 255, 255, 0.55) !important;
+    color: rgba(255, 255, 255, 0.55) !important;
 }
 
 /* Buttons */
 .btn-mlc-save {
-    background: var(--mlc-red);
-    color: white;
-    font-weight: 700;
-    border-radius: 8px;
-    padding: 10px 14px;
-    border: none;
+    background: var(--mlc-red);
+    color: white;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: none;
 }
 
 .btn-mlc-save:hover {
-    filter: brightness(.95);
+    filter: brightness(.95);
 }
 
 .btn-mlc-add {
-    background: #1f8a3a;
-    color: #fff;
-    border-radius: 8px;
-    padding: 6px 10px;
-    border: none;
+    background: #1f8a3a;
+    color: #fff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    border: none;
 }
 
 .btn-mlc-outline {
-    background: transparent;
-    border: 1px solid rgba(229, 9, 20, 0.25);
-    color: #fff;
-    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(229, 9, 20, 0.25);
+    color: #fff;
+    border-radius: 8px;
 }
 
 /* Modal */
 .modal-mlc {
-    background: linear-gradient(180deg, #0b0b0b, #111);
-    border-radius: 12px;
-    border: 1px solid rgba(229, 9, 20, 0.35);
-    box-shadow: 0 20px 50px rgba(229, 9, 20, 0.15);
-    padding: 0;
+    background: linear-gradient(180deg, #0b0b0b, #111);
+    border-radius: 12px;
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    box-shadow: 0 20px 50px rgba(229, 9, 20, 0.15);
+    padding: 0;
 }
 
 .modal-mlc .modal-header {
-    border-bottom: none;
-    padding: 16px 18px;
-    background: transparent;
+    border-bottom: none;
+    padding: 16px 18px;
+    background: transparent;
 }
 
 /* --- ESTILOS ANTIGUOS ELIMINADOS/REEMPLAZADOS --- */
-/* Eliminamos el estilo obsoleto para usar la nueva clase .car-card */
 .car-item {
-    display: none !important;
+    display: none !important;
 }
 
 
 /* --- NUEVOS ESTILOS PARA MI GARAJE (Diseño de Tarjeta) --- */
-
-/* Estilo Base de las Tarjetas de Coche */
 .car-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    /* Hereda el estilo de tarjeta (borde rojo, sombra) pero con un fondo más oscuro para contraste */
-    background-color: var(--mlc-panel);
-    border: 1px solid rgba(229, 9, 20, 0.35);
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-
-    /* Animación de hover sutil */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--mlc-panel);
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .car-card:hover {
-    transform: translateY(-3px);
-    /* Pequeño desplazamiento hacia arriba */
-    box-shadow: 0 10px 35px var(--mlc-glow);
-    background-color: rgba(20, 20, 20, 0.95);
-    /* Ligeramente más intenso */
+    transform: translateY(-3px);
+    box-shadow: 0 10px 35px var(--mlc-glow);
+    background-color: rgba(20, 20, 20, 0.95);
 }
 
 /* Contenedor de la Imagen */
 .car-image-container {
-    width: 100%;
-    /* Relación de aspecto 16:9 - Ideal para fotos de coches */
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    border-bottom: 1px solid rgba(229, 9, 20, 0.1);
-    /* Separador sutil */
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(229, 9, 20, 0.1);
 }
 
 .car-image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    /* Asegura que la imagen cubra el contenedor */
-    transition: transform 0.3s ease;
-    border-radius: 0 !important;
-    /* Asegura que no tenga borde de estilos anteriores */
-    max-width: unset !important;
-    /* Asegura el ancho completo */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    border-radius: 0 !important;
+    max-width: unset !important;
 }
 
 /* Efecto zoom sutil en la imagen al hacer hover */
 .car-card:hover .car-image-container img {
-    transform: scale(1.05);
+    transform: scale(1.05);
 }
 
 /* Contenido de los Detalles (Nombre, Modelo, Año) */
 .car-details-content {
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-grow: 1;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-grow: 1;
 }
 
 .car-name {
-    color: var(--mlc-red) !important;
-    /* Rojo principal de MLC */
-    font-weight: 700;
-    margin-bottom: 2px;
-    font-size: 1.2rem;
-    line-height: 1.2;
+    color: var(--mlc-red) !important;
+    font-weight: 700;
+    margin-bottom: 2px;
+    font-size: 1.2rem;
+    line-height: 1.2;
 }
 
 .car-model-year {
-    color: rgba(255, 255, 255, 0.65) !important;
-    /* Gris claro para el texto secundario */
-    font-size: 0.9rem;
-    margin-bottom: 0;
-    font-weight: 400;
-    /* No tan gruesa como el nombre */
+    color: rgba(255, 255, 255, 0.65) !important;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    font-weight: 400;
 }
 
 /* Botón de Editar Flotante */
 .btn-edit-car {
-    /* Usamos el estilo btn-mlc-save de tu botón de guardar para el botón de editar */
-    background: var(--mlc-red);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 1rem;
-    transition: opacity 0.2s, background-color 0.2s;
-    line-height: 1;
-    height: 35px;
-    width: 35px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: var(--mlc-red);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 1rem;
+    transition: opacity 0.2s, background-color 0.2s;
+    line-height: 1;
+    height: 35px;
+    width: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-edit-car:hover {
-    background: #c70812;
-    /* Rojo más oscuro en hover */
-    filter: none;
-    /* Desactivar el filtro del estilo global */
+    background: #c70812;
+    filter: none;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .main-perfil {
-        padding: 20px;
-    }
+    .main-perfil {
+        padding: 20px;
+    }
 
-    .card-mlc {
-        padding: 14px;
-    }
+    .card-mlc {
+        padding: 14px;
+    }
 }
 
 
@@ -246,19 +227,68 @@ textarea:focus,
 .card-mlc h5,
 .card-mlc p,
 .card-mlc span {
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* Títulos como "Datos personales" y "Mi Garaje" */
 .card-mlc .section-title,
 .card-mlc-title,
 .card-mlc h2 {
-    color: #fff !important;
-    font-weight: 700 !important;
+    color: #fff !important;
+    font-weight: 700 !important;
 }
 
 /* Subtítulos tipo "Nombre", "Correo electrónico" */
 .form-group label,
 label {
-    color: rgba(255, 255, 255, 0.75) !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* ======================================================= */
+/* ⭐ ESTILOS AÑADIDOS PARA EL TOGGLE DE CONTRASEÑA ⭐ */
+/* ======================================================= */
+
+.password-toggle-icon {
+    width: 32px; /* Ajustado para ser más grande, como en tus capturas */
+    height: 32px; 
+    display: block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+}
+
+/* Asegúrate de que las rutas a tus imágenes sean correctas */
+.password-toggle-icon.hide-password {
+    /* Icono de ojo tachado para el estado por defecto (contraseña oculta) */
+    background-image: url('../../img/icono-ojo-tachado.png'); 
+}
+
+.password-toggle-icon.show-password {
+    /* Icono de ojo abierto para el estado de mostrar contraseña */
+    background-image: url('../../img/icono-ojo-abierto.png'); 
+}
+
+.btn-mlc-password-toggle {
+    /* Estilo para integrar el icono al final del input */
+    background-color: transparent !important;
+    border: none !important; 
+    padding: 0.375rem 0.75rem; 
+}
+
+/* Ajuste para que el input group se vea bien con el botón */
+.input-group:not(.has-validation) > .mlc-input:not(:last-child), 
+.input-group > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-check-input) {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.input-group > .btn:last-child {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+/* Ajuste específico para el input mlc-input */
+.mlc-input {
+    border-right: none !important;
 }
