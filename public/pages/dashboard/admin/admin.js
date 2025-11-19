@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // ===== ELEMENTOS DEL DOM (Actualizado para nuevos IDs de imagen) =====
+    // ===== ELEMENTOS DEL DOM (IDs del HTML) =====
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
     if (!calendarEl || !eventModalEl) return;
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const endTimeInput = document.getElementById("end-time");
     const eventIdInput = document.getElementById("eventId");
 
-    // ⭐ ELEMENTOS DE IMAGEN MODIFICADOS Y CLAVE PARA LA SOLUCIÓN ⭐
+    // ⭐ ELEMENTOS DE IMAGEN CLAVE ⭐
     const imageFileInput = document.getElementById("imageFile"); // input type="file"
     const imageURLInput = document.getElementById("imageURL");   // input type="hidden"
     const currentImagePreview = document.getElementById("currentImagePreview");
@@ -51,12 +51,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // ... (Función showConfirmAlert sin cambios) ...
     function showConfirmAlert(message, onConfirm) {
-        let confirmBox = document.getElementById("customConfirmContainer").querySelector(".custom-confirm");
+        let confirmBox = document.getElementById("customConfirmContainer")?.querySelector(".custom-confirm");
 
         if (!confirmBox) {
             confirmBox = document.createElement("div");
             confirmBox.className = "custom-confirm";
-            document.getElementById("customConfirmContainer").appendChild(confirmBox);
+            const container = document.getElementById("customConfirmContainer");
+            if (container) container.appendChild(confirmBox);
         }
 
         confirmBox.innerHTML = `
@@ -100,7 +101,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     image_url: e.image_url
                 }
             }));
-        } catch(e) {
+        } catch (e) {
             console.error("Error al obtener eventos:", e);
             alert("Error al cargar los eventos");
             return [];
@@ -121,11 +122,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             startDateInput.value = info.startStr.split("T")[0];
             eventIdInput.value = "";
             deleteEventBtn.style.display = "none";
-            
+
             // Lógica de imagen al crear: limpiar todo
-            imageFileInput.value = ""; // Limpiar input file
-            imageURLInput.value = ""; // Limpiar campo hidden
-            currentImageContainer.style.display = "none"; // Ocultar previsualización
+            imageFileInput.value = "";
+            imageURLInput.value = "";
+            currentImageContainer.style.display = "none";
 
             eventModal.show();
         },
@@ -140,10 +141,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             titleInput.value = event.title;
             descriptionInput.value = extendedProps.description || "";
             locationInput.value = extendedProps.location || "";
-            
-            // ⭐ SOLUCIÓN DEL ERROR: Rellena el campo HIDDEN y vacía el FILE ⭐
-            imageURLInput.value = currentURL;
-            imageFileInput.value = ""; // Esto es lo único que el navegador permite: vacío
+
+            // ⭐ SOLUCIÓN DEL InvalidStateError: ASIGNAR A HIDDEN y VACIAR FILE ⭐
+            imageURLInput.value = currentURL; // Guarda la URL existente
+            imageFileInput.value = ""; // Debe vaciarse para evitar el error al rellenar el formulario
 
             // Lógica para previsualizar la imagen existente
             if (currentURL) {
@@ -178,40 +179,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     calendar.render();
 
     // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN =====
-    
+
     // Previsualizar nuevo archivo seleccionado (Usa URL.createObjectURL)
-    imageFileInput.addEventListener('change', function() {
+    imageFileInput.addEventListener('change', function () {
         const file = this.files[0];
 
         if (file) {
             const fileUrl = URL.createObjectURL(file);
             currentImagePreview.src = fileUrl;
             currentImageContainer.style.display = 'block';
-            // Marca el campo hidden para indicar que hay un archivo subido para evitar enviar la URL antigua
-            imageURLInput.value = 'FILE_UPLOADED'; 
-        } else if (imageURLInput.value === 'FILE_UPLOADED') {
-             // Si el usuario cancela la selección de archivo, vuelve al estado anterior
-             imageURLInput.value = ""; // Si no había URL antes, se vacía.
-             currentImageContainer.style.display = 'none';
+            // Al seleccionar un nuevo archivo, ignoramos la URL existente.
+        } else {
+            // Si el usuario cancela la selección de archivo, mostramos la URL que estaba guardada (si la hay)
+            if (imageURLInput.value) {
+                currentImagePreview.src = imageURLInput.value;
+                currentImageContainer.style.display = 'block';
+            } else {
+                currentImageContainer.style.display = 'none';
+            }
         }
     });
 
-    // Botón para eliminar la imagen (deja el campo imageURLInput vacío)
+    // Botón para eliminar la imagen
     clearImageBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        imageURLInput.value = ""; // Borra la URL existente (el backend la pondrá a NULL)
-        imageFileInput.value = ""; // Limpia el input file
+        imageURLInput.value = ""; // Indica al backend que la URL debe ser NULL
+        imageFileInput.value = ""; // Limpia el archivo subido
         currentImageContainer.style.display = 'none';
     });
 
 
-    // ===== GUARDAR EVENTO (Usa FormData) =====
+    // ===== GUARDAR EVENTO (Usa FormData para enviar el archivo) =====
     saveEventBtn.addEventListener("click", async () => {
         const id = eventIdInput.value;
         const date = startDateInput.value;
         const startTime = startTimeInput.value;
         const endTime = endTimeInput.value;
-        
+
         // Validación de campos obligatorios
         if (!titleInput.value.trim() || !date || !startTime || !endTime) {
             alert("Completa todos los campos obligatorios");
@@ -232,21 +236,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         const file = imageFileInput.files[0];
         const currentURL = imageURLInput.value;
 
-        // 2. Adjuntar imagen o URL
+        // 2. Adjuntar archivo O URL existente
         if (file) {
-            // Si hay un nuevo archivo subido
+            // Si hay un nuevo archivo subido, lo adjuntamos
             formData.append('imageFile', file);
-        } else if (currentURL && currentURL !== 'FILE_UPLOADED') {
-             // Si no hay nuevo archivo, pero hay una URL existente (edición sin cambio o sin imagen)
-             formData.append('imageURL', currentURL);
+            // IMPORTANTE: NO enviamos imageURLInput.value para que el backend suba la nueva imagen.
+        } else {
+            // Si NO hay archivo nuevo, enviamos la URL existente (o "" si se pulsó 'Quitar imagen')
+            // El backend usa este campo para saber si debe mantener la URL o poner NULL.
+            formData.append('imageURL', currentURL);
         }
-        // Si no hay archivo ni currentURL, el campo imageURL no se adjunta y el backend lo pondrá a NULL.
 
         try {
             const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
                 method: id ? "PUT" : "POST",
-                // El navegador establece el Content-Type (multipart/form-data) automáticamente.
-                body: formData 
+                body: formData // Envía el FormData correctamente
             });
 
             const data = await res.json();
@@ -267,7 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert("No hay evento seleccionado");
             return;
         }
-        
+
         showConfirmAlert("¿Eliminar este evento?", async () => {
             try {
                 const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
@@ -283,7 +287,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    // ===== LOGOUT (Sin cambios) =====
+    // ... (Lógica de Logout sin cambios) ...
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
