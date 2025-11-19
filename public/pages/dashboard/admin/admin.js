@@ -24,8 +24,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ===== ELEMENTOS DEL DOM (IDs del HTML) =====
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
-    if (!calendarEl || !eventModalEl) return;
 
+    // --- ELEMENTOS DE EVENTOS (Ya existentes) ---
+    if (calendarEl && eventModalEl) {
+        // Resto de declaraciones de eventos...
+    }
     const eventModal = new bootstrap.Modal(eventModalEl);
     const form = document.getElementById("eventForm");
 
@@ -37,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const endTimeInput = document.getElementById("end-time");
     const eventIdInput = document.getElementById("eventId");
 
-    // ⭐ ELEMENTOS DE IMAGEN CLAVE ⭐
+    // ⭐ ELEMENTOS DE IMAGEN CLAVE DE EVENTOS ⭐
     const imageFileInput = document.getElementById("imageFile"); // input type="file"
     const imageURLInput = document.getElementById("imageURL");   // input type="hidden"
     const currentImagePreview = document.getElementById("currentImagePreview");
@@ -48,6 +51,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     const deleteEventBtn = document.getElementById("deleteEventBtn");
 
     let selectedEvent = null;
+
+
+    // --- ELEMENTOS DEL GARAGE (NUEVOS) ---
+    const carGarageForm = document.getElementById("carGarageForm");
+    const carModalEl = document.getElementById("carGarageModal"); // Asumiendo un ID para el modal del coche
+    // if (carModalEl) const carModal = new bootstrap.Modal(carModalEl); // Si existe un modal de coche
+
+    const carIdInput = document.getElementById("carId");
+    const carNameInput = document.getElementById("car_name");
+    const carModelInput = document.getElementById("model");
+    const carYearInput = document.getElementById("year");
+    const carDescriptionInput = document.getElementById("description");
+
+    // ⭐ ELEMENTOS DE IMAGEN CLAVE DEL GARAGE ⭐
+    const carPhotoFileInput = document.getElementById("carPhotoFile"); // input type="file" del coche (Clave)
+    const carPhotoUrlInput = document.getElementById("carPhotoURL");   // input type="hidden" del coche (Clave)
+    const carPhotoPreview = document.getElementById("carPhotoPreview");
+    const carPhotoContainer = document.getElementById("carPhotoContainer");
+    const clearCarPhotoBtn = document.getElementById("clearCarPhotoBtn");
+
 
     // ... (Función showConfirmAlert sin cambios) ...
     function showConfirmAlert(message, onConfirm) {
@@ -108,190 +131,288 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // ===== CALENDARIO (Sin cambios) =====
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        selectable: true,
-        editable: false,
-        height: "auto",
-        locale: "es",
+    // ==========================================================
+    // ⭐ LÓGICA DE EVENTOS (CALENDARIO) (Sin cambios funcionales) ⭐
+    // ==========================================================
+    if (calendarEl) {
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: "dayGridMonth",
+            selectable: true,
+            editable: false,
+            height: "auto",
+            locale: "es",
 
-        select: (info) => {
-            selectedEvent = null;
-            form.reset();
-            startDateInput.value = info.startStr.split("T")[0];
-            eventIdInput.value = "";
-            deleteEventBtn.style.display = "none";
+            select: (info) => {
+                selectedEvent = null;
+                form.reset();
+                startDateInput.value = info.startStr.split("T")[0];
+                eventIdInput.value = "";
+                deleteEventBtn.style.display = "none";
 
-            // Lógica de imagen al crear: limpiar todo
-            imageFileInput.value = "";
-            imageURLInput.value = "";
-            currentImageContainer.style.display = "none";
+                // Lógica de imagen al crear: limpiar todo
+                imageFileInput.value = "";
+                imageURLInput.value = "";
+                currentImageContainer.style.display = "none";
 
-            eventModal.show();
-        },
+                eventModal.show();
+            },
 
-        eventClick: (info) => {
-            const event = info.event;
-            selectedEvent = event;
-            const extendedProps = event.extendedProps;
-            const currentURL = extendedProps.image_url || ""; // La URL de la base de datos
+            eventClick: (info) => {
+                const event = info.event;
+                selectedEvent = event;
+                const extendedProps = event.extendedProps;
+                const currentURL = extendedProps.image_url || "";
 
-            eventIdInput.value = event.id;
-            titleInput.value = event.title;
-            descriptionInput.value = extendedProps.description || "";
-            locationInput.value = extendedProps.location || "";
+                eventIdInput.value = event.id;
+                titleInput.value = event.title;
+                descriptionInput.value = extendedProps.description || "";
+                locationInput.value = extendedProps.location || "";
 
-            // ASIGNAR URL EXISTENTE a hidden y VACIAR input file
-            imageURLInput.value = currentURL; // Guarda la URL existente
-            imageFileInput.value = ""; // Debe vaciarse al abrir el formulario
+                // ASIGNAR URL EXISTENTE a hidden y VACIAR input file
+                imageURLInput.value = currentURL;
+                imageFileInput.value = "";
 
-            // Lógica para previsualizar la imagen existente
-            if (currentURL) {
-                currentImagePreview.src = currentURL;
-                currentImageContainer.style.display = 'block';
-            } else {
-                currentImagePreview.src = '';
-                currentImageContainer.style.display = 'none';
-            }
+                // Lógica para previsualizar la imagen existente
+                if (currentURL) {
+                    currentImagePreview.src = currentURL;
+                    currentImageContainer.style.display = 'block';
+                } else {
+                    currentImagePreview.src = '';
+                    currentImageContainer.style.display = 'none';
+                }
 
-            if (event.start) {
-                const startDate = new Date(event.start);
-                startDateInput.value = startDate.toISOString().split("T")[0];
-                startTimeInput.value = startDate.toTimeString().slice(0, 5);
-            }
+                if (event.start) {
+                    const startDate = new Date(event.start);
+                    startDateInput.value = startDate.toISOString().split("T")[0];
+                    startTimeInput.value = startDate.toTimeString().slice(0, 5);
+                }
 
-            if (event.end) {
-                const endDate = new Date(event.end);
-                endTimeInput.value = endDate.toTimeString().slice(0, 5);
-            }
+                if (event.end) {
+                    const endDate = new Date(event.end);
+                    endTimeInput.value = endDate.toTimeString().slice(0, 5);
+                }
 
-            deleteEventBtn.style.display = "inline-block";
-            eventModal.show();
-        },
+                deleteEventBtn.style.display = "inline-block";
+                eventModal.show();
+            },
 
-        events: async (info, successCallback) => {
-            const events = await fetchEvents();
-            successCallback(events);
-        }
-    });
-
-    calendar.render();
-
-    // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN (Sin cambios) =====
-
-    // Previsualizar nuevo archivo seleccionado (Usa URL.createObjectURL)
-    imageFileInput.addEventListener('change', function () {
-        const file = this.files[0];
-
-        if (file) {
-            const fileUrl = URL.createObjectURL(file);
-            currentImagePreview.src = fileUrl;
-            currentImageContainer.style.display = 'block';
-            // Al seleccionar un nuevo archivo, el valor de imageURLInput sigue siendo la URL antigua,
-            // pero el backend priorizará el archivo en imageFile.
-        } else {
-            // Si el usuario cancela la selección de archivo, mostramos la URL que estaba guardada (si la hay)
-            if (imageURLInput.value) {
-                currentImagePreview.src = imageURLInput.value;
-                currentImageContainer.style.display = 'block';
-            } else {
-                currentImageContainer.style.display = 'none';
-            }
-        }
-    });
-
-    // Botón para eliminar la imagen
-    clearImageBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        imageURLInput.value = ""; // INDICA al backend que la URL debe ser NULL
-        imageFileInput.value = ""; // Limpia el archivo subido
-        currentImageContainer.style.display = 'none';
-    });
-
-
-    // ===== GUARDAR EVENTO (CORRECCIÓN CLAVE EN LA LÓGICA DE FormData) =====
-    saveEventBtn.addEventListener("click", async () => {
-        const id = eventIdInput.value;
-        const date = startDateInput.value;
-        const startTime = startTimeInput.value;
-        const endTime = endTimeInput.value;
-
-        // Validación de campos obligatorios
-        if (!titleInput.value.trim() || !date || !startTime || !endTime) {
-            alert("Completa todos los campos obligatorios");
-            return;
-        }
-
-        const start = `${date}T${startTime}`;
-        const end = `${date}T${endTime}`;
-
-        // 1. Crear FormData para enviar archivos al backend
-        const formData = new FormData();
-        formData.append('title', titleInput.value.trim());
-        formData.append('description', descriptionInput.value.trim());
-        formData.append('location', locationInput.value.trim());
-        formData.append('start', start);
-        formData.append('end', end);
-
-        const file = imageFileInput.files[0];
-        const currentURL = imageURLInput.value;
-
-        // ⭐ LÓGICA CORREGIDA PARA ADJUNTAR IMAGEN ⭐
-        if (file) {
-            // Caso 1: Hay un nuevo archivo subido. Lo adjuntamos bajo 'imageFile'
-            formData.append('imageFile', file);
-
-            // Si hay un archivo, NO enviamos el campo imageURL para que el backend suba y use la nueva URL.
-            // Si el backend recibe 'imageFile', ignora 'imageURL' (excepto para PUT, donde el archivo anula la URL).
-
-        } else {
-            // Caso 2: NO hay archivo nuevo. Enviamos la URL existente.
-            // Si currentURL es "" (vacío), es porque se pulsó 'Quitar imagen', y el backend pondrá NULL.
-            // Si currentURL tiene una URL, el backend la mantendrá.
-            formData.append('imageURL', currentURL);
-        }
-        // ⭐ FIN LÓGICA CORREGIDA ⭐
-
-        try {
-            const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
-                method: id ? "PUT" : "POST",
-                body: formData // Envía el FormData correctamente
-            });
-
-            const data = await res.json();
-            if (!data.success) throw new Error(data.message || "Fallo en la respuesta del servidor.");
-
-            alert(id ? "Evento actualizado correctamente" : "Evento creado correctamente");
-            eventModal.hide();
-            calendar.refetchEvents();
-        } catch (e) {
-            console.error("Error al guardar:", e);
-            alert("Error al guardar evento: " + e.message);
-        }
-    });
-
-    // ===== ELIMINAR EVENTO (Sin cambios) =====
-    deleteEventBtn.addEventListener("click", async () => {
-        if (!selectedEvent || !selectedEvent.id) {
-            alert("No hay evento seleccionado");
-            return;
-        }
-
-        showConfirmAlert("¿Eliminar este evento?", async () => {
-            try {
-                const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
-                const data = await res.json();
-                if (!data.success) throw new Error();
-
-                alert("Evento eliminado correctamente");
-                eventModal.hide();
-                calendar.refetchEvents();
-            } catch {
-                alert("Error al eliminar evento");
+            events: async (info, successCallback) => {
+                const events = await fetchEvents();
+                successCallback(events);
             }
         });
-    });
+
+        calendar.render();
+
+
+        // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN DE EVENTOS =====
+
+        // Previsualizar nuevo archivo seleccionado (Usa URL.createObjectURL)
+        imageFileInput.addEventListener('change', function () {
+            const file = this.files[0];
+
+            if (file) {
+                const fileUrl = URL.createObjectURL(file);
+                currentImagePreview.src = fileUrl;
+                currentImageContainer.style.display = 'block';
+            } else {
+                if (imageURLInput.value) {
+                    currentImagePreview.src = imageURLInput.value;
+                    currentImageContainer.style.display = 'block';
+                } else {
+                    currentImageContainer.style.display = 'none';
+                }
+            }
+        });
+
+        // Botón para eliminar la imagen
+        clearImageBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            imageURLInput.value = ""; // INDICA al backend que la URL debe ser NULL
+            imageFileInput.value = ""; // Limpia el archivo subido
+            currentImageContainer.style.display = 'none';
+        });
+
+
+        // ===== GUARDAR EVENTO (CORRECCIÓN CLAVE EN LA LÓGICA DE FormData) =====
+        saveEventBtn.addEventListener("click", async () => {
+            const id = eventIdInput.value;
+            const date = startDateInput.value;
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+
+            // Validación de campos obligatorios
+            if (!titleInput.value.trim() || !date || !startTime || !endTime) {
+                alert("Completa todos los campos obligatorios");
+                return;
+            }
+
+            const start = `${date}T${startTime}`;
+            const end = `${date}T${endTime}`;
+
+            // 1. Crear FormData para enviar archivos al backend
+            const formData = new FormData();
+            formData.append('title', titleInput.value.trim());
+            formData.append('description', descriptionInput.value.trim());
+            formData.append('location', locationInput.value.trim());
+            formData.append('start', start);
+            formData.append('end', end);
+
+            const file = imageFileInput.files[0];
+            const currentURL = imageURLInput.value;
+
+            // ⭐ LÓGICA DE ADJUNTAR IMAGEN DE EVENTOS ⭐
+            if (file) {
+                formData.append('imageFile', file);
+            } else {
+                formData.append('imageURL', currentURL);
+            }
+
+            try {
+                const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
+                    method: id ? "PUT" : "POST",
+                    body: formData // Envía el FormData correctamente
+                });
+
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message || "Fallo en la respuesta del servidor.");
+
+                alert(id ? "Evento actualizado correctamente" : "Evento creado correctamente");
+                eventModal.hide();
+                calendar.refetchEvents();
+            } catch (e) {
+                console.error("Error al guardar:", e);
+                alert("Error al guardar evento: " + e.message);
+            }
+        });
+
+        // ===== ELIMINAR EVENTO (Sin cambios) =====
+        deleteEventBtn.addEventListener("click", async () => {
+            if (!selectedEvent || !selectedEvent.id) {
+                alert("No hay evento seleccionado");
+                return;
+            }
+
+            showConfirmAlert("¿Eliminar este evento?", async () => {
+                try {
+                    const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+                    const data = await res.json();
+                    if (!data.success) throw new Error();
+
+                    alert("Evento eliminado correctamente");
+                    eventModal.hide();
+                    calendar.refetchEvents();
+                } catch {
+                    alert("Error al eliminar evento");
+                }
+            });
+        });
+    } // Fin del bloque de Eventos/Calendario
+    // ==========================================================
+
+
+    // ==========================================================
+    // ⭐ LÓGICA DEL CAR GARAGE (NUEVA IMPLEMENTACIÓN) ⭐
+    // ==========================================================
+    if (carGarageForm && usuario) {
+
+        // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DEL COCHE =====
+        if (carPhotoFileInput) {
+            // Previsualizar nuevo archivo
+            carPhotoFileInput.addEventListener('change', function () {
+                const file = this.files[0];
+
+                if (file) {
+                    const fileUrl = URL.createObjectURL(file);
+                    carPhotoPreview.src = fileUrl;
+                    carPhotoContainer.style.display = 'block';
+                } else {
+                    // Si cancela, vuelve a mostrar la URL antigua si existe
+                    if (carPhotoUrlInput.value) {
+                        carPhotoPreview.src = carPhotoUrlInput.value;
+                        carPhotoContainer.style.display = 'block';
+                    } else {
+                        carPhotoContainer.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        if (clearCarPhotoBtn) {
+            // Botón para eliminar la imagen
+            clearCarPhotoBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                carPhotoUrlInput.value = ""; // INDICA al backend que la URL debe ser NULL
+                carPhotoFileInput.value = ""; // Limpia el archivo subido
+                carPhotoContainer.style.display = 'none';
+            });
+        }
+
+        // ===== GUARDADO DEL COCHE (POST/PUT) =====
+        carGarageForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            // 1. Obtener datos básicos
+            const id = carIdInput.value;
+            const userId = usuario.id;
+
+            if (!carNameInput.value.trim() || !userId) {
+                alert("El nombre del coche y el usuario son obligatorios.");
+                return;
+            }
+
+            // 2. Crear FormData para enviar el archivo
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('car_name', carNameInput.value.trim());
+            formData.append('model', carModelInput.value.trim());
+            formData.append('year', carYearInput.value.trim());
+            formData.append('description', carDescriptionInput.value.trim());
+
+            // El ID solo se requiere en PUT y se añade al FormData
+            if (id) {
+                formData.append('id', id);
+            }
+
+            // 3. Lógica de Imagen
+            const file = carPhotoFileInput.files[0];
+            const currentURL = carPhotoUrlInput.value;
+
+            if (file) {
+                // Caso 1: Nuevo archivo subido. Lo adjuntamos como 'imageFile' (nombre que espera carGarage.js)
+                formData.append('imageFile', file);
+            } else {
+                // Caso 2: No hay archivo nuevo. Enviamos la URL existente/vacía como 'photoURL'
+                formData.append('photoURL', currentURL); // photoURL es el nombre que espera carGarage.js
+            }
+
+            try {
+                // Si es PUT, añadimos el ID como query parameter
+                const url = id ? `/api/carGarage?id=${id}` : "/api/carGarage";
+
+                const res = await fetch(url, {
+                    method: id ? "PUT" : "POST",
+                    body: formData // Envía el FormData correctamente
+                });
+
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.msg || "Fallo en la respuesta del servidor.");
+
+                alert(id ? "Coche actualizado correctamente" : "Coche añadido correctamente");
+
+                // Si tienes un modal de coche, lo cierras aquí:
+                // carModal.hide(); 
+                // Y recargas la lista de coches si tienes esa función:
+                // loadCarList(userId); 
+
+            } catch (e) {
+                console.error("Error al guardar el coche:", e);
+                alert("Error al guardar el coche: " + e.message);
+            }
+        });
+    }
+    // ==========================================================
+
 
     // ... (Lógica de Logout sin cambios) ...
     const logoutBtn = document.getElementById("logout-btn");

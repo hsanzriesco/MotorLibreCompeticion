@@ -1,8 +1,3 @@
-// ===============================================
-// API CAR GARAGE (COMPATIBLE CON VERCEL + NEON + CLOUDINARY)
-// CRUD completo: GET, POST, PUT, DELETE
-// ===============================================
-
 import { Pool } from "pg";
 import { v2 as cloudinary } from 'cloudinary';
 import formidable from 'formidable';
@@ -70,7 +65,7 @@ export default async function handler(req, res) {
         // 1. LISTAR COCHES (GET)
         // --------------------------------------------
         if (method === "GET") {
-            const { user_id, id } = req.query; // Ahora también podemos buscar por ID individual si es necesario
+            const { user_id, id } = req.query;
 
             if (id) {
                 const result = await client.query("SELECT * FROM car_garage WHERE id = $1", [id]);
@@ -99,7 +94,7 @@ export default async function handler(req, res) {
 
             // Extraer campos y archivo. photoURL es el campo hidden con la URL existente.
             const { user_id, car_name, model, year, description, photoURL, id } = fields;
-            const file = files.imageFile?.[0]; // imageFile es el archivo subido
+            const file = files.imageFile?.[0]; // imageFile es el archivo subido (Nombre CLAVE)
 
             // Validación de campos obligatorios
             if (!user_id && method === "POST") {
@@ -124,7 +119,6 @@ export default async function handler(req, res) {
                     });
                     finalPhotoUrl = uploadResponse.secure_url; // Obtener la URL pública
                 } catch (cloudinaryError) {
-                    // Muestra el error de Cloudinary para el diagnóstico
                     console.error("Cloudinary Upload Error:", cloudinaryError);
                     return res.status(500).json({ ok: false, msg: `Error al subir la imagen (Cloudinary Code: ${cloudinaryError.http_code || 'N/A'}). Revisa las credenciales.` });
                 }
@@ -174,8 +168,6 @@ export default async function handler(req, res) {
                 return res.status(400).json({ ok: false, msg: "Falta id" });
             }
 
-            // Aquí podrías añadir lógica para borrar la imagen de Cloudinary antes de eliminar el registro
-
             await client.query("DELETE FROM car_garage WHERE id = $1", [id]);
 
             return res.status(200).json({ ok: true, msg: "Coche eliminado" });
@@ -193,7 +185,6 @@ export default async function handler(req, res) {
         if (err.message.includes('ECONNREFUSED')) {
             errorMessage = 'Error de conexión a la base de datos.';
         }
-        // El error de Cloudinary ahora se captura en el bloque PUT/POST, pero lo dejamos aquí como fallback
 
         return res.status(500).json({ ok: false, msg: errorMessage, error: err.message });
     } finally {
