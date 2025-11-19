@@ -53,7 +53,9 @@ export default async function handler(req, res) {
             api_secret: process.env.CLOUDINARY_API_SECRET,
         });
     } catch (configError) {
-        return res.status(500).json({ ok: false, msg: "Error de configuración de Cloudinary." });
+        // Error de configuración (ej. variables de entorno faltantes)
+        console.error("Cloudinary Configuration Error:", configError);
+        return res.status(500).json({ ok: false, msg: "Error de configuración de Cloudinary. Revisa las variables de entorno." });
     }
     // ==========================================================
 
@@ -83,7 +85,7 @@ export default async function handler(req, res) {
                 [user_id]
             );
 
-            // Importante: El frontend espera 'motorcycles' para la carga combinada
+            // Importante: El frontend espera 'motorcycles'
             return res.status(200).json({ ok: true, motorcycles: result.rows });
         }
 
@@ -95,7 +97,7 @@ export default async function handler(req, res) {
             // 1. Parsear FormData
             const { fields, files } = await parseMultipart(req);
 
-            // ATENCIÓN: Se usa 'motorcycle_name' en lugar de 'car_name'
+            // Extraer campos y archivo. Se usa 'motorcycle_name'
             const { user_id, motorcycle_name, model, year, description, photoURL, id } = fields;
             const file = files.imageFile?.[0]; // imageFile es el archivo subido
 
@@ -117,7 +119,7 @@ export default async function handler(req, res) {
             if (file && file.size > 0) {
                 try {
                     const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
-                        // CAMBIO DE CARPETA: Usar una carpeta específica para motos
+                        // Carpeta específica para el garaje de motos
                         folder: "motor_libre_competicion_motos_garage",
                         resource_type: "auto",
                     });
@@ -143,7 +145,6 @@ export default async function handler(req, res) {
                     VALUES ($1, $2, $3, $4, $5, $6, NOW())
                     RETURNING *;
                 `;
-                // ATENCIÓN: Usamos motorcycle_name aquí
                 values = [user_id, motorcycle_name, model, year, description, finalPhotoUrl];
 
             } else if (method === "PUT") {
@@ -154,13 +155,12 @@ export default async function handler(req, res) {
                     WHERE id = $6
                     RETURNING *;
                 `;
-                // ATENCIÓN: Usamos motorcycle_name aquí
                 values = [motorcycle_name, model, year, description, finalPhotoUrl, id];
             }
 
             const result = await client.query(query, values);
 
-            // Importante: Devolvemos 'motorcycle' como clave de objeto único
+            // Devolvemos 'motorcycle' como clave de objeto único
             return res.status(200).json({ ok: true, msg: `Moto ${method === 'POST' ? 'añadida' : 'actualizada'}`, motorcycle: result.rows[0] });
         }
 
@@ -175,7 +175,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ ok: false, msg: "Falta id de la moto" });
             }
 
-            // ATENCIÓN: Usamos la tabla 'motos_garage'
+            // Elimina de la tabla motos_garage
             await client.query("DELETE FROM motos_garage WHERE id = $1", [id]);
 
             return res.status(200).json({ ok: true, msg: "Moto eliminada" });
