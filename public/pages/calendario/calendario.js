@@ -1,7 +1,22 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Obtener referencias de la imagen y otros elementos
+    // 1. Obtener referencias
     const modalImageContainer = document.getElementById("event-image-container");
     const modalImage = document.getElementById("modalImage");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalDesc = document.getElementById("modalDesc");
+    const modalLoc = document.getElementById("modalLoc");
+    const modalStart = document.getElementById("modalStart"); // Nuevo ID
+    const modalEnd = document.getElementById("modalEnd");     // Nuevo ID
+
+    // Configuración de visualización de fechas
+    const DATE_OPTIONS = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+
 
     // Lógica para obtener el usuario de localStorage (ajustar si usas sessionStorage)
     const stored = localStorage.getItem('usuario');
@@ -30,7 +45,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
         }
 
-        // Asegúrate de que bootstrap sea globalmente accesible aquí
         const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
         if (offcanvasMenu) {
             offcanvasMenu.hide();
@@ -47,7 +61,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         locale: "es",
-        // Fuente de eventos desde la API
         events: async (fetchInfo, successCallback, failureCallback) => {
             try {
                 // Asegúrate de que la API /api/events devuelva la columna 'image_url'
@@ -68,13 +81,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
 
             // Rellenar datos del modal
-            document.getElementById("modalTitle").textContent = e.title;
-            document.getElementById("modalDesc").textContent = extendedProps.description || "Sin descripción.";
-            document.getElementById("modalLoc").textContent = extendedProps.location || "Ubicación no especificada.";
-            document.getElementById("modalDate").textContent = new Date(e.start).toLocaleDateString("es-ES");
+            modalTitle.textContent = e.title;
+            modalDesc.textContent = extendedProps.description || "Sin descripción.";
+            modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
-            // ⭐ LÓGICA DE LA IMAGEN ⭐
-            // La URL DEBE estar en extendedProps.image_url
+            // ⭐ CLAVE: Muestra Fecha y Hora de inicio y fin ⭐
+            modalStart.textContent = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
+            modalEnd.textContent = new Date(e.end).toLocaleDateString("es-ES", DATE_OPTIONS);
+
+            // ⭐ LÓGICA DE LA IMAGEN (VERIFICADA Y CORRECTA) ⭐
             const imageUrl = extendedProps.image_url;
 
             if (imageUrl) {
