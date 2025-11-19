@@ -11,7 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
 
-    // ELEMENTOS DEL MODAL
+    // ELEMENTOS DEL MODAL DE CONTRASEÑA
+    const passwordModal = document.getElementById('passwordModal');
+    const currentPasswordInput = document.getElementById('current-password');
+    const newPasswordInput = document.getElementById('new-password');
+    const confirmNewPasswordInput = document.getElementById('confirm-new-password');
+
+
+    // ELEMENTOS DEL MODAL DE VEHÍCULO
     const carModal = document.getElementById('carModal'); // Obtenemos el DOM, no la instancia de Bootstrap aquí
     const carModalTitle = document.getElementById('carModalTitle');
     const carIdInput = document.getElementById('car-id');
@@ -421,10 +428,45 @@ document.addEventListener('DOMContentLoaded', () => {
     loadVehicles();
 
     // *******************************************************************
-    // EL RESTO DE FUNCIONES DE PERFIL, CONTRASEÑA Y CONFIRMACIÓN NO CAMBIAN
+    // ⭐ NUEVA LÓGICA: VISUALIZACIÓN DE CONTRASEÑA ⭐
     // *******************************************************************
-    // Incluir aquí las funciones de profileForm, passwordForm, logoutBtn y mostrarConfirmacion
-    // para que el archivo sea funcional.
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function () {
+            // 1. Obtener el ID del input objetivo
+            const targetId = this.getAttribute('data-target-id');
+            const passwordInput = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+
+            if (!passwordInput || !icon) return;
+
+            // 2. Comprobar el tipo de input y cambiarlo
+            const isPassword = passwordInput.type === 'password';
+
+            passwordInput.type = isPassword ? 'text' : 'password';
+
+            // 3. Cambiar el icono (ojo tachado vs. ojo abierto)
+            if (isPassword) {
+                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            } else {
+                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            }
+
+            // Opcional: Mantener el foco en el campo después de hacer clic
+            passwordInput.focus();
+        });
+    });
+    // *******************************************************************
+    // ⭐ FIN LÓGICA: VISUALIZACIÓN DE CONTRASEÑA ⭐
+    // *******************************************************************
+
+
+    // *******************************************************************
+    // EL RESTO DE FUNCIONES (INCLUIDAS LAS QUE FALTABAN)
+    // *******************************************************************
 
     /**
      * Muestra una ventana de confirmación centralizada con el estilo de la app (negro/rojo).
@@ -511,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Lógica del Formulario de Perfil ---
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -524,120 +567,124 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const confirmar = await mostrarConfirmacion('¿Quieres guardar los cambios de tu perfil?', 'Guardar');
         if (!confirmar) {
-            mostrarAlerta('Guardado cancelado', 'info');
+            mostrarAlerta('Cambios cancelados', 'info');
+            // Recargar para restaurar los valores iniciales si se cancela
+            document.getElementById('profile-name').value = user.name || '';
+            document.getElementById('profile-email').value = user.email || '';
             return;
         }
 
-        const payload = { id: user.id, name: newName, email: newEmail };
-
         try {
-            const resp = await fetch('/api/userList', {
+            const resp = await fetch('/api/userAction', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: user.id,
+                    name: newName,
+                    email: newEmail
+                })
             });
 
             const json = await resp.json();
-
-            if (resp.ok && json && json.success === true) {
-                user.name = newName;
-                user.email = newEmail;
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                userNameElement.textContent = newName;
-                mostrarAlerta('Datos actualizados correctamente.', 'exito');
-                return;
+            if (!resp.ok || !json.ok) {
+                throw new Error(json.msg || 'Fallo en la actualización del perfil.');
             }
 
-            // Fallback (manteniendo la lógica original de actualización local)
+            // Actualizar la sesión y la UI
             user.name = newName;
             user.email = newEmail;
             sessionStorage.setItem('usuario', JSON.stringify(user));
-            userNameElement.textContent = newName;
-            mostrarAlerta('Error en la respuesta del servidor. Datos actualizados localmente.', 'info');
 
-        } catch {
-            user.name = newName;
-            user.email = newEmail;
-            sessionStorage.setItem('usuario', JSON.stringify(user));
-            userNameElement.textContent = newName;
-            mostrarAlerta('Error de red. Datos actualizados localmente.', 'info');
+            userNameElement.textContent = newName || 'Usuario';
+            mostrarAlerta('Perfil actualizado correctamente', 'exito');
+
+        } catch (error) {
+            console.error('Error al actualizar perfil:', error);
+            mostrarAlerta('Error al actualizar perfil: ' + error.message, 'error');
         }
     });
 
-    // Se asume que passwordModal está definido en el HTML
-    document.getElementById('passwordModal').addEventListener('show.bs.modal', () => {
-        passwordForm.reset();
-    });
-
-    // *******************************************************************
-    // ⭐ BLOQUE DE CÓDIGO MODIFICADO PARA ELIMINAR VERIFICACIÓN ACTUAL ⭐
-    // *******************************************************************
+    // --- Lógica del Formulario de Contraseña ---
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Leemos el campo actual, pero lo IGNORAMOS para simular contraseña olvidada en sesión
-        const actual = document.getElementById('current-password').value;
-        const nueva = document.getElementById('new-password').value;
-        const repetir = document.getElementById('confirm-new-password').value;
+        const currentPassword = currentPasswordInput.value;
+        const newPassword = newPasswordInput.value;
+        const confirmNewPassword = confirmNewPasswordInput.value;
 
-        if (nueva !== repetir) {
-            mostrarAlerta('Las nuevas contraseñas no coinciden', 'error');
+        if (newPassword !== confirmNewPassword) {
+            mostrarAlerta('La nueva contraseña y su confirmación no coinciden.', 'error');
             return;
         }
 
-        // ⚠️ ADVERTENCIA: Se elimina la verificación de la contraseña actual (user.password)
-        // haciendo el cambio de contraseña INSEGURO, pero cumpliendo tu solicitud.
-        // if (actual !== user.password) { ... } <- ELIMINADO
+        if (currentPassword === newPassword) {
+            mostrarAlerta('La nueva contraseña no puede ser igual a la actual.', 'advertencia');
+            return;
+        }
 
-        const confirmar = await mostrarConfirmacion('¿Quieres actualizar tu contraseña?', 'Actualizar');
+        if (newPassword.length < 6) {
+            mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres.', 'advertencia');
+            return;
+        }
+
+        const confirmar = await mostrarConfirmacion('¿Deseas cambiar tu contraseña?', 'Cambiar');
         if (!confirmar) {
-            mostrarAlerta('Actualización cancelada', 'info');
+            mostrarAlerta('Cambio de contraseña cancelado', 'info');
             return;
         }
 
         try {
-            // Enviamos solo la ID y la NUEVA contraseña al servidor
-            const resp = await fetch('/api/userList', {
+            const resp = await fetch('/api/userAction', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: user.id, password: nueva })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: user.id,
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    action: 'change_password'
+                })
             });
 
             const json = await resp.json();
-
-            if (resp.ok && json && json.success === true) {
-                // Actualización local (insegura, solo para mantener la funcionalidad de tu mock)
-                user.password = nueva;
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                mostrarAlerta('Contraseña actualizada correctamente.', 'exito');
-            } else {
-                // Fallback de actualización local si el servidor falla
-                user.password = nueva;
-                sessionStorage.setItem('usuario', JSON.stringify(user));
-                mostrarAlerta('Error en la respuesta del servidor. Contraseña actualizada localmente.', 'info');
+            if (!resp.ok || !json.ok) {
+                // El backend debe devolver un mensaje claro si la contraseña actual es incorrecta
+                throw new Error(json.msg || 'Fallo en el cambio de contraseña.');
             }
-        } catch {
-            // Fallback de actualización local si hay error de red
-            user.password = nueva;
-            sessionStorage.setItem('usuario', JSON.stringify(user));
-            mostrarAlerta('Error de red. Contraseña actualizada localmente.', 'info');
+
+            mostrarAlerta('Contraseña cambiada correctamente. Vuelve a iniciar sesión.', 'exito');
+
+            // Cerrar el modal y redirigir
+            const modalInstance = bootstrap.Modal.getInstance(passwordModal);
+            if (modalInstance) modalInstance.hide();
+
+            setTimeout(() => {
+                sessionStorage.removeItem('usuario');
+                window.location.href = '../auth/login/login.html';
+            }, 1200);
+
+        } catch (error) {
+            console.error('Error al cambiar contraseña:', error);
+            mostrarAlerta('Error al cambiar contraseña: ' + error.message, 'error');
+        } finally {
+            // Limpiar los campos del formulario de contraseña
+            passwordForm.reset();
         }
-
-        // Cierra el modal de contraseña 
-        const passwordModalElement = document.getElementById('passwordModal');
-        const passwordModalInstance = bootstrap.Modal.getInstance(passwordModalElement);
-        if (passwordModalInstance) passwordModalInstance.hide();
     });
-    // *******************************************************************
-    // ⭐ FIN DEL BLOQUE DE CÓDIGO MODIFICADO ⭐
-    // *******************************************************************
 
-    // Añadir lógica de cierre de sesión
-    logoutBtn.addEventListener('click', (e) => {
+    // --- Lógica de Cerrar Sesión ---
+    logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        sessionStorage.removeItem('usuario');
-        mostrarAlerta("Sesión cerrada. ¡Vuelve pronto!", 'info');
-        setTimeout(() => window.location.href = '/index.html', 1000);
+        const confirmar = await mostrarConfirmacion('¿Estás seguro de que quieres cerrar sesión?', 'Cerrar');
+        if (confirmar) {
+            sessionStorage.removeItem('usuario');
+            mostrarAlerta('Sesión cerrada', 'info');
+            setTimeout(() => window.location.href = '/index.html', 800);
+        } else {
+            mostrarAlerta('Cierre de sesión cancelado', 'info');
+        }
     });
-
 });

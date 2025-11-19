@@ -127,13 +127,37 @@
                     <form id="password-form">
 
                         <div class="mb-3">
+                            <label class="form-label">Contraseña actual</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control mlc-input" id="current-password" required />
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target-id="current-password" style="border-left: none;">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">Nueva contraseña</label>
-                            <input type="password" class="form-control mlc-input" id="new-password" required />
+                            <div class="input-group">
+                                <input type="password" class="form-control mlc-input" id="new-password" required />
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target-id="new-password" style="border-left: none;">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Confirmar nueva contraseña</label>
-                            <input type="password" class="form-control mlc-input" id="confirm-new-password" required />
+                            <div class="input-group">
+                                <input type="password" class="form-control mlc-input" id="confirm-new-password"
+                                    required />
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target-id="confirm-new-password" style="border-left: none;">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="d-grid gap-2 mt-3">
