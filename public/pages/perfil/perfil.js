@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
 
+    // ⭐ NUEVOS ELEMENTOS DE IMAGEN ⭐
+    const carPhotoFileInput = document.getElementById('carPhotoFile');
+    const carPhotoUrlInput = document.getElementById('car-photo-url'); // Nuevo ID
+    const carPhotoPreview = document.getElementById('carPhotoPreview');
+    const carPhotoContainer = document.getElementById('carPhotoContainer');
+    const clearCarPhotoBtn = document.getElementById('clearCarPhotoBtn');
+
     let currentCarId = null;
 
     const stored = sessionStorage.getItem('usuario');
@@ -41,12 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCar(car) {
+        // Usar imagen de Cloudinary si existe, si no, usar la placeholder
         const defaultImg = 'https://via.placeholder.com/300x150?text=Sin+Foto';
         return `
       <div class="col-12 col-md-6" data-car-id="${car.id}">
         <div class="car-item" data-car-id="${car.id}" style="cursor:pointer;">
           <div class="car-image-container" style="width:120px;">
-            <img src="${escapeHtml(car.photo_url) || defaultImg}" alt="${escapeHtml(car.car_name)}" style="width:100%; border-radius:6px;" />
+            <img src="${escapeHtml(car.photo_url) || defaultImg}" alt="${escapeHtml(car.car_name)}" style="width:100%; border-radius:6px; object-fit: cover; aspect-ratio: 1/1;" />
           </div>
           <div class="car-details" style="padding-left:12px;">
             <h6 class="mb-1" style="color:#e50914;">${escapeHtml(car.car_name)}</h6>
@@ -58,9 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadCars() {
         try {
-            // Nota: Se asume que /api/carGarage está implementado en otro lugar.
             const resp = await fetch(`/api/carGarage?user_id=${encodeURIComponent(user.id)}`);
-            if (!resp.ok) throw new Error();
+            if (!resp.ok) throw new Error('Error al cargar coches');
             const data = await resp.json();
 
             carList.innerHTML = '';
@@ -83,14 +90,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-        } catch { }
+        } catch (e) { console.error(e); }
     }
 
     loadCars();
 
+    // ⭐ LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN DEL COCHE ⭐
+
+    // Previsualizar nuevo archivo seleccionado
+    carPhotoFileInput.addEventListener('change', function () {
+        const file = this.files[0];
+
+        if (file) {
+            const fileUrl = URL.createObjectURL(file);
+            carPhotoPreview.src = fileUrl;
+            carPhotoContainer.style.display = 'block';
+        } else {
+            // Si el usuario cancela la selección, mostramos la URL existente si la hay
+            if (carPhotoUrlInput.value) {
+                carPhotoPreview.src = carPhotoUrlInput.value;
+                carPhotoContainer.style.display = 'block';
+            } else {
+                carPhotoContainer.style.display = 'none';
+            }
+        }
+    });
+
+    // Botón para eliminar la imagen
+    clearCarPhotoBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        carPhotoUrlInput.value = ""; // Clave: Esto indica al backend que la URL debe ser NULL
+        carPhotoFileInput.value = ""; // Limpia el archivo subido
+        carPhotoContainer.style.display = 'none';
+        carPhotoPreview.src = '';
+    });
+
+
+    // ⭐ MODIFICACIÓN DE openCarModal ⭐
     function openCarModal(car) {
         carForm.reset();
         currentCarId = null;
+
+        // Limpiar campos de imagen
+        carPhotoFileInput.value = "";
+        carPhotoUrlInput.value = "";
+        carPhotoContainer.style.display = 'none';
+        carPhotoPreview.src = '';
+
 
         if (car) {
             document.getElementById('carModalTitle').textContent = 'Editar coche';
@@ -98,7 +144,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('car-name').value = car.car_name;
             document.getElementById('car-model').value = car.model || '';
             document.getElementById('car-year').value = car.year || '';
-            document.getElementById('car-photo').value = car.photo_url || '';
+            document.getElementById('car-description').value = car.description || '';
+
+            // ⭐ Lógica de la imagen existente ⭐
+            if (car.photo_url) {
+                carPhotoUrlInput.value = car.photo_url;
+                carPhotoPreview.src = car.photo_url;
+                carPhotoContainer.style.display = 'block';
+            }
+
             currentCarId = car.id;
             deleteCarBtn.style.display = 'inline-block';
         } else {
@@ -112,62 +166,66 @@ document.addEventListener('DOMContentLoaded', () => {
         new bootstrap.Modal(document.getElementById('carModal')).show();
     });
 
+    // ⭐ MODIFICACIÓN DE carForm.submit PARA USAR FORMDATA ⭐
     carForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const carData = {
-            id: currentCarId || null,
-            user_id: user.id,
-            car_name: document.getElementById('car-name').value.trim(),
-            model: document.getElementById('car-model').value.trim(),
-            year: document.getElementById('car-year').value.trim() || null,
-            description: '',
-            photo_url: document.getElementById('car-photo').value.trim()
-        };
+        const id = currentCarId;
+        const carName = document.getElementById('car-name').value.trim();
 
-        if (!carData.car_name) {
+        if (!carName) {
             mostrarAlerta('El nombre del coche es obligatorio', 'advertencia');
             return;
         }
 
-        try {
-            let resp;
+        // 1. CREAR FORMDATA
+        const formData = new FormData();
+        formData.append('user_id', user.id);
+        formData.append('car_name', carName);
+        formData.append('model', document.getElementById('car-model').value.trim() || '');
+        formData.append('year', document.getElementById('car-year').value.trim() || '');
+        formData.append('description', document.getElementById('car-description').value.trim() || '');
 
-            if (currentCarId) {
-                // Asume que la actualización de coche está en /api/carGarage (PUT)
-                resp = await fetch('/api/carGarage', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: carData.id,
-                        car_name: carData.car_name,
-                        model: carData.model,
-                        year: carData.year,
-                        description: carData.description,
-                        photo_url: carData.photo_url
-                    })
-                });
-                if (!resp.ok) throw 0;
-                mostrarAlerta('Coche actualizado', 'exito');
-            } else {
-                // Asume que añadir coche está en /api/carGarage (POST)
-                resp = await fetch('/api/carGarage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(carData)
-                });
-                if (!resp.ok) throw 0;
-                mostrarAlerta('Coche añadido', 'exito');
-            }
+        if (id) {
+            formData.append('id', id);
+        }
+
+        // 2. LÓGICA DE LA IMAGEN
+        const file = carPhotoFileInput.files[0];
+        const currentURL = carPhotoUrlInput.value;
+
+        if (file) {
+            // Caso 1: Nuevo archivo subido. Se añade como 'imageFile'
+            formData.append('imageFile', file);
+        } else {
+            // Caso 2: No hay archivo nuevo. Se envía la URL existente o vacía como 'photoURL'
+            formData.append('photoURL', currentURL);
+        }
+
+        try {
+            const url = id ? `/api/carGarage?id=${id}` : "/api/carGarage";
+
+            const resp = await fetch(url, {
+                method: id ? 'PUT' : 'POST',
+                body: formData // ⭐ CLAVE: Enviamos el FormData
+            });
+
+            const json = await resp.json();
+            if (!resp.ok || !json.ok) throw new Error(json.msg || 'Fallo en la respuesta del servidor.');
+
+            mostrarAlerta(id ? 'Coche actualizado' : 'Coche añadido', 'exito');
 
             await loadCars();
             const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
             if (modal) modal.hide();
 
-        } catch {
-            mostrarAlerta('Error guardando coche.', 'error');
+        } catch (e) {
+            console.error("Error al guardar el coche:", e);
+            mostrarAlerta('Error guardando coche. ' + e.message, 'error');
         }
     });
+
+    // ... (El resto de funciones auxiliares y manejadores de perfil/contraseña quedan sin cambios) ...
 
     /**
      * Muestra una ventana de confirmación centralizada con el estilo de la app (negro/rojo).
