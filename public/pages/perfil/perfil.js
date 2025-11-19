@@ -303,6 +303,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCar = type === 'car';
         const nameInput = carNameInput.value.trim();
 
+        // ⭐ INICIO: VALIDACIÓN DE AÑO (El cambio solicitado) ⭐
+        const vehicleYear = parseInt(carYearInput.value.trim());
+        const currentYear = new Date().getFullYear();
+
+        if (isNaN(vehicleYear) || vehicleYear > currentYear || vehicleYear < 1900) {
+            mostrarAlerta(`El año del vehículo no es válido. Debe ser entre 1900 y ${currentYear} (el año actual).`, 'error');
+            return; // Detiene el envío del formulario
+        }
+        // ⭐ FIN: VALIDACIÓN DE AÑO ⭐
+
         if (!nameInput) {
             mostrarAlerta(`El nombre del ${isCar ? 'coche' : 'moto'} es obligatorio`, 'advertencia');
             return;
