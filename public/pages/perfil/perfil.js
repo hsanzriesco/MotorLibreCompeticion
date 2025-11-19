@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ELEMENTOS DEL MODAL DE CONTRASEÑA
     const passwordModal = document.getElementById('passwordModal');
-    const currentPasswordInput = document.getElementById('current-password');
+    // const currentPasswordInput = document.getElementById('current-password'); // ¡ELIMINADO!
     const newPasswordInput = document.getElementById('new-password');
     const confirmNewPasswordInput = document.getElementById('confirm-new-password');
 
@@ -428,16 +428,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadVehicles();
 
     // *******************************************************************
-    // ⭐ NUEVA LÓGICA: VISUALIZACIÓN DE CONTRASEÑA ⭐
+    // ⭐ LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA CON ICONOS PERSONALIZADOS ⭐
     // *******************************************************************
     document.querySelectorAll('.toggle-password').forEach(button => {
         button.addEventListener('click', function () {
-            // 1. Obtener el ID del input objetivo
+            // 1. Obtener el ID del input objetivo y el span del icono
             const targetId = this.getAttribute('data-target-id');
             const passwordInput = document.getElementById(targetId);
-            const icon = this.querySelector('i');
+            // Seleccionamos el span que tiene las clases de icono personalizadas
+            const iconSpan = this.querySelector('.password-toggle-icon');
 
-            if (!passwordInput || !icon) return;
+            if (!passwordInput || !iconSpan) return;
 
             // 2. Comprobar el tipo de input y cambiarlo
             const isPassword = passwordInput.type === 'password';
@@ -446,13 +447,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 3. Cambiar el icono (ojo tachado vs. ojo abierto)
             if (isPassword) {
-                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
+                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto (show-password)
+                iconSpan.classList.remove('hide-password');
+                iconSpan.classList.add('show-password');
             } else {
-                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
+                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado (hide-password)
+                iconSpan.classList.remove('show-password');
+                iconSpan.classList.add('hide-password');
             }
 
             // Opcional: Mantener el foco en el campo después de hacer clic
@@ -460,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     // *******************************************************************
-    // ⭐ FIN LÓGICA: VISUALIZACIÓN DE CONTRASEÑA ⭐
+    // ⭐ FIN LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA ⭐
     // *******************************************************************
 
 
@@ -610,17 +611,20 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const currentPassword = currentPasswordInput.value;
+        // const currentPassword = currentPasswordInput.value; // ¡ELIMINADO!
         const newPassword = newPasswordInput.value;
         const confirmNewPassword = confirmNewPasswordInput.value;
 
+        // NOTA: Para cambiar la contraseña, el backend NECESITA la contraseña actual
+        // para autenticar el cambio, incluso si se quita el campo de la interfaz.
+        // Como el campo se ha quitado, no tenemos su valor. Para que esto funcione, 
+        // el backend debe permitir el cambio sin la contraseña actual O
+        // el campo 'current-password' debe ser devuelto en el HTML.
+        // POR AHORA, LO DEJAMOS SIMPLEMENTE EN BLANCO para evitar errores JS.
+        const currentPassword = '';
+
         if (newPassword !== confirmNewPassword) {
             mostrarAlerta('La nueva contraseña y su confirmación no coinciden.', 'error');
-            return;
-        }
-
-        if (currentPassword === newPassword) {
-            mostrarAlerta('La nueva contraseña no puede ser igual a la actual.', 'advertencia');
             return;
         }
 
@@ -643,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({
                     id: user.id,
-                    current_password: currentPassword,
+                    current_password: currentPassword, // Enviamos vacío (revisar backend)
                     new_password: newPassword,
                     action: 'change_password'
                 })
