@@ -2,8 +2,8 @@ import { Pool } from "pg";
 
 // Conexión al pool PostgreSQL
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
 });
 
 // 🔧 Función auxiliar para parsear body (compatible con JSON y texto) - MANTENLA
@@ -50,13 +50,13 @@ export default async function handler(req, res) {
 
         // Determinar el body (usa req.body si el entorno lo parseó, sino usa parseBody)
         const body = req.body && Object.keys(req.body).length > 0 ? req.body : await parseBody(req);
-        
+
         // Desestructuración de los campos necesarios
         const { title, description, location, start, end, image_url } = body;
-        
+
         // Validación común para POST y PUT
         if (req.method === "POST" || req.method === "PUT") {
-             if (!title || !start || !end) {
+            if (!title || !start || !end) {
                 return res.status(400).json({
                     success: false,
                     message: "Faltan campos obligatorios.",
