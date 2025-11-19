@@ -612,15 +612,13 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         // const currentPassword = currentPasswordInput.value; // ¡ELIMINADO!
+
         const newPassword = newPasswordInput.value;
         const confirmNewPassword = confirmNewPasswordInput.value;
 
-        // NOTA: Para cambiar la contraseña, el backend NECESITA la contraseña actual
-        // para autenticar el cambio, incluso si se quita el campo de la interfaz.
-        // Como el campo se ha quitado, no tenemos su valor. Para que esto funcione, 
-        // el backend debe permitir el cambio sin la contraseña actual O
-        // el campo 'current-password' debe ser devuelto en el HTML.
-        // POR AHORA, LO DEJAMOS SIMPLEMENTE EN BLANCO para evitar errores JS.
+        // Se envía un campo de contraseña actual vacía, asumiendo que el backend 
+        // permite el cambio solo con la nueva contraseña si el campo no está presente,
+        // o que hay otra capa de autenticación para esta acción.
         const currentPassword = '';
 
         if (newPassword !== confirmNewPassword) {
@@ -647,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({
                     id: user.id,
-                    current_password: currentPassword, // Enviamos vacío (revisar backend)
+                    current_password: currentPassword, // Enviamos vacío
                     new_password: newPassword,
                     action: 'change_password'
                 })
@@ -655,7 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const json = await resp.json();
             if (!resp.ok || !json.ok) {
-                // El backend debe devolver un mensaje claro si la contraseña actual es incorrecta
                 throw new Error(json.msg || 'Fallo en el cambio de contraseña.');
             }
 

@@ -16,34 +16,50 @@
     <link rel="stylesheet" href="./perfil.css" />
 
     <style>
-        /* ESTILOS PARA LOS ICONOS PERSONALIZADOS (OJO ABIERTO/TACHADO) */
         .password-toggle-icon {
-            width: 24px;
-            /* Ajusta según el tamaño de tu icono */
-            height: 24px;
-            /* Ajusta según el tamaño de tu icono */
-            display: inline-block;
+            width: 32px;
+            /* Ajustado para ser más grande, como en tus capturas */
+            height: 32px;
+            display: block;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             cursor: pointer;
-            vertical-align: middle;
         }
 
         /* Asegúrate de que las rutas a tus imágenes sean correctas */
         .password-toggle-icon.hide-password {
+            /* Icono de ojo tachado para el estado por defecto (contraseña oculta) */
             background-image: url('../../img/icono-ojo-tachado.png');
         }
 
         .password-toggle-icon.show-password {
+            /* Icono de ojo abierto para el estado de mostrar contraseña */
             background-image: url('../../img/icono-ojo-abierto.png');
         }
 
-        /* Ajuste para el botón si usas el estilo Bootstrap por defecto */
         .btn-mlc-password-toggle {
+            /* Estilo para integrar el icono al final del input */
             background-color: transparent !important;
             border: none !important;
             padding: 0.375rem 0.75rem;
+        }
+
+        /* Ajuste para que el input group se vea bien con el botón */
+        .input-group:not(.has-validation)>.form-control:not(:last-child),
+        .input-group> :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-check-input) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .input-group>.btn:last-child {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        /* Ajuste específico para el input mlc-input */
+        .mlc-input {
+            border-right: none !important;
         }
     </style>
 </head>
@@ -188,7 +204,6 @@
             </div>
         </div>
     </div>
-
     <div class="modal fade" id="carModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content modal-mlc">
