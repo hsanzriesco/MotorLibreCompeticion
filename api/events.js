@@ -35,7 +35,7 @@ function parseMultipart(req) {
 
 export default async function handler(req, res) {
     const { id } = req.query;
-    let pool; // Declaramos pool fuera para que esté disponible en el finally
+    let pool; 
 
     // ==========================================================
     // ⭐ GUARDRAIL: COMPROBAR Y CONFIGURAR ANTES DE CUALQUIER FALLO ⭐
@@ -118,12 +118,20 @@ export default async function handler(req, res) {
 
             // 2. Procesar imagen si se ha subido un nuevo archivo
             if (file && file.size > 0) {
-                // Si la imagen es muy grande o la red es lenta, esto puede causar un timeout en Vercel (5s).
-                const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
-                    folder: "motor_libre_competicion_events",
-                    resource_type: "auto",
-                });
-                finalImageUrl = uploadResponse.secure_url; // Obtenemos la URL pública
+                try {
+                    // Si la imagen es muy grande o la red es lenta, esto puede causar un timeout en Vercel (5s).
+                    const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
+                        folder: "motor_libre_competicion_events",
+                        resource_type: "auto",
+                    });
+                    finalImageUrl = uploadResponse.secure_url; // Obtenemos la URL pública
+                } catch (cloudinaryError) {
+                    // 🚨 MODIFICACIÓN CLAVE: Capturar y propagar el error de Cloudinary con detalles 🚨
+                    console.error("Cloudinary Upload Error:", cloudinaryError);
+                    const errorDetails = cloudinaryError.http_code ? ` (Code: ${cloudinaryError.http_code})` : '';
+                    // Lanzamos un error más específico para ser capturado por el bloque catch principal
+                    throw new Error(`Cloudinary Upload Failed${errorDetails}: ${cloudinaryError.message}`);
+                }
 
             } else if (req.method === "PUT" && imageURL === '') {
                 // Si es una actualización y el campo hidden se envió vacío (es decir, se pulsó 'Quitar imagen')
@@ -175,9 +183,12 @@ export default async function handler(req, res) {
 
         let errorMessage = 'Error interno del servidor.';
 
-        // Diagnóstico de errores
-        if (error.message.includes('Cloudinary')) {
-            errorMessage = 'Error al subir la imagen. Revisa tus credenciales de Cloudinary.';
+        // Diagnóstico de errores mejorado
+        if (error.message.includes('Cloudinary Upload Failed')) {
+            // Este es el error personalizado con detalles de Cloudinary
+            errorMessage = `Error al subir la imagen: ${error.message}`;
+        } else if (error.message.includes('Cloudinary')) {
+            errorMessage = 'Error de autenticación de Cloudinary. Revisa tus credenciales.';
         } else if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('timeout')) {
             errorMessage = 'Error de conexión a la base de datos o timeout. Revisa la DATABASE_URL.';
         } else if (error.code === '22007' || error.code === '22P02') {
