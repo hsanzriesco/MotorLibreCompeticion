@@ -35,6 +35,7 @@ function parseMultipart(req) {
 
 export default async function handler(req, res) {
     const { id } = req.query;
+    let pool; // Declaramos pool fuera para que esté disponible en el finally
 
     // ==========================================================
     // ⭐ GUARDRAIL: COMPROBAR Y CONFIGURAR ANTES DE CUALQUIER FALLO ⭐
@@ -50,7 +51,6 @@ export default async function handler(req, res) {
 
     if (missingVars.length > 0) {
         console.error("FATAL ERROR: Faltan variables de entorno:", missingVars.join(", "));
-        // Usamos 500 para que el frontend siga viendo el error de servidor, pero la consola lo hace explícito.
         return res.status(500).json({
             success: false,
             message: `Error de configuración del servidor. Faltan las variables de entorno: ${missingVars.join(", ")}.`,
@@ -72,8 +72,8 @@ export default async function handler(req, res) {
         });
     }
 
-    // Conexión al pool PostgreSQL (creada solo si la URL existe)
-    const pool = new Pool({
+    // Inicialización del Pool de PostgreSQL
+    pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },
     });
@@ -81,11 +81,15 @@ export default async function handler(req, res) {
     // ⭐ FIN GUARDRAIL Y CONFIGURACIÓN ⭐
     // ==========================================================
 
+    let client; // Declaramos el cliente para la conexión a la DB
 
     try {
+        // ⭐ ESTABLECER CONEXIÓN (Mejora la captura de errores de DB) ⭐
+        client = await pool.connect();
+
         // === 🟢 GET: Obtener todos los eventos ===
         if (req.method === "GET") {
-            const result = await pool.query(
+            const result = await client.query(
                 `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
                 FROM events
                 ORDER BY start ASC`
@@ -114,6 +118,7 @@ export default async function handler(req, res) {
 
             // 2. Procesar imagen si se ha subido un nuevo archivo
             if (file && file.size > 0) {
+                // Si la imagen es muy grande o la red es lenta, esto puede causar un timeout en Vercel (5s).
                 const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
                     folder: "motor_libre_competicion_events",
                     resource_type: "auto",
@@ -129,7 +134,7 @@ export default async function handler(req, res) {
 
             if (req.method === "POST") {
                 // 3. Insertar el nuevo evento
-                result = await pool.query(
+                result = await client.query(
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url)
                 VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING *`,
@@ -141,7 +146,7 @@ export default async function handler(req, res) {
                 // 4. Actualizar el evento
                 if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
-                result = await pool.query(
+                result = await client.query(
                     `UPDATE events
                 SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6
                 WHERE id = $7
@@ -157,7 +162,7 @@ export default async function handler(req, res) {
         // === 🔴 DELETE: Eliminar evento ===
         if (req.method === "DELETE") {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
-            await pool.query("DELETE FROM events WHERE id = $1", [id]);
+            await client.query("DELETE FROM events WHERE id = $1", [id]);
             return res.status(200).json({ success: true, message: "Evento eliminado correctamente." });
         }
 
@@ -167,14 +172,24 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("Error general en /api/events:", error);
-        // Verificar si el error es de Cloudinary o de la base de datos
+
         let errorMessage = 'Error interno del servidor.';
+
+        // Diagnóstico de errores
         if (error.message.includes('Cloudinary')) {
             errorMessage = 'Error al subir la imagen. Revisa tus credenciales de Cloudinary.';
-        } else if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
-            errorMessage = 'Error de conexión a la base de datos. Revisa la DATABASE_URL.';
+        } else if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('timeout')) {
+            errorMessage = 'Error de conexión a la base de datos o timeout. Revisa la DATABASE_URL.';
+        } else if (error.code === '22007' || error.code === '22P02') {
+            // Error de PostgreSQL: formato de fecha/hora incorrecto o ID no válido
+            errorMessage = 'Error de formato de fecha/hora o ID inválido al intentar guardar en la DB.';
         }
 
         return res.status(500).json({ success: false, message: errorMessage });
+    } finally {
+        // 🚨 LIBERAR LA CONEXIÓN DESPUÉS DE CADA SOLICITUD
+        if (client) {
+            client.release();
+        }
     }
 }
