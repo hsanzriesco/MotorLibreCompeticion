@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- Selectores de Elementos ---
     const profileForm = document.getElementById('profile-form');
     const passwordForm = document.getElementById('password-form');
     const carForm = document.getElementById('car-form');
@@ -13,13 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ELEMENTOS DEL MODAL DE CONTRASEÑA
     const passwordModal = document.getElementById('passwordModal');
-    // const currentPasswordInput = document.getElementById('current-password'); // ¡ELIMINADO!
     const newPasswordInput = document.getElementById('new-password');
     const confirmNewPasswordInput = document.getElementById('confirm-new-password');
 
 
     // ELEMENTOS DEL MODAL DE VEHÍCULO
-    const carModal = document.getElementById('carModal'); // Obtenemos el DOM, no la instancia de Bootstrap aquí
+    const carModal = document.getElementById('carModal'); // Obtenemos el DOM
     const carModalTitle = document.getElementById('carModalTitle');
     const carIdInput = document.getElementById('car-id');
     const carNameInput = document.getElementById('car-name');
@@ -39,18 +39,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const carPhotoContainer = document.getElementById('carPhotoContainer');
     const clearCarPhotoBtn = document.getElementById('clearCarPhotoBtn');
 
-    let currentVehicle = null; // Almacenará { id, type, ...datos }
+    let currentVehicle = null;
+    let user;
 
     // --- Carga Inicial de Usuario ---
     const stored = sessionStorage.getItem('usuario');
     if (!stored) {
-        // Asumo que 'mostrarAlerta' está disponible
         mostrarAlerta("Sesión expirada. Inicia sesión.", 'error');
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
         return;
     }
 
-    let user;
     try {
         user = JSON.parse(stored);
     } catch (err) {
@@ -72,6 +71,46 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
+
+    // *******************************************************************
+    // ⭐ NUEVA LÓGICA: VISUALIZACIÓN DE CONTRASEÑA CON ÍCONOS DE BOOTSTRAP ⭐
+    // *******************************************************************
+
+    /**
+     * Configura la funcionalidad de alternar la visibilidad de la contraseña
+     * usando los íconos bi-eye-slash y bi-eye.
+     */
+    const setupPasswordToggle = () => {
+        document.querySelectorAll('.toggle-password').forEach(icon => {
+            icon.addEventListener('click', function () {
+                // 1. Obtener el ID del input objetivo
+                const targetId = this.getAttribute('data-target-id');
+                const passwordInput = document.getElementById(targetId);
+
+                if (!passwordInput) return;
+
+                // 2. Comprobar el tipo de input y cambiarlo
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+
+                // 3. Cambiar la clase del ícono (bi-eye-slash <-> bi-eye)
+                this.classList.toggle('bi-eye-slash', !isPassword); // Ojo tachado si ahora es 'text'
+                this.classList.toggle('bi-eye', isPassword);        // Ojo abierto si ahora era 'password'
+
+                // Opcional: Mantener el foco en el campo después de hacer clic
+                passwordInput.focus();
+            });
+        });
+    };
+
+    // Inicializar el toggle al cargar la página
+    setupPasswordToggle();
+
+    // *******************************************************************
+    // ⭐ FIN NUEVA LÓGICA DE CONTRASEÑA ⭐
+    // *******************************************************************
+
+
     // --- FUNCIÓN RENDERIZADO DE VEHÍCULOS (COCHE O MOTO) ---
     function renderVehicle(vehicle) {
         const isCar = vehicle.type === 'car';
@@ -80,8 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = vehicle[nameKey];
 
         const defaultImg = isCar
-            ? 'https://via.placeholder.com/400x225?text=Coche+Sin+Foto'
-            : 'https://via.placeholder.com/400x225?text=Moto+Sin+Foto';
+            ? 'https://via.placeholder.com/400x225/e50914/FFFFFF?text=Coche+Sin+Foto'
+            : 'https://via.placeholder.com/400x225/0e0e0e/FFFFFF?text=Moto+Sin+Foto';
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
@@ -146,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const motorcycles = (bikesData.motorcycles || []).map(m => ({
                 ...m,
                 type: 'motorcycle',
-                // Dejamos la clave original 'motorcycle_name'
             }));
             allVehicles.push(...motorcycles);
 
@@ -214,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         vehicleTypeSelect.disabled = isEdit;
     }
 
-    // MODIFICACIÓN DE openCarModal (Ahora maneja VEHÍCULOS)
+    // MODIFICACIÓN de openCarModal (Ahora maneja VEHÍCULOS)
     function openCarModal(vehicle = null) {
         carForm.reset();
         currentVehicle = vehicle;
@@ -310,17 +348,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCar = type === 'car';
         const nameInput = carNameInput.value.trim();
 
-        // ⭐ INICIO: VALIDACIÓN DE AÑO (El cambio solicitado) ⭐
+        // ⭐ VALIDACIÓN DE AÑO ⭐
         const vehicleYear = parseInt(carYearInput.value.trim());
         const currentYear = new Date().getFullYear();
 
         if (isNaN(vehicleYear) || vehicleYear < 1900) {
-            // Mensaje para años no numéricos o anteriores a 1900
             mostrarAlerta(`El año del vehículo no es válido. Debe ser un número entre 1900 y ${currentYear}.`, 'error');
             return;
         }
 
-        // 🚨 NUEVA VERIFICACIÓN DE AÑO SUPERIOR (con el mensaje solicitado)
+        // 🚨 VERIFICACIÓN DE AÑO SUPERIOR
         if (vehicleYear > currentYear) {
             mostrarAlerta(`El año del vehículo (${vehicleYear}) no puede ser superior al año actual (${currentYear}).`, 'error');
             return; // Detiene el envío del formulario
@@ -353,12 +390,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (file) {
             // Si hay un nuevo archivo seleccionado
             formData.append('imageFile', file);
-            // No adjuntamos photoURL, el backend sabrá que debe subir la imagen
+            // No adjuntamos photoURL
         } else if (currentURL && currentURL !== 'FILE_PENDING') {
-            // Si no hay archivo nuevo, pero hay una URL existente (o la hemos borrado explícitamente a "")
+            // Si no hay archivo nuevo, pero hay una URL existente
             formData.append('photoURL', currentURL);
         } else {
-            // Si no hay ni archivo ni URL
+            // Si no hay ni archivo ni URL (para borrar la imagen existente si no hay nada en el campo)
             formData.append('photoURL', '');
         }
 
@@ -369,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const resp = await fetch(url, {
                 method: id ? 'PUT' : 'POST',
-                // Importante: No establecer Content-Type para FormData, el navegador lo hace automáticamente
+                // Importante: No establecer Content-Type para FormData
                 body: formData
             });
 
@@ -424,49 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Inicialización ---
-    loadVehicles();
-
     // *******************************************************************
-    // ⭐ LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA CON ICONOS PERSONALIZADOS ⭐
-    // *******************************************************************
-    document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', function () {
-            // 1. Obtener el ID del input objetivo y el span del icono
-            const targetId = this.getAttribute('data-target-id');
-            const passwordInput = document.getElementById(targetId);
-            // Seleccionamos el span que tiene las clases de icono personalizadas
-            const iconSpan = this.querySelector('.password-toggle-icon');
-
-            if (!passwordInput || !iconSpan) return;
-
-            // 2. Comprobar el tipo de input y cambiarlo
-            const isPassword = passwordInput.type === 'password';
-
-            passwordInput.type = isPassword ? 'text' : 'password';
-
-            // 3. Cambiar el icono (ojo tachado vs. ojo abierto)
-            if (isPassword) {
-                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto (show-password)
-                iconSpan.classList.remove('hide-password');
-                iconSpan.classList.add('show-password');
-            } else {
-                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado (hide-password)
-                iconSpan.classList.remove('show-password');
-                iconSpan.classList.add('hide-password');
-            }
-
-            // Opcional: Mantener el foco en el campo después de hacer clic
-            passwordInput.focus();
-        });
-    });
-    // *******************************************************************
-    // ⭐ FIN LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA ⭐
-    // *******************************************************************
-
-
-    // *******************************************************************
-    // EL RESTO DE FUNCIONES (INCLUIDAS LAS QUE FALTABAN)
+    // ⭐ EL RESTO DE FUNCIONES (CONFIRMACIÓN, PERFIL, CONTRASEÑA, LOGOUT) ⭐
     // *******************************************************************
 
     /**
@@ -611,14 +607,11 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // const currentPassword = currentPasswordInput.value; // ¡ELIMINADO!
-
         const newPassword = newPasswordInput.value;
         const confirmNewPassword = confirmNewPasswordInput.value;
 
         // Se envía un campo de contraseña actual vacía, asumiendo que el backend 
-        // permite el cambio solo con la nueva contraseña si el campo no está presente,
-        // o que hay otra capa de autenticación para esta acción.
+        // permite el cambio solo con la nueva contraseña si el campo no está presente.
         const currentPassword = '';
 
         if (newPassword !== confirmNewPassword) {
@@ -688,4 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarAlerta('Cierre de sesión cancelado', 'info');
         }
     });
+
+    // --- Inicialización ---
+    loadVehicles();
 });
