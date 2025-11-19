@@ -307,8 +307,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const vehicleYear = parseInt(carYearInput.value.trim());
         const currentYear = new Date().getFullYear();
 
-        if (isNaN(vehicleYear) || vehicleYear > currentYear || vehicleYear < 1900) {
-            mostrarAlerta(`El año del vehículo no es válido. Debe ser entre 1900 y ${currentYear} (el año actual).`, 'error');
+        if (isNaN(vehicleYear) || vehicleYear < 1900) {
+            // Mensaje para años no numéricos o anteriores a 1900
+            mostrarAlerta(`El año del vehículo no es válido. Debe ser un número entre 1900 y ${currentYear}.`, 'error');
+            return;
+        }
+
+        // 🚨 NUEVA VERIFICACIÓN DE AÑO SUPERIOR (con el mensaje solicitado)
+        if (vehicleYear > currentYear) {
+            mostrarAlerta(`El año del vehículo (${vehicleYear}) no puede ser superior al año actual (${currentYear}).`, 'error');
             return; // Detiene el envío del formulario
         }
         // ⭐ FIN: VALIDACIÓN DE AÑO ⭐
