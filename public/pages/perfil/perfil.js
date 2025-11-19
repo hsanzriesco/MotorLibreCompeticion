@@ -106,6 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const allVehicles = [];
         const userId = encodeURIComponent(user.id);
 
+        let carsHtml = '';
+        let motorcyclesHtml = '';
+
         // 1. Cargar Coches
         try {
             const carsResp = await fetch(`/api/carGarage?user_id=${userId}`);
@@ -115,11 +118,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 type: 'car'
             }));
             allVehicles.push(...cars);
+
+            // Renderizar coches si hay
+            if (cars.length > 0) {
+                carsHtml += '<h3 class="vehicle-section-title">Coches</h3><div class="row">';
+                cars.forEach(car => {
+                    carsHtml += renderVehicle(car);
+                });
+                carsHtml += '</div>';
+            }
+
         } catch (e) {
             console.error("Error al cargar coches:", e.message);
         }
 
-        // 2. Cargar Motos (CORRECCIÓN: NO mapear motorcycle_name a car_name)
+        // 2. Cargar Motos
         try {
             const bikesResp = await fetch(`/api/motosGarage?user_id=${userId}`);
             const bikesData = await bikesResp.json();
@@ -129,12 +142,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Dejamos la clave original 'motorcycle_name'
             }));
             allVehicles.push(...motorcycles);
+
+            // Renderizar motos si hay
+            if (motorcycles.length > 0) {
+                motorcyclesHtml += '<h3 class="vehicle-section-title">Motos</h3><div class="row">';
+                motorcycles.forEach(moto => {
+                    motorcyclesHtml += renderVehicle(moto);
+                });
+                motorcyclesHtml += '</div>';
+            }
         } catch (e) {
             console.error("Error al cargar motos:", e.message);
         }
 
-        // 3. Combinar y mostrar
+        // 3. Combinar y mostrar con el Separador
         carList.innerHTML = '';
+        let finalHtml = '';
 
         if (!allVehicles.length) {
             noCarsMessage.style.display = 'block';
@@ -142,7 +165,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         noCarsMessage.style.display = 'none';
-        allVehicles.forEach(v => carList.innerHTML += renderVehicle(v));
+
+        // 3.1. Añadir Coches
+        finalHtml += carsHtml;
+
+        // 3.2. ⭐ Insertar Separador si hay COCHES Y MOTOS ⭐
+        if (carsHtml.length > 0 && motorcyclesHtml.length > 0) {
+            finalHtml += '<hr class="vehicle-separator">';
+        }
+
+        // 3.3. Añadir Motos
+        finalHtml += motorcyclesHtml;
+
+        carList.innerHTML = finalHtml; // Renderizamos todo el contenido combinado
 
         // Event Listener para abrir modal al hacer clic en el vehículo
         carList.querySelectorAll('.car-card').forEach(item => {
