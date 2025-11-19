@@ -569,28 +569,25 @@ document.addEventListener('DOMContentLoaded', () => {
         passwordForm.reset();
     });
 
+    // *******************************************************************
+    // ⭐ BLOQUE DE CÓDIGO MODIFICADO PARA ELIMINAR VERIFICACIÓN ACTUAL ⭐
+    // *******************************************************************
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // Leemos el campo actual, pero lo IGNORAMOS para simular contraseña olvidada en sesión
         const actual = document.getElementById('current-password').value;
         const nueva = document.getElementById('new-password').value;
         const repetir = document.getElementById('confirm-new-password').value;
 
         if (nueva !== repetir) {
-            mostrarAlerta('Las contraseñas no coinciden', 'error');
+            mostrarAlerta('Las nuevas contraseñas no coinciden', 'error');
             return;
         }
 
-        if (!user.password) {
-            mostrarAlerta('Error interno. Contraseña anterior no disponible.', 'error');
-            return;
-        }
-
-        // ⚠️ ADVERTENCIA: Esta verificación es insegura, la contraseña no debería estar en sessionStorage
-        if (actual !== user.password) {
-            mostrarAlerta('Contraseña actual incorrecta', 'error');
-            return;
-        }
+        // ⚠️ ADVERTENCIA: Se elimina la verificación de la contraseña actual (user.password)
+        // haciendo el cambio de contraseña INSEGURO, pero cumpliendo tu solicitud.
+        // if (actual !== user.password) { ... } <- ELIMINADO
 
         const confirmar = await mostrarConfirmacion('¿Quieres actualizar tu contraseña?', 'Actualizar');
         if (!confirmar) {
@@ -599,6 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // Enviamos solo la ID y la NUEVA contraseña al servidor
             const resp = await fetch('/api/userList', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -608,25 +606,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const json = await resp.json();
 
             if (resp.ok && json && json.success === true) {
+                // Actualización local (insegura, solo para mantener la funcionalidad de tu mock)
                 user.password = nueva;
                 sessionStorage.setItem('usuario', JSON.stringify(user));
                 mostrarAlerta('Contraseña actualizada correctamente.', 'exito');
             } else {
+                // Fallback de actualización local si el servidor falla
                 user.password = nueva;
                 sessionStorage.setItem('usuario', JSON.stringify(user));
                 mostrarAlerta('Error en la respuesta del servidor. Contraseña actualizada localmente.', 'info');
             }
         } catch {
+            // Fallback de actualización local si hay error de red
             user.password = nueva;
             sessionStorage.setItem('usuario', JSON.stringify(user));
             mostrarAlerta('Error de red. Contraseña actualizada localmente.', 'info');
         }
 
-        // Cierra el modal de contraseña (se asume que existe)
+        // Cierra el modal de contraseña 
         const passwordModalElement = document.getElementById('passwordModal');
         const passwordModalInstance = bootstrap.Modal.getInstance(passwordModalElement);
         if (passwordModalInstance) passwordModalInstance.hide();
     });
+    // *******************************************************************
+    // ⭐ FIN DEL BLOQUE DE CÓDIGO MODIFICADO ⭐
+    // *******************************************************************
 
     // Añadir lógica de cierre de sesión
     logoutBtn.addEventListener('click', (e) => {
