@@ -11,14 +11,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
 
-    // ⭐ NUEVOS ELEMENTOS DE IMAGEN ⭐
+    // ⭐ NUEVOS ELEMENTOS DEL MODAL PARA MOTOS/COCHES ⭐
+    const vehicleTypeSelect = document.getElementById('vehicle-type-select');
+    const vehicleTypeInput = document.getElementById('vehicle-type'); // Hidden input
+    const vehicleNameLabel = document.getElementById('vehicle-name-label');
+    // ⭐ FIN NUEVOS ELEMENTOS ⭐
+
+    // ⭐ ELEMENTOS DE IMAGEN ⭐
     const carPhotoFileInput = document.getElementById('carPhotoFile');
-    const carPhotoUrlInput = document.getElementById('car-photo-url'); // Nuevo ID
+    const carPhotoUrlInput = document.getElementById('car-photo-url');
     const carPhotoPreview = document.getElementById('carPhotoPreview');
     const carPhotoContainer = document.getElementById('carPhotoContainer');
     const clearCarPhotoBtn = document.getElementById('clearCarPhotoBtn');
 
-    let currentCarId = null;
+    let currentVehicle = null; // Almacenará { id, type, ...datos }
 
     const stored = sessionStorage.getItem('usuario');
     if (!stored) {
@@ -47,71 +53,111 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
-    // ⭐ FUNCIÓN RENDERCAR ACTUALIZADA CON EL DISEÑO DE TARJETA MEJORADO ⭐
-    function renderCar(car) {
-        // Usar imagen de Cloudinary si existe, si no, usar la placeholder
-        const defaultImg = 'https://via.placeholder.com/400x225?text=Sin+Foto'; // Placeholder 16:9
-        const imgSrc = escapeHtml(car.photo_url) || defaultImg;
+    // ⭐ FUNCIÓN RENDERIZADO DE VEHÍCULOS (COCHE O MOTO) ⭐
+    function renderVehicle(vehicle) {
+        // Determina si es coche o moto
+        const isCar = vehicle.type === 'car';
+        const nameKey = isCar ? 'car_name' : 'motorcycle_name';
+        const name = vehicle[nameKey];
+
+        // Usar imagen de Cloudinary si existe, si no, usar la placeholder específica
+        const defaultImg = isCar
+            ? 'https://via.placeholder.com/400x225?text=Coche+Sin+Foto'
+            : 'https://via.placeholder.com/400x225?text=Moto+Sin+Foto';
+        const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
-        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-car-id="${car.id}">
-            <div class="car-card" data-car-id="${car.id}" role="button" tabindex="0">
-                <div class="car-image-container">
-                    <img src="${imgSrc}" 
-                         alt="Foto de ${escapeHtml(car.car_name)}" 
-                         loading="lazy"
-                         onerror="this.onerror=null;this.src='${defaultImg}';" />
-                </div>
-                <div class="car-details-content">
-                    <div class="car-name-group">
-                        <h5 class="car-name">${escapeHtml(car.car_name)}</h5>
-                        <p class="car-model-year">
-                            ${escapeHtml(car.model || 'Modelo N/A')} (${car.year || 'Año N/A'})
-                        </p>
-                    </div>
-                    <button class="btn btn-edit-car">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
+            <div class="car-card" role="button" tabindex="0">
+                <div class="car-image-container">
+                    <img src="${imgSrc}" 
+                         alt="Foto de ${escapeHtml(name)}" 
+                         loading="lazy"
+                         onerror="this.onerror=null;this.src='${defaultImg}';" />
+                </div>
+                <div class="car-details-content">
+                    <div class="car-name-group">
+                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
+                        <p class="car-model-year">
+                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
+                        </p>
+                    </div>
+                    <button class="btn btn-edit-car">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     }
 
-    async function loadCars() {
+    // ⭐ FUNCIÓN CARGA DE VEHÍCULOS (COCHES + MOTOS) ⭐
+    async function loadVehicles() {
         try {
-            const resp = await fetch(`/api/carGarage?user_id=${encodeURIComponent(user.id)}`);
-            if (!resp.ok) throw new Error('Error al cargar coches');
-            const data = await resp.json();
+            const userId = encodeURIComponent(user.id);
 
+            // 1. Cargar Coches
+            const carsResp = await fetch(`/api/carGarage?user_id=${userId}`);
+            const carsData = await carsResp.json();
+            const cars = (carsData.cars || []).map(c => ({
+                ...c,
+                type: 'car'
+            }));
+
+            // 2. Cargar Motos (usando la ruta motosGarage)
+            const bikesResp = await fetch(`/api/motosGarage?user_id=${userId}`);
+            const bikesData = await bikesResp.json();
+            const motorcycles = (bikesData.motorcycles || []).map(m => ({
+                ...m,
+                type: 'motorcycle',
+                // Para simplificar la compatibilidad con el modal, mapeamos 'motorcycle_name' a 'car_name'
+                car_name: m.motorcycle_name
+            }));
+
+            // 3. Combinar y mostrar
+            const allVehicles = [...cars, ...motorcycles];
             carList.innerHTML = '';
 
-            if (!data.cars || !data.cars.length) {
+            if (!allVehicles.length) {
                 noCarsMessage.style.display = 'block';
                 return;
             }
 
             noCarsMessage.style.display = 'none';
-            data.cars.forEach(car => carList.innerHTML += renderCar(car));
+            allVehicles.forEach(v => carList.innerHTML += renderVehicle(v));
 
-            // ⭐ EVENT LISTENER EN LA NUEVA CLASE .car-card ⭐
+            // ⭐ EVENT LISTENER para abrir modal ⭐
             carList.querySelectorAll('.car-card').forEach(item => {
                 item.addEventListener('click', () => {
-                    const el = item.closest('[data-car-id]');
-                    const id = parseInt(el.dataset.carId);
-                    const car = data.cars.find(c => c.id === id);
-                    openCarModal(car);
-                    new bootstrap.Modal(document.getElementById('carModal')).show();
+                    const el = item.closest('[data-vehicle-id]');
+                    const id = parseInt(el.dataset.vehicleId);
+                    const type = el.dataset.vehicleType;
+                    const vehicle = allVehicles.find(v => v.id === id && v.type === type);
+
+                    if (vehicle) {
+                        openCarModal(vehicle);
+                        new bootstrap.Modal(document.getElementById('carModal')).show();
+                    }
                 });
             });
 
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error("Error al cargar vehículos:", e);
+            mostrarAlerta("Error al cargar el garaje.", 'error');
+        }
     }
 
-    loadCars();
+    loadVehicles();
 
-    // ⭐ LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN DEL COCHE ⭐
+    // ⭐ LÓGICA DE CAMBIO DE SELECTOR EN EL MODAL ⭐
+    vehicleTypeSelect.addEventListener('change', (e) => {
+        const selectedType = e.target.value;
+        const nameLabel = selectedType === 'car' ? 'Nombre del coche' : 'Nombre de la moto';
+        vehicleNameLabel.textContent = nameLabel;
+        vehicleTypeInput.value = selectedType; // Actualiza el hidden input
+    });
 
-    // Previsualizar nuevo archivo seleccionado
+
+    // ⭐ LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN DEL VEHÍCULO ⭐
     carPhotoFileInput.addEventListener('change', function () {
         const file = this.files[0];
 
@@ -120,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
             carPhotoPreview.src = fileUrl;
             carPhotoContainer.style.display = 'block';
         } else {
-            // Si el usuario cancela la selección, mostramos la URL existente si la hay
             if (carPhotoUrlInput.value) {
                 carPhotoPreview.src = carPhotoUrlInput.value;
                 carPhotoContainer.style.display = 'block';
@@ -130,20 +175,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Botón para eliminar la imagen
     clearCarPhotoBtn?.addEventListener('click', (e) => {
         e.preventDefault();
-        carPhotoUrlInput.value = ""; // Clave: Esto indica al backend que la URL debe ser NULL
-        carPhotoFileInput.value = ""; // Limpia el archivo subido
+        carPhotoUrlInput.value = "";
+        carPhotoFileInput.value = "";
         carPhotoContainer.style.display = 'none';
         carPhotoPreview.src = '';
     });
 
 
-    // ⭐ MODIFICACIÓN DE openCarModal ⭐
-    function openCarModal(car) {
+    // ⭐ MODIFICACIÓN DE openCarModal (Ahora maneja VEHÍCULOS) ⭐
+    function openCarModal(vehicle) {
         carForm.reset();
-        currentCarId = null;
+        currentVehicle = null;
 
         // Limpiar campos de imagen
         carPhotoFileInput.value = "";
@@ -152,25 +196,40 @@ document.addEventListener('DOMContentLoaded', () => {
         carPhotoPreview.src = '';
 
 
-        if (car) {
-            document.getElementById('carModalTitle').textContent = 'Editar coche';
-            document.getElementById('car-id').value = car.id;
-            document.getElementById('car-name').value = car.car_name;
-            document.getElementById('car-model').value = car.model || '';
-            document.getElementById('car-year').value = car.year || '';
-            document.getElementById('car-description').value = car.description || '';
+        if (vehicle) {
+            currentVehicle = vehicle;
+            const isCar = vehicle.type === 'car';
+            const nameKey = isCar ? 'car_name' : 'motorcycle_name';
 
-            // ⭐ Lógica de la imagen existente ⭐
-            if (car.photo_url) {
-                carPhotoUrlInput.value = car.photo_url;
-                carPhotoPreview.src = car.photo_url;
+            document.getElementById('carModalTitle').textContent = `Editar ${isCar ? 'coche' : 'moto'}`;
+            document.getElementById('car-id').value = vehicle.id;
+            document.getElementById('car-name').value = vehicle[nameKey];
+            document.getElementById('car-model').value = vehicle.model || '';
+            document.getElementById('car-year').value = vehicle.year || '';
+            document.getElementById('car-description').value = vehicle.description || '';
+
+            // Setear el selector
+            vehicleTypeSelect.value = vehicle.type;
+            vehicleTypeSelect.disabled = true; // No permitir cambiar el tipo al editar
+            vehicleTypeInput.value = vehicle.type;
+
+            // Actualizar label
+            vehicleNameLabel.textContent = isCar ? 'Nombre del coche' : 'Nombre de la moto';
+
+            // Lógica de la imagen existente
+            if (vehicle.photo_url) {
+                carPhotoUrlInput.value = vehicle.photo_url;
+                carPhotoPreview.src = vehicle.photo_url;
                 carPhotoContainer.style.display = 'block';
             }
 
-            currentCarId = car.id;
             deleteCarBtn.style.display = 'inline-block';
         } else {
-            document.getElementById('carModalTitle').textContent = 'Añadir coche';
+            document.getElementById('carModalTitle').textContent = 'Añadir vehículo';
+            vehicleTypeSelect.value = 'car'; // Default a coche
+            vehicleTypeSelect.disabled = false; // Permitir cambiar al añadir
+            vehicleTypeInput.value = 'car';
+            vehicleNameLabel.textContent = 'Nombre del coche';
             deleteCarBtn.style.display = 'none';
         }
     }
@@ -180,22 +239,27 @@ document.addEventListener('DOMContentLoaded', () => {
         new bootstrap.Modal(document.getElementById('carModal')).show();
     });
 
-    // ⭐ MODIFICACIÓN DE carForm.submit PARA USAR FORMDATA ⭐
+    // ⭐ MODIFICACIÓN DE carForm.submit PARA VEHÍCULOS ⭐
     carForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const id = currentCarId;
-        const carName = document.getElementById('car-name').value.trim();
+        const id = currentVehicle ? currentVehicle.id : null;
+        const type = vehicleTypeInput.value;
+        const isCar = type === 'car';
+        const nameInput = document.getElementById('car-name').value.trim();
 
-        if (!carName) {
-            mostrarAlerta('El nombre del coche es obligatorio', 'advertencia');
+        if (!nameInput) {
+            mostrarAlerta(`El nombre del ${isCar ? 'coche' : 'moto'} es obligatorio`, 'advertencia');
             return;
         }
 
         // 1. CREAR FORMDATA
         const formData = new FormData();
         formData.append('user_id', user.id);
-        formData.append('car_name', carName);
+
+        // CLAVE: Usar el nombre de campo correcto según el tipo de vehículo
+        formData.append(isCar ? 'car_name' : 'motorcycle_name', nameInput);
+
         formData.append('model', document.getElementById('car-model').value.trim() || '');
         formData.append('year', document.getElementById('car-year').value.trim() || '');
         formData.append('description', document.getElementById('car-description').value.trim() || '');
@@ -209,37 +273,68 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentURL = carPhotoUrlInput.value;
 
         if (file) {
-            // Caso 1: Nuevo archivo subido. Se añade como 'imageFile'
             formData.append('imageFile', file);
         } else {
-            // Caso 2: No hay archivo nuevo. Se envía la URL existente o vacía como 'photoURL'
             formData.append('photoURL', currentURL);
         }
 
         try {
-            const url = id ? `/api/carGarage?id=${id}` : "/api/carGarage";
+            // CLAVE: Seleccionar la API correcta
+            const apiSegment = isCar ? 'carGarage' : 'motosGarage';
+            const url = id ? `/api/${apiSegment}?id=${id}` : `/api/${apiSegment}`;
 
             const resp = await fetch(url, {
                 method: id ? 'PUT' : 'POST',
-                body: formData // ⭐ CLAVE: Enviamos el FormData
+                body: formData
             });
 
             const json = await resp.json();
             if (!resp.ok || !json.ok) throw new Error(json.msg || 'Fallo en la respuesta del servidor.');
 
-            mostrarAlerta(id ? 'Coche actualizado' : 'Coche añadido', 'exito');
+            mostrarAlerta(id ? 'Vehículo actualizado' : 'Vehículo añadido', 'exito');
 
-            await loadCars();
+            await loadVehicles(); // Recargar la lista combinada
             const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
             if (modal) modal.hide();
 
         } catch (e) {
-            console.error("Error al guardar el coche:", e);
-            mostrarAlerta('Error guardando coche. ' + e.message, 'error');
+            console.error("Error al guardar el vehículo:", e);
+            mostrarAlerta('Error guardando vehículo. ' + e.message, 'error');
         }
     });
 
-    // ... (El resto de funciones auxiliares y manejadores de perfil/contraseña quedan sin cambios) ...
+    // ⭐ MODIFICACIÓN DE deleteCarBtn PARA VEHÍCULOS ⭐
+    deleteCarBtn.addEventListener('click', async () => {
+        if (!currentVehicle) return;
+
+        const isCar = currentVehicle.type === 'car';
+        const itemName = isCar ? 'coche' : 'moto';
+
+        const confirmar = await mostrarConfirmacion(`¿Seguro que quieres eliminar este ${itemName}?`, 'Eliminar');
+        if (!confirmar) {
+            mostrarAlerta('Eliminación cancelada', 'info');
+            return;
+        }
+
+        try {
+            // CLAVE: Seleccionar la API correcta
+            const apiSegment = isCar ? 'carGarage' : 'motosGarage';
+            const resp = await fetch(`/api/${apiSegment}?id=${encodeURIComponent(currentVehicle.id)}`, { method: 'DELETE' });
+            if (!resp.ok) throw 0;
+
+            mostrarAlerta('Vehículo eliminado', 'exito');
+            await loadVehicles();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
+            if (modal) modal.hide();
+
+        } catch {
+            mostrarAlerta('Error eliminando vehículo.', 'error');
+        }
+    });
+
+    // *******************************************************************
+    // EL RESTO DE FUNCIONES DE PERFIL, CONTRASEÑA Y CONFIRMACIÓN NO CAMBIAN
+    // *******************************************************************
 
     /**
      * Muestra una ventana de confirmación centralizada con el estilo de la app (negro/rojo).
@@ -325,30 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.addEventListener('keydown', e => { if (e.key === 'Escape') cleanup(false); }, { once: true });
         });
     }
-
-    deleteCarBtn.addEventListener('click', async () => {
-        if (!currentCarId) return;
-
-        // Usamos 'Eliminar' como texto de confirmación
-        const confirmar = await mostrarConfirmacion('¿Seguro que quieres eliminar este coche?', 'Eliminar');
-        if (!confirmar) {
-            mostrarAlerta('Eliminación cancelada', 'info');
-            return;
-        }
-
-        try {
-            const resp = await fetch(`/api/carGarage?id=${encodeURIComponent(currentCarId)}`, { method: 'DELETE' });
-            if (!resp.ok) throw 0;
-
-            mostrarAlerta('Coche eliminado', 'exito');
-            await loadCars();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('carModal'));
-            if (modal) modal.hide();
-
-        } catch {
-            mostrarAlerta('Error eliminando coche.', 'error');
-        }
-    });
 
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
