@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const res = await fetch("/api/events");
             const json = await res.json();
-            if (!json.success || !Array.isArray(json.data)) throw new Error();
+            if (!json.success || !Array.isArray(json.data)) throw new Error(json.message || "Error desconocido al obtener eventos.");
             return json.data.map((e) => ({
                 id: e.id,
                 title: e.title,
@@ -103,12 +103,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             }));
         } catch (e) {
             console.error("Error al obtener eventos:", e);
-            alert("Error al cargar los eventos");
+            alert("Error al cargar los eventos: " + e.message);
             return [];
         }
     }
 
-    // ===== CALENDARIO =====
+    // ===== CALENDARIO (Sin cambios) =====
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         selectable: true,
@@ -142,9 +142,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             descriptionInput.value = extendedProps.description || "";
             locationInput.value = extendedProps.location || "";
 
-            // ⭐ SOLUCIÓN DEL InvalidStateError: ASIGNAR A HIDDEN y VACIAR FILE ⭐
+            // ASIGNAR URL EXISTENTE a hidden y VACIAR input file
             imageURLInput.value = currentURL; // Guarda la URL existente
-            imageFileInput.value = ""; // Debe vaciarse para evitar el error al rellenar el formulario
+            imageFileInput.value = ""; // Debe vaciarse al abrir el formulario
 
             // Lógica para previsualizar la imagen existente
             if (currentURL) {
@@ -178,7 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     calendar.render();
 
-    // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN =====
+    // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN (Sin cambios) =====
 
     // Previsualizar nuevo archivo seleccionado (Usa URL.createObjectURL)
     imageFileInput.addEventListener('change', function () {
@@ -188,7 +188,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const fileUrl = URL.createObjectURL(file);
             currentImagePreview.src = fileUrl;
             currentImageContainer.style.display = 'block';
-            // Al seleccionar un nuevo archivo, ignoramos la URL existente.
+            // Al seleccionar un nuevo archivo, el valor de imageURLInput sigue siendo la URL antigua,
+            // pero el backend priorizará el archivo en imageFile.
         } else {
             // Si el usuario cancela la selección de archivo, mostramos la URL que estaba guardada (si la hay)
             if (imageURLInput.value) {
@@ -203,13 +204,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Botón para eliminar la imagen
     clearImageBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        imageURLInput.value = ""; // Indica al backend que la URL debe ser NULL
+        imageURLInput.value = ""; // INDICA al backend que la URL debe ser NULL
         imageFileInput.value = ""; // Limpia el archivo subido
         currentImageContainer.style.display = 'none';
     });
 
 
-    // ===== GUARDAR EVENTO (Usa FormData para enviar el archivo) =====
+    // ===== GUARDAR EVENTO (CORRECCIÓN CLAVE EN LA LÓGICA DE FormData) =====
     saveEventBtn.addEventListener("click", async () => {
         const id = eventIdInput.value;
         const date = startDateInput.value;
@@ -225,7 +226,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const start = `${date}T${startTime}`;
         const end = `${date}T${endTime}`;
 
-        // ⭐ 1. Crear FormData para enviar archivos al backend ⭐
+        // 1. Crear FormData para enviar archivos al backend
         const formData = new FormData();
         formData.append('title', titleInput.value.trim());
         formData.append('description', descriptionInput.value.trim());
@@ -236,16 +237,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         const file = imageFileInput.files[0];
         const currentURL = imageURLInput.value;
 
-        // 2. Adjuntar archivo O URL existente
+        // ⭐ LÓGICA CORREGIDA PARA ADJUNTAR IMAGEN ⭐
         if (file) {
-            // Si hay un nuevo archivo subido, lo adjuntamos
+            // Caso 1: Hay un nuevo archivo subido. Lo adjuntamos bajo 'imageFile'
             formData.append('imageFile', file);
-            // IMPORTANTE: NO enviamos imageURLInput.value para que el backend suba la nueva imagen.
+
+            // Si hay un archivo, NO enviamos el campo imageURL para que el backend suba y use la nueva URL.
+            // Si el backend recibe 'imageFile', ignora 'imageURL' (excepto para PUT, donde el archivo anula la URL).
+
         } else {
-            // Si NO hay archivo nuevo, enviamos la URL existente (o "" si se pulsó 'Quitar imagen')
-            // El backend usa este campo para saber si debe mantener la URL o poner NULL.
+            // Caso 2: NO hay archivo nuevo. Enviamos la URL existente.
+            // Si currentURL es "" (vacío), es porque se pulsó 'Quitar imagen', y el backend pondrá NULL.
+            // Si currentURL tiene una URL, el backend la mantendrá.
             formData.append('imageURL', currentURL);
         }
+        // ⭐ FIN LÓGICA CORREGIDA ⭐
 
         try {
             const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
