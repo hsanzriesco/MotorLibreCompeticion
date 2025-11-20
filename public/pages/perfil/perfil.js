@@ -347,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCar = currentVehicle.type === 'car';
         const itemName = isCar ? 'coche' : 'moto';
 
+        // Usa la función de confirmación antes de la eliminación
         const confirmar = await mostrarConfirmacion(`¿Seguro que quieres eliminar este ${itemName}?`, 'Eliminar');
         if (!confirmar) {
             mostrarAlerta('Eliminación cancelada', 'info');
@@ -376,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // CONFIRMACIONES
+    // CONFIRMACIONES (Esta función es la que crea el modal en el centro de la pantalla)
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             if (document.getElementById('mlc-confirm-overlay')) {
@@ -507,21 +508,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ CERRAR SESIÓN (AHORA SÍ FUNCIONA CORRECTAMENTE)
+    // 🚀 LÓGICA DE CERRAR SESIÓN (Ya cumple con la confirmación solicitada)
     logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
 
+        // Muestra el modal de confirmación
         const confirmar = await mostrarConfirmacion(
             '¿Seguro que quieres cerrar sesión?',
             'Cerrar sesión'
         );
 
         if (!confirmar) {
+            // Acción de CANCELAR
             mostrarAlerta('Cierre de sesión cancelado', 'info');
             return;
         }
 
-        // Solo si CONFIRMA:
+        // Acción de ACEPTAR: Cierra la sesión y redirige
         sessionStorage.removeItem('usuario');
         mostrarAlerta('Sesión cerrada correctamente', 'exito');
 
