@@ -115,6 +115,7 @@ textarea:focus,
 }
 
 /* --- ESTILOS ANTIGUOS ELIMINADOS/REEMPLAZADOS --- */
+/* Eliminamos el estilo obsoleto para usar la nueva clase .car-card */
 .car-item {
     display: none !important;
 }
@@ -263,37 +264,53 @@ label {
 }
 
 /* ======================================================= */
-/* ⭐ NUEVOS ESTILOS PARA EL TOGGLE DE CONTRASEÑA ⭐ */
+/* ⭐ ESTILOS AÑADIDOS PARA EL TOGGLE DE CONTRASEÑA ⭐ */
+/* Estos estilos hacen que el ícono de ojo sea tu imagen personalizada */
 /* ======================================================= */
 
-.password-wrapper {
-    position: relative;
-}
-
-.password-wrapper .mlc-input {
-    /* Ajuste el padding-right del input para que el ícono quepa sin superponer el texto */
-    padding-right: 2.8rem !important;
-}
-
-.toggle-password {
-    position: absolute;
-    top: 50%;
-    /* Centra verticalmente */
-    right: 12px;
-    /* Espacio desde el borde derecho */
-    transform: translateY(-50%);
+.password-toggle-icon {
+    width: 32px;
+    height: 32px;
+    display: block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     cursor: pointer;
-    font-size: 1.4rem;
-    /* Tamaño del ícono */
-    color: var(--mlc-red) !important;
-    /* Color del ícono */
-    transition: color 0.15s ease;
-    z-index: 5;
-    /* Asegura que el ícono esté por encima del input */
-    line-height: 1;
 }
 
-.toggle-password:hover {
-    color: #ff333f !important;
-    /* Un poco más claro en hover */
+/* Asegúrate de que las rutas a tus imágenes sean correctas */
+.password-toggle-icon.hide-password {
+    /* Icono de ojo tachado (estado de contraseña oculta) */
+    background-image: url('../../img/icono-ojo-tachado.png');
+}
+
+.password-toggle-icon.show-password {
+    /* Icono de ojo abierto (estado de contraseña visible) */
+    background-image: url('../../img/icono-ojo-abierto.png');
+}
+
+.btn-mlc-password-toggle {
+    /* El botón que envuelve el ícono */
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0.375rem 0.75rem;
+    /* El padding estándar de Bootstrap para botones */
+}
+
+/* ⚠️ Correcciones para Input Group ⚠️ */
+/* Ajuste el border-radius para que el input (mlc-input) y el botón (btn) se unan correctamente. */
+
+/* Quitar el borde derecho al input y redondear solo el lado izquierdo */
+.input-group>.mlc-input:not(:last-child) {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-right: none !important;
+}
+
+/* Quitar el borde izquierdo al botón y redondear solo el lado derecho */
+.input-group>.btn-mlc-password-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    /* Mantiene el borde que tenía el input en ese lado */
 }
