@@ -267,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         carPhotoPreview.src = '';
     });
 
-
     // GUARDAR VEHÍCULO
     carForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -508,14 +507,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // CERRAR SESIÓN
+    // CERRAR SESIÓN (MODIFICADO)
     logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        const confirmar = await mostrarConfirmacion('¿Seguro que quieres cerrar sesión?', 'Cerrar');
+
+        const confirmar = await mostrarConfirmacion(
+            '¿Seguro que quieres cerrar sesión?',
+            'Cerrar sesión'
+        );
+
         if (confirmar) {
             sessionStorage.removeItem('usuario');
             mostrarAlerta('Sesión cerrada', 'info');
-            setTimeout(() => window.location.href = '/index.html', 800);
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 800);
         } else {
             mostrarAlerta('Cierre de sesión cancelado', 'info');
         }
