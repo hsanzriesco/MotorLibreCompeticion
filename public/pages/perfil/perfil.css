@@ -272,22 +272,28 @@ label {
 
 .password-wrapper .mlc-input {
     /* Ajuste el padding-right del input para que el ícono quepa sin superponer el texto */
-    padding-right: 2.8rem !important; 
+    padding-right: 2.8rem !important;
 }
 
 .toggle-password {
     position: absolute;
-    top: 50%; /* Centra verticalmente */
-    right: 12px; /* Espacio desde el borde derecho */
+    top: 50%;
+    /* Centra verticalmente */
+    right: 12px;
+    /* Espacio desde el borde derecho */
     transform: translateY(-50%);
     cursor: pointer;
-    font-size: 1.4rem; /* Tamaño del ícono */
-    color: var(--mlc-red) !important; /* Color del ícono */
+    font-size: 1.4rem;
+    /* Tamaño del ícono */
+    color: var(--mlc-red) !important;
+    /* Color del ícono */
     transition: color 0.15s ease;
-    z-index: 5; /* Asegura que el ícono esté por encima del input */
+    z-index: 5;
+    /* Asegura que el ícono esté por encima del input */
     line-height: 1;
 }
 
 .toggle-password:hover {
-    color: #ff333f !important; /* Un poco más claro en hover */
+    color: #ff333f !important;
+    /* Un poco más claro en hover */
 }

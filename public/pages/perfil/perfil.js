@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // *******************************************************************
-    // ⭐ NUEVA LÓGICA: VISUALIZACIÓN DE CONTRASEÑA CON ÍCONOS DE BOOTSTRAP ⭐
+    // ⭐ MODIFICACIÓN: VISUALIZACIÓN DE CONTRASEÑA CON ÍCONOS DE BOOTSTRAP ⭐
     // *******************************************************************
 
     /**
@@ -94,8 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 passwordInput.type = isPassword ? 'text' : 'password';
 
                 // 3. Cambiar la clase del ícono (bi-eye-slash <-> bi-eye)
-                this.classList.toggle('bi-eye-slash', !isPassword); // Ojo tachado si ahora es 'text'
-                this.classList.toggle('bi-eye', isPassword);        // Ojo abierto si ahora era 'password'
+                this.classList.toggle('bi-eye-slash', !isPassword);
+                this.classList.toggle('bi-eye', isPassword);
 
                 // Opcional: Mantener el foco en el campo después de hacer clic
                 passwordInput.focus();
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPasswordToggle();
 
     // *******************************************************************
-    // ⭐ FIN NUEVA LÓGICA DE CONTRASEÑA ⭐
+    // ⭐ FIN MODIFICACIÓN DE CONTRASEÑA ⭐
     // *******************************************************************
 
 
@@ -124,27 +124,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
-        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
-            <div class="car-card" role="button" tabindex="0">
-                <div class="car-image-container">
-                    <img src="${imgSrc}" 
-                            alt="Foto de ${escapeHtml(name)}" 
-                            loading="lazy"
-                            onerror="this.onerror=null;this.src='${defaultImg}';" />
-                </div>
-                <div class="car-details-content">
-                    <div class="car-name-group">
-                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
-                        <p class="car-model-year">
-                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
-                        </p>
-                    </div>
-                    <button class="btn btn-edit-car">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
+            <div class="car-card" role="button" tabindex="0">
+                <div class="car-image-container">
+                    <img src="${imgSrc}" 
+                            alt="Foto de ${escapeHtml(name)}" 
+                            loading="lazy"
+                            onerror="this.onerror=null;this.src='${defaultImg}';" />
+            </div>
+                <div class="car-details-content">
+                    <div class="car-name-group">
+                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
+                        <p class="car-model-year">
+                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
+                        </p>
+                    </div>
+                    <button class="btn btn-edit-car">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     }
 
     // --- FUNCIÓN CARGA DE VEHÍCULOS (COCHES + MOTOS) ---
