@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     const profileForm = document.getElementById('profile-form');
-    const passwordForm = document.getElementById('password-form');
+    // ELIMINADO: const passwordForm = document.getElementById('password-form');
     const carForm = document.getElementById('car-form');
     const carList = document.getElementById('car-list');
     const userNameElement = document.getElementById('user-name');
@@ -11,11 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
 
-    // ELEMENTOS DEL MODAL DE CONTRASEÑA
-    const passwordModal = document.getElementById('passwordModal');
-    // const currentPasswordInput = document.getElementById('current-password'); // ¡ELIMINADO!
-    const newPasswordInput = document.getElementById('new-password');
-    const confirmNewPasswordInput = document.getElementById('confirm-new-password');
+    // ELEMENTOS DEL MODAL DE CONTRASEÑA (Todos eliminados o comentados)
+    // ELIMINADO: const passwordModal = document.getElementById('passwordModal');
+    // ELIMINADO: const newPasswordInput = document.getElementById('new-password');
+    // ELIMINADO: const confirmNewPasswordInput = document.getElementById('confirm-new-password');
 
 
     // ELEMENTOS DEL MODAL DE VEHÍCULO
@@ -85,27 +84,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
-        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
-            <div class="car-card" role="button" tabindex="0">
-                <div class="car-image-container">
-                    <img src="${imgSrc}" 
-                            alt="Foto de ${escapeHtml(name)}" 
-                            loading="lazy"
-                            onerror="this.onerror=null;this.src='${defaultImg}';" />
-                </div>
-                <div class="car-details-content">
-                    <div class="car-name-group">
-                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
-                        <p class="car-model-year">
-                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
-                        </p>
-                    </div>
-                    <button class="btn btn-edit-car">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
+            <div class="car-card" role="button" tabindex="0">
+                <div class="car-image-container">
+                    <img src="${imgSrc}" 
+                            alt="Foto de ${escapeHtml(name)}" 
+                            loading="lazy"
+                            onerror="this.onerror=null;this.src='${defaultImg}';" />
+                </div>
+                <div class="car-details-content">
+                    <div class="car-name-group">
+                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
+                        <p class="car-model-year">
+                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
+                        </p>
+                    </div>
+                    <button class="btn btn-edit-car">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     }
 
     // --- FUNCIÓN CARGA DE VEHÍCULOS (COCHES + MOTOS) ---
@@ -428,42 +427,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadVehicles();
 
     // *******************************************************************
-    // ⭐ LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA CON ICONOS PERSONALIZADOS ⭐
+    // LÓGICA ELIMINADA: VISUALIZACIÓN DE CONTRASEÑA CON ICONOS PERSONALIZADOS
     // *******************************************************************
-    document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', function () {
-            // 1. Obtener el ID del input objetivo y el span del icono
-            const targetId = this.getAttribute('data-target-id');
-            const passwordInput = document.getElementById(targetId);
-            // Seleccionamos el span que tiene las clases de icono personalizadas
-            const iconSpan = this.querySelector('.password-toggle-icon');
-
-            if (!passwordInput || !iconSpan) return;
-
-            // 2. Comprobar el tipo de input y cambiarlo
-            const isPassword = passwordInput.type === 'password';
-
-            passwordInput.type = isPassword ? 'text' : 'password';
-
-            // 3. Cambiar el icono (ojo tachado vs. ojo abierto)
-            if (isPassword) {
-                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto (show-password)
-                iconSpan.classList.remove('hide-password');
-                iconSpan.classList.add('show-password');
-            } else {
-                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado (hide-password)
-                iconSpan.classList.remove('show-password');
-                iconSpan.classList.add('hide-password');
-            }
-
-            // Opcional: Mantener el foco en el campo después de hacer clic
-            passwordInput.focus();
-        });
-    });
-    // *******************************************************************
-    // ⭐ FIN LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA ⭐
-    // *******************************************************************
-
+    // ELIMINADO: document.querySelectorAll('.toggle-password').forEach(button => { ... });
 
     // *******************************************************************
     // EL RESTO DE FUNCIONES (INCLUIDAS LAS QUE FALTABAN)
@@ -607,74 +573,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Lógica del Formulario de Contraseña ---
-    passwordForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        // const currentPassword = currentPasswordInput.value; // ¡ELIMINADO!
-
-        const newPassword = newPasswordInput.value;
-        const confirmNewPassword = confirmNewPasswordInput.value;
-
-        // Se envía un campo de contraseña actual vacía, asumiendo que el backend 
-        // permite el cambio solo con la nueva contraseña si el campo no está presente,
-        // o que hay otra capa de autenticación para esta acción.
-        const currentPassword = '';
-
-        if (newPassword !== confirmNewPassword) {
-            mostrarAlerta('La nueva contraseña y su confirmación no coinciden.', 'error');
-            return;
-        }
-
-        if (newPassword.length < 6) {
-            mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres.', 'advertencia');
-            return;
-        }
-
-        const confirmar = await mostrarConfirmacion('¿Deseas cambiar tu contraseña?', 'Cambiar');
-        if (!confirmar) {
-            mostrarAlerta('Cambio de contraseña cancelado', 'info');
-            return;
-        }
-
-        try {
-            const resp = await fetch('/api/userAction', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    id: user.id,
-                    current_password: currentPassword, // Enviamos vacío
-                    new_password: newPassword,
-                    action: 'change_password'
-                })
-            });
-
-            const json = await resp.json();
-            if (!resp.ok || !json.ok) {
-                throw new Error(json.msg || 'Fallo en el cambio de contraseña.');
-            }
-
-            mostrarAlerta('Contraseña cambiada correctamente. Vuelve a iniciar sesión.', 'exito');
-
-            // Cerrar el modal y redirigir
-            const modalInstance = bootstrap.Modal.getInstance(passwordModal);
-            if (modalInstance) modalInstance.hide();
-
-            setTimeout(() => {
-                sessionStorage.removeItem('usuario');
-                window.location.href = '../auth/login/login.html';
-            }, 1200);
-
-        } catch (error) {
-            console.error('Error al cambiar contraseña:', error);
-            mostrarAlerta('Error al cambiar contraseña: ' + error.message, 'error');
-        } finally {
-            // Limpiar los campos del formulario de contraseña
-            passwordForm.reset();
-        }
-    });
+    // ELIMINADO: --- Lógica del Formulario de Contraseña ---
+    // ELIMINADO: passwordForm.addEventListener('submit', async (e) => { ... });
 
     // --- Lógica de Cerrar Sesión ---
     logoutBtn.addEventListener('click', async (e) => {
