@@ -377,13 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // CONFIRMACIONES (Esta función es la que crea el modal en el centro de la pantalla)
+    // 🛑 CONFIRMACIONES (CORRECCIÓN DE LA PROMESA)
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
-            // ✅ CORRECCIÓN CLAVE: Si ya hay un modal abierto, salimos sin resolver NADA,
-            // forzando al usuario a usar el modal que ya está en pantalla.
+            // Si ya hay un modal activo, salimos sin resolver la promesa.
             if (document.getElementById('mlc-confirm-overlay')) {
-                // No resolvemos ni true ni false. Solo salimos.
                 return;
             }
 
@@ -448,14 +446,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
             btnConfirm.focus();
 
+            // Usamos una bandera para garantizar que resolve() solo se llame una vez.
+            let resolved = false;
+
             function cleanup(x) {
+                if (resolved) return; // Si ya se resolvió, salimos.
+                resolved = true;
+
+                // Limpieza de event listeners (opcional pero buena práctica)
+                btnCancel.removeEventListener('click', handleCancel);
+                btnConfirm.removeEventListener('click', handleConfirm);
+                document.removeEventListener('keydown', handleKeydown);
+
+                // Eliminamos el overlay del DOM
                 overlay.remove();
+
+                // Resolvemos la promesa
                 resolve(!!x);
             }
 
-            btnCancel.addEventListener('click', () => cleanup(false), { once: true });
-            btnConfirm.addEventListener('click', () => cleanup(true), { once: true });
-            document.addEventListener('keydown', e => { if (e.key === 'Escape') cleanup(false); }, { once: true });
+            const handleCancel = () => cleanup(false);
+            const handleConfirm = () => cleanup(true);
+            const handleKeydown = e => { if (e.key === 'Escape') cleanup(false); };
+
+            // Añadimos los event listeners
+            btnCancel.addEventListener('click', handleCancel);
+            btnConfirm.addEventListener('click', handleConfirm);
+            document.addEventListener('keydown', handleKeydown, { once: true });
         });
     }
 
@@ -510,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 🚀 LÓGICA DE CERRAR SESIÓN (CORREGIDA LA TEMPORIZACIÓN A 1500ms)
+    // ✅ LÓGICA DE CERRAR SESIÓN (TIEMPO CONFIRMADO EN 1500ms)
     logoutBtn.addEventListener('click', async (e) => {
         // Detiene el comportamiento por defecto inmediatamente
         e.preventDefault();
@@ -534,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             sessionStorage.removeItem('usuario'); // Limpia la sesión
             window.location.href = '/index.html'; // Redirige
-        }, 1500); // <-- TIEMPO AUMENTADO
+        }, 1500);
     });
 
     // INICIALIZAR
