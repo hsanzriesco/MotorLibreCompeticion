@@ -66,7 +66,7 @@
 
         <div class="row g-4">
             <div class="col-12 col-lg-6">
-                <div class="card card-mlc h-100">
+                <div class="card card-mlc">
                     <div class="card-body">
                         <h4 class="card-title mb-4 section-title">Datos personales</h4>
                         <form id="profile-form">
@@ -80,7 +80,8 @@
                             <div class="mb-4">
                                 <label for="profile-email" class="form-label">Correo electrónico</label>
                                 <input type="email" class="form-control mlc-input" id="profile-email" required />
-                                <div class="form-text text-muted mt-1 email-hint">Cambiar correo requiere verificar tu contraseña.
+                                <div class="form-text text-muted mt-1 email-hint">Cambiar correo requiere verificar tu
+                                    contraseña.
                                 </div>
                             </div>
 
@@ -102,37 +103,25 @@
                         </div>
 
                         <div id="car-list" class="row g-3" aria-live="polite">
-                            <p id="no-cars-message" class="text-center text-muted no-cars-text">Aún no tienes vehículos en tu garaje.</p>
-                            
+                            <p id="no-cars-message" class="text-center text-muted no-cars-text">Aún no tienes vehículos
+                                en tu garaje.</p>
+
                             <div class="col-12">
                                 <div class="car-card">
                                     <div class="car-image-container">
-                                        <img src="https://via.placeholder.com/400x225/e50914/FFFFFF?text=Ford+Mustang" alt="Ford Mustang" class="img-fluid">
+                                        <img src="https://via.placeholder.com/400x225/e50914/FFFFFF?text=Tu+Coche"
+                                            alt="Tu Vehículo" class="img-fluid">
                                     </div>
                                     <div class="car-details-content">
                                         <div>
-                                            <p class="car-name">Ford Mustang</p>
-                                            <p class="car-model-year">GT 2020</p>
+                                            <p class="car-name">Mi Coche Deportivo</p>
+                                            <p class="car-model-year">Modelo X (2023)</p>
                                         </div>
                                         <button class="btn btn-edit-car"><i class="bi bi-pencil"></i></button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-12">
-                                <div class="car-card">
-                                    <div class="car-image-container">
-                                        <img src="https://via.placeholder.com/400x225/0e0e0e/FFFFFF?text=Kawasaki+Ninja" alt="Kawasaki Ninja" class="img-fluid">
-                                    </div>
-                                    <div class="car-details-content">
-                                        <div>
-                                            <p class="car-name">Kawasaki Ninja</p>
-                                            <p class="car-model-year">ZX-6R 2022</p>
-                                        </div>
-                                        <button class="btn btn-edit-car"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -161,7 +150,7 @@
                         </div>
 
                         <div class="mb-2">
-                            <label class="form-label" id="vehicle-name-label">Nombre del coche</label>
+                            <label class="form-label" id="vehicle-name-label">Nombre</label>
                             <input type="text" id="car-name" class="form-control mlc-input" required />
                         </div>
                         <div class="mb-2">

@@ -17,7 +17,6 @@ body {
     min-height: 100vh;
     padding-bottom: 40px;
     display: flex;
-    /* Para que el footer se quede abajo si hay poco contenido */
     flex-direction: column;
 }
 
@@ -30,11 +29,9 @@ body {
 /* Main Content Area */
 .main-perfil {
     margin-top: 90px;
-    /* Ajuste para la altura de la navbar */
     max-width: 1200px;
     padding: 30px 12px;
     flex-grow: 1;
-    /* Para que ocupe el espacio disponible */
 }
 
 .profile-title {
@@ -42,9 +39,7 @@ body {
     font-size: 2.5rem;
     font-weight: 700;
     text-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
-    /* Efecto de brillo sutil */
     margin-bottom: 3rem !important;
-    /* Más espacio debajo del título principal */
 }
 
 /* Card Styling */
@@ -59,13 +54,11 @@ body {
 
 .card-mlc:hover {
     transform: translateY(-5px);
-    /* Pequeño efecto de elevación */
     box-shadow: 0 12px 40px var(--mlc-glow);
 }
 
 .card-mlc .card-body {
     padding: 25px;
-    /* Más padding interno para los elementos */
 }
 
 .section-title {
@@ -74,7 +67,6 @@ body {
     font-size: 1.8rem;
     margin-bottom: 1.5rem;
     border-bottom: 2px solid var(--mlc-red);
-    /* Línea de separación sutil */
     padding-bottom: 10px;
     text-shadow: 0 0 8px rgba(229, 9, 20, 0.3);
 }
@@ -90,7 +82,6 @@ textarea,
     color: #ffffff !important;
     border-radius: 8px !important;
     padding: 12px 15px !important;
-    /* Más padding para hacerlos más grandes */
     transition: box-shadow .15s ease, border-color .15s ease;
     font-size: 1rem;
 }
@@ -109,7 +100,6 @@ textarea:focus,
 
 ::placeholder {
     color: rgba(255, 255, 255, 0.45) !important;
-    /* Placeholder más tenue */
 }
 
 .form-label {
@@ -122,7 +112,6 @@ textarea:focus,
 .email-hint {
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.5) !important;
-    /* Hint más sutil */
 }
 
 /* Buttons */
@@ -132,7 +121,6 @@ textarea:focus,
     font-weight: 700;
     border-radius: 8px;
     padding: 12px 20px;
-    /* Botones más grandes */
     border: none;
     font-size: 1.1rem;
     letter-spacing: 0.05em;
@@ -141,15 +129,12 @@ textarea:focus,
 
 .btn-mlc-save:hover {
     background-color: #c70812;
-    /* Rojo un poco más oscuro */
     box-shadow: 0 0 20px rgba(229, 9, 20, 0.7);
-    /* Brillo intenso en hover */
     transform: translateY(-2px);
 }
 
 .btn-mlc-add {
     background: #1f8a3a;
-    /* Verde para añadir */
     color: #fff;
     border-radius: 8px;
     padding: 8px 15px;
@@ -157,7 +142,6 @@ textarea:focus,
     font-size: 0.95rem;
     font-weight: 600;
     display: flex;
-    /* Para centrar el icono y texto */
     align-items: center;
     transition: background-color 0.2s ease, transform 0.2s ease;
 }
@@ -174,9 +158,7 @@ textarea:focus,
 .btn-outline-mlc {
     background: transparent;
     border: 1px solid rgba(229, 9, 20, 0.5);
-    /* Borde más visible */
     color: var(--mlc-red);
-    /* Color del texto rojo */
     border-radius: 8px;
     padding: 10px 15px;
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -218,15 +200,18 @@ textarea:focus,
     color: var(--mlc-text-muted) !important;
 }
 
+/* La clase .car-item se elimina porque el HTML usa el nuevo diseño .car-card */
+.car-item {
+    display: none !important;
+}
+
 .car-card {
     position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
     background-color: rgba(20, 20, 20, 0.7);
-    /* Fondo un poco más oscuro para el listado */
     border: 1px solid rgba(229, 9, 20, 0.2);
-    /* Borde más sutil */
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
@@ -235,7 +220,6 @@ textarea:focus,
 
 .car-card:hover {
     transform: translateY(-5px);
-    /* Más énfasis en el hover */
     box-shadow: 0 10px 35px var(--mlc-glow);
     background-color: rgba(20, 20, 20, 0.9);
 }
@@ -258,7 +242,6 @@ textarea:focus,
 
 .car-card:hover .car-image-container img {
     transform: scale(1.08);
-    /* Más zoom en la imagen */
 }
 
 .car-details-content {
@@ -273,16 +256,13 @@ textarea:focus,
     color: var(--mlc-red) !important;
     font-weight: 700;
     margin-bottom: 5px;
-    /* Más espacio debajo del nombre */
     font-size: 1.3rem;
-    /* Nombre un poco más grande */
     line-height: 1.2;
 }
 
 .car-model-year {
     color: var(--mlc-text-muted) !important;
     font-size: 0.95rem;
-    /* Texto un poco más grande */
     margin-bottom: 0;
     font-weight: 400;
 }
@@ -292,14 +272,11 @@ textarea:focus,
     color: white;
     border: none;
     border-radius: 50%;
-    /* Botón circular */
     padding: 8px;
     font-size: 1.1rem;
     transition: background-color 0.2s ease, transform 0.2s ease;
     width: 40px;
-    /* Ajuste de tamaño */
     height: 40px;
-    /* Ajuste de tamaño */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -309,14 +286,11 @@ textarea:focus,
 .btn-edit-car:hover {
     background-color: #c70812;
     transform: scale(1.1);
-    /* Efecto de crecimiento en hover */
     box-shadow: 0 6px 15px rgba(229, 9, 20, 0.6);
 }
 
 /* Responsive Adjustments */
 @media (max-width: 991px) {
-
-    /* Para pantallas medianas y pequeñas (lg breakpoint) */
     .main-perfil {
         padding: 20px;
     }
@@ -353,8 +327,6 @@ textarea:focus,
 }
 
 @media (max-width: 767px) {
-
-    /* Para pantallas muy pequeñas (sm breakpoint) */
     .main-perfil {
         padding: 15px;
     }
@@ -368,7 +340,6 @@ textarea:focus,
         font-size: 1.3rem;
         text-align: center;
         border-bottom: none;
-        /* Quitar la línea en móviles si es muy ancha */
     }
 
     .btn-mlc-add {
@@ -389,7 +360,6 @@ textarea:focus,
 
     .btn-edit-car {
         position: absolute;
-        /* Posicionarlo de forma absoluta en la tarjeta */
         top: 10px;
         right: 10px;
         z-index: 10;
