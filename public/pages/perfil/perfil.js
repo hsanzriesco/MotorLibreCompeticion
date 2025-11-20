@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- Selectores de Elementos ---
     const profileForm = document.getElementById('profile-form');
+    const passwordForm = document.getElementById('password-form');
     const carForm = document.getElementById('car-form');
     const carList = document.getElementById('car-list');
     const userNameElement = document.getElementById('user-name');
@@ -11,8 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
 
+    // ELEMENTOS DEL MODAL DE CONTRASEÑA
+    const passwordModal = document.getElementById('passwordModal');
+    // const currentPasswordInput = document.getElementById('current-password'); // ¡ELIMINADO!
+    const newPasswordInput = document.getElementById('new-password');
+    const confirmNewPasswordInput = document.getElementById('confirm-new-password');
+
+
     // ELEMENTOS DEL MODAL DE VEHÍCULO
-    const carModal = document.getElementById('carModal'); // Obtenemos el DOM
+    const carModal = document.getElementById('carModal'); // Obtenemos el DOM, no la instancia de Bootstrap aquí
     const carModalTitle = document.getElementById('carModalTitle');
     const carIdInput = document.getElementById('car-id');
     const carNameInput = document.getElementById('car-name');
@@ -32,17 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const carPhotoContainer = document.getElementById('carPhotoContainer');
     const clearCarPhotoBtn = document.getElementById('clearCarPhotoBtn');
 
-    let currentVehicle = null;
-    let user;
+    let currentVehicle = null; // Almacenará { id, type, ...datos }
 
     // --- Carga Inicial de Usuario ---
     const stored = sessionStorage.getItem('usuario');
     if (!stored) {
+        // Asumo que 'mostrarAlerta' está disponible
         mostrarAlerta("Sesión expirada. Inicia sesión.", 'error');
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
         return;
     }
 
+    let user;
     try {
         user = JSON.parse(stored);
     } catch (err) {
@@ -64,46 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
-
-    // *******************************************************************
-    // ⭐ LÓGICA DE VISUALIZACIÓN DE CONTRASEÑA (MANTENIDA) ⭐
-    // *******************************************************************
-
-    document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', function () {
-            // 1. Obtener el ID del input objetivo y el span del icono
-            const targetId = this.getAttribute('data-target-id');
-            const passwordInput = document.getElementById(targetId);
-            // Seleccionamos el span que tiene las clases de icono personalizadas
-            const iconSpan = this.querySelector('.password-toggle-icon');
-
-            if (!passwordInput || !iconSpan) return;
-
-            // 2. Comprobar el tipo de input y cambiarlo
-            const isPassword = passwordInput.type === 'password';
-
-            passwordInput.type = isPassword ? 'text' : 'password';
-
-            // 3. Cambiar el icono (ojo tachado vs. ojo abierto)
-            if (isPassword) {
-                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto (show-password)
-                iconSpan.classList.remove('hide-password');
-                iconSpan.classList.add('show-password');
-            } else {
-                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado (hide-password)
-                iconSpan.classList.remove('show-password');
-                iconSpan.classList.add('hide-password');
-            }
-
-            // Opcional: Mantener el foco en el campo después de hacer clic
-            passwordInput.focus();
-        });
-    });
-    // *******************************************************************
-    // ⭐ FIN LÓGICA DE VISUALIZACIÓN DE CONTRASEÑA ⭐
-    // *******************************************************************
-
-
     // --- FUNCIÓN RENDERIZADO DE VEHÍCULOS (COCHE O MOTO) ---
     function renderVehicle(vehicle) {
         const isCar = vehicle.type === 'car';
@@ -112,28 +80,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = vehicle[nameKey];
 
         const defaultImg = isCar
-            ? 'https://via.placeholder.com/400x225/e50914/FFFFFF?text=Coche+Sin+Foto'
-            : 'https://via.placeholder.com/400x225/0e0e0e/FFFFFF?text=Moto+Sin+Foto';
+            ? 'https://via.placeholder.com/400x225?text=Coche+Sin+Foto'
+            : 'https://via.placeholder.com/400x225?text=Moto+Sin+Foto';
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
-        <div class="col-12 col-sm-6 col-md-6 col-lg-6 mb-4" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
-            <div class="card car-card shadow-sm h-100" role="button" tabindex="0">
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
+            <div class="car-card" role="button" tabindex="0">
                 <div class="car-image-container">
                     <img src="${imgSrc}" 
                             alt="Foto de ${escapeHtml(name)}" 
                             loading="lazy"
-                            class="card-img-top"
                             onerror="this.onerror=null;this.src='${defaultImg}';" />
                 </div>
-                <div class="card-body car-details-content">
+                <div class="car-details-content">
                     <div class="car-name-group">
-                        <h5 class="car-name card-title">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
-                        <p class="car-model-year card-text text-muted">
+                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
+                        <p class="car-model-year">
                             ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
                         </p>
                     </div>
-                    <button class="btn btn-sm btn-edit-car position-absolute top-0 end-0 mt-2 me-2">
+                    <button class="btn btn-edit-car">
                         <i class="bi bi-pencil-square"></i>
                     </button>
                 </div>
@@ -161,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Renderizar coches si hay
             if (cars.length > 0) {
-                carsHtml += '<h3 class="vehicle-section-title mt-4 mb-3">🚗 Coches</h3><div class="row">';
+                carsHtml += '<h3 class="vehicle-section-title">Coches</h3><div class="row">';
                 cars.forEach(car => {
                     carsHtml += renderVehicle(car);
                 });
@@ -179,12 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const motorcycles = (bikesData.motorcycles || []).map(m => ({
                 ...m,
                 type: 'motorcycle',
+                // Dejamos la clave original 'motorcycle_name'
             }));
             allVehicles.push(...motorcycles);
 
             // Renderizar motos si hay
             if (motorcycles.length > 0) {
-                motorcyclesHtml += '<h3 class="vehicle-section-title mt-4 mb-3">🏍️ Motos</h3><div class="row">';
+                motorcyclesHtml += '<h3 class="vehicle-section-title">Motos</h3><div class="row">';
                 motorcycles.forEach(moto => {
                     motorcyclesHtml += renderVehicle(moto);
                 });
@@ -200,8 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!allVehicles.length) {
             noCarsMessage.style.display = 'block';
-            // Asegurarse de que carList está vacío
-            carList.innerHTML = '';
             return;
         }
 
@@ -212,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3.2. ⭐ Insertar Separador si hay COCHES Y MOTOS ⭐
         if (carsHtml.length > 0 && motorcyclesHtml.length > 0) {
-            finalHtml += '<hr class="vehicle-separator my-4">';
+            finalHtml += '<hr class="vehicle-separator">';
         }
 
         // 3.3. Añadir Motos
@@ -223,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Event Listener para abrir modal al hacer clic en el vehículo
         carList.querySelectorAll('.car-card').forEach(item => {
             item.addEventListener('click', () => {
-                // Buscar el contenedor de datos que está un nivel superior a la card
                 const el = item.closest('[data-vehicle-id]');
                 const id = parseInt(el.dataset.vehicleId);
                 const type = el.dataset.vehicleType;
@@ -249,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         vehicleTypeSelect.disabled = isEdit;
     }
 
-    // MODIFICACIÓN de openCarModal (Ahora maneja VEHÍCULOS)
+    // MODIFICACIÓN DE openCarModal (Ahora maneja VEHÍCULOS)
     function openCarModal(vehicle = null) {
         carForm.reset();
         currentVehicle = vehicle;
@@ -345,16 +310,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCar = type === 'car';
         const nameInput = carNameInput.value.trim();
 
-        // ⭐ VALIDACIÓN DE AÑO ⭐
+        // ⭐ INICIO: VALIDACIÓN DE AÑO (El cambio solicitado) ⭐
         const vehicleYear = parseInt(carYearInput.value.trim());
         const currentYear = new Date().getFullYear();
 
         if (isNaN(vehicleYear) || vehicleYear < 1900) {
+            // Mensaje para años no numéricos o anteriores a 1900
             mostrarAlerta(`El año del vehículo no es válido. Debe ser un número entre 1900 y ${currentYear}.`, 'error');
             return;
         }
 
-        // 🚨 VERIFICACIÓN DE AÑO SUPERIOR
+        // 🚨 NUEVA VERIFICACIÓN DE AÑO SUPERIOR (con el mensaje solicitado)
         if (vehicleYear > currentYear) {
             mostrarAlerta(`El año del vehículo (${vehicleYear}) no puede ser superior al año actual (${currentYear}).`, 'error');
             return; // Detiene el envío del formulario
@@ -387,12 +353,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (file) {
             // Si hay un nuevo archivo seleccionado
             formData.append('imageFile', file);
-            // No adjuntamos photoURL
+            // No adjuntamos photoURL, el backend sabrá que debe subir la imagen
         } else if (currentURL && currentURL !== 'FILE_PENDING') {
-            // Si no hay archivo nuevo, pero hay una URL existente
+            // Si no hay archivo nuevo, pero hay una URL existente (o la hemos borrado explícitamente a "")
             formData.append('photoURL', currentURL);
         } else {
-            // Si no hay ni archivo ni URL (para borrar la imagen existente si no hay nada en el campo)
+            // Si no hay ni archivo ni URL
             formData.append('photoURL', '');
         }
 
@@ -403,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const resp = await fetch(url, {
                 method: id ? 'PUT' : 'POST',
-                // Importante: No establecer Content-Type para FormData
+                // Importante: No establecer Content-Type para FormData, el navegador lo hace automáticamente
                 body: formData
             });
 
@@ -458,9 +424,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Inicialización ---
+    loadVehicles();
 
     // *******************************************************************
-    // ⭐ FUNCIONES AUXILIARES ⭐
+    // ⭐ LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA CON ICONOS PERSONALIZADOS ⭐
+    // *******************************************************************
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function () {
+            // 1. Obtener el ID del input objetivo y el span del icono
+            const targetId = this.getAttribute('data-target-id');
+            const passwordInput = document.getElementById(targetId);
+            // Seleccionamos el span que tiene las clases de icono personalizadas
+            const iconSpan = this.querySelector('.password-toggle-icon');
+
+            if (!passwordInput || !iconSpan) return;
+
+            // 2. Comprobar el tipo de input y cambiarlo
+            const isPassword = passwordInput.type === 'password';
+
+            passwordInput.type = isPassword ? 'text' : 'password';
+
+            // 3. Cambiar el icono (ojo tachado vs. ojo abierto)
+            if (isPassword) {
+                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto (show-password)
+                iconSpan.classList.remove('hide-password');
+                iconSpan.classList.add('show-password');
+            } else {
+                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado (hide-password)
+                iconSpan.classList.remove('show-password');
+                iconSpan.classList.add('hide-password');
+            }
+
+            // Opcional: Mantener el foco en el campo después de hacer clic
+            passwordInput.focus();
+        });
+    });
+    // *******************************************************************
+    // ⭐ FIN LÓGICA MODIFICADA: VISUALIZACIÓN DE CONTRASEÑA ⭐
+    // *******************************************************************
+
+
+    // *******************************************************************
+    // EL RESTO DE FUNCIONES (INCLUIDAS LAS QUE FALTABAN)
     // *******************************************************************
 
     /**
@@ -548,8 +554,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // El código de 'mostrarAlerta' se mantiene en el HTML según tu estructura.
-
     // --- Lógica del Formulario de Perfil ---
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -603,6 +607,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Lógica del Formulario de Contraseña ---
+    passwordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // const currentPassword = currentPasswordInput.value; // ¡ELIMINADO!
+
+        const newPassword = newPasswordInput.value;
+        const confirmNewPassword = confirmNewPasswordInput.value;
+
+        // Se envía un campo de contraseña actual vacía, asumiendo que el backend 
+        // permite el cambio solo con la nueva contraseña si el campo no está presente,
+        // o que hay otra capa de autenticación para esta acción.
+        const currentPassword = '';
+
+        if (newPassword !== confirmNewPassword) {
+            mostrarAlerta('La nueva contraseña y su confirmación no coinciden.', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres.', 'advertencia');
+            return;
+        }
+
+        const confirmar = await mostrarConfirmacion('¿Deseas cambiar tu contraseña?', 'Cambiar');
+        if (!confirmar) {
+            mostrarAlerta('Cambio de contraseña cancelado', 'info');
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/userAction', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: user.id,
+                    current_password: currentPassword, // Enviamos vacío
+                    new_password: newPassword,
+                    action: 'change_password'
+                })
+            });
+
+            const json = await resp.json();
+            if (!resp.ok || !json.ok) {
+                throw new Error(json.msg || 'Fallo en el cambio de contraseña.');
+            }
+
+            mostrarAlerta('Contraseña cambiada correctamente. Vuelve a iniciar sesión.', 'exito');
+
+            // Cerrar el modal y redirigir
+            const modalInstance = bootstrap.Modal.getInstance(passwordModal);
+            if (modalInstance) modalInstance.hide();
+
+            setTimeout(() => {
+                sessionStorage.removeItem('usuario');
+                window.location.href = '../auth/login/login.html';
+            }, 1200);
+
+        } catch (error) {
+            console.error('Error al cambiar contraseña:', error);
+            mostrarAlerta('Error al cambiar contraseña: ' + error.message, 'error');
+        } finally {
+            // Limpiar los campos del formulario de contraseña
+            passwordForm.reset();
+        }
+    });
+
     // --- Lógica de Cerrar Sesión ---
     logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -615,7 +688,4 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarAlerta('Cierre de sesión cancelado', 'info');
         }
     });
-
-    // --- Inicialización (SE EJECUTA INMEDIATAMENTE YA QUE NO HAY PESTAÑAS) ---
-    loadVehicles();
 });
