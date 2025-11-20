@@ -27,6 +27,16 @@ body {
     margin-top: 90px;
     max-width: 1200px;
     padding: 30px 12px;
+
+    /* ⭐ MODIFICACIÓN CLAVE: Implementar layout de dos columnas con CSS Grid */
+    display: grid;
+    /* Define 2 columnas: 1ra columna más pequeña (1fr) y 2da columna más grande (1.5fr) */
+    grid-template-columns: minmax(300px, 1fr) minmax(300px, 1.5fr);
+    gap: 30px;
+    /* Espacio entre las tarjetas */
+    justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Card */
@@ -39,12 +49,11 @@ body {
     /* ⭐ MODIFICACIÓN CLAVE: Ajustar padding para mejor espaciado */
     padding: 30px;
 
-    /* ⭐ MODIFICACIÓN CLAVE: Altura automática y ancho máximo para hacerlo responsive al contenido */
+    /* ⭐ MODIFICACIÓN CLAVE: Quitar propiedades de centrado y ancho fijo que interfieren con el layout Grid */
     height: auto;
-    max-width: 500px;
-    /* Limita el ancho en escritorio para mejor diseño */
-    margin: 0 auto 30px auto;
-    /* Centrar la tarjeta y añadir margen inferior */
+    /* Asegura que la tarjeta ocupe el 100% de la columna que le asigna el Grid */
+    max-width: none;
+    margin: 0;
 }
 
 /* Inputs — FIX GLOBAL */
@@ -245,6 +254,8 @@ textarea:focus,
 /* Responsive */
 @media (max-width: 768px) {
     .main-perfil {
+        /* ⭐ MODIFICACIÓN CLAVE: Volver a una sola columna en móvil */
+        grid-template-columns: 1fr;
         padding: 20px;
     }
 
@@ -252,6 +263,8 @@ textarea:focus,
         padding: 14px;
         /* Permite que la tarjeta ocupe más ancho en móvil, si aplica */
         max-width: 100%;
+        margin-bottom: 20px;
+        /* Añadir espacio entre tarjetas en móvil */
     }
 }
 
