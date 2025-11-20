@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 🛑 CONFIRMACIONES (CORRECCIÓN DE LA PROMESA)
+    // CONFIRMACIONES (Se mantiene para la eliminación de vehículo y actualización de perfil)
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             // Si ya hay un modal activo, salimos sin resolver la promesa.
@@ -446,22 +446,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             btnConfirm.focus();
 
-            // Usamos una bandera para garantizar que resolve() solo se llame una vez.
             let resolved = false;
 
             function cleanup(x) {
-                if (resolved) return; // Si ya se resolvió, salimos.
+                if(resolved) return;
                 resolved = true;
-
-                // Limpieza de event listeners (opcional pero buena práctica)
+                
                 btnCancel.removeEventListener('click', handleCancel);
                 btnConfirm.removeEventListener('click', handleConfirm);
                 document.removeEventListener('keydown', handleKeydown);
-
-                // Eliminamos el overlay del DOM
+                
                 overlay.remove();
-
-                // Resolvemos la promesa
+                
                 resolve(!!x);
             }
 
@@ -469,7 +465,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const handleConfirm = () => cleanup(true);
             const handleKeydown = e => { if (e.key === 'Escape') cleanup(false); };
 
-            // Añadimos los event listeners
             btnCancel.addEventListener('click', handleCancel);
             btnConfirm.addEventListener('click', handleConfirm);
             document.addEventListener('keydown', handleKeydown, { once: true });
@@ -527,31 +522,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ LÓGICA DE CERRAR SESIÓN (TIEMPO CONFIRMADO EN 1500ms)
-    logoutBtn.addEventListener('click', async (e) => {
+    // ⛔ LÓGICA DE CERRAR SESIÓN (SIN CONFIRMACIÓN)
+    logoutBtn.addEventListener('click', (e) => {
         // Detiene el comportamiento por defecto inmediatamente
         e.preventDefault();
 
-        // 1. Muestra el modal de confirmación y espera la respuesta del usuario
-        const confirmar = await mostrarConfirmacion(
-            '¿Seguro que quieres cerrar sesión?',
-            'Cerrar sesión'
-        );
-
-        if (!confirmar) {
-            // Acción de CANCELAR
-            mostrarAlerta('Cierre de sesión cancelado', 'info');
-            return;
-        }
-
-        // 2. Acción de ACEPTAR: Muestra el mensaje de éxito
+        // 1. Muestra el mensaje de éxito inmediatamente
         mostrarAlerta('Sesión cerrada correctamente', 'exito');
 
-        // 3. Espera 1.5 segundos (1500ms) para que la alerta sea visible
+        // 2. Espera 1 segundo (1000ms) para que la alerta sea visible, luego limpia y redirige
         setTimeout(() => {
             sessionStorage.removeItem('usuario'); // Limpia la sesión
             window.location.href = '/index.html'; // Redirige
-        }, 1500);
+        }, 1000); 
     });
 
     // INICIALIZAR
