@@ -102,25 +102,20 @@
                                 Añadir vehículo</button>
                         </div>
 
-                        <div id="car-list" class="row g-3" aria-live="polite">
+                        <div id="car-list">
                             <p id="no-cars-message" class="text-center text-muted no-cars-text">Aún no tienes vehículos
                                 en tu garaje.</p>
 
-                            <div class="col-12">
-                                <div class="car-card">
-                                    <div class="car-image-container">
-                                        <img src="https://via.placeholder.com/400x225/e50914/FFFFFF?text=Tu+Coche"
-                                            alt="Tu Vehículo" class="img-fluid">
-                                    </div>
-                                    <div class="car-details-content">
-                                        <div>
-                                            <p class="car-name">Mi Coche Deportivo</p>
-                                            <p class="car-model-year">Modelo X (2023)</p>
-                                        </div>
-                                        <button class="btn btn-edit-car"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                </div>
+                            <h5 id="cars-title" class="sub-section-title" style="display:none;"><i
+                                    class="bi bi-car-front-fill me-2"></i>Coches</h5>
+                            <div id="car-list-cars" class="row g-3">
                             </div>
+
+                            <h5 id="motorcycles-title" class="sub-section-title mt-4" style="display:none;"><i
+                                    class="bi bi-motorcycle me-2"></i>Motocicletas</h5>
+                            <div id="car-list-motorcycles" class="row g-3">
+                            </div>
+
                         </div>
                     </div>
                 </div>

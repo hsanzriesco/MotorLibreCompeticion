@@ -1,3 +1,5 @@
+/* ... [CSS anterior (Layout, Cards, Inputs, Buttons) no ha cambiado] ... */
+
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
 :root {
@@ -70,6 +72,20 @@ body {
     padding-bottom: 10px;
     text-shadow: 0 0 8px rgba(229, 9, 20, 0.3);
 }
+
+/* --- NUEVO ESTILO: Título de subsección --- */
+.sub-section-title {
+    color: var(--mlc-red) !important;
+    font-weight: 700;
+    font-size: 1.25rem;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(229, 9, 20, 0.15);
+    display: flex;
+    align-items: center;
+}
+
+/* ------------------------------------------- */
 
 /* Inputs */
 input,
@@ -198,11 +214,6 @@ textarea:focus,
     font-style: italic;
     padding: 20px;
     color: var(--mlc-text-muted) !important;
-}
-
-/* La clase .car-item se elimina porque el HTML usa el nuevo diseño .car-card */
-.car-item {
-    display: none !important;
 }
 
 .car-card {
