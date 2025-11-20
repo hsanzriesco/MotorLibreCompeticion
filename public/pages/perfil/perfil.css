@@ -1,19 +1,65 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* =======================================================================
+    ⭐ 1. VARIABLES CSS (CUSTOM PROPERTIES)
+    ======================================================================= */
 :root {
+    /* Colores */
     --mlc-red: #e50914;
+    /* Rojo principal (Éxito/Acción) */
+    --mlc-red-hover: #c70812;
     --mlc-dark: #0e0e0e;
+    /* Negro muy oscuro */
+    --mlc-background: #0b0b0b;
     --mlc-panel: rgba(20, 20, 20, 0.9);
-    --mlc-glow: rgba(229, 9, 20, 0.25);
+    /* Fondo de tarjetas con ligera transparencia */
+    --mlc-glow: rgba(229, 9, 20, 0.35);
+    /* Sombra de brillo rojizo */
+    --mlc-text-light: rgba(255, 255, 255, 0.95);
+    /* Texto principal */
+    --mlc-text-muted: rgba(255, 255, 255, 0.65);
+    /* Texto secundario/etiquetas */
+    --mlc-border: rgba(255, 255, 255, 0.15);
+    /* Borde de inputs y separadores */
+
+    /* Tipografía */
+    --font-primary: 'Orbitron', sans-serif;
+    --font-secondary: 'Inter', sans-serif;
+    /* Más legible para cuerpo de texto e inputs */
+
+    /* Espaciado */
+    --spacer-xs: 8px;
+    --spacer-sm: 12px;
+    --spacer-md: 18px;
+    --spacer-lg: 30px;
+    --spacer-xl: 40px;
 }
 
-/* Layout */
+/* =======================================================================
+    2. LAYOUT Y BASE
+    ======================================================================= */
 body {
-    background: linear-gradient(180deg, #0b0b0b 0%, #111 100%);
-    color: #fff;
-    font-family: 'Orbitron', sans-serif;
+    background: linear-gradient(180deg, var(--mlc-background) 0%, #111 100%);
+    color: var(--mlc-text-light);
+    font-family: var(--font-secondary);
+    /* Usamos Inter para legibilidad en cuerpo */
     min-height: 100vh;
     padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    /* Ajuste para Bootstrap modals */
+    padding-right: 0 !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-primary);
+    /* Orbitron solo para títulos */
 }
 
 .navbar-mlc {
@@ -22,55 +68,117 @@ body {
     border-bottom: none;
 }
 
-/* Main */
+/* Main Content Area */
 .main-perfil {
     margin-top: 90px;
     max-width: 1200px;
-    padding: 30px 12px;
-
-    /* ⭐ MODIFICACIÓN CLAVE: Implementar layout de dos columnas con CSS Grid */
-    display: grid;
-    /* Define 2 columnas: 1ra columna más pequeña (1fr) y 2da columna más grande (1.5fr) */
-    grid-template-columns: minmax(300px, 1fr) minmax(300px, 1.5fr);
-    gap: 30px;
-    /* Espacio entre las tarjetas */
-    justify-content: center;
-    margin-left: auto;
-    margin-right: auto;
+    padding: var(--spacer-lg) var(--spacer-sm);
+    flex-grow: 1;
 }
 
-/* Card */
+.profile-title {
+    color: #fff;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+    margin-bottom: 3rem !important;
+}
+
+/* =======================================================================
+    3. CARD STYLING Y TÍTULOS DE SECCIÓN
+    ======================================================================= */
+
 .card-mlc {
     background: var(--mlc-panel);
     border: 1px solid rgba(229, 9, 20, 0.35);
     box-shadow: 0 8px 30px var(--mlc-glow);
     border-radius: 12px;
-
-    /* ⭐ MODIFICACIÓN CLAVE: Ajustar padding para mejor espaciado */
-    padding: 30px;
-
-    /* ⭐ MODIFICACIÓN CLAVE: Quitar propiedades de centrado y ancho fijo que interfieren con el layout Grid */
-    height: auto;
-    /* Asegura que la tarjeta ocupe el 100% de la columna que le asigna el Grid */
-    max-width: none;
-    margin: 0;
+    /* REDUCIMOS el padding original para controlar mejor el espaciado interno */
+    padding: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Inputs — FIX GLOBAL */
+.card-mlc:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px var(--mlc-glow);
+}
+
+.card-mlc .card-body {
+    /* MANTENEMOS el padding en el body interno, para los formularios */
+    padding: 25px;
+}
+
+/* ⭐ NUEVO ESTILO: SEPARADOR DE SECCIONES INTERNO EN EL CARD ⭐ */
+.section-divider {
+    border-top: 1px solid var(--mlc-border);
+    margin: var(--spacer-lg) 0;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ⭐ FIN: NUEVO ESTILO ⭐ */
+
+
+.section-title {
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--mlc-red);
+    padding-bottom: 10px;
+    text-shadow: 0 0 8px rgba(229, 9, 20, 0.3);
+}
+
+/* ⭐ Nuevo: Título de subsección/grupos de vehículos ⭐ */
+.vehicle-section-title {
+    color: var(--mlc-red) !important;
+    font-weight: 700;
+    font-size: 1.5rem;
+    padding-bottom: 5px;
+    margin-top: 2rem !important;
+    /* Más espacio para separar secciones de coches/motos */
+    margin-bottom: 1rem !important;
+    border-bottom: 1px solid rgba(229, 9, 20, 0.15);
+}
+
+/* Separador horizontal entre secciones (Coches vs Motos) */
+.vehicle-separator {
+    border-top: 1px dashed rgba(229, 9, 20, 0.4);
+    margin: var(--spacer-lg) 0;
+}
+
+/* --- Título de subsección general (mantengo el original por si se usa en otro sitio) --- */
+.sub-section-title {
+    color: var(--mlc-red) !important;
+    font-weight: 700;
+    font-size: 1.25rem;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(229, 9, 20, 0.15);
+    display: flex;
+    align-items: center;
+}
+
+
+/* =======================================================================
+    4. INPUTS Y FORMULARIOS
+    ======================================================================= */
 input,
 select,
 textarea,
 .form-control,
 .mlc-input {
     background: #0c0c0c !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #ffffff !important;
+    border: 1px solid var(--mlc-border) !important;
+    color: var(--mlc-text-light) !important;
     border-radius: 8px !important;
-    padding: 10px 12px !important;
-    transition: box-shadow .15s ease;
+    padding: var(--spacer-sm) var(--spacer-md) !important;
+    transition: box-shadow .15s ease, border-color .15s ease;
+    font-size: 1rem;
+    font-family: var(--font-secondary);
 }
 
-/* Prevent Bootstrap from turning inputs white */
 input:focus,
 select:focus,
 textarea:focus,
@@ -79,127 +187,252 @@ textarea:focus,
     background: #121212 !important;
     color: #fff !important;
     border-color: var(--mlc-red) !important;
-    box-shadow: 0 0 12px rgba(229, 9, 20, 0.35) !important;
+    box-shadow: 0 0 15px rgba(229, 9, 20, 0.45) !important;
     outline: none !important;
 }
 
-/* Placeholder visible */
-::placeholder {
-    color: rgba(255, 255, 255, 0.55) !important;
+/* ⭐ Estilos para inputs deshabilitados ⭐ */
+input:disabled,
+select:disabled,
+textarea:disabled {
+    background: #1a1a1a !important;
+    color: var(--mlc-text-muted) !important;
+    cursor: not-allowed;
 }
 
-/* Buttons */
+::placeholder {
+    color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.form-label {
+    color: var(--mlc-text-muted) !important;
+    font-weight: 500;
+    /* Ligeramente más grueso para destacar */
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 0.95rem;
+}
+
+.email-hint {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ⭐ Estilo para el ícono de toggle de contraseña ⭐ */
+.input-group-text {
+    background: #121212 !important;
+    border: 1px solid var(--mlc-border) !important;
+    border-left: none !important;
+    color: var(--mlc-text-muted);
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+}
+
+.password-toggle-icon {
+    font-size: 1.2rem;
+}
+
+.show-password::before {
+    content: "\F389";
+    /* bi-eye-fill - Ojo abierto */
+}
+
+.hide-password::before {
+    content: "\F341";
+    /* bi-eye-slash-fill - Ojo tachado */
+}
+
+
+/* =======================================================================
+    5. BOTONES
+    ======================================================================= */
 .btn-mlc-save {
     background: var(--mlc-red);
     color: white;
     font-weight: 700;
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: 12px 20px;
     border: none;
-
-    /* ⭐ MODIFICACIÓN CLAVE: Mejorar el espaciado del botón de guardar */
-    margin-top: 25px;
-    display: block;
-    width: 100%;
-    /* Ocupa todo el ancho en el contenedor ajustado */
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
 }
 
 .btn-mlc-save:hover {
-    filter: brightness(.95);
+    background-color: var(--mlc-red-hover);
+    box-shadow: 0 0 20px rgba(229, 9, 20, 0.7);
+    transform: translateY(-2px);
+    color: white;
+}
+
+.btn-mlc-save:active {
+    background-color: #b00710 !important;
+    box-shadow: none !important;
+    transform: translateY(0);
 }
 
 .btn-mlc-add {
     background: #1f8a3a;
+    /* Verde para 'Añadir' */
     color: #fff;
     border-radius: 8px;
-    padding: 6px 10px;
+    padding: 8px 15px;
     border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.btn-mlc-outline {
-    background: transparent;
-    border: 1px solid rgba(229, 9, 20, 0.25);
+.btn-mlc-add:hover {
+    background-color: #1a7130;
+    transform: translateY(-2px);
     color: #fff;
-    border-radius: 8px;
 }
 
-/* Modal */
-.modal-mlc {
+.btn-mlc-add i {
+    font-size: 1.1rem;
+    margin-right: 5px;
+}
+
+.btn-outline-mlc {
+    background: transparent;
+    border: 1px solid rgba(229, 9, 20, 0.5);
+    color: var(--mlc-red);
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-outline-mlc:hover {
+    background-color: var(--mlc-red);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* Botón de eliminar (Delete/Danger) */
+.btn-danger-mlc {
+    background: #8b0000;
+    color: white;
+    border: 1px solid #ff4444;
+    transition: all 0.2s ease;
+}
+
+.btn-danger-mlc:hover {
+    background: #a00000;
+    border-color: #ff6666;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(255, 0, 0, 0.2);
+    color: white;
+}
+
+
+/* =======================================================================
+    6. MODAL STYLING
+    ======================================================================= */
+.modal-content {
     background: linear-gradient(180deg, #0b0b0b, #111);
     border-radius: 12px;
     border: 1px solid rgba(229, 9, 20, 0.35);
     box-shadow: 0 20px 50px rgba(229, 9, 20, 0.15);
-    padding: 0;
+    color: var(--mlc-text-light);
+    /* Asegurar que el texto del body sea visible */
 }
 
 .modal-mlc .modal-header {
     border-bottom: none;
-    padding: 16px 18px;
+    padding: var(--spacer-md) 25px;
     background: transparent;
 }
 
-/* --- ESTILOS ANTIGUOS ELIMINADOS/REEMPLAZADOS --- */
-/* Eliminamos el estilo obsoleto para usar la nueva clase .car-card */
-.car-item {
-    display: none !important;
+.modal-mlc .modal-title {
+    color: #fff !important;
+    font-size: 1.5rem;
+    font-weight: 700;
 }
 
+.modal-mlc .btn-close {
+    background: transparent;
+    filter: invert(1) grayscale(100%) brightness(200%);
+    /* Hace el ícono blanco */
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
 
-/* --- NUEVOS ESTILOS PARA MI GARAJE (Diseño de Tarjeta) --- */
+.modal-mlc .btn-close:hover {
+    opacity: 1;
+}
 
-/* Estilo Base de las Tarjetas de Coche */
+.modal-mlc .modal-body {
+    padding: 0px 25px 25px 25px;
+}
+
+/* Imagen del Vehículo en Modal */
+#carPhotoContainer {
+    max-width: 250px;
+    margin-bottom: var(--spacer-md);
+    border: 1px dashed var(--mlc-red);
+    padding: 5px;
+    border-radius: 8px;
+}
+
+#carPhotoPreview {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 5px;
+}
+
+/* =======================================================================
+    7. MI GARAJE (CARDS DE VEHÍCULOS)
+    ======================================================================= */
+.no-cars-text {
+    font-style: italic;
+    padding: 20px;
+    color: var(--mlc-text-muted) !important;
+    text-align: center;
+}
+
 .car-card {
     position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
-    /* Hereda el estilo de tarjeta (borde rojo, sombra) pero con un fondo más oscuro para contraste */
-    background-color: var(--mlc-panel);
-    border: 1px solid rgba(229, 9, 20, 0.35);
+    background-color: rgba(20, 20, 20, 0.7);
+    border: 1px solid rgba(229, 9, 20, 0.2);
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-
-    /* Animación de hover sutil */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .car-card:hover {
-    transform: translateY(-3px);
-    /* Pequeño desplazamiento hacia arriba */
+    transform: translateY(-5px);
     box-shadow: 0 10px 35px var(--mlc-glow);
-    background-color: rgba(20, 20, 20, 0.95);
-    /* Ligeramente más intenso */
+    background-color: rgba(20, 20, 20, 0.9);
 }
 
-/* Contenedor de la Imagen */
 .car-image-container {
     width: 100%;
-    /* Relación de aspecto 16:9 - Ideal para fotos de coches */
     aspect-ratio: 16 / 9;
     overflow: hidden;
     border-bottom: 1px solid rgba(229, 9, 20, 0.1);
-    /* Separador sutil */
 }
 
 .car-image-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* Asegura que la imagen cubra el contenedor */
     transition: transform 0.3s ease;
     border-radius: 0 !important;
-    /* Asegura que no tenga borde de estilos anteriores */
     max-width: unset !important;
-    /* Asegura el ancho completo */
 }
 
-/* Efecto zoom sutil en la imagen al hacer hover */
 .car-card:hover .car-image-container img {
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
-/* Contenido de los Detalles (Nombre, Modelo, Año) */
 .car-details-content {
     padding: 15px;
     display: flex;
@@ -210,76 +443,138 @@ textarea:focus,
 
 .car-name {
     color: var(--mlc-red) !important;
-    /* Rojo principal de MLC */
     font-weight: 700;
-    margin-bottom: 2px;
-    font-size: 1.2rem;
+    margin-bottom: 5px;
+    font-size: 1.3rem;
     line-height: 1.2;
 }
 
 .car-model-year {
-    color: rgba(255, 255, 255, 0.65) !important;
-    /* Gris claro para el texto secundario */
-    font-size: 0.9rem;
+    color: var(--mlc-text-muted) !important;
+    font-size: 0.95rem;
     margin-bottom: 0;
     font-weight: 400;
-    /* No tan gruesa como el nombre */
 }
 
-/* Botón de Editar Flotante */
 .btn-edit-car {
-    /* Usamos el estilo btn-mlc-save de tu botón de guardar para el botón de editar */
+    /* Mantenemos el estilo de botón de editar en la tarjeta */
     background: var(--mlc-red);
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 1rem;
-    transition: opacity 0.2s, background-color 0.2s;
-    line-height: 1;
-    height: 35px;
-    width: 35px;
+    border-radius: 50%;
+    padding: 8px;
+    font-size: 1.1rem;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 10px rgba(229, 9, 20, 0.4);
 }
 
 .btn-edit-car:hover {
-    background: #c70812;
-    /* Rojo más oscuro en hover */
-    filter: none;
-    /* Desactivar el filtro del estilo global */
+    background-color: var(--mlc-red-hover);
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(229, 9, 20, 0.6);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* =======================================================================
+    8. RESPONSIVE Y UTILIDADES
+    ======================================================================= */
+@media (max-width: 991px) {
     .main-perfil {
-        /* ⭐ MODIFICACIÓN CLAVE: Volver a una sola columna en móvil */
-        grid-template-columns: 1fr;
         padding: 20px;
     }
 
-    .card-mlc {
-        padding: 14px;
-        /* Permite que la tarjeta ocupe más ancho en móvil, si aplica */
-        max-width: 100%;
-        margin-bottom: 20px;
-        /* Añadir espacio entre tarjetas en móvil */
+    .profile-title {
+        font-size: 2rem;
+        margin-bottom: 2.5rem !important;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .card-mlc .card-body {
+        padding: 20px;
+    }
+
+    .btn-mlc-add {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+
+    .car-name {
+        font-size: 1.2rem;
+    }
+
+    .car-model-year {
+        font-size: 0.9rem;
     }
 }
 
+@media (max-width: 767px) {
+    .main-perfil {
+        padding: 15px;
+    }
 
-/* FIX — Mejorar visibilidad de textos débiles */
+    .profile-title {
+        font-size: 1.8rem;
+        margin-bottom: 2rem !important;
+    }
+
+    .section-title {
+        font-size: 1.3rem;
+        text-align: center;
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .vehicle-section-title {
+        font-size: 1.3rem;
+        text-align: left;
+    }
+
+    .btn-mlc-add {
+        width: 100%;
+        margin-top: 15px;
+        justify-content: center;
+    }
+
+    /* Adaptación del header de Garaje a columna */
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .car-details-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .btn-edit-car {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+}
+
+/* Fixes para visibilidad de texto (Simplificados) */
+/* Se aplica color base y se confía en la cascada, usando !important solo si es estrictamente necesario */
 .card-mlc label,
 .card-mlc h3,
 .card-mlc h4,
 .card-mlc h5,
 .card-mlc p,
 .card-mlc span {
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: var(--mlc-text-light);
 }
 
-/* Títulos como "Datos personales" y "Mi Garaje" */
 .card-mlc .section-title,
 .card-mlc-title,
 .card-mlc h2 {
@@ -287,72 +582,7 @@ textarea:focus,
     font-weight: 700 !important;
 }
 
-/* Subtítulos tipo "Nombre", "Correo electrónico" */
 .form-group label,
 label {
-    color: rgba(255, 255, 255, 0.75) !important;
-}
-
-/* ======================================================= */
-/* ESTILOS DE FORMULARIO - Ajustes Finales */
-/* ======================================================= */
-
-/* Asegura que el texto de información secundaria tenga el espaciado correcto */
-.profile-info-text {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 5px;
-    margin-bottom: 15px;
-    /* Pequeño espacio para separarlo del botón si existe */
-}
-
-/* ======================================================= */
-/* ESTILOS ANTERIORES - DEJADOS POR COMPATIBILIDAD */
-/* ======================================================= */
-
-.password-toggle-icon {
-    width: 32px;
-    height: 32px;
-    display: block;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    cursor: pointer;
-}
-
-/* Asegúrate de que las rutas a tus imágenes sean correctas */
-.password-toggle-icon.hide-password {
-    /* Icono de ojo tachado (estado de contraseña oculta) */
-    background-image: url('../../img/icono-ojo-tachado.png');
-}
-
-.password-toggle-icon.show-password {
-    /* Icono de ojo abierto (estado de contraseña visible) */
-    background-image: url('../../img/icono-ojo-abierto.png');
-}
-
-.btn-mlc-password-toggle {
-    /* El botón que envuelve el ícono */
-    background-color: transparent !important;
-    border: none !important;
-    padding: 0.375rem 0.75rem;
-    /* El padding estándar de Bootstrap para botones */
-}
-
-/* ⚠️ Correcciones para Input Group ⚠️ */
-/* Ajuste el border-radius para que el input (mlc-input) y el botón (btn) se unan correctamente. */
-
-/* Quitar el borde derecho al input y redondear solo el lado izquierdo */
-.input-group>.mlc-input:not(:last-child) {
-    border-top-right-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-right: none !important;
-}
-
-/* Quitar el borde izquierdo al botón y redondear solo el lado derecho */
-.input-group>.btn-mlc-password-toggle {
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    /* Mantiene el borde que tenía el input en ese lado */
+    color: var(--mlc-text-muted) !important;
 }
