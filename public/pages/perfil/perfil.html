@@ -16,14 +16,51 @@
     <link rel="stylesheet" href="./perfil.css" />
 
     <style>
+        .password-toggle-icon {
+            width: 32px;
+            /* Ajustado para ser más grande, como en tus capturas */
+            height: 32px;
+            display: block;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+        }
+
+        /* Asegúrate de que las rutas a tus imágenes sean correctas */
+        .password-toggle-icon.hide-password {
+            /* Icono de ojo tachado para el estado por defecto (contraseña oculta) */
+            background-image: url('../../img/icono-ojo-tachado.png');
+        }
+
+        .password-toggle-icon.show-password {
+            /* Icono de ojo abierto para el estado de mostrar contraseña */
+            background-image: url('../../img/icono-ojo-abierto.png');
+        }
+
         .btn-mlc-password-toggle {
+            /* Estilo para integrar el icono al final del input */
             background-color: transparent !important;
             border: none !important;
             padding: 0.375rem 0.75rem;
         }
 
-        /* Los estilos .password-toggle-icon, .hide-password, .show-password
-        y sus ajustes de .input-group se han quitado ya que solo aplicaban al modal de contraseña. */
+        /* Ajuste para que el input group se vea bien con el botón */
+        .input-group:not(.has-validation)>.form-control:not(:last-child),
+        .input-group> :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-check-input) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .input-group>.btn:last-child {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        /* Ajuste específico para el input mlc-input */
+        .mlc-input {
+            border-right: none !important;
+        }
     </style>
 </head>
 
@@ -67,14 +104,16 @@
             <a href="#" id="logout-btn" class="d-block text-danger">
                 <i class="bi bi-box-arrow-right"></i> Cerrar sesión
             </a>
+
         </div>
     </div>
+
     <main class="container main-perfil">
         <h1 class="text-center mb-4">Mi Perfil</h1>
 
         <div class="row">
             <div class="col-12 col-lg-6 mb-4 mb-lg-0">
-                <div class="card card-mlc h-100">
+                <div class="card card-mlc">
                     <div class="card-body">
                         <h4 class="card-title mb-3">Datos personales</h4>
                         <form id="profile-form" class="mb-3">
@@ -88,8 +127,7 @@
                             <div class="mb-3">
                                 <label for="profile-email" class="form-label">Correo electrónico</label>
                                 <input type="email" class="form-control mlc-input" id="profile-email" required />
-                                <div class="form-text text-muted mt-1">
-                                    Cambiar correo requiere verificar tu contraseña.
+                                <div class="form-text text-muted mt-1">Cambiar correo requiere verificar tu contraseña.
                                 </div>
                             </div>
 
@@ -98,12 +136,17 @@
                             </div>
                         </form>
 
+                        <div class="d-grid gap-2 mt-3">
+                            <button id="change-password-btn" class="btn btn-mlc-outline" data-bs-toggle="modal"
+                                data-bs-target="#passwordModal">
+                                <i class="bi bi-key"></i> Cambiar contraseña
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-
             <div class="col-12 col-lg-6">
-                <div class="card card-mlc h-100">
+                <div class="card card-mlc">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h4 class="card-title mb-0">Mi Garaje</h4>
@@ -121,6 +164,46 @@
         </div>
     </main>
 
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content modal-mlc">
+                <div class="modal-header">
+                    <h5 class="modal-title text-light">Cambiar contraseña</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="password-form">
+                        <div class="mb-3">
+                            <label class="form-label">Nueva contraseña</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control mlc-input" id="new-password" required />
+                                <button class="btn btn-mlc-password-toggle toggle-password" type="button"
+                                    data-target-id="new-password">
+                                    <span class="password-toggle-icon hide-password"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Confirmar nueva contraseña</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control mlc-input" id="confirm-new-password"
+                                    required />
+                                <button class="btn btn-mlc-password-toggle toggle-password" type="button"
+                                    data-target-id="confirm-new-password">
+                                    <span class="password-toggle-icon hide-password"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="submit" class="btn btn-mlc-save">Actualizar contraseña</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="carModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content modal-mlc">
