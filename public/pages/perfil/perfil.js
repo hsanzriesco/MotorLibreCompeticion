@@ -380,8 +380,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // CONFIRMACIONES (Esta función es la que crea el modal en el centro de la pantalla)
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
+            // ✅ CORRECCIÓN CLAVE: Si ya hay un modal abierto, salimos sin resolver NADA,
+            // forzando al usuario a usar el modal que ya está en pantalla.
             if (document.getElementById('mlc-confirm-overlay')) {
-                resolve(false);
+                // No resolvemos ni true ni false. Solo salimos.
                 return;
             }
 
@@ -508,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ LÓGICA DE CERRAR SESIÓN (CORREGIDA LA TEMPORIZACIÓN)
+    // 🚀 LÓGICA DE CERRAR SESIÓN (CORREGIDA LA TEMPORIZACIÓN A 1500ms)
     logoutBtn.addEventListener('click', async (e) => {
         // Detiene el comportamiento por defecto inmediatamente
         e.preventDefault();
@@ -525,15 +527,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 2. Acción de ACEPTAR: Muestra el mensaje de éxito INMEDIATAMENTE después de la confirmación
-        //    y programa la limpieza de sesión y redirección.
+        // 2. Acción de ACEPTAR: Muestra el mensaje de éxito
         mostrarAlerta('Sesión cerrada correctamente', 'exito');
 
-        // 3. Espera 1 segundo para que la alerta sea visible y luego redirige y limpia
+        // 3. Espera 1.5 segundos (1500ms) para que la alerta sea visible
         setTimeout(() => {
-            sessionStorage.removeItem('usuario'); // Limpia la sesión (ahora dentro del timeout)
+            sessionStorage.removeItem('usuario'); // Limpia la sesión
             window.location.href = '/index.html'; // Redirige
-        }, 1000);
+        }, 1500); // <-- TIEMPO AUMENTADO
     });
 
     // INICIALIZAR
