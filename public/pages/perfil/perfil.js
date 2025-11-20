@@ -508,11 +508,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 🚀 LÓGICA DE CERRAR SESIÓN (Ya cumple con la confirmación solicitada)
+    // ✅ LÓGICA DE CERRAR SESIÓN (CORREGIDA LA TEMPORIZACIÓN)
     logoutBtn.addEventListener('click', async (e) => {
+        // Detiene el comportamiento por defecto inmediatamente
         e.preventDefault();
 
-        // Muestra el modal de confirmación
+        // 1. Muestra el modal de confirmación y espera la respuesta del usuario
         const confirmar = await mostrarConfirmacion(
             '¿Seguro que quieres cerrar sesión?',
             'Cerrar sesión'
@@ -524,12 +525,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Acción de ACEPTAR: Cierra la sesión y redirige
-        sessionStorage.removeItem('usuario');
+        // 2. Acción de ACEPTAR: Muestra el mensaje de éxito INMEDIATAMENTE después de la confirmación
+        //    y programa la limpieza de sesión y redirección.
         mostrarAlerta('Sesión cerrada correctamente', 'exito');
 
+        // 3. Espera 1 segundo para que la alerta sea visible y luego redirige y limpia
         setTimeout(() => {
-            window.location.href = '/index.html';
+            sessionStorage.removeItem('usuario'); // Limpia la sesión (ahora dentro del timeout)
+            window.location.href = '/index.html'; // Redirige
         }, 1000);
     });
 
