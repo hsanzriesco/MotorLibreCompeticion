@@ -117,103 +117,80 @@
             <i id="login-icon" class="bi bi-person-circle fs-3" style="display: none;"></i>
         </header>
 
-        <ul class="nav nav-pills mb-4 justify-content-center" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile-section"
-                    type="button" role="tab" aria-controls="profile-section" aria-selected="true"><i
-                        class="bi bi-person-gear"></i> Mi Perfil</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="garage-tab" data-bs-toggle="tab" data-bs-target="#garage-section"
-                    type="button" role="tab" aria-controls="garage-section" aria-selected="false"><i
-                        class="bi bi-car-front"></i> Mi Garaje</button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-
-            <div class="tab-pane fade show active" id="profile-section" role="tabpanel" aria-labelledby="profile-tab">
-                <div class="card profile-card">
-                    <div class="section-header">
-                        <h3 class="mb-0 fw-bold">Actualizar Datos de Acceso</h3>
-                        <p class="text-muted mb-0 small">Modifica tu nombre y/o correo electrónico asociado a tu cuenta.
-                        </p>
-                    </div>
-                    <div class="card-body">
-                        <form id="profile-form">
-                            <input type="hidden" id="user-id">
-
-                            <div class="mb-3">
-                                <label for="profile-name" class="form-label fw-semibold">Nombre Completo</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                                    <input type="text" class="form-control" id="profile-name" required
-                                        placeholder="Tu nombre aparecerá en la app">
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="profile-email" class="form-label fw-semibold">Correo Electrónico</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                                    <input type="email" class="form-control" id="profile-email" required
-                                        placeholder="email@ejemplo.com">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary w-100 py-2"><i class="bi bi-save"></i> Guardar
-                                Cambios del Perfil</button>
-                        </form>
-                    </div>
+        <div id="profile-section">
+            <div class="card profile-card">
+                <div class="section-header">
+                    <h3 class="mb-0 fw-bold">Actualizar Datos de Acceso</h3>
+                    <p class="text-muted mb-0 small">Modifica tu nombre y/o correo electrónico asociado a tu cuenta.</p>
                 </div>
+                <div class="card-body">
+                    <form id="profile-form">
+                        <input type="hidden" id="user-id">
 
-                <div class="card profile-card mt-4">
-                    <div class="section-header">
-                        <h3 class="mb-0 fw-bold">Contraseña</h3>
-                        <p class="text-muted mb-0 small">Esta sección usaría tu lógica de 'toggle-password' si estuviera
-                            activa.</p>
-                    </div>
-                    <div class="card-body">
-                        <form id="password-form-simulado">
-                            <div class="mb-3">
-                                <label for="current-password" class="form-label">Contraseña Actual</label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="current-password"
-                                        placeholder="Ingresa tu contraseña actual">
-                                    <button class="btn btn-outline-secondary toggle-password" type="button"
-                                        data-target-id="current-password">
-                                        <span class="password-toggle-icon hide-password"></span>
-                                    </button>
-                                </div>
+                        <div class="mb-3">
+                            <label for="profile-name" class="form-label fw-semibold">Nombre Completo</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="profile-name" required
+                                    placeholder="Tu nombre aparecerá en la app">
                             </div>
-                            <button class="btn btn-secondary w-100 py-2" disabled>Cambiar Contraseña (Inactivo)</button>
-                        </form>
-                    </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="profile-email" class="form-label fw-semibold">Correo Electrónico</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control" id="profile-email" required
+                                    placeholder="email@ejemplo.com">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2"><i class="bi bi-save"></i> Guardar
+                            Cambios del Perfil</button>
+                    </form>
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="garage-section" role="tabpanel" aria-labelledby="garage-tab">
-                <div class="mt-4">
-                    <div
-                        class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded-3 shadow-sm">
-                        <h2 class="h4 mb-0 fw-bold text-dark">Tu Colección de Vehículos</h2>
-                        <button id="open-add-car-btn" class="btn btn-success"><i class="bi bi-plus-circle"></i> Añadir
-                            Vehículo</button>
-                    </div>
-
-                    <div id="no-cars-message" class="alert alert-info text-center" style="display: none;">
-                        <i class="bi bi-exclamation-triangle-fill"></i> No tienes vehículos registrados. ¡Añade tu
-                        primer Coche o Moto!
-                    </div>
-
-                    <div id="car-list" class="mt-3">
-                    </div>
+            <div class="card profile-card mt-4">
+                <div class="section-header">
+                    <h3 class="mb-0 fw-bold">Contraseña</h3>
+                    <p class="text-muted mb-0 small">Esta sección usaría tu lógica de 'toggle-password' si estuviera
+                        activa.</p>
+                </div>
+                <div class="card-body">
+                    <form id="password-form-simulado">
+                        <div class="mb-3">
+                            <label for="current-password" class="form-label">Contraseña Actual</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="current-password"
+                                    placeholder="Ingresa tu contraseña actual">
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target-id="current-password">
+                                    <span class="password-toggle-icon hide-password"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary w-100 py-2" disabled>Cambiar Contraseña (Inactivo)</button>
+                    </form>
                 </div>
             </div>
+        </div>
+        <div id="garage-section" class="mt-5">
+            <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded-3 shadow-sm">
+                <h2 class="h4 mb-0 fw-bold text-dark">Tu Colección de Vehículos</h2>
+                <button id="open-add-car-btn" class="btn btn-success"><i class="bi bi-plus-circle"></i> Añadir
+                    Vehículo</button>
+            </div>
 
+            <div id="no-cars-message" class="alert alert-info text-center" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill"></i> No tienes vehículos registrados. ¡Añade tu primer Coche
+                o Moto!
+            </div>
+
+            <div id="car-list" class="mt-3">
+            </div>
         </div>
     </div>
-
     <div class="modal fade" id="carModal" tabindex="-1" aria-labelledby="carModalTitle" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">

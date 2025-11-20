@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentVehicle = null;
     let user;
-    let bsCarModalInstance; // Instancia de Bootstrap Modal
 
     // --- Carga Inicial de Usuario ---
     const stored = sessionStorage.getItem('usuario');
@@ -53,13 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Inicializar instancia de Bootstrap Modal
-    if (carModal) {
-        bsCarModalInstance = new bootstrap.Modal(carModal, {
-            keyboard: true
-        });
-    }
-
     userNameElement.textContent = user.name || 'Usuario';
     if (loginIcon) loginIcon.style.display = 'none';
 
@@ -73,38 +65,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // -------------------------------------------------------------------
-    // 👁️ LÓGICA DE VISUALIZACIÓN DE CONTRASEÑA
-    // -------------------------------------------------------------------
+    // *******************************************************************
+    // ⭐ LÓGICA DE VISUALIZACIÓN DE CONTRASEÑA (MANTENIDA) ⭐
+    // *******************************************************************
+
     document.querySelectorAll('.toggle-password').forEach(button => {
         button.addEventListener('click', function () {
+            // 1. Obtener el ID del input objetivo y el span del icono
             const targetId = this.getAttribute('data-target-id');
             const passwordInput = document.getElementById(targetId);
+            // Seleccionamos el span que tiene las clases de icono personalizadas
             const iconSpan = this.querySelector('.password-toggle-icon');
 
             if (!passwordInput || !iconSpan) return;
 
+            // 2. Comprobar el tipo de input y cambiarlo
             const isPassword = passwordInput.type === 'password';
 
             passwordInput.type = isPassword ? 'text' : 'password';
 
+            // 3. Cambiar el icono (ojo tachado vs. ojo abierto)
             if (isPassword) {
+                // Si estaba oculto (password), lo mostramos (text) -> Cambia a ojo abierto (show-password)
                 iconSpan.classList.remove('hide-password');
                 iconSpan.classList.add('show-password');
             } else {
+                // Si estaba visible (text), lo ocultamos (password) -> Cambia a ojo tachado (hide-password)
                 iconSpan.classList.remove('show-password');
                 iconSpan.classList.add('hide-password');
             }
 
+            // Opcional: Mantener el foco en el campo después de hacer clic
             passwordInput.focus();
         });
     });
+    // *******************************************************************
+    // ⭐ FIN LÓGICA DE VISUALIZACIÓN DE CONTRASEÑA ⭐
+    // *******************************************************************
 
-    // -------------------------------------------------------------------
-    // 🚗 FUNCIÓN RENDERIZADO DE VEHÍCULOS
-    // -------------------------------------------------------------------
+
+    // --- FUNCIÓN RENDERIZADO DE VEHÍCULOS (COCHE O MOTO) ---
     function renderVehicle(vehicle) {
         const isCar = vehicle.type === 'car';
+        // Usa la clave correcta: 'car_name' o 'motorcycle_name'
         const nameKey = isCar ? 'car_name' : 'motorcycle_name';
         const name = vehicle[nameKey];
 
@@ -138,72 +141,89 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
 
-    // -------------------------------------------------------------------
-    // ⚙️ FUNCIÓN CARGA DE VEHÍCULOS (MEJORADA CON CONCURRENCIA)
-    // -------------------------------------------------------------------
+    // --- FUNCIÓN CARGA DE VEHÍCULOS (COCHES + MOTOS) ---
     async function loadVehicles() {
-        const userId = encodeURIComponent(user.id);
         const allVehicles = [];
+        const userId = encodeURIComponent(user.id);
 
-        // Usamos Promise.all para cargar Coches y Motos en paralelo
-        const [carsData, bikesData] = await Promise.all([
-            fetch(`/api/carGarage?user_id=${userId}`).then(r => r.json()).catch(e => {
-                console.error("Error al cargar coches:", e.message);
-                return { cars: [] };
-            }),
-            fetch(`/api/motosGarage?user_id=${userId}`).then(r => r.json()).catch(e => {
-                console.error("Error al cargar motos:", e.message);
-                return { motorcycles: [] };
-            })
-        ]);
-
-        const cars = (carsData.cars || []).map(c => ({ ...c, type: 'car' }));
-        const motorcycles = (bikesData.motorcycles || []).map(m => ({ ...m, type: 'motorcycle' }));
-        allVehicles.push(...cars, ...motorcycles);
-
-        let finalHtml = '';
         let carsHtml = '';
         let motorcyclesHtml = '';
 
-        // 1. Renderizar Coches
-        if (cars.length > 0) {
-            carsHtml += '<h3 class="vehicle-section-title mt-4 mb-3">🚗 Coches</h3><div class="row">';
-            cars.forEach(car => {
-                carsHtml += renderVehicle(car);
-            });
-            carsHtml += '</div>';
+        // 1. Cargar Coches
+        try {
+            const carsResp = await fetch(`/api/carGarage?user_id=${userId}`);
+            const carsData = await carsResp.json();
+            const cars = (carsData.cars || []).map(c => ({
+                ...c,
+                type: 'car'
+            }));
+            allVehicles.push(...cars);
+
+            // Renderizar coches si hay
+            if (cars.length > 0) {
+                carsHtml += '<h3 class="vehicle-section-title mt-4 mb-3">🚗 Coches</h3><div class="row">';
+                cars.forEach(car => {
+                    carsHtml += renderVehicle(car);
+                });
+                carsHtml += '</div>';
+            }
+
+        } catch (e) {
+            console.error("Error al cargar coches:", e.message);
         }
 
-        // 2. Renderizar Motos
-        if (motorcycles.length > 0) {
-            motorcyclesHtml += '<h3 class="vehicle-section-title mt-4 mb-3">🏍️ Motos</h3><div class="row">';
-            motorcycles.forEach(moto => {
-                motorcyclesHtml += renderVehicle(moto);
-            });
-            motorcyclesHtml += '</div>';
+        // 2. Cargar Motos
+        try {
+            const bikesResp = await fetch(`/api/motosGarage?user_id=${userId}`);
+            const bikesData = await bikesResp.json();
+            const motorcycles = (bikesData.motorcycles || []).map(m => ({
+                ...m,
+                type: 'motorcycle',
+            }));
+            allVehicles.push(...motorcycles);
+
+            // Renderizar motos si hay
+            if (motorcycles.length > 0) {
+                motorcyclesHtml += '<h3 class="vehicle-section-title mt-4 mb-3">🏍️ Motos</h3><div class="row">';
+                motorcycles.forEach(moto => {
+                    motorcyclesHtml += renderVehicle(moto);
+                });
+                motorcyclesHtml += '</div>';
+            }
+        } catch (e) {
+            console.error("Error al cargar motos:", e.message);
         }
 
-        // 3. Mostrar Contenido
+        // 3. Combinar y mostrar con el Separador
+        carList.innerHTML = '';
+        let finalHtml = '';
+
         if (!allVehicles.length) {
             noCarsMessage.style.display = 'block';
+            // Asegurarse de que carList está vacío
             carList.innerHTML = '';
             return;
         }
 
         noCarsMessage.style.display = 'none';
+
+        // 3.1. Añadir Coches
         finalHtml += carsHtml;
 
-        // Insertar Separador si hay AMBOS tipos de vehículos
+        // 3.2. ⭐ Insertar Separador si hay COCHES Y MOTOS ⭐
         if (carsHtml.length > 0 && motorcyclesHtml.length > 0) {
             finalHtml += '<hr class="vehicle-separator my-4">';
         }
 
+        // 3.3. Añadir Motos
         finalHtml += motorcyclesHtml;
-        carList.innerHTML = finalHtml;
 
-        // 4. Adjuntar Event Listener después de la renderización
+        carList.innerHTML = finalHtml; // Renderizamos todo el contenido combinado
+
+        // Event Listener para abrir modal al hacer clic en el vehículo
         carList.querySelectorAll('.car-card').forEach(item => {
             item.addEventListener('click', () => {
+                // Buscar el contenedor de datos que está un nivel superior a la card
                 const el = item.closest('[data-vehicle-id]');
                 const id = parseInt(el.dataset.vehicleId);
                 const type = el.dataset.vehicleType;
@@ -211,24 +231,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (vehicle) {
                     openCarModal(vehicle);
-                    bsCarModalInstance.show();
+                    // Obtener la instancia de Bootstrap justo antes de mostrar
+                    new bootstrap.Modal(carModal).show();
                 }
             });
         });
     }
 
-    // -------------------------------------------------------------------
-    // 🛠️ Lógica del Modal de Vehículo
-    // -------------------------------------------------------------------
+    // --- Lógica del Modal de Vehículo ---
     function updateCarModalUI(type, isEdit = false) {
         const isCar = type === 'car';
         vehicleTypeInput.value = type;
 
+        // Actualizar título y etiqueta
         carModalTitle.textContent = isEdit ? `Editar ${isCar ? 'Coche' : 'Moto'}` : `Añadir ${isCar ? 'Coche' : 'Moto'}`;
         vehicleNameLabel.textContent = isCar ? 'Nombre del coche' : 'Nombre de la moto';
         vehicleTypeSelect.disabled = isEdit;
     }
 
+    // MODIFICACIÓN de openCarModal (Ahora maneja VEHÍCULOS)
     function openCarModal(vehicle = null) {
         carForm.reset();
         currentVehicle = vehicle;
@@ -265,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteCarBtn.style.display = 'none';
         }
 
-        // Configuración final de UI
+        // Configuración final de UI (Tanto para editar como para añadir)
         vehicleTypeSelect.value = type;
         updateCarModalUI(type, isEdit);
     }
@@ -275,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Abrir modal de añadir
     openAddCarBtn.addEventListener('click', () => {
         openCarModal(null);
-        bsCarModalInstance.show();
+        new bootstrap.Modal(carModal).show();
     });
 
     // Cambiar etiqueta cuando cambia el tipo en el modal (Solo al AÑADIR)
@@ -324,14 +345,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCar = type === 'car';
         const nameInput = carNameInput.value.trim();
 
-        // VALIDACIÓN DE AÑO
+        // ⭐ VALIDACIÓN DE AÑO ⭐
         const vehicleYear = parseInt(carYearInput.value.trim());
         const currentYear = new Date().getFullYear();
 
-        if (isNaN(vehicleYear) || vehicleYear < 1900 || vehicleYear > currentYear) {
+        if (isNaN(vehicleYear) || vehicleYear < 1900) {
             mostrarAlerta(`El año del vehículo no es válido. Debe ser un número entre 1900 y ${currentYear}.`, 'error');
             return;
         }
+
+        // 🚨 VERIFICACIÓN DE AÑO SUPERIOR
+        if (vehicleYear > currentYear) {
+            mostrarAlerta(`El año del vehículo (${vehicleYear}) no puede ser superior al año actual (${currentYear}).`, 'error');
+            return; // Detiene el envío del formulario
+        }
+        // ⭐ FIN: VALIDACIÓN DE AÑO ⭐
 
         if (!nameInput) {
             mostrarAlerta(`El nombre del ${isCar ? 'coche' : 'moto'} es obligatorio`, 'advertencia');
@@ -342,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('user_id', user.id);
 
-        // Usar el nombre de campo correcto según el tipo de vehículo
+        // CLAVE: Usar el nombre de campo correcto según el tipo de vehículo
         formData.append(isCar ? 'car_name' : 'motorcycle_name', nameInput);
         formData.append('model', carModelInput.value.trim() || '');
         formData.append('year', carYearInput.value.trim() || '');
@@ -357,34 +385,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentURL = carPhotoUrlInput.value;
 
         if (file) {
+            // Si hay un nuevo archivo seleccionado
             formData.append('imageFile', file);
-            // Si subimos un archivo, no enviamos la URL
+            // No adjuntamos photoURL
         } else if (currentURL && currentURL !== 'FILE_PENDING') {
             // Si no hay archivo nuevo, pero hay una URL existente
             formData.append('photoURL', currentURL);
         } else {
-            // Si se eliminó la foto o no había (para asegurar que se borra si ya existía una)
+            // Si no hay ni archivo ni URL (para borrar la imagen existente si no hay nada en el campo)
             formData.append('photoURL', '');
         }
 
         try {
-            // Seleccionar la API correcta
+            // CLAVE: Seleccionar la API correcta
             const apiSegment = isCar ? 'carGarage' : 'motosGarage';
             const url = id ? `/api/${apiSegment}?id=${id}` : `/api/${apiSegment}`;
 
             const resp = await fetch(url, {
                 method: id ? 'PUT' : 'POST',
-                // Importante: No establecer Content-Type para FormData, el navegador lo gestiona
+                // Importante: No establecer Content-Type para FormData
                 body: formData
             });
 
+            // Leer la respuesta, incluso si es un error
             const json = await resp.json();
             if (!resp.ok || !json.ok) throw new Error(json.msg || 'Fallo en la respuesta del servidor.');
 
             mostrarAlerta(id ? 'Vehículo actualizado' : 'Vehículo añadido', 'exito');
 
             await loadVehicles(); // Recargar la lista combinada
-            bsCarModalInstance.hide(); // Ocultar usando la instancia guardada
+            const modalInstance = bootstrap.Modal.getInstance(carModal);
+            if (modalInstance) modalInstance.hide();
 
         } catch (e) {
             console.error("Error al guardar el vehículo:", e);
@@ -392,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Lógica de Eliminación de Vehículo ---
+    // ⭐ MODIFICACIÓN DE deleteCarBtn PARA VEHÍCULOS ⭐
     deleteCarBtn.addEventListener('click', async () => {
         if (!currentVehicle) return;
 
@@ -406,11 +437,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // CLAVE: Seleccionar la API correcta
             const apiSegment = isCar ? 'carGarage' : 'motosGarage';
-            const resp = await fetch(`/api/${apiSegment}?id=${encodeURIComponent(currentVehicle.id)}`, {
-                method: 'DELETE'
-            });
+            const resp = await fetch(`/api/${apiSegment}?id=${encodeURIComponent(currentVehicle.id)}`, { method: 'DELETE' });
 
+            // Si la respuesta es 200 o 204
             if (!resp.ok) {
                 const json = await resp.json();
                 throw new Error(json.msg || 'Error al eliminar en el servidor');
@@ -418,7 +449,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             mostrarAlerta('Vehículo eliminado', 'exito');
             await loadVehicles();
-            bsCarModalInstance.hide();
+            const modalInstance = bootstrap.Modal.getInstance(carModal);
+            if (modalInstance) modalInstance.hide();
 
         } catch (e) {
             console.error("Error eliminando vehículo:", e);
@@ -427,83 +459,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // -------------------------------------------------------------------
-    // 🔗 Lógica del Formulario de Perfil
-    // -------------------------------------------------------------------
-    profileForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const newName = document.getElementById('profile-name').value.trim();
-        const newEmail = document.getElementById('profile-email').value.trim();
-
-        if (newName === (user.name || '') && newEmail === (user.email || '')) {
-            mostrarAlerta('No hay cambios que guardar.', 'info');
-            return;
-        }
-
-        const confirmar = await mostrarConfirmacion('¿Quieres guardar los cambios de tu perfil?', 'Guardar');
-        if (!confirmar) {
-            mostrarAlerta('Cambios cancelados', 'info');
-            // Restaurar los valores iniciales
-            document.getElementById('profile-name').value = user.name || '';
-            document.getElementById('profile-email').value = user.email || '';
-            return;
-        }
-
-        try {
-            const resp = await fetch('/api/userAction', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    id: user.id,
-                    name: newName,
-                    email: newEmail
-                })
-            });
-
-            const json = await resp.json();
-            if (!resp.ok || !json.ok) {
-                throw new Error(json.msg || 'Fallo en la actualización del perfil.');
-            }
-
-            // Actualizar la sesión y la UI
-            user.name = newName;
-            user.email = newEmail;
-            sessionStorage.setItem('usuario', JSON.stringify(user));
-
-            userNameElement.textContent = newName || 'Usuario';
-            mostrarAlerta('Perfil actualizado correctamente', 'exito');
-
-        } catch (error) {
-            console.error('Error al actualizar perfil:', error);
-            mostrarAlerta('Error al actualizar perfil: ' + error.message, 'error');
-        }
-    });
-
-
-    // -------------------------------------------------------------------
-    // 🚪 Lógica de Cerrar Sesión
-    // -------------------------------------------------------------------
-    logoutBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const confirmar = await mostrarConfirmacion('¿Estás seguro de que quieres cerrar sesión?', 'Cerrar');
-        if (confirmar) {
-            sessionStorage.removeItem('usuario');
-            mostrarAlerta('Sesión cerrada', 'info');
-            setTimeout(() => window.location.href = '/index.html', 800);
-        } else {
-            mostrarAlerta('Cierre de sesión cancelado', 'info');
-        }
-    });
-
-    // -------------------------------------------------------------------
-    // 💡 FUNCIONES AUXILIARES (SE MANTIENE LA IMPLEMENTACIÓN ORIGINAL)
-    // -------------------------------------------------------------------
+    // *******************************************************************
+    // ⭐ FUNCIONES AUXILIARES ⭐
+    // *******************************************************************
 
     /**
-     * Muestra una ventana de confirmación centralizada con el estilo de la app.
+     * Muestra una ventana de confirmación centralizada con el estilo de la app (negro/rojo).
      * @param {string} mensaje - Mensaje a mostrar.
      * @param {string} [confirmText='Confirmar'] - Texto del botón de confirmación.
      * @returns {Promise<boolean>} Resuelve a true si se confirma, false si se cancela.
@@ -583,12 +544,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
             btnCancel.addEventListener('click', () => cleanup(false), { once: true });
             btnConfirm.addEventListener('click', () => cleanup(true), { once: true });
-            document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') cleanup(false);
-            }, { once: true });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') cleanup(false); }, { once: true });
         });
     }
 
-    // --- Inicialización ---
+    // El código de 'mostrarAlerta' se mantiene en el HTML según tu estructura.
+
+    // --- Lógica del Formulario de Perfil ---
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newName = document.getElementById('profile-name').value.trim();
+        const newEmail = document.getElementById('profile-email').value.trim();
+
+        if (newName === (user.name || '') && newEmail === (user.email || '')) {
+            mostrarAlerta('No hay cambios que guardar.', 'info');
+            return;
+        }
+
+        const confirmar = await mostrarConfirmacion('¿Quieres guardar los cambios de tu perfil?', 'Guardar');
+        if (!confirmar) {
+            mostrarAlerta('Cambios cancelados', 'info');
+            // Recargar para restaurar los valores iniciales si se cancela
+            document.getElementById('profile-name').value = user.name || '';
+            document.getElementById('profile-email').value = user.email || '';
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/userAction', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: user.id,
+                    name: newName,
+                    email: newEmail
+                })
+            });
+
+            const json = await resp.json();
+            if (!resp.ok || !json.ok) {
+                throw new Error(json.msg || 'Fallo en la actualización del perfil.');
+            }
+
+            // Actualizar la sesión y la UI
+            user.name = newName;
+            user.email = newEmail;
+            sessionStorage.setItem('usuario', JSON.stringify(user));
+
+            userNameElement.textContent = newName || 'Usuario';
+            mostrarAlerta('Perfil actualizado correctamente', 'exito');
+
+        } catch (error) {
+            console.error('Error al actualizar perfil:', error);
+            mostrarAlerta('Error al actualizar perfil: ' + error.message, 'error');
+        }
+    });
+
+    // --- Lógica de Cerrar Sesión ---
+    logoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const confirmar = await mostrarConfirmacion('¿Estás seguro de que quieres cerrar sesión?', 'Cerrar');
+        if (confirmar) {
+            sessionStorage.removeItem('usuario');
+            mostrarAlerta('Sesión cerrada', 'info');
+            setTimeout(() => window.location.href = '/index.html', 800);
+        } else {
+            mostrarAlerta('Cierre de sesión cancelado', 'info');
+        }
+    });
+
+    // --- Inicialización (SE EJECUTA INMEDIATAMENTE YA QUE NO HAY PESTAÑAS) ---
     loadVehicles();
 });
