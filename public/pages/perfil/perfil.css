@@ -35,7 +35,16 @@ body {
     border: 1px solid rgba(229, 9, 20, 0.35);
     box-shadow: 0 8px 30px var(--mlc-glow);
     border-radius: 12px;
-    padding: 18px;
+
+    /* ⭐ MODIFICACIÓN CLAVE: Ajustar padding para mejor espaciado */
+    padding: 30px;
+
+    /* ⭐ MODIFICACIÓN CLAVE: Altura automática y ancho máximo para hacerlo responsive al contenido */
+    height: auto;
+    max-width: 500px;
+    /* Limita el ancho en escritorio para mejor diseño */
+    margin: 0 auto 30px auto;
+    /* Centrar la tarjeta y añadir margen inferior */
 }
 
 /* Inputs — FIX GLOBAL */
@@ -78,6 +87,12 @@ textarea:focus,
     border-radius: 8px;
     padding: 10px 14px;
     border: none;
+
+    /* ⭐ MODIFICACIÓN CLAVE: Mejorar el espaciado del botón de guardar */
+    margin-top: 25px;
+    display: block;
+    width: 100%;
+    /* Ocupa todo el ancho en el contenedor ajustado */
 }
 
 .btn-mlc-save:hover {
@@ -235,6 +250,8 @@ textarea:focus,
 
     .card-mlc {
         padding: 14px;
+        /* Permite que la tarjeta ocupe más ancho en móvil, si aplica */
+        max-width: 100%;
     }
 }
 
@@ -264,8 +281,20 @@ label {
 }
 
 /* ======================================================= */
-/* ⭐ ESTILOS AÑADIDOS PARA EL TOGGLE DE CONTRASEÑA ⭐ */
-/* Estos estilos hacen que el ícono de ojo sea tu imagen personalizada */
+/* ESTILOS DE FORMULARIO - Ajustes Finales */
+/* ======================================================= */
+
+/* Asegura que el texto de información secundaria tenga el espaciado correcto */
+.profile-info-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 5px;
+    margin-bottom: 15px;
+    /* Pequeño espacio para separarlo del botón si existe */
+}
+
+/* ======================================================= */
+/* ESTILOS ANTERIORES - DEJADOS POR COMPATIBILIDAD */
 /* ======================================================= */
 
 .password-toggle-icon {
