@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // CERRAR SESIÓN (MODIFICADO)
+    // ✅ CERRAR SESIÓN (AHORA SÍ FUNCIONA CORRECTAMENTE)
     logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
 
@@ -516,15 +516,18 @@ document.addEventListener('DOMContentLoaded', () => {
             'Cerrar sesión'
         );
 
-        if (confirmar) {
-            sessionStorage.removeItem('usuario');
-            mostrarAlerta('Sesión cerrada', 'info');
-            setTimeout(() => {
-                window.location.href = '/index.html';
-            }, 800);
-        } else {
+        if (!confirmar) {
             mostrarAlerta('Cierre de sesión cancelado', 'info');
+            return;
         }
+
+        // Solo si CONFIRMA:
+        sessionStorage.removeItem('usuario');
+        mostrarAlerta('Sesión cerrada correctamente', 'exito');
+
+        setTimeout(() => {
+            window.location.href = '/index.html';
+        }, 1000);
     });
 
     // INICIALIZAR
