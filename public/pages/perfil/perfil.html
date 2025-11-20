@@ -2,196 +2,235 @@
 <html lang="es">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mi Perfil - MLC</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+            /* Fondo claro por defecto */
+        }
 
-    <link rel="icon" type="image/png" href="../../img/imagen-tfg.png" />
+        .container {
+            max-width: 900px;
+        }
 
-    <link rel="stylesheet" href="../../css/navbar.css" />
-    <link rel="stylesheet" href="../../css/alertas.css" />
-    <link rel="stylesheet" href="./perfil.css" />
+        .section-title {
+            border-bottom: 2px solid #e50914;
+            /* Color de énfasis (Rojo Netflix/MLC) */
+            padding-bottom: 10px;
+        }
 
+        /* Estilos para la tarjeta de vehículo (ajustado para Bootstrap) */
+        .car-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .car-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .car-image-container {
+            overflow: hidden;
+            height: 150px;
+            /* Altura fija para la imagen */
+        }
+
+        .car-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Opcional: Iconos de contraseña */
+        .password-toggle-icon.hide-password::before {
+            content: "\f340";
+            /* ojo tachado */
+            font-family: "bootstrap-icons";
+        }
+
+        .password-toggle-icon.show-password::before {
+            content: "\f341";
+            /* ojo abierto */
+            font-family: "bootstrap-icons";
+        }
+
+        .btn-edit-car {
+            color: #e50914;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+
+        .vehicle-section-title {
+            color: #e50914;
+        }
+    </style>
 </head>
 
 <body>
-    <div id="alerta-container" class="alerta-container"></div>
 
-    <nav class="navbar navbar-dark bg-dark px-3 fixed-top navbar-mlc">
-        <a id="logo-link" class="navbar-brand d-flex align-items-center" href="/index.html">
-            <img src="../../img/imagen-tfg.png" alt="MLC" height="55" />
-        </a>
+    <div class="container mt-5 mb-5">
+        <header class="text-center mb-5">
+            <h1 class="display-4">Bienvenido, <span id="user-name">Usuario</span></h1>
+            <button id="logout-btn" class="btn btn-outline-danger mt-3">Cerrar Sesión</button>
+            <i id="login-icon" class="bi bi-person-circle fs-3" style="display: none;"></i>
+        </header>
 
-        <div class="d-flex align-items-center ms-auto me-1">
-            <a id="login-icon" href="../auth/login/login.html" class="text-light me-3">
-                <i class="bi bi-person-circle fs-4"></i>
-            </a>
-            <span id="user-name" class="text-danger fw-bold me-3"></span>
-            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                <i class="bi bi-list fs-4"></i>
-            </button>
-        </div>
-    </nav>
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile-section"
+                    type="button" role="tab" aria-controls="profile-section" aria-selected="true">Mi Perfil</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="garage-tab" data-bs-toggle="tab" data-bs-target="#garage-section"
+                    type="button" role="tab" aria-controls="garage-section" aria-selected="false">Mi Garaje</button>
+            </li>
+        </ul>
 
-    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-        <div class="offcanvas-header border-secondary">
-            <h5 class="offcanvas-title">Menú</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body">
-            <a id="menu-inicio" class="d-block text-light mb-2" href="#">
-                <i class="bi bi-house"></i> Inicio
-            </a>
-            <a href="../calendario/calendario.html" class="d-block text-light mb-2">
-                <i class="bi bi-calendar-event"></i> Calendario
-            </a>
-            <a href="./perfil.html" class="d-block text-danger fw-bold mb-2">
-                <i class="bi bi-person-circle"></i> Mi perfil
-            </a>
+        <div class="tab-content" id="myTabContent">
 
-            <hr class="border-secondary" />
-            <a href="#" id="logout-btn" class="d-block text-danger">
-                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
-            </a>
+            <div class="tab-pane fade show active" id="profile-section" role="tabpanel" aria-labelledby="profile-tab">
+                <div class="card shadow mt-4 p-4">
+                    <h2 class="section-title mb-4">Información Personal</h2>
+                    <form id="profile-form">
+                        <input type="hidden" id="user-id">
+
+                        <div class="mb-3">
+                            <label for="profile-name" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="profile-name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="profile-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="profile-email" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </form>
+
+                    <h2 class="section-title mt-5 mb-4">Cambio de Contraseña (Deshabilitado en JS)</h2>
+                    <form id="password-form-simulado">
+                        <div class="mb-3">
+                            <label for="current-password" class="form-label">Contraseña Actual</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="current-password"
+                                    placeholder="Ingresa tu contraseña actual">
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target-id="current-password">
+                                    <span class="password-toggle-icon hide-password"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="garage-section" role="tabpanel" aria-labelledby="garage-tab">
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="section-title mb-0">Mi Garaje de Vehículos</h2>
+                        <button id="open-add-car-btn" class="btn btn-success"><i class="bi bi-plus-circle"></i> Añadir
+                            Vehículo</button>
+                    </div>
+
+                    <div id="no-cars-message" class="alert alert-info text-center" style="display: none;">
+                        No tienes vehículos registrados. ¡Añade tu primer Coche o Moto!
+                    </div>
+
+                    <div id="car-list" class="mt-3">
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>
 
-    <main class="container main-perfil">
-        <h1 class="text-center mb-5 profile-title">Mi Perfil</h1>
-
-        <div class="row g-4">
-            <div class="col-12 col-lg-6">
-                <div class="card card-mlc">
-                    <div class="card-body">
-                        <h4 class="card-title mb-4 section-title">Datos personales</h4>
-                        <form id="profile-form">
-                            <input type="hidden" id="user-id" />
-
-                            <div class="mb-3">
-                                <label for="profile-name" class="form-label">Nombre</label>
-                                <input type="text" class="form-control mlc-input" id="profile-name" required />
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="profile-email" class="form-label">Correo electrónico</label>
-                                <input type="email" class="form-control mlc-input" id="profile-email" required />
-                                <div class="form-text text-muted mt-1 email-hint">Cambiar correo requiere verificar tu
-                                    contraseña.
-                                </div>
-                            </div>
-
-                            <div class="d-grid mt-4">
-                                <button type="submit" class="btn btn-mlc-save">Guardar cambios</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-lg-6">
-                <div class="card card-mlc h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4 class="card-title mb-0 section-title">Mi Garaje</h4>
-                            <button class="btn btn-mlc-add" id="open-add-car-btn"><i class="bi bi-plus-circle me-2"></i>
-                                Añadir vehículo</button>
-                        </div>
-
-                        <div id="car-list">
-                            <p id="no-cars-message" class="text-center text-muted no-cars-text">Aún no tienes vehículos
-                                en tu garaje.</p>
-
-                            <h5 id="cars-title" class="sub-section-title" style="display:none;"><i
-                                    class="bi bi-car-front-fill me-2"></i>Coches</h5>
-                            <div id="car-list-cars" class="row g-3">
-                            </div>
-
-                            <h5 id="motorcycles-title" class="sub-section-title mt-4" style="display:none;"><i
-                                    class="bi bi-motorcycle me-2"></i>Motocicletas</h5>
-                            <div id="car-list-motorcycles" class="row g-3">
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <div class="modal fade" id="carModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content modal-mlc">
+    <div class="modal fade" id="carModal" tabindex="-1" aria-labelledby="carModalTitle" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title text-light" id="carModalTitle">Añadir vehículo</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="carModalTitle">Añadir Vehículo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="car-form">
-                        <input type="hidden" id="car-id" />
-                        <input type="hidden" id="car-description" value="" />
-                        <input type="hidden" id="vehicle-type" value="car" />
+                    <form id="car-form" enctype="multipart/form-data">
+                        <input type="hidden" id="car-id">
+                        <input type="hidden" id="vehicle-type">
 
                         <div class="mb-3">
-                            <label class="form-label">Tipo de Vehículo</label>
-                            <select class="form-select mlc-input" id="vehicle-type-select">
+                            <label for="vehicle-type-select" class="form-label">Tipo de Vehículo</label>
+                            <select class="form-select" id="vehicle-type-select">
                                 <option value="car">Coche</option>
                                 <option value="motorcycle">Moto</option>
                             </select>
                         </div>
 
-                        <div class="mb-2">
-                            <label class="form-label" id="vehicle-name-label">Nombre</label>
-                            <input type="text" id="car-name" class="form-control mlc-input" required />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Modelo</label>
-                            <input type="text" id="car-model" class="form-control mlc-input" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Año</label>
-                            <input type="number" id="car-year" class="form-control mlc-input" />
+                        <div class="mb-3">
+                            <label for="car-name" class="form-label" id="vehicle-name-label">Nombre del vehículo</label>
+                            <input type="text" class="form-control" id="car-name" required>
                         </div>
 
                         <div class="mb-3">
-                            <label for="carPhotoFile" class="form-label">Subir Imagen</label>
-                            <input class="form-control mlc-input" type="file" id="carPhotoFile" name="imageFile"
-                                accept="image/*" />
-                            <input type="hidden" id="car-photo-url" name="photoURL" />
+                            <label for="car-model" class="form-label">Modelo</label>
+                            <input type="text" class="form-control" id="car-model">
                         </div>
 
-                        <div id="carPhotoContainer" class="mb-3" style="display: none">
-                            <label class="form-label d-block">Imagen actual:</label>
-                            <img id="carPhotoPreview" src="" alt="Vista previa del vehículo" class="img-fluid mb-2"
-                                style="max-height: 150px; border-radius: 5px;" />
-                            <button type="button" id="clearCarPhotoBtn"
-                                class="btn btn-sm btn-outline-danger w-100">Quitar imagen</button>
-                        </div>
-                        <div class="d-flex justify-content-between mt-3">
-                            <button type="button" id="delete-car-btn" class="btn btn-outline-mlc" style="display:none;">
-                                <i class="bi bi-trash"></i> Eliminar
-                            </button>
-                            <button type="submit" class="btn btn-mlc-save ms-auto">
-                                <i class="bi bi-save"></i> Guardar
-                            </button>
+                        <div class="mb-3">
+                            <label for="car-year" class="form-label">Año</label>
+                            <input type="number" class="form-control" id="car-year" min="1900" max="2100">
                         </div>
 
+                        <div class="mb-3">
+                            <label for="car-description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="car-description" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="carPhotoFile" class="form-label">Subir Foto del Vehículo</label>
+                            <input class="form-control" type="file" id="carPhotoFile" accept="image/*">
+                            <input type="hidden" id="car-photo-url">
+                        </div>
+
+                        <div id="carPhotoContainer" class="text-center border p-2 mb-3" style="display:none;">
+                            <img id="carPhotoPreview" src="" alt="Previsualización de Foto" class="img-fluid"
+                                style="max-height: 200px;">
+                            <button id="clearCarPhotoBtn" class="btn btn-sm btn-outline-danger mt-2">Eliminar
+                                Imagen</button>
+                        </div>
+
+                        <div class="modal-footer d-flex justify-content-between">
+                            <button type="button" id="delete-car-btn" class="btn btn-danger"
+                                style="display:none;">Eliminar Vehículo</button>
+                            <div>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button type="submit" class="btn btn-primary">Guardar</button>
+                            </div>
+                        </div>
                     </form>
                 </div>
-
             </div>
         </div>
     </div>
 
-
-    <script src="../../js/alertas.js"></script>
-    <script src="../../js/navbar.js"></script>
-    <script src="./perfil.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="perfil.js"></script>
+
+    <script>
+        // Ejemplo de una simple función de alerta si no tienes una librería de toasts.
+        function mostrarAlerta(msg, tipo) {
+            console.log(`[ALERTA ${tipo.toUpperCase()}]: ${msg}`);
+            // Implementación básica para mostrar el mensaje:
+            alert(`${tipo.toUpperCase()}: ${msg}`);
+        }
+    </script>
 </body>
 
 </html>
