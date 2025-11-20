@@ -38,7 +38,7 @@ body {
     padding: 18px;
 }
 
-/* Inputs — FIX GLOBAL */
+/* Inputs */
 input,
 select,
 textarea,
@@ -52,7 +52,6 @@ textarea,
     transition: box-shadow .15s ease;
 }
 
-/* Prevent Bootstrap from turning inputs white */
 input:focus,
 select:focus,
 textarea:focus,
@@ -65,7 +64,6 @@ textarea:focus,
     outline: none !important;
 }
 
-/* Placeholder visible */
 ::placeholder {
     color: rgba(255, 255, 255, 0.55) !important;
 }
@@ -114,15 +112,29 @@ textarea:focus,
     background: transparent;
 }
 
-/* --- ESTILOS ANTIGUOS ELIMINADOS/REEMPLAZADOS --- */
-/* Eliminamos el estilo obsoleto para usar la nueva clase .car-card */
+/* Eliminar estilos antiguos */
 .car-item {
     display: none !important;
 }
 
-/* --- NUEVOS ESTILOS PARA MI GARAJE (Diseño de Tarjeta) --- */
+/* -------------------------------------------------------
+   NUEVO DISEÑO MÁS NÍTIDO Y ESPACIOSO PARA EL GARAJE 
+---------------------------------------------------------*/
 
-/* Estilo Base de las Tarjetas de Coche */
+/* Contenedor de secciones (Coches / Motos) */
+.garage-section {
+    margin-bottom: 55px;
+}
+
+/* Grid más limpio y separado */
+.garage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 22px;
+    margin-top: 15px;
+}
+
+/* Tarjetas */
 .car-card {
     position: relative;
     display: flex;
@@ -130,10 +142,11 @@ textarea:focus,
     height: 100%;
     background-color: var(--mlc-panel);
     border: 1px solid rgba(229, 9, 20, 0.35);
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 6px 20px rgba(229, 9, 20, 0.12);
 }
 
 .car-card:hover {
@@ -142,7 +155,7 @@ textarea:focus,
     background-color: rgba(20, 20, 20, 0.95);
 }
 
-/* Contenedor de la Imagen */
+/* Imagen */
 .car-image-container {
     width: 100%;
     aspect-ratio: 16 / 9;
@@ -163,15 +176,16 @@ textarea:focus,
     transform: scale(1.05);
 }
 
-/* Contenido de los Detalles */
+/* Contenido */
 .car-details-content {
-    padding: 15px;
+    padding: 16px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-grow: 1;
 }
 
+/* Textos */
 .car-name {
     color: var(--mlc-red) !important;
     font-weight: 700;
@@ -187,7 +201,7 @@ textarea:focus,
     font-weight: 400;
 }
 
-/* Botón de Editar */
+/* Botón editar */
 .btn-edit-car {
     background: var(--mlc-red);
     color: white;
@@ -217,9 +231,14 @@ textarea:focus,
     .card-mlc {
         padding: 14px;
     }
+
+    .garage-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 18px;
+    }
 }
 
-/* FIX — Mejorar visibilidad de textos débiles */
+/* Mejor visibilidad */
 .card-mlc label,
 .card-mlc h3,
 .card-mlc h4,
