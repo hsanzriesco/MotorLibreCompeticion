@@ -5,15 +5,20 @@
     --mlc-dark: #0e0e0e;
     --mlc-panel: rgba(20, 20, 20, 0.9);
     --mlc-glow: rgba(229, 9, 20, 0.25);
+    --mlc-text-light: rgba(255, 255, 255, 0.85);
+    --mlc-text-muted: rgba(255, 255, 255, 0.65);
 }
 
 /* Layout */
 body {
     background: linear-gradient(180deg, #0b0b0b 0%, #111 100%);
-    color: #fff;
+    color: var(--mlc-text-light);
     font-family: 'Orbitron', sans-serif;
     min-height: 100vh;
     padding-bottom: 40px;
+    display: flex;
+    /* Para que el footer se quede abajo si hay poco contenido */
+    flex-direction: column;
 }
 
 .navbar-mlc {
@@ -22,23 +27,59 @@ body {
     border-bottom: none;
 }
 
-/* Main */
+/* Main Content Area */
 .main-perfil {
     margin-top: 90px;
+    /* Ajuste para la altura de la navbar */
     max-width: 1200px;
     padding: 30px 12px;
+    flex-grow: 1;
+    /* Para que ocupe el espacio disponible */
 }
 
-/* Card */
+.profile-title {
+    color: #fff;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+    /* Efecto de brillo sutil */
+    margin-bottom: 3rem !important;
+    /* Más espacio debajo del título principal */
+}
+
+/* Card Styling */
 .card-mlc {
     background: var(--mlc-panel);
     border: 1px solid rgba(229, 9, 20, 0.35);
     box-shadow: 0 8px 30px var(--mlc-glow);
     border-radius: 12px;
     padding: 18px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Inputs — FIX GLOBAL */
+.card-mlc:hover {
+    transform: translateY(-5px);
+    /* Pequeño efecto de elevación */
+    box-shadow: 0 12px 40px var(--mlc-glow);
+}
+
+.card-mlc .card-body {
+    padding: 25px;
+    /* Más padding interno para los elementos */
+}
+
+.section-title {
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--mlc-red);
+    /* Línea de separación sutil */
+    padding-bottom: 10px;
+    text-shadow: 0 0 8px rgba(229, 9, 20, 0.3);
+}
+
+/* Inputs */
 input,
 select,
 textarea,
@@ -48,11 +89,12 @@ textarea,
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: #ffffff !important;
     border-radius: 8px !important;
-    padding: 10px 12px !important;
-    transition: box-shadow .15s ease;
+    padding: 12px 15px !important;
+    /* Más padding para hacerlos más grandes */
+    transition: box-shadow .15s ease, border-color .15s ease;
+    font-size: 1rem;
 }
 
-/* Prevent Bootstrap from turning inputs white */
 input:focus,
 select:focus,
 textarea:focus,
@@ -61,13 +103,26 @@ textarea:focus,
     background: #121212 !important;
     color: #fff !important;
     border-color: var(--mlc-red) !important;
-    box-shadow: 0 0 12px rgba(229, 9, 20, 0.35) !important;
+    box-shadow: 0 0 15px rgba(229, 9, 20, 0.45) !important;
     outline: none !important;
 }
 
-/* Placeholder visible */
 ::placeholder {
-    color: rgba(255, 255, 255, 0.55) !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+    /* Placeholder más tenue */
+}
+
+.form-label {
+    color: var(--mlc-text-muted) !important;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.email-hint {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5) !important;
+    /* Hint más sutil */
 }
 
 /* Buttons */
@@ -76,106 +131,136 @@ textarea:focus,
     color: white;
     font-weight: 700;
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: 12px 20px;
+    /* Botones más grandes */
     border: none;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-mlc-save:hover {
-    filter: brightness(.95);
+    background-color: #c70812;
+    /* Rojo un poco más oscuro */
+    box-shadow: 0 0 20px rgba(229, 9, 20, 0.7);
+    /* Brillo intenso en hover */
+    transform: translateY(-2px);
 }
 
 .btn-mlc-add {
     background: #1f8a3a;
+    /* Verde para añadir */
     color: #fff;
     border-radius: 8px;
-    padding: 6px 10px;
+    padding: 8px 15px;
     border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    /* Para centrar el icono y texto */
+    align-items: center;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.btn-mlc-outline {
+.btn-mlc-add:hover {
+    background-color: #1a7130;
+    transform: translateY(-2px);
+}
+
+.btn-mlc-add i {
+    font-size: 1.1rem;
+}
+
+.btn-outline-mlc {
     background: transparent;
-    border: 1px solid rgba(229, 9, 20, 0.25);
-    color: #fff;
+    border: 1px solid rgba(229, 9, 20, 0.5);
+    /* Borde más visible */
+    color: var(--mlc-red);
+    /* Color del texto rojo */
     border-radius: 8px;
+    padding: 10px 15px;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Modal */
+.btn-outline-mlc:hover {
+    background-color: var(--mlc-red);
+    color: #fff;
+}
+
+/* Modal Styling */
 .modal-mlc {
     background: linear-gradient(180deg, #0b0b0b, #111);
     border-radius: 12px;
     border: 1px solid rgba(229, 9, 20, 0.35);
     box-shadow: 0 20px 50px rgba(229, 9, 20, 0.15);
-    padding: 0;
 }
 
 .modal-mlc .modal-header {
     border-bottom: none;
-    padding: 16px 18px;
+    padding: 18px 25px;
     background: transparent;
 }
 
-/* --- ESTILOS ANTIGUOS ELIMINADOS/REEMPLAZADOS --- */
-/* Eliminamos el estilo obsoleto para usar la nueva clase .car-card */
-.car-item {
-    display: none !important;
+.modal-mlc .modal-title {
+    color: #fff !important;
+    font-size: 1.5rem;
+    font-weight: 700;
 }
 
+.modal-mlc .modal-body {
+    padding: 0px 25px 25px 25px;
+}
 
-/* --- NUEVOS ESTILOS PARA MI GARAJE (Diseño de Tarjeta) --- */
+/* Mi Garaje specific styles (Car Cards) */
+.no-cars-text {
+    font-style: italic;
+    padding: 20px;
+    color: var(--mlc-text-muted) !important;
+}
 
-/* Estilo Base de las Tarjetas de Coche */
 .car-card {
     position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
-    /* Hereda el estilo de tarjeta (borde rojo, sombra) pero con un fondo más oscuro para contraste */
-    background-color: var(--mlc-panel);
-    border: 1px solid rgba(229, 9, 20, 0.35);
+    background-color: rgba(20, 20, 20, 0.7);
+    /* Fondo un poco más oscuro para el listado */
+    border: 1px solid rgba(229, 9, 20, 0.2);
+    /* Borde más sutil */
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-
-    /* Animación de hover sutil */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .car-card:hover {
-    transform: translateY(-3px);
-    /* Pequeño desplazamiento hacia arriba */
+    transform: translateY(-5px);
+    /* Más énfasis en el hover */
     box-shadow: 0 10px 35px var(--mlc-glow);
-    background-color: rgba(20, 20, 20, 0.95);
-    /* Ligeramente más intenso */
+    background-color: rgba(20, 20, 20, 0.9);
 }
 
-/* Contenedor de la Imagen */
 .car-image-container {
     width: 100%;
-    /* Relación de aspecto 16:9 - Ideal para fotos de coches */
     aspect-ratio: 16 / 9;
     overflow: hidden;
     border-bottom: 1px solid rgba(229, 9, 20, 0.1);
-    /* Separador sutil */
 }
 
 .car-image-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* Asegura que la imagen cubra el contenedor */
     transition: transform 0.3s ease;
     border-radius: 0 !important;
-    /* Asegura que no tenga borde de estilos anteriores */
     max-width: unset !important;
-    /* Asegura el ancho completo */
 }
 
-/* Efecto zoom sutil en la imagen al hacer hover */
 .car-card:hover .car-image-container img {
-    transform: scale(1.05);
+    transform: scale(1.08);
+    /* Más zoom en la imagen */
 }
 
-/* Contenido de los Detalles (Nombre, Modelo, Año) */
 .car-details-content {
     padding: 15px;
     display: flex;
@@ -186,70 +271,143 @@ textarea:focus,
 
 .car-name {
     color: var(--mlc-red) !important;
-    /* Rojo principal de MLC */
     font-weight: 700;
-    margin-bottom: 2px;
-    font-size: 1.2rem;
+    margin-bottom: 5px;
+    /* Más espacio debajo del nombre */
+    font-size: 1.3rem;
+    /* Nombre un poco más grande */
     line-height: 1.2;
 }
 
 .car-model-year {
-    color: rgba(255, 255, 255, 0.65) !important;
-    /* Gris claro para el texto secundario */
-    font-size: 0.9rem;
+    color: var(--mlc-text-muted) !important;
+    font-size: 0.95rem;
+    /* Texto un poco más grande */
     margin-bottom: 0;
     font-weight: 400;
-    /* No tan gruesa como el nombre */
 }
 
-/* Botón de Editar Flotante */
 .btn-edit-car {
-    /* Usamos el estilo btn-mlc-save de tu botón de guardar para el botón de editar */
     background: var(--mlc-red);
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 1rem;
-    transition: opacity 0.2s, background-color 0.2s;
-    line-height: 1;
-    height: 35px;
-    width: 35px;
+    border-radius: 50%;
+    /* Botón circular */
+    padding: 8px;
+    font-size: 1.1rem;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    width: 40px;
+    /* Ajuste de tamaño */
+    height: 40px;
+    /* Ajuste de tamaño */
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 10px rgba(229, 9, 20, 0.4);
 }
 
 .btn-edit-car:hover {
-    background: #c70812;
-    /* Rojo más oscuro en hover */
-    filter: none;
-    /* Desactivar el filtro del estilo global */
+    background-color: #c70812;
+    transform: scale(1.1);
+    /* Efecto de crecimiento en hover */
+    box-shadow: 0 6px 15px rgba(229, 9, 20, 0.6);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive Adjustments */
+@media (max-width: 991px) {
+
+    /* Para pantallas medianas y pequeñas (lg breakpoint) */
     .main-perfil {
         padding: 20px;
     }
 
-    .card-mlc {
-        padding: 14px;
+    .profile-title {
+        font-size: 2rem;
+        margin-bottom: 2.5rem !important;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .card-mlc .card-body {
+        padding: 20px;
+    }
+
+    .btn-mlc-add {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+
+    .btn-mlc-add i {
+        font-size: 1rem;
+    }
+
+    .car-name {
+        font-size: 1.2rem;
+    }
+
+    .car-model-year {
+        font-size: 0.9rem;
     }
 }
 
+@media (max-width: 767px) {
 
-/* FIX — Mejorar visibilidad de textos débiles */
+    /* Para pantallas muy pequeñas (sm breakpoint) */
+    .main-perfil {
+        padding: 15px;
+    }
+
+    .profile-title {
+        font-size: 1.8rem;
+        margin-bottom: 2rem !important;
+    }
+
+    .section-title {
+        font-size: 1.3rem;
+        text-align: center;
+        border-bottom: none;
+        /* Quitar la línea en móviles si es muy ancha */
+    }
+
+    .btn-mlc-add {
+        width: 100%;
+        margin-top: 15px;
+        justify-content: center;
+    }
+
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .car-details-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .btn-edit-car {
+        position: absolute;
+        /* Posicionarlo de forma absoluta en la tarjeta */
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+        width: 35px;
+        height: 35px;
+    }
+}
+
+/* Fixes para visibilidad de texto */
 .card-mlc label,
 .card-mlc h3,
 .card-mlc h4,
 .card-mlc h5,
 .card-mlc p,
 .card-mlc span {
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: var(--mlc-text-light) !important;
 }
 
-/* Títulos como "Datos personales" y "Mi Garaje" */
 .card-mlc .section-title,
 .card-mlc-title,
 .card-mlc h2 {
@@ -257,8 +415,7 @@ textarea:focus,
     font-weight: 700 !important;
 }
 
-/* Subtítulos tipo "Nombre", "Correo electrónico" */
 .form-group label,
 label {
-    color: rgba(255, 255, 255, 0.75) !important;
+    color: var(--mlc-text-muted) !important;
 }
