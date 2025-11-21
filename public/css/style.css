@@ -4,155 +4,241 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
 body {
-  font-family: 'Orbitron', sans-serif;
-  background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
-  color: #f5f5f5;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
+    color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
 }
 
 /* ====== NAVBAR ====== */
 .navbar {
-  background: linear-gradient(90deg, #000000, #1a1a1a);
-  border-bottom: 2px solid #e50914;
-  box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
-  transition: background 0.3s ease;
+    background: linear-gradient(90deg, #000000, #1a1a1a);
+    border-bottom: 2px solid #e50914;
+    box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
+    transition: background 0.3s ease;
 }
 
 .navbar:hover {
-  background: linear-gradient(90deg, #1a1a1a, #000000);
+    background: linear-gradient(90deg, #1a1a1a, #000000);
 }
 
 .navbar-brand {
-  font-weight: 800;
-  font-size: 1.5rem;
-  text-transform: uppercase;
-  color: #e50914 !important;
-  letter-spacing: 1px;
-  transition: transform 0.2s ease;
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    color: #e50914 !important;
+    letter-spacing: 1px;
+    transition: transform 0.2s ease;
 }
 
 .navbar-brand:hover {
-  transform: scale(1.05);
+    transform: scale(1.05);
 }
 
 .nav-link {
-  color: #ccc !important;
-  font-weight: 500;
-  transition: color 0.2s ease, transform 0.2s ease;
+    color: #ccc !important;
+    font-weight: 500;
+    transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-link:hover {
-  color: #e50914 !important;
-  transform: translateY(-2px);
+    color: #e50914 !important;
+    transform: translateY(-2px);
 }
 
 .nav-item i {
-  margin-right: 6px;
+    margin-right: 6px;
 }
 
 /* ====== MAIN CONTENT ====== */
 main {
-  margin-top: 8vh;
-  text-align: center;
-  animation: fadeIn 1.2s ease;
+    margin-top: 8vh;
+    text-align: center;
+    animation: fadeIn 1.2s ease;
 }
 
 main h1 {
-  font-size: 2.5rem;
-  color: #e50914;
-  text-shadow: 0 0 8px rgba(229, 9, 20, 0.6);
+    font-size: 2.5rem;
+    color: #e50914;
+    text-shadow: 0 0 8px rgba(229, 9, 20, 0.6);
 }
 
 main p {
-  font-size: 1.1rem;
-  color: #ccc;
-  margin-top: 1rem;
-  line-height: 1.6;
+    font-size: 1.1rem;
+    color: #ccc;
+    margin-top: 1rem;
+    line-height: 1.6;
 }
 
 /* ====== BUTTONS (opcional para usar luego) ====== */
 .btn-custom {
-  background: #e50914;
-  color: #fff;
-  border: none;
-  border-radius: 50px;
-  padding: 10px 24px;
-  font-weight: 600;
-  transition: all 0.3s ease;
+    background: #e50914;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .btn-custom:hover {
-  background: #ff0a1e;
-  box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
-  transform: translateY(-2px);
+    background: #ff0a1e;
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
+    transform: translateY(-2px);
 }
 
 /* ====== ANIMATIONS ====== */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ====== RESPONSIVE ====== */
 @media (max-width: 768px) {
-  main h1 {
-    font-size: 2rem;
-  }
+    main h1 {
+        font-size: 2rem;
+    }
 
-  main p {
-    font-size: 1rem;
-  }
+    main p {
+        font-size: 1rem;
+    }
 }
 
 .navbar-logo {
-  height: 50px;
-  width: auto;
-  display: block;
+    height: 50px;
+    width: auto;
+    display: block;
 }
 
 /* Espacio entre el navbar y el contenido principal */
 .main-content {
-  padding-top: 100px; /* ajusta según la altura real del navbar */
+    padding-top: 100px; /* ajusta según la altura real del navbar */
 }
 
 /* ==== Mensajes tipo "Bienvenido" ==== */
 .custom-alert {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #22c55e; /* Verde tipo Tailwind */
-  color: white;
-  padding: 14px 22px;
-  border-radius: 12px;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 9999;
-  opacity: 0;
-  transform: translateY(-15px);
-  transition: all 0.3s ease;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #22c55e; /* Verde tipo Tailwind */
+    color: white;
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(-15px);
+    transition: all 0.3s ease;
 }
 
 .custom-alert.show {
-  opacity: 1;
-  transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .custom-alert.error {
-  background-color: #ef4444; /* Rojo para errores */
+    background-color: #ef4444; /* Rojo para errores */
 }
 
 .custom-alert.warning {
-  background-color: #facc15; /* Amarillo */
-  color: #1f2937;
+    background-color: #facc15; /* Amarillo */
+    color: #1f2937;
+}
+
+/* ⭐⭐ ESTILOS PARA EL MODAL DE CONFIRMACIÓN (NEGRO/ROJO CENTRADO) ⭐⭐ */
+
+/* 1. Fondo Oscuro (Overlay) y Centrado */
+.modal-overlay {
+    /* Oculto por defecto, solo se muestra con JS */
+    display: none; 
+    
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Negro semi-transparente para el fondo */
+    background-color: rgba(0, 0, 0, 0.9); 
+    
+    /* Centrado perfecto */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Asegura que esté encima de todo */
+}
+
+/* 2. Contenido del Modal (La caja negra con borde rojo) */
+.modal-content {
+    background-color: #0d0d0d; /* Fondo muy oscuro */
+    border: 2px solid #e50914; /* Borde rojo */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 25px rgba(229, 9, 20, 0.7); /* Sombra roja para efecto "glow" */
+    text-align: center;
+    width: 90%;
+    max-width: 450px;
+}
+
+/* Estilo del texto de la pregunta */
+.modal-content h3 {
+    color: #f5f5f5; /* Texto blanco */
+    margin-bottom: 25px;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+}
+
+/* Contenedor de botones */
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+/* Estilo del botón (General) */
+.modal-actions button {
+    flex: 1;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.5px;
+}
+
+/* Botón de Confirmar (Rojo) */
+.btn-confirmar {
+    background-color: #e50914; 
+    color: #fff;
+}
+
+.btn-confirmar:hover {
+    background-color: #ff0a1e; 
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Botón de Cancelar (Fondo oscuro con borde) */
+.btn-cancelar {
+    background-color: #222; 
+    color: #ccc;
+    border: 1px solid #444;
+}
+
+.btn-cancelar:hover {
+    background-color: #333;
+    border-color: #e50914;
 }
