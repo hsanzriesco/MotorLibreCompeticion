@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+:root {
+    --mlc-red: #e50914;
+    --mlc-dark: #0e0e0e;
+    --mlc-panel: rgba(20, 20, 20, 0.9);
+    --mlc-glow: rgba(229, 9, 20, 0.25);
+}
+
+/* Layout */
+body {
+    background: linear-gradient(180deg, #0b0b0b 0%, #111 100%);
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+.navbar-mlc {
+    background: #0f0f0f !important;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
+    border-bottom: none;
+}
+
+/* Main */
+.main-perfil {
+    margin-top: 90px;
+    max-width: 1200px;
+    padding: 30px 12px;
+}
+
+/* Card */
+.card-mlc {
+    background: var(--mlc-panel);
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    box-shadow: 0 8px 30px var(--mlc-glow);
+    border-radius: 12px;
+    padding: 18px;
+}
+
+/* Inputs */
+input,
+select,
+textarea,
+.form-control,
+.mlc-input {
+    background: #0c0c0c !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    transition: box-shadow .15s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
+.mlc-input:focus {
+    background: #121212 !important;
+    color: #fff !important;
+    border-color: var(--mlc-red) !important;
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.35) !important;
+    outline: none !important;
+}
+
+::placeholder {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Buttons */
+.btn-mlc-save {
+    background: var(--mlc-red);
+    color: white;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: none;
+}
+
+.btn-mlc-save:hover {
+    filter: brightness(.95);
+}
+
+.btn-mlc-add {
+    background: #1f8a3a;
+    color: #fff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    border: none;
+}
+
+.btn-mlc-outline {
+    background: transparent;
+    border: 1px solid rgba(229, 9, 20, 0.25);
+    color: #fff;
+    border-radius: 8px;
+}
+
+/* Modal */
+.modal-mlc {
+    background: linear-gradient(180deg, #0b0b0b, #111);
+    border-radius: 12px;
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    box-shadow: 0 20px 50px rgba(229, 9, 20, 0.15);
+    padding: 0;
+}
+
+.modal-mlc .modal-header {
+    border-bottom: none;
+    padding: 16px 18px;
+    background: transparent;
+}
+
+/* Eliminar estilos antiguos */
+.car-item {
+    display: none !important;
+}
+
+/* -------------------------------------------------------
+   NUEVO DISEÑO MÁS NÍTIDO Y ESPACIOSO PARA EL GARAJE 
+---------------------------------------------------------*/
+
+/* Contenedor de secciones (Coches / Motos) */
+.garage-section {
+    margin-bottom: 55px;
+}
+
+/* Grid más limpio y separado */
+.garage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 22px;
+    margin-top: 15px;
+}
+
+/* Tarjetas */
+.car-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--mlc-panel);
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 6px 20px rgba(229, 9, 20, 0.12);
+}
+
+.car-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 35px var(--mlc-glow);
+    background-color: rgba(20, 20, 20, 0.95);
+}
+
+/* Imagen */
+.car-image-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(229, 9, 20, 0.1);
+}
+
+.car-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    border-radius: 0 !important;
+    max-width: unset !important;
+}
+
+.car-card:hover .car-image-container img {
+    transform: scale(1.05);
+}
+
+/* Contenido */
+.car-details-content {
+    padding: 16px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-grow: 1;
+}
+
+/* Textos */
+.car-name {
+    color: var(--mlc-red) !important;
+    font-weight: 700;
+    margin-bottom: 2px;
+    font-size: 1.2rem;
+    line-height: 1.2;
+}
+
+.car-model-year {
+    color: rgba(255, 255, 255, 0.65) !important;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    font-weight: 400;
+}
+
+/* Botón editar */
+.btn-edit-car {
+    background: var(--mlc-red);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 1rem;
+    transition: opacity 0.2s, background-color 0.2s;
+    line-height: 1;
+    height: 35px;
+    width: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-edit-car:hover {
+    background: #c70812;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-perfil {
+        padding: 20px;
+    }
+
+    .card-mlc {
+        padding: 14px;
+    }
+
+    .garage-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 18px;
+    }
+}
+
+/* Mejor visibilidad */
+.card-mlc label,
+.card-mlc h3,
+.card-mlc h4,
+.card-mlc h5,
+.card-mlc p,
+.card-mlc span {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Títulos */
+.card-mlc .section-title,
+.card-mlc-title,
+.card-mlc h2 {
+    color: #fff !important;
+    font-weight: 700 !important;
+}
+
+/* Subtítulos */
+.form-group label,
+label {
+    color: rgba(255, 255, 255, 0.75) !important;
+}

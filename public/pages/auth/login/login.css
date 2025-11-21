@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
+
+body {
+  font-family: 'Orbitron', sans-serif;
+  background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
+  color: #f5f5f5;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  background: linear-gradient(90deg, #000000, #1a1a1a);
+  border-bottom: 2px solid #e50914;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
+  z-index: 10;
+}
+
+.form-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.form-box {
+  background-color: rgba(20, 20, 20, 0.92);
+  border: 1px solid #e50914;
+  border-radius: 14px;
+  box-shadow: 0 0 25px rgba(229, 9, 20, 0.3);
+  padding: 40px 50px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.form-box h2 {
+  color: #e50914;
+  font-weight: 800;
+  margin-bottom: 25px;
+  text-shadow: 0 0 12px rgba(229, 9, 20, 0.8);
+  font-size: 1.8rem;
+}
+
+.form-box label {
+  display: block;
+  text-align: left;
+  margin-top: 15px;
+  font-weight: 600;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.form-box input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background-color: #222;
+  color: #fff;
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.form-box input:focus {
+  border-color: #e50914;
+  box-shadow: 0 0 8px rgba(229, 9, 20, 0.6);
+}
+
+.form-box button {
+  width: 100%;
+  background-color: #e50914;
+  color: white;
+  font-weight: 700;
+  border: none;
+  padding: 14px;
+  margin-top: 30px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.form-box button:hover {
+  background-color: #ff1a1a;
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
+}
+
+.switch-link {
+  margin-top: 18px;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.switch-link a {
+  color: #e50914;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.switch-link a:hover {
+  text-decoration: underline;
+}
