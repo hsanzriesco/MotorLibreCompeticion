@@ -540,4 +540,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // INICIALIZAR
     loadVehicles();
 
+    
 });
