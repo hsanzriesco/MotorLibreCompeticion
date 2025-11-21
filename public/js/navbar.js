@@ -40,11 +40,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // ⭐⭐ LÓGICA DE CIERRE DE SESIÓN MODIFICADA CON CONFIRMACIÓN ⭐⭐
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
-            sessionStorage.clear();
-            window.location.href = "/index.html";
+            
+            // Muestra la ventana de confirmación al usuario
+            const confirmarCierre = confirm("¿Estás seguro/a de que quieres cerrar la sesión?");
+
+            if (confirmarCierre) {
+                // Si el usuario confirma ('Aceptar'), procede a cerrar la sesión
+                sessionStorage.clear();
+                window.location.href = "/index.html";
+            } else {
+                // Si el usuario cancela, no hace nada y se queda en la página
+                console.log("Cierre de sesión cancelado por el usuario.");
+            }
         });
     }
 });
