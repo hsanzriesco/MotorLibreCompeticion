@@ -56,8 +56,13 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
             if (modal) {
-                // Muestra el modal (el CSS se encarga del centrado y el estilo)
+                // Si el modal existe en el HTML, lo mostramos.
                 modal.style.display = "flex"; 
+            } else {
+                // Si el modal NO existe (esto causa el error que describes), 
+                // hacemos el logout de forma inmediata (como fallback).
+                console.warn("ADVERTENCIA: No se encontró el modal 'custom-logout-modal'. Cerrando sesión directamente.");
+                realizarLogout();
             }
         });
     }
