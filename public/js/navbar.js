@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
-    // ⭐️ REFERENCIAS AL MODAL PERSONALIZADO (Añadidas)
+    // ⭐️ REFERENCIAS A ELEMENTOS DEL MODAL PERSONALIZADO
     const modal = document.getElementById("custom-logout-modal");
     const btnConfirmarLogout = document.getElementById("btn-confirmar-logout");
     const btnCancelarLogout = document.getElementById("btn-cancelar-logout");
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
             if (modal) {
-                // Muestra el modal con estilo 'flex' para centrarlo (definido en CSS)
+                // Muestra el modal (el CSS se encarga del centrado y el estilo)
                 modal.style.display = "flex"; 
             }
         });
@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ⭐⭐ Manejadores para los botones del MODAL ⭐⭐
     
-    // 1. Botón "Sí, Cerrar Sesión"
+    // 1. Botón "Sí, Cerrar Sesión" (ejecuta el logout)
     if (btnConfirmarLogout) {
         btnConfirmarLogout.addEventListener("click", () => {
             if (modal) modal.style.display = "none"; // Oculta el modal
@@ -72,10 +72,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 2. Botón "No, Cancelar"
+    // 2. Botón "No, Cancelar" (solo oculta el modal)
     if (btnCancelarLogout) {
         btnCancelarLogout.addEventListener("click", () => {
-            if (modal) modal.style.display = "none"; // Solo oculta el modal
+            if (modal) modal.style.display = "none";
         });
     }
 });
