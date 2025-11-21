@@ -5,6 +5,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
+    // ⭐️ REFERENCIAS AL MODAL PERSONALIZADO (Añadidas)
+    const modal = document.getElementById("custom-logout-modal");
+    const btnConfirmarLogout = document.getElementById("btn-confirmar-logout");
+    const btnCancelarLogout = document.getElementById("btn-cancelar-logout");
+    
+    // Función centralizada para ejecutar el cierre de sesión
+    function realizarLogout() {
+        sessionStorage.clear();
+        window.location.href = "/index.html";
+    }
+
     const storedUser = sessionStorage.getItem("usuario");
     let user = null;
 
@@ -40,22 +51,31 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ⭐⭐ LÓGICA DE CIERRE DE SESIÓN MODIFICADA CON CONFIRMACIÓN ⭐⭐
+    // ⭐⭐ LÓGICA MODIFICADA: Muestra el MODAL PERSONALIZADO ⭐⭐
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
-            
-            // Muestra la ventana de confirmación al usuario
-            const confirmarCierre = confirm("¿Estás seguro/a de que quieres cerrar la sesión?");
-
-            if (confirmarCierre) {
-                // Si el usuario confirma ('Aceptar'), procede a cerrar la sesión
-                sessionStorage.clear();
-                window.location.href = "/index.html";
-            } else {
-                // Si el usuario cancela, no hace nada y se queda en la página
-                console.log("Cierre de sesión cancelado por el usuario.");
+            if (modal) {
+                // Muestra el modal con estilo 'flex' para centrarlo (definido en CSS)
+                modal.style.display = "flex"; 
             }
+        });
+    }
+
+    // ⭐⭐ Manejadores para los botones del MODAL ⭐⭐
+    
+    // 1. Botón "Sí, Cerrar Sesión"
+    if (btnConfirmarLogout) {
+        btnConfirmarLogout.addEventListener("click", () => {
+            if (modal) modal.style.display = "none"; // Oculta el modal
+            realizarLogout(); // Ejecuta el cierre de sesión
+        });
+    }
+
+    // 2. Botón "No, Cancelar"
+    if (btnCancelarLogout) {
+        btnCancelarLogout.addEventListener("click", () => {
+            if (modal) modal.style.display = "none"; // Solo oculta el modal
         });
     }
 });
