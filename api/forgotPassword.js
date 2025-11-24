@@ -1,9 +1,9 @@
 // 1. Importar dependencias necesarias usando sintaxis ESM (import)
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
-import jwt from 'jsonwebtoken'; // Para generar el token
+import jwt from 'jsonwebtoken';
 
-// Configuración de la base de datos (usando la variable de entorno de Neon)
+// Configuración de la base de datos
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -15,14 +15,13 @@ const pool = new Pool({
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true,
+    secure: true, 
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
 });
 
-// Usamos export default para el handler de Vercel/Next.js/Express
 export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
@@ -36,39 +35,35 @@ export default async (req, res) => {
 
     try {
         // 2. Buscar el usuario en la DB
-        // Seleccionamos el ID del usuario. Asume que se llama 'id' o 'user_id'
-        const result = await pool.query('SELECT id AS user_identifier, email FROM users WHERE email = $1', [email]);
+        // IMPORTANTE: Asegúrate de que 'id' es el nombre correcto de la columna ID
+        const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
         if (!user) {
-            // Nota de seguridad: Siempre respondemos éxito para evitar enumeración de usuarios.
             return res.status(200).json({ message: 'If the user exists, a password reset email has been sent.' });
         }
+        
+        const userId = user.id; // Asume que el ID se llama 'id'
 
-        // Usamos el identificador encontrado (ya sea id o user_id)
-        const userId = user.user_identifier;
-
-        // 3. Generar el Token de Restablecimiento
+        // 3. Generar el Token
         const token = jwt.sign(
-            { id: userId },
-            process.env.JWT_SECRET,
+            { id: userId }, 
+            process.env.JWT_SECRET, 
             { expiresIn: '1h' }
         );
-
-        const expirationDate = new Date(Date.now() + 3600000); // 1 hora en milisegundos
+        
+        const expirationDate = new Date(Date.now() + 3600000);
 
         // 4. Guardar el token y su expiración en la DB
-        // NOTA: Asegúrate de que tu tabla 'users' tenga las columnas 'reset_token' y 'reset_token_expires'
-        // y que la columna de ID primario se llame 'id'
+        // Si tu columna ID se llama 'user_id', cambia $3 a 'user_id = $3'
         await pool.query(
             'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
             [token, expirationDate, userId]
         );
 
-        // 5. Configurar el enlace de restablecimiento (¡AJUSTA ESTA URL!)
+        // ... (resto de la lógica de envío de email)
         const resetURL = `https://tu-dominio-motorlibre.vercel.app/pages/auth/reset/reset.html?token=${token}`;
-
-        // 6. Configurar y Enviar el Correo Electrónico
+        
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: user.email,
@@ -86,19 +81,12 @@ export default async (req, res) => {
 
         await transporter.sendMail(mailOptions);
 
-        // 7. Respuesta de éxito
         return res.status(200).json({ message: 'Password reset email sent successfully.' });
 
     } catch (error) {
-        console.error('FATAL ERROR:', error); // Log más detallado
-
-        // A. Si el error es de conexión/autenticación de Nodemailer o DB
-        if (error.code === 'EENVELOPE' || error.code === 'EAUTH') {
-            // 500 por error de autenticación/conexión (variables de entorno incorrectas)
-            return res.status(500).json({ message: 'Error interno de configuración del servidor (email/DB). Consulta los logs.' });
-        }
-
-        // B. Si el error es una excepción no manejada (ej. columna de DB faltante)
-        return res.status(500).json({ message: 'An unexpected internal server error occurred.' });
+        console.error('FATAL ERROR:', error);
+        
+        // DEVUELVE UN JSON SIEMPRE, incluso en 500, para que login.js no rompa.
+        return res.status(500).json({ message: 'Internal Server Error. Please check Vercel Logs for DB/Email Config Issues.' });
     }
 };
