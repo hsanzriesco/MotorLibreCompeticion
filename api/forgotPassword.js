@@ -3,31 +3,27 @@ import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken'; // Para generar el token
 
-// NOTA: En Vercel, las variables de entorno se cargan automáticamente.
-
 // Configuración de la base de datos (usando la variable de entorno de Neon)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false // Puede ser necesario para Neon en algunos entornos
+        rejectUnauthorized: false
     }
 });
 
-// Configuración de Nodemailer (usando variables de entorno)
-// Asegúrate de que EMAIL_USER y EMAIL_PASS estén configuradas correctamente en Vercel
+// Configuración de Nodemailer
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', // Ejemplo para Gmail. Ajusta según tu proveedor.
-    port: 465, // O 587 si usas STARTTLS
-    secure: true, // true para 465, false para otros puertos
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
-        user: process.env.EMAIL_USER, // Tu correo
-        pass: process.env.EMAIL_PASS, // Tu contraseña de aplicación/clave
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     },
 });
 
 // Usamos export default para el handler de Vercel/Next.js/Express
 export default async (req, res) => {
-    // Vercel y Next.js/Express-like API handling
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
@@ -40,36 +36,36 @@ export default async (req, res) => {
 
     try {
         // 2. Buscar el usuario en la DB
-        // Asumiendo que el ID del usuario se llama 'id' en tu DB, no 'user_id'
-        const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+        // Seleccionamos el ID del usuario. Asume que se llama 'id' o 'user_id'
+        const result = await pool.query('SELECT id AS user_identifier, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
         if (!user) {
-            // Nota de seguridad: Es mejor responder siempre 'Si el correo existe...' 
-            // para evitar enumeración de usuarios.
+            // Nota de seguridad: Siempre respondemos éxito para evitar enumeración de usuarios.
             return res.status(200).json({ message: 'If the user exists, a password reset email has been sent.' });
         }
 
+        // Usamos el identificador encontrado (ya sea id o user_id)
+        const userId = user.user_identifier;
+
         // 3. Generar el Token de Restablecimiento
-        // Creamos un token que expira en 1 hora (3600 segundos)
         const token = jwt.sign(
-            { id: user.id },
-            process.env.JWT_SECRET, // Usa la clave secreta de tus variables de entorno
+            { id: userId },
+            process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // Calcular la fecha de expiración para guardar en la DB
         const expirationDate = new Date(Date.now() + 3600000); // 1 hora en milisegundos
 
         // 4. Guardar el token y su expiración en la DB
-        // Asegúrate de que la columna se llame 'id' o ajusta el nombre
+        // NOTA: Asegúrate de que tu tabla 'users' tenga las columnas 'reset_token' y 'reset_token_expires'
+        // y que la columna de ID primario se llame 'id'
         await pool.query(
             'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
-            [token, expirationDate, user.id]
+            [token, expirationDate, userId]
         );
 
-        // 5. Configurar el enlace de restablecimiento (¡IMPORTANTE: AJUSTA ESTA URL!)
-        // Debe apuntar a tu dominio de Vercel y a la página reset.html
+        // 5. Configurar el enlace de restablecimiento (¡AJUSTA ESTA URL!)
         const resetURL = `https://tu-dominio-motorlibre.vercel.app/pages/auth/reset/reset.html?token=${token}`;
 
         // 6. Configurar y Enviar el Correo Electrónico
@@ -94,8 +90,15 @@ export default async (req, res) => {
         return res.status(200).json({ message: 'Password reset email sent successfully.' });
 
     } catch (error) {
-        console.error('Error sending reset password email:', error);
-        // Respuesta de error 500 para el cliente
-        return res.status(500).json({ message: 'An error occurred while processing your request. Please check server logs.' });
+        console.error('FATAL ERROR:', error); // Log más detallado
+
+        // A. Si el error es de conexión/autenticación de Nodemailer o DB
+        if (error.code === 'EENVELOPE' || error.code === 'EAUTH') {
+            // 500 por error de autenticación/conexión (variables de entorno incorrectas)
+            return res.status(500).json({ message: 'Error interno de configuración del servidor (email/DB). Consulta los logs.' });
+        }
+
+        // B. Si el error es una excepción no manejada (ej. columna de DB faltante)
+        return res.status(500).json({ message: 'An unexpected internal server error occurred.' });
     }
 };
