@@ -1,8 +1,10 @@
 {
   "type": "module",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.8.0",
     "formidable": "^3.5.4",
-    "pg": "^8.11.3"
+    "nodemailer": "^7.0.10",
+    "pg": "^8.16.3"
   }
 }
