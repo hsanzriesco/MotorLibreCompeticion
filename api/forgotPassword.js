@@ -15,11 +15,11 @@ const pool = new Pool({
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, 
+    secure: true,
     auth: {
-        // Estas son las credenciales para iniciar sesión en el servidor SMTP
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS, 
+        // Credenciales que deben cargarse desde Vercel
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     },
 });
 
@@ -35,24 +35,24 @@ export default async (req, res) => {
     }
 
     try {
-        // 2. Buscar el usuario en la DB
+        // 2. Buscar el usuario en la DB (Asume columna ID se llama 'id')
         const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
         if (!user) {
-            // Nota de seguridad: Siempre respuesta genérica para evitar enumeración
+            // Siempre respuesta genérica por seguridad
             return res.status(200).json({ message: 'If the user exists, a password reset email has been sent.' });
         }
-        
+
         const userId = user.id;
 
-        // 3. Generar el Token
+        // 3. Generar el Token (expira en 1h)
         const token = jwt.sign(
-            { id: userId }, 
-            process.env.JWT_SECRET, 
+            { id: userId },
+            process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
-        
+
         const expirationDate = new Date(Date.now() + 3600000);
 
         // 4. Guardar el token y su expiración en la DB
@@ -63,9 +63,8 @@ export default async (req, res) => {
 
         // 5. URL de restablecimiento: USANDO TU DOMINIO REAL
         const resetURL = `https://motor-libre-competicion.vercel.app/pages/auth/reset/reset.html?token=${token}`;
-        
+
         const mailOptions = {
-            // AHORA el campo 'from' usa la variable de entorno para definir el remitente
             from: `Motor Libre Competición <${process.env.EMAIL_USER}>`,
             to: user.email,
             subject: 'Motor Libre Competición: Restablecer Contraseña',
@@ -86,8 +85,8 @@ export default async (req, res) => {
 
     } catch (error) {
         console.error('FATAL ERROR:', error);
-        
-        // DEVUELVE UN JSON SIEMPRE para que login.js no rompa en caso de 500.
+
+        // DEVUELVE UN JSON SIEMPRE en caso de error 500.
         return res.status(500).json({ message: 'Internal Server Error. Please check Vercel Logs for DB/Email Config Issues.' });
     }
 };
