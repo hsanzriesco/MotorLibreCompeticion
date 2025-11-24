@@ -1,11 +1,9 @@
-// 1. Importar dependencias necesarias
-const { Pool } = require('pg');
-const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken'); // Para generar el token
+// 1. Importar dependencias necesarias usando sintaxis ESM (import)
+import { Pool } from 'pg';
+import nodemailer from 'nodemailer';
+import jwt from 'jsonwebtoken'; // Para generar el token
 
-// Asegúrate de que .env esté cargado, si es necesario, hazlo en server.js o aquí.
-// const dotenv = require('dotenv');
-// dotenv.config(); 
+// NOTA: En Vercel, las variables de entorno se cargan automáticamente.
 
 // Configuración de la base de datos (usando la variable de entorno de Neon)
 const pool = new Pool({
@@ -16,6 +14,7 @@ const pool = new Pool({
 });
 
 // Configuración de Nodemailer (usando variables de entorno)
+// Asegúrate de que EMAIL_USER y EMAIL_PASS estén configuradas correctamente en Vercel
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com', // Ejemplo para Gmail. Ajusta según tu proveedor.
     port: 465, // O 587 si usas STARTTLS
@@ -26,7 +25,8 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-module.exports = async (req, res) => {
+// Usamos export default para el handler de Vercel/Next.js/Express
+export default async (req, res) => {
     // Vercel y Next.js/Express-like API handling
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
@@ -40,7 +40,8 @@ module.exports = async (req, res) => {
 
     try {
         // 2. Buscar el usuario en la DB
-        const result = await pool.query('SELECT user_id, email FROM users WHERE email = $1', [email]);
+        // Asumiendo que el ID del usuario se llama 'id' en tu DB, no 'user_id'
+        const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
         if (!user) {
@@ -52,34 +53,38 @@ module.exports = async (req, res) => {
         // 3. Generar el Token de Restablecimiento
         // Creamos un token que expira en 1 hora (3600 segundos)
         const token = jwt.sign(
-            { user_id: user.user_id }, 
-            process.env.JWT_SECRET, // Usa la misma clave secreta que para tus otros JWTs
+            { id: user.id },
+            process.env.JWT_SECRET, // Usa la clave secreta de tus variables de entorno
             { expiresIn: '1h' }
         );
-        
+
         // Calcular la fecha de expiración para guardar en la DB
         const expirationDate = new Date(Date.now() + 3600000); // 1 hora en milisegundos
 
         // 4. Guardar el token y su expiración en la DB
+        // Asegúrate de que la columna se llame 'id' o ajusta el nombre
         await pool.query(
-            'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE user_id = $3',
-            [token, expirationDate, user.user_id]
+            'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+            [token, expirationDate, user.id]
         );
 
-        // 5. Configurar el enlace de restablecimiento (Asegúrate de cambiar 'tu-dominio.vercel.app')
-        // El enlace debe apuntar a tu página de reset con el token.
-        const resetURL = `https://tu-dominio.vercel.app/auth/reset?token=${token}`;
-        
+        // 5. Configurar el enlace de restablecimiento (¡IMPORTANTE: AJUSTA ESTA URL!)
+        // Debe apuntar a tu dominio de Vercel y a la página reset.html
+        const resetURL = `https://tu-dominio-motorlibre.vercel.app/pages/auth/reset/reset.html?token=${token}`;
+
         // 6. Configurar y Enviar el Correo Electrónico
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: user.email,
-            subject: 'Restablecer Contraseña',
+            subject: 'Motor Libre Competición: Restablecer Contraseña',
             html: `
-                <p>Has solicitado restablecer tu contraseña.</p>
-                <p>Haz clic en el siguiente enlace para completar el proceso:</p>
-                <a href="${resetURL}">${resetURL}</a>
-                <p>Este enlace expirará en 1 hora.</p>
+                <p>Hola,</p>
+                <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para crear una nueva:</p>
+                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
+                    Restablecer Contraseña
+                </a>
+                <p style="margin-top: 20px;">Este enlace expirará en 1 hora.</p>
+                <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
             `,
         };
 
@@ -90,7 +95,7 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Error sending reset password email:', error);
-        // Respuesta genérica de error
-        return res.status(500).json({ message: 'An error occurred while processing your request.' });
+        // Respuesta de error 500 para el cliente
+        return res.status(500).json({ message: 'An error occurred while processing your request. Please check server logs.' });
     }
 };
