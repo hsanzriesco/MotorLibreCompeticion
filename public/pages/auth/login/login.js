@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 if (res.ok || res.status === 200) {
-                    mostrarAlerta("Si el correo está registrado, recibirás un enlace de restablecimiento en breve. Revisa tu bandeja de spam.", "exito");
+                    mostrarAlerta("Email enviado, revisa la bandeja de spam", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
                 } else {
