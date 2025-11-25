@@ -5,15 +5,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
+    // --- INICIO DE CORRECCIÓN PARA EL AUTORELLENO DESPUÉS DE RESET ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const passwordInput = document.getElementById("password"); // Asume que este es el ID del campo de contraseña
+
+    // 1. Si la URL contiene '?reset=true' (proviene de la página de restablecimiento)
+    if (urlParams.get('reset') === 'true') {
+        // 2. Borrar forzadamente el valor del campo de la contraseña
+        // Esto evita que el navegador autocomplete la contraseña recién creada
+        if (passwordInput) {
+            passwordInput.value = '';
+        }
+        
+        // 3. Mostrar alerta de éxito
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta("Contraseña restablecida con éxito. Ya puedes iniciar sesión.", "exito");
+        }
+        
+        // 4. Limpiar el parámetro 'reset=true' de la URL
+        // Esto previene que el mensaje y la limpieza se repitan si el usuario recarga la página.
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    // --- FIN DE CORRECCIÓN ---
+
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
 
             const usernameInput = document.getElementById("username");
-            const passwordInput = document.getElementById("password");
+            // passwordInput ya está definido arriba
+            // const passwordInput = document.getElementById("password");
 
             const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
+            // Ya que passwordInput.value se limpia arriba, esta línea usa el valor actual del usuario.
+            const password = passwordInput.value.trim(); 
 
             if (!username || !password) {
                 mostrarAlerta("Por favor, completa todos los campos.", "aviso");
