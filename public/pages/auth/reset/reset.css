@@ -1,132 +1,130 @@
-/* ---------------------------------- */
-/* ESTILOS GLOBALES Y DE FONDO */
-/* ---------------------------------- */
+/* ------------------------------------------------ */
+/* Asegura que el body esté centrado para la vista de formulario */
+/* NOTA: Si tu style.css ya centra el body, puedes omitir esto */
 body {
-    /* Fondo negro sólido como en la imagen */
-    background-color: #000000;
-    /* Color de texto principal */
-    color: #ffffff; 
-    /* Fuente estilo tecnológico (Orbitron es la que se enlazó en el HTML) */
-    font-family: 'Orbitron', sans-serif;
-    /* Centrar el contenido en la pantalla */
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 20px;
     margin: 0;
-    padding: 20px; 
     box-sizing: border-box;
+    /* La fuente y el fondo ya vienen de style.css, no es necesario repetirlos */
 }
 
-/* ---------------------------------- */
-/* ESTILOS DEL CONTENEDOR PRINCIPAL */
-/* ---------------------------------- */
-.container {
+/* ------------------------------------------------ */
+/* ESTILOS DEL CONTENEDOR PRINCIPAL (form-box) */
+/* ------------------------------------------------ */
+.form-box {
     width: 100%;
-    max-width: 400px;
-    /* Borde superior rojo de 3px como el de la imagen */
-    border-top: 3px solid #ff0000; 
-    padding: 20px 30px;
-    /* Fondo ligeramente más oscuro */
-    background-color: #0a0a0a; 
-    border-radius: 5px;
-    /* Sombra roja sutil para un efecto de brillo (glow) */
-    box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); 
+    max-width: 420px; /* Tamaño del formulario */
+    
+    /* Efecto de borde superior rojo y glow de la imagen */
+    border-top: 3px solid #e50914; /* Rojo de la marca MLC */
+    background-color: #1a1a1a; /* Fondo muy oscuro, ligeramente diferente al body */
+    padding: 30px 40px;
+    border-radius: 6px;
+    
+    /* Efecto de brillo (glow) en los bordes */
+    box-shadow: 0 0 25px rgba(229, 9, 20, 0.4), 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
 }
 
-/* ---------------------------------- */
-/* ESTILOS DE TÍTULOS */
-/* ---------------------------------- */
-.main-title {
-    /* Estilo para el título superior */
-    color: #ff0000;
+.form-box:hover {
+    box-shadow: 0 0 30px rgba(229, 9, 20, 0.7); /* Brillo más intenso al pasar el ratón */
+}
+
+/* ------------------------------------------------ */
+/* ESTILOS DE TÍTULO */
+/* ------------------------------------------------ */
+.form-box h2 {
+    /* Estilo para el título "Restablecer Contraseña" */
+    font-size: 1.6rem;
+    color: #e50914; /* Color rojo brillante */
     text-align: center;
     margin-bottom: 30px;
     text-transform: uppercase;
-    letter-spacing: 3px;
-    font-size: 1.5em;
-    font-weight: 700;
-}
-
-h2 {
-    /* Estilo del subtítulo "Restablecer Contraseña" */
-    color: #ff0000;
-    text-align: center;
-    margin-bottom: 25px;
-    text-transform: uppercase;
     letter-spacing: 2px;
-    font-size: 1.2em;
+    text-shadow: 0 0 5px rgba(229, 9, 20, 0.5);
 }
 
-/* ---------------------------------- */
-/* ESTILOS DEL FORMULARIO */
-/* ---------------------------------- */
-#reset-password-form {
+/* ------------------------------------------------ */
+/* ESTILOS DEL FORMULARIO Y CAMPOS DE ENTRADA */
+/* ------------------------------------------------ */
+#resetForm {
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Espacio entre elementos del formulario */
+    gap: 15px; /* Espacio entre elementos */
 }
 
-label {
-    /* Estilo de las etiquetas */
-    color: #ffffff;
+.form-box label {
     font-size: 0.9em;
+    color: #cccccc;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: -5px; 
+    display: block; /* Asegura que la etiqueta tome su propia línea */
 }
 
-input[type="password"] {
-    /* Estilo de los campos de entrada */
-    padding: 10px;
-    border: 1px solid #ff0000; /* Borde rojo */
-    background-color: #1a0000; /* Fondo del input un poco más claro que el body */
-    color: #ffffff;
+/* Estilo para todos los inputs del formulario */
+.form-box input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    background-color: #0a0a0a; /* Fondo más oscuro que el contenedor */
+    border: 1px solid #e50914; /* Borde rojo */
+    color: #f5f5f5;
     font-size: 1em;
     outline: none;
+    border-radius: 4px;
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    font-family: 'Orbitron', sans-serif; /* Usar la fuente tecnológica */
 }
 
-input[type="password"]:focus {
-    /* Efecto de brillo rojo al enfocar */
-    box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
-    border-color: #ff3333;
+/* Efecto al enfocar el campo */
+.form-box input[type="password"]:focus {
+    border-color: #ff0a1e;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
 }
 
-/* ---------------------------------- */
-/* ESTILO DEL BOTÓN */
-/* ---------------------------------- */
-button[type="submit"] {
-    /* Estilo del botón */
-    background-color: #ff0000;
-    color: #000000; /* Texto negro para contraste */
+/* ------------------------------------------------ */
+/* ESTILO DEL BOTÓN (Usando la clase btn-custom si existe en style.css) */
+/* ------------------------------------------------ */
+/* Si tu .btn-custom del style.css ya aplica todo el estilo, puedes usar solo esto. */
+.form-box button[type="submit"] {
+    margin-top: 20px;
+    padding: 14px;
+    /* Si necesitas sobreescribir el estilo de tu btn-custom */
+    background: #e50914; 
+    color: #fff;
     border: none;
-    padding: 12px;
+    border-radius: 50px;
+    font-weight: 600;
     font-size: 1.1em;
-    text-transform: uppercase;
     letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
     cursor: pointer;
-    margin-top: 15px;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
     font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
 }
 
-button[type="submit"]:hover {
-    /* Efecto al pasar el ratón */
-    background-color: #ff3333;
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+.form-box button[type="submit"]:hover {
+    background: #ff0a1e;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+    transform: translateY(-2px);
 }
 
-/* ---------------------------------- */
-/* ESTILO DEL MENSAJE (oculto por defecto) */
-/* ---------------------------------- */
+/* ------------------------------------------------ */
+/* ESTILO DEL MENSAJE (usando custom-alert si existe) */
+/* ------------------------------------------------ */
 #message-display {
     text-align: center;
     padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ff0000;
-    color: #ff0000;
+    margin-bottom: 15px;
+    border: 1px solid #e50914;
+    color: #e50914;
     background-color: #1a0000;
-    font-weight: bold;
+    font-weight: 600;
+    border-radius: 4px;
+    opacity: 0; /* Oculto por defecto, JS lo hará visible */
+    transition: opacity 0.3s ease;
 }
