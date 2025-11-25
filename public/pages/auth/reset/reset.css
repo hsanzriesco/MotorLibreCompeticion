@@ -1,6 +1,10 @@
 /* ------------------------------------------------ */
-/* Asegura que el body esté centrado para la vista de formulario */
-/* NOTA: Si tu style.css ya centra el body, puedes omitir esto */
+/* IMPORTACIÓN DE LA FUENTE ORBITRON */
+/* ------------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
+
+/* Asegura que el body esté centrado y usa la fuente */
+/* NOTA: Si tu style.css ya tiene esto, este bloque solo sirve de respaldo */
 body {
     display: flex;
     justify-content: center;
@@ -9,7 +13,7 @@ body {
     padding: 20px;
     margin: 0;
     box-sizing: border-box;
-    /* La fuente y el fondo ya vienen de style.css, no es necesario repetirlos */
+    font-family: 'Orbitron', sans-serif; /* Aplica Orbitron a todo el body */
 }
 
 /* ------------------------------------------------ */
@@ -17,35 +21,31 @@ body {
 /* ------------------------------------------------ */
 .form-box {
     width: 100%;
-    max-width: 420px; /* Tamaño del formulario */
-    
-    /* Efecto de borde superior rojo y glow de la imagen */
+    max-width: 420px;
     border-top: 3px solid #e50914; /* Rojo de la marca MLC */
-    background-color: #1a1a1a; /* Fondo muy oscuro, ligeramente diferente al body */
+    background-color: #1a1a1a;
     padding: 30px 40px;
     border-radius: 6px;
-    
-    /* Efecto de brillo (glow) en los bordes */
     box-shadow: 0 0 25px rgba(229, 9, 20, 0.4), 0 0 10px rgba(0, 0, 0, 0.5);
     transition: all 0.3s ease;
 }
 
 .form-box:hover {
-    box-shadow: 0 0 30px rgba(229, 9, 20, 0.7); /* Brillo más intenso al pasar el ratón */
+    box-shadow: 0 0 30px rgba(229, 9, 20, 0.7);
 }
 
 /* ------------------------------------------------ */
 /* ESTILOS DE TÍTULO */
 /* ------------------------------------------------ */
 .form-box h2 {
-    /* Estilo para el título "Restablecer Contraseña" */
     font-size: 1.6rem;
-    color: #e50914; /* Color rojo brillante */
+    color: #e50914;
     text-align: center;
     margin-bottom: 30px;
     text-transform: uppercase;
     letter-spacing: 2px;
     text-shadow: 0 0 5px rgba(229, 9, 20, 0.5);
+    font-family: 'Orbitron', sans-serif; /* Asegura la fuente en el título */
 }
 
 /* ------------------------------------------------ */
@@ -54,7 +54,7 @@ body {
 #resetForm {
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Espacio entre elementos */
+    gap: 15px;
 }
 
 .form-box label {
@@ -63,21 +63,21 @@ body {
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: -5px; 
-    display: block; /* Asegura que la etiqueta tome su propia línea */
+    display: block;
 }
 
 /* Estilo para todos los inputs del formulario */
 .form-box input[type="password"] {
     width: 100%;
     padding: 12px;
-    background-color: #0a0a0a; /* Fondo más oscuro que el contenedor */
-    border: 1px solid #e50914; /* Borde rojo */
+    background-color: #0a0a0a;
+    border: 1px solid #e50914;
     color: #f5f5f5;
     font-size: 1em;
     outline: none;
     border-radius: 4px;
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
-    font-family: 'Orbitron', sans-serif; /* Usar la fuente tecnológica */
+    font-family: 'Orbitron', sans-serif; /* Aplica la fuente aquí */
 }
 
 /* Efecto al enfocar el campo */
@@ -87,15 +87,13 @@ body {
 }
 
 /* ------------------------------------------------ */
-/* ESTILO DEL BOTÓN (Usando la clase btn-custom si existe en style.css) */
+/* ESTILO DEL BOTÓN */
 /* ------------------------------------------------ */
-/* Si tu .btn-custom del style.css ya aplica todo el estilo, puedes usar solo esto. */
 .form-box button[type="submit"] {
     margin-top: 20px;
     padding: 14px;
-    /* Si necesitas sobreescribir el estilo de tu btn-custom */
     background: #e50914; 
-    color: #fff;
+    color: #000000; /* Texto negro para contraste */
     border: none;
     border-radius: 50px;
     font-weight: 600;
@@ -104,7 +102,7 @@ body {
     text-transform: uppercase;
     transition: all 0.3s ease;
     cursor: pointer;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Orbitron', sans-serif; /* Aplica la fuente aquí */
 }
 
 .form-box button[type="submit"]:hover {
@@ -114,7 +112,7 @@ body {
 }
 
 /* ------------------------------------------------ */
-/* ESTILO DEL MENSAJE (usando custom-alert si existe) */
+/* ESTILO DEL MENSAJE */
 /* ------------------------------------------------ */
 #message-display {
     text-align: center;
@@ -125,6 +123,7 @@ body {
     background-color: #1a0000;
     font-weight: 600;
     border-radius: 4px;
-    opacity: 0; /* Oculto por defecto, JS lo hará visible */
+    opacity: 0;
     transition: opacity 0.3s ease;
+    font-family: 'Orbitron', sans-serif; /* Aplica la fuente aquí */
 }
