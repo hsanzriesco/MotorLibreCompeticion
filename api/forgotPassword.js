@@ -28,15 +28,15 @@ export default async (req, res) => {
         return res.status(400).json({ message: 'Email is required.' });
     }
 
-    // --- NUEVA VALIDACIÓN: Verificar si el correo tiene el símbolo @ ---
+    // --- VALIDACIÓN: Verificar si el correo tiene el símbolo @ ---
     if (!email.includes('@')) {
-        return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido. Debe incluir el símbolo @.' });
+        return res.status(400).json({ message: 'Error: Formato de correo electrónico no válido. Incluye un signo "@".' });
     }
     // ------------------------------------------------------------------
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
-        return res.status(500).json({
-            message: 'Internal Server Error: Missing critical environment variables.'
+        return res.status(500).json({ 
+            message: 'Internal Server Error: Missing critical environment variables.' 
         });
     }
 
@@ -46,19 +46,19 @@ export default async (req, res) => {
 
         if (!user) {
             console.log(`Intento de restablecimiento para email no encontrado: ${email}`);
-            return res.status(404).json({
-                message: 'Error: El correo electrónico no está registrado.'
+            return res.status(404).json({ 
+                message: 'Error: El correo electrónico no está registrado.' 
             });
         }
-
+        
         const userId = user.id;
 
         const token = jwt.sign(
-            { id: userId },
-            process.env.JWT_SECRET,
+            { id: userId }, 
+            process.env.JWT_SECRET, 
             { expiresIn: '1h' }
         );
-
+        
         const expirationDate = new Date(Date.now() + 3600000);
 
         await pool.query(
@@ -67,7 +67,7 @@ export default async (req, res) => {
         );
 
         const resetURL = `https://motor-libre-competicion.vercel.app/pages/auth/reset/reset.html?token=${token}`;
-
+        
         const mailOptions = {
             from: `Motor Libre Competición <${process.env.EMAIL_USER}>`,
             to: user.email,
@@ -85,13 +85,13 @@ export default async (req, res) => {
 
         await transporter.sendMail(mailOptions);
 
-        return res.status(200).json({
-            message: 'Éxito: Se ha enviado un enlace para restablecer la contraseña a tu correo.'
+        return res.status(200).json({ 
+             message: 'Éxito: Se ha enviado un enlace para restablecer la contraseña a tu correo.'
         });
 
     } catch (error) {
         console.error('FATAL ERROR during password reset process:', error.message || error);
-
+        
         return res.status(500).json({ message: 'Internal Server Error. Falló al procesar la solicitud de restablecimiento.' });
     }
 };
