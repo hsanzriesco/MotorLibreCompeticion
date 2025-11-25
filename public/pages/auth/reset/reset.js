@@ -1,4 +1,4 @@
-// La función mostrarAlerta está definida en alertas.js y se carga antes.
+// La función mostrarAlerta debe estar definida en alertas.js y cargada antes.
 
 function getTokenFromUrl() {
     const params = new URLSearchParams(window.location.search);

@@ -57,15 +57,15 @@ function mostrarConfirmacion(mensaje) {
         overlay.className = 'confirmacion-overlay';
 
         overlay.innerHTML = `
-            <div class="confirmacion-box" role="dialog" aria-modal="true">
-                <h4>Confirmar acción</h4>
-                <p>${mensaje}</p>
-                <div class="confirmacion-btns">
-                    <button class="confirm-btn confirm-yes">Sí</button>
-                    <button class="confirm-btn confirm-no">No</button>
-                </div>
-            </div>
-        `;
+            <div class="confirmacion-box" role="dialog" aria-modal="true">
+                <h4>Confirmar acción</h4>
+                <p>${mensaje}</p>
+                <div class="confirmacion-btns">
+                    <button class="confirm-btn confirm-yes">Sí</button>
+                    <button class="confirm-btn confirm-no">No</button>
+                </div>
+            </div>
+        `;
 
         document.body.appendChild(overlay);
         setTimeout(() => overlay.classList.add('mostrar'), 10);
