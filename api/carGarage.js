@@ -2,19 +2,17 @@ import { Pool } from "pg";
 import { v2 as cloudinary } from 'cloudinary';
 import formidable from 'formidable';
 
-// Desactiva el parser de body para que formidable pueda manejar el archivo
 export const config = {
     api: {
         bodyParser: false,
     },
 };
 
-// Función auxiliar para parsear el cuerpo multipart (archivos y campos)
 function parseMultipart(req) {
     return new Promise((resolve, reject) => {
         const form = formidable({
             multiples: false,
-            maxFileSize: 10 * 1024 * 1024 // Límite de 10MB
+            maxFileSize: 10 * 1024 * 1024
         });
 
         form.parse(req, (err, fields, files) => {
@@ -23,7 +21,6 @@ function parseMultipart(req) {
                 return reject(err);
             }
 
-            // Formidable devuelve campos y archivos como arrays, los convertimos a un solo valor
             const singleFields = Object.fromEntries(
                 Object.entries(fields).map(([key, value]) => [key, value[0]])
             );
@@ -33,7 +30,6 @@ function parseMultipart(req) {
     });
 }
 
-// Inicialización global del pool de DB
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
@@ -41,11 +37,8 @@ const pool = new Pool({
 
 export default async function handler(req, res) {
     const { method } = req;
-    let client; // Usamos un cliente para el patrón pool.connect() y liberación
+    let client;
 
-    // ==========================================================
-    // ⭐ CONFIGURACIÓN CLOUDINARY ⭐
-    // ==========================================================
     try {
         cloudinary.config({
             cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -55,15 +48,11 @@ export default async function handler(req, res) {
     } catch (configError) {
         return res.status(500).json({ ok: false, msg: "Error de configuración de Cloudinary." });
     }
-    // ==========================================================
 
 
     try {
-        client = await pool.connect(); // Obtener un cliente de conexión
+        client = await pool.connect();
 
-        // --------------------------------------------
-        // 1. LISTAR COCHES (GET)
-        // --------------------------------------------
         if (method === "GET") {
             const { user_id, id } = req.query;
 
@@ -84,19 +73,13 @@ export default async function handler(req, res) {
             return res.status(200).json({ ok: true, cars: result.rows });
         }
 
-        // --------------------------------------------
-        // 2 & 3. AGREGAR (POST) / EDITAR (PUT) COCHE con IMAGEN
-        // --------------------------------------------
         if (method === "POST" || method === "PUT") {
 
-            // 1. Parsear FormData
             const { fields, files } = await parseMultipart(req);
 
-            // Extraer campos y archivo. photoURL es el campo hidden con la URL existente.
             const { user_id, car_name, model, year, description, photoURL, id } = fields;
-            const file = files.imageFile?.[0]; // imageFile es el archivo subido (Nombre CLAVE)
+            const file = files.imageFile?.[0];
 
-            // Validación de campos obligatorios
             if (!user_id && method === "POST") {
                 return res.status(400).json({ ok: false, msg: "Falta user_id" });
             }
@@ -108,23 +91,21 @@ export default async function handler(req, res) {
             }
 
 
-            let finalPhotoUrl = photoURL || null; // URL existente por defecto
+            let finalPhotoUrl = photoURL || null;
 
-            // 2. Procesar imagen si se ha subido un nuevo archivo
             if (file && file.size > 0) {
                 try {
                     const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
-                        folder: "motor_libre_competicion_car_garage", // Carpeta específica para el garaje
+                        folder: "motor_libre_competicion_car_garage",
                         resource_type: "auto",
                     });
-                    finalPhotoUrl = uploadResponse.secure_url; // Obtener la URL pública
+                    finalPhotoUrl = uploadResponse.secure_url;
                 } catch (cloudinaryError) {
                     console.error("Cloudinary Upload Error:", cloudinaryError);
                     return res.status(500).json({ ok: false, msg: `Error al subir la imagen (Cloudinary Code: ${cloudinaryError.http_code || 'N/A'}). Revisa las credenciales.` });
                 }
 
             } else if (method === "PUT" && photoURL === '') {
-                // Si es una actualización y se ha vaciado el campo oculto (quitar imagen)
                 finalPhotoUrl = null;
             }
 
@@ -133,7 +114,6 @@ export default async function handler(req, res) {
             let values;
 
             if (method === "POST") {
-                // AGREGAR COCHE
                 query = `
                     INSERT INTO car_garage (user_id, car_name, model, year, description, photo_url, created_at)
                     VALUES ($1, $2, $3, $4, $5, $6, NOW())
@@ -142,7 +122,6 @@ export default async function handler(req, res) {
                 values = [user_id, car_name, model, year, description, finalPhotoUrl];
 
             } else if (method === "PUT") {
-                // EDITAR COCHE
                 query = `
                     UPDATE car_garage
                     SET car_name = $1, model = $2, year = $3, description = $4, photo_url = $5
@@ -158,9 +137,6 @@ export default async function handler(req, res) {
         }
 
 
-        // --------------------------------------------
-        // 4. ELIMINAR COCHE (DELETE)
-        // --------------------------------------------
         if (method === "DELETE") {
             const { id } = req.query;
 
@@ -173,9 +149,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ ok: true, msg: "Coche eliminado" });
         }
 
-        // --------------------------------------------
-        // MÉTODO NO PERMITIDO
-        // --------------------------------------------
         return res.status(405).json({ ok: false, msg: "Método no permitido" });
 
     } catch (err) {
@@ -188,7 +161,6 @@ export default async function handler(req, res) {
 
         return res.status(500).json({ ok: false, msg: errorMessage, error: err.message });
     } finally {
-        // Liberar la conexión
         if (client) {
             client.release();
         }
