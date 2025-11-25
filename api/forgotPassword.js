@@ -38,12 +38,15 @@ export default async (req, res) => {
         const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
+        // --- CAMBIO CLAVE AQUÍ ---
         if (!user) {
             console.log(`Intento de restablecimiento para email no encontrado: ${email}`);
-            return res.status(200).json({
-                message: 'Si el correo electrónico está registrado, se ha enviado un enlace para restablecer la contraseña.'
+            // Devolver 404 para que el cliente sepa que el email no existe
+            return res.status(404).json({
+                message: 'Error: El correo electrónico no está registrado.'
             });
         }
+        // --------------------------
 
         const userId = user.id;
 
@@ -79,8 +82,9 @@ export default async (req, res) => {
 
         await transporter.sendMail(mailOptions);
 
+        // Devolver 200 (éxito) con mensaje de éxito de envío
         return res.status(200).json({
-            message: 'Si el correo electrónico está registrado, se ha enviado un enlace para restablecer la contraseña.'
+            message: 'Éxito: Se ha enviado un enlace para restablecer la contraseña a tu correo.'
         });
 
     } catch (error) {
