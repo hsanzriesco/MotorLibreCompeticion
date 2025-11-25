@@ -1,6 +1,6 @@
-import { Pool } from 'pg';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs'; // Importamos bcryptjs para hashear la nueva contraseña
+const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -9,68 +9,56 @@ const pool = new Pool({
     }
 });
 
-// Número de rondas de hashing (factor de coste). 10 es un buen valor por defecto.
-const SALT_ROUNDS = 10;
-
-export default async (req, res) => {
-    // Aseguramos que solo se acepten peticiones POST
+module.exports = async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
     const { token, newPassword } = req.body;
 
-    // 1. Validación de entradas
     if (!token || !newPassword) {
-        return res.status(400).json({ message: 'Token y nueva contraseña son requeridos.' });
-    }
-
-    // Validación de variables de entorno
-    if (!process.env.JWT_SECRET || !process.env.DATABASE_URL) {
-        return res.status(500).json({
-            message: 'Internal Server Error: Missing critical environment variables.'
-        });
+        return res.status(400).json({ message: 'Token and new password are required.' });
     }
 
     try {
-        // 2. Verificar la validez del token JWT (expiración y firma)
         let decoded;
         try {
             decoded = jwt.verify(token, process.env.JWT_SECRET);
         } catch (err) {
-            console.error('Token verification error:', err.message);
-            // Captura errores como 'jwt expired' o 'invalid signature'
-            return res.status(401).json({ message: 'Token inválido o expirado. Por favor, solicita otro enlace.' });
+            return res.status(401).json({ message: 'Invalid or expired token.' });
         }
+        
+        const userId = decoded.user_id;
 
-        const userId = decoded.id;
-
-        // 3. Buscar el usuario y validar que el token coincida y no haya expirado en la BD
         const result = await pool.query(
-            'SELECT reset_token, reset_token_expires FROM users WHERE id = $1',
+            'SELECT reset_token, reset_token_expires FROM users WHERE user_id = $1',
             [userId]
         );
 
         const user = result.rows[0];
 
-        if (!user || user.reset_token !== token || new Date(user.reset_token_expires) < new Date()) {
-            return res.status(401).json({ message: 'El enlace de restablecimiento es inválido o ya ha sido utilizado/expirado.' });
+        if (!user || user.reset_token !== token) {
+            return res.status(401).json({ message: 'Invalid or missing token in database.' });
+        }
+        
+        const now = new Date();
+        if (now > new Date(user.reset_token_expires)) {
+             await pool.query('UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE user_id = $1', [userId]);
+             return res.status(401).json({ message: 'Token has expired.' });
         }
 
-        // 4. Hashear la nueva contraseña
-        const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-        // 5. Actualizar la contraseña y limpiar el token de restablecimiento
         await pool.query(
-            'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
+            'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE user_id = $2',
             [hashedPassword, userId]
         );
 
-        // 6. Respuesta de éxito
-        return res.status(200).json({ success: true, message: 'La contraseña ha sido restablecida con éxito.' });
+        return res.status(200).json({ message: 'Password has been successfully reset.' });
 
     } catch (error) {
-        console.error('FATAL ERROR during password reset update:', error.message || error);
-        return res.status(500).json({ success: false, message: 'Error interno del servidor al actualizar la contraseña.' });
+        console.error('Error resetting password:', error);
+        return res.status(500).json({ message: 'An error occurred while resetting the password.' });
     }
 };
