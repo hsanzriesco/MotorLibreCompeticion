@@ -100,9 +100,10 @@ export default async (req, res) => {
         return res.status(200).json({ message: 'Password reset email sent successfully.' });
 
     } catch (error) {
-        console.error('FATAL ERROR:', error);
+        // *** CAMBIO CRÍTICO: Imprime el error completo en la consola de Vercel.
+        console.error('FATAL ERROR during password reset process:', error.message || error);
         
         // Respuesta JSON de error general
-        return res.status(500).json({ message: 'Internal Server Error. Failed to process password reset request.' });
+        return res.status(500).json({ message: 'Internal Server Error. Failed to process password reset request. Check Vercel logs for details.' });
     }
 };
