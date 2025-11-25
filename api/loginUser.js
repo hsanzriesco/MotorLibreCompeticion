@@ -19,7 +19,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan datos" });
     }
 
-    // Consulta que compara la contraseña en texto plano
     const { rows } = await pool.query(
       "SELECT id, name, email, role FROM users WHERE name = $1 AND password = $2",
       [username, password]
