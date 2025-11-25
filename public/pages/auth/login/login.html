@@ -12,27 +12,42 @@
     <link rel="icon" type="image/png" href="../../../img/imagen-tfg.png" />
     <link rel="stylesheet" href="../../../css/alertas.css" />
 
-    <!-- Estilo adicional para colocar el icono del ojo -->
-    <style>
+    <!-- ESTILOS PARA EL CAMPO DE CONTRASEÑA CON ICONO DE OJO --><style>
+        /* Contenedor general para el input y el icono */
         .password-container {
             position: relative;
+            margin-bottom: 15px; /* Ajusta según el espaciado de tus labels */
         }
 
+        /* Ajuste del input para dejar espacio al icono */
         .password-container input[type="password"],
         .password-container input[type="text"] {
-            padding-right: 40px;
-            /* Asegura espacio para el icono */
+            padding-right: 40px; /* Suficiente espacio para el icono */
+            width: 100%; /* Asegura que ocupe todo el ancho */
         }
 
+        /* Estilos para el icono del ojo */
         .toggle-password {
             position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(calc(-50% + 15px));
-            /* Ajuste fino */
+            right: 15px; /* Distancia desde el borde derecho */
+            top: 50%; /* Centrado vertical */
+            transform: translateY(-50%); /* Ajuste para centrar perfectamente */
             cursor: pointer;
-            color: #6c757d;
-            font-size: 1.2em;
+            color: #e50914; /* Color rojo como en tu imagen */
+            font-size: 1.1em; /* Tamaño del icono */
+            z-index: 10; /* Asegura que esté por encima del input */
+            /* Transiciones si quieres un efecto suave al cambiar */
+            transition: color 0.2s ease-in-out; 
+        }
+
+        .toggle-password:hover {
+            color: #ff3344; /* Un rojo un poco más claro al pasar el mouse */
+        }
+
+        /* Opcional: ajustar el label si es necesario */
+        .form-box label {
+            margin-bottom: 5px; /* Espacio entre label y input */
+            display: block; /* Asegura que el label ocupe su propia línea */
         }
     </style>
 </head>
@@ -52,11 +67,9 @@
                 <input type="text" id="username" required placeholder="Ej. piloto123" />
 
                 <label for="password">Contraseña</label>
-                <!-- Contenedor para el campo de contraseña y el icono -->
-                <div class="password-container">
+                <!-- Contenedor para el campo de contraseña y el icono --><div class="password-container">
                     <input type="password" id="password" required placeholder="********" />
-                    <!-- Icono de ojo de Bootstrap Icons -->
-                    <i class="bi bi-eye-slash toggle-password" id="togglePassword"></i>
+                    <!-- Icono de ojo de Bootstrap Icons --><i class="bi bi-eye-slash toggle-password" id="togglePassword"></i>
                 </div>
 
                 <button type="submit">Iniciar sesión</button>
@@ -66,18 +79,17 @@
                 ¿No tienes cuenta?
                 <a href="../register/register.html">Regístrate aquí</a>
             </p>
-
+            
             <p class="forgot-password-link">
                 <a href="#" id="forgotPasswordLink">Olvidé mi contraseña</a>
             </p>
-
-            <div id="emailRequestForm"
-                style="display:none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
+            
+            <div id="emailRequestForm" style="display:none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
                 <label for="resetEmail">Ingresa tu email:</label>
-                <input type="email" id="resetEmail" placeholder="ejemplo@correo.com" required />
+                <input type="email" id="resetEmail" placeholder="ejemplo@correo.com" required/>
                 <button type="button" id="sendResetEmailBtn" class="btn btn-sm btn-danger mt-2">Enviar Enlace</button>
             </div>
-
+            
         </div>
     </div>
 
