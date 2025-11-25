@@ -5,15 +5,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
+    // --- INICIO DE CORRECCIÓN PARA EL AUTORELLENO DESPUÉS DE RESET ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const passwordInput = document.getElementById("password"); // Asume que este es el ID del campo de contraseña
+
+    // 1. Si la URL contiene '?reset=true' (proviene de la página de restablecimiento)
+    if (urlParams.get('reset') === 'true') {
+        // 2. Borrar forzadamente el valor del campo de la contraseña
+        // Esto evita que el navegador autocomplete la contraseña recién creada
+        if (passwordInput) {
+            passwordInput.value = '';
+        }
+        
+        // 3. Mostrar alerta de éxito
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta("Contraseña restablecida con éxito. Ya puedes iniciar sesión.", "exito");
+        }
+        
+        // 4. Limpiar el parámetro 'reset=true' de la URL
+        // Esto previene que el mensaje y la limpieza se repitan si el usuario recarga la página.
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    // --- FIN DE CORRECCIÓN ---
+
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
 
             const usernameInput = document.getElementById("username");
-            const passwordInput = document.getElementById("password");
+            // passwordInput ya está definido arriba
+            // const passwordInput = document.getElementById("password");
 
             const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
+            // Ya que passwordInput.value se limpia arriba, esta línea usa el valor actual del usuario.
+            const password = passwordInput.value.trim(); 
 
             if (!username || !password) {
                 mostrarAlerta("Por favor, completa todos los campos.", "aviso");
@@ -77,30 +102,55 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         sendResetEmailBtn.addEventListener("click", async () => {
-            const email = resetEmailInput.value.trim();
-
-            if (!email) {
-                mostrarAlerta("Por favor, introduce tu correo electrónico.", "aviso");
-                return;
+            // *** CAMBIO CLAVE: FORZAR VALIDACIÓN NATIVA ***
+            // checkValidity() verifica si el input es válido (incluyendo type="email")
+            // reportValidity() muestra el mensaje de error nativo si no es válido.
+            if (!resetEmailInput.checkValidity()) {
+                resetEmailInput.reportValidity();
+                return; // Detiene la ejecución si la validación falla
             }
+
+            const email = resetEmailInput.value.trim();
+            const apiUrl = "/api/forgotPassword";
+
+            // Se elimina la verificación manual de !email ya que checkValidity cubre required
 
             sendResetEmailBtn.disabled = true;
             sendResetEmailBtn.textContent = "Enviando...";
 
             try {
-                const res = await fetch("/api/forgotPassword", {
+                const res = await fetch(apiUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email }),
                 });
+                
+                // Intentar parsear el JSON de la respuesta
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    // Si no es JSON, asumir un error genérico del servidor
+                    console.error("Respuesta no JSON:", await res.text());
+                    mostrarAlerta("Error de servidor inesperado.", "error");
+                    return;
+                }
+
 
                 if (res.ok || res.status === 200) {
+                    // Éxito: Código 200
                     mostrarAlerta("Si el correo está registrado, recibirás un enlace de restablecimiento en breve. Revisa tu bandeja de spam.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
+                } else if (res.status === 400) {
+                    // Error de validación de formato (e.g., falta @).
+                    mostrarAlerta(data.message, "aviso");
+                } else if (res.status === 404) {
+                    // Error: Email no existe en la BD.
+                    mostrarAlerta(data.message, "error");
                 } else {
-                    const errorData = await res.json();
-                    mostrarAlerta(errorData.message || "Error al solicitar el restablecimiento. Inténtalo más tarde.", "error");
+                    // Otros errores (500, etc.)
+                    mostrarAlerta(data.message || "Error al solicitar el restablecimiento. Inténtalo más tarde.", "error");
                 }
             } catch (err) {
                 console.error("Error de conexión al solicitar restablecimiento:", err);
