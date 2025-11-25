@@ -1,6 +1,10 @@
-const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+// **USANDO SINTAXIS ES MODULES (import)**
+import { Pool } from 'pg';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+// NOTA: Si bcryptjs o jsonwebtoken no son compatibles con 'import' por defecto, 
+// es posible que tengas que ajustarlos o usar un wrapper. Asumimos que sí lo son.
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -9,7 +13,8 @@ const pool = new Pool({
     }
 });
 
-module.exports = async (req, res) => {
+// Usando 'export default' en lugar de 'module.exports'
+export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
@@ -23,6 +28,7 @@ module.exports = async (req, res) => {
     try {
         let decoded;
         try {
+            // Nota: La función 'verify' debe importarse correctamente
             decoded = jwt.verify(token, process.env.JWT_SECRET);
         } catch (err) {
             return res.status(401).json({ message: 'Invalid or expired token.' });
@@ -59,7 +65,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Error resetting password:', error);
-        // JSON return para manejar errores en el frontend
         return res.status(500).json({ message: 'An error occurred while resetting the password.' });
     }
 };
