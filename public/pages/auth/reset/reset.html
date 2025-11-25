@@ -2,26 +2,101 @@
 <html lang="es">
 <head>
     <title>Restablecer Contraseña</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../public/css/style.css"> 
+    
+    <style>
+        /* CSS ESPECÍFICO PARA CENTRAR Y ESTILIZAR EL FORMULARIO */
+        /* Estas clases no están en el style.css global, así que las definimos aquí */
+        .form-card {
+            width: 100%;
+            max-width: 400px;
+            /* Aplicamos el diseño de la imagen: Borde superior rojo y sombra/brillo */
+            border-top: 3px solid #e50914; 
+            padding: 30px;
+            background-color: #121212; /* Fondo más oscuro */
+            border-radius: 5px;
+            box-shadow: 0 0 25px rgba(229, 9, 20, 0.4); /* Sombra roja (glow) */
+            animation: fadeIn 1s ease;
+        }
 
-    </head>
+        .form-card h2 {
+            /* Hacemos que el h2 se vea como un título de la marca */
+            font-size: 1.5rem;
+            color: #e50914;
+            text-align: center;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #ccc;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            /* Estilo que va con el tema oscuro/rojo */
+            background-color: #0a0a0a; 
+            border: 1px solid #e50914;
+            color: #f5f5f5;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .form-group input:focus {
+            border-color: #ff0a1e;
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.6);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* Usamos el estilo h1 principal para el título superior */
+        .main-title-reset {
+             font-size: 2.5rem;
+             color: #e50914;
+             text-shadow: 0 0 8px rgba(229, 9, 20, 0.6);
+             margin-bottom: 30px;
+             text-transform: uppercase;
+             animation: fadeIn 1.2s ease;
+        }
+    </style>
+</head>
 <body>
-    <div class="container">
-        <h1 class="main-title">RESTAURAR ACCESO</h1> 
-        <div id="message-display" style="display: none;"></div>
+    <div class="form-card">
+        <h1 class="main-title-reset">Restablecer Acceso</h1>
+        
+        <div id="message-display" class="custom-alert" style="display: none;"></div>
         
         <form id="reset-password-form">
-            <h2>Restablecer Contraseña</h2>
+            <h2>Cambiar Contraseña</h2>
             
-            <label for="new-password">Nueva Contraseña:</label>
-            <input type="password" id="new-password" required>
+            <div class="form-group">
+                <label for="new-password">Nueva Contraseña:</label>
+                <input type="password" id="new-password" required>
+            </div>
 
-            <label for="confirm-password">Confirmar Contraseña:</label>
-            <input type="password" id="confirm-password" required>
+            <div class="form-group">
+                <label for="confirm-password">Confirmar Contraseña:</label>
+                <input type="password" id="confirm-password" required>
+            </div>
 
-            <button type="submit">Restablecer Contraseña</button>
+            <div class="text-center">
+                <button type="submit" class="btn-custom">Restablecer Contraseña</button>
+            </div>
         </form>
     </div>
 
