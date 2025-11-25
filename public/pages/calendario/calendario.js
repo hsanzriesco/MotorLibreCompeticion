@@ -1,14 +1,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Obtener referencias
     const modalImageContainer = document.getElementById("event-image-container");
     const modalImage = document.getElementById("modalImage");
     const modalTitle = document.getElementById("modalTitle");
     const modalDesc = document.getElementById("modalDesc");
     const modalLoc = document.getElementById("modalLoc");
-    const modalStart = document.getElementById("modalStart"); // Nuevo ID
-    const modalEnd = document.getElementById("modalEnd");     // Nuevo ID
-
-    // Configuración de visualización de fechas
+    const modalStart = document.getElementById("modalStart");
+    const modalEnd = document.getElementById("modalEnd");
     const DATE_OPTIONS = {
         year: 'numeric',
         month: 'long',
@@ -18,7 +15,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 
-    // Lógica para obtener el usuario de localStorage (ajustar si usas sessionStorage)
     const stored = localStorage.getItem('usuario');
     let usuario = null;
     try {
@@ -35,7 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         loginIcon.style.display = "none";
     }
 
-    // 2. Lógica de Cerrar Sesión
     document.getElementById("logout-btn").addEventListener("click", (e) => {
         e.preventDefault();
 
@@ -56,14 +51,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
 
-    // 3. Inicialización de FullCalendar y manejo de eventos
     const calendarEl = document.getElementById("calendar");
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
         locale: "es",
         events: async (fetchInfo, successCallback, failureCallback) => {
             try {
-                // Asegúrate de que la API /api/events devuelva la columna 'image_url'
                 const res = await fetch("/api/events");
                 const data = await res.json();
                 if (data.success && Array.isArray(data.data)) successCallback(data.data);
@@ -75,32 +68,24 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
         },
-        // Manejo del click en un evento
         eventClick: (info) => {
             const e = info.event;
             const extendedProps = e.extendedProps;
-
-            // Rellenar datos del modal
             modalTitle.textContent = e.title;
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
-
-            // ⭐ CLAVE: Muestra Fecha y Hora de inicio y fin ⭐
             modalStart.textContent = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
             modalEnd.textContent = new Date(e.end).toLocaleDateString("es-ES", DATE_OPTIONS);
-
-            // ⭐ LÓGICA DE LA IMAGEN (VERIFICADA Y CORRECTA) ⭐
             const imageUrl = extendedProps.image_url;
 
             if (imageUrl) {
                 modalImage.src = imageUrl;
-                modalImageContainer.style.display = "block"; // Mostrar el contenedor
+                modalImageContainer.style.display = "block";
             } else {
                 modalImage.src = "";
-                modalImageContainer.style.display = "none"; // Ocultar el contenedor
+                modalImageContainer.style.display = "none";
             }
 
-            // ⭐ USAR LA API DE BOOTSTRAP PARA EL MODAL RESPONSIVO ⭐
             const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
             eventModal.show();
         },
