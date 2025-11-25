@@ -1,129 +1,129 @@
-/* ------------------------------------------------ */
-/* IMPORTACIÓN DE LA FUENTE ORBITRON */
-/* ------------------------------------------------ */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* Asegura que el body esté centrado y usa la fuente */
-/* NOTA: Si tu style.css ya tiene esto, este bloque solo sirve de respaldo */
+/* Estilos de body y contenedor principal copiados de login.css para asegurar el centrado */
 body {
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
+    color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center; /* Agregado para centrar horizontalmente */
+    align-items: center; /* Agregado para centrar verticalmente */
+    flex-direction: column; /* Necesario si se usa el navbar, aunque aquí solo centra el formulario */
+}
+
+/* El elemento form-container no está en tu HTML de reset, pero si lo tuvieras, usaría esto: */
+/*
+.form-container {
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-    margin: 0;
-    box-sizing: border-box;
-    font-family: 'Orbitron', sans-serif; /* Aplica Orbitron a todo el body */
+    padding: 40px 20px;
 }
+*/
 
-/* ------------------------------------------------ */
-/* ESTILOS DEL CONTENEDOR PRINCIPAL (form-box) */
-/* ------------------------------------------------ */
+/* Estilo de la caja principal del formulario (form-box) */
 .form-box {
+    background-color: rgba(20, 20, 20, 0.92);
+    border: 1px solid #e50914;
+    border-radius: 14px;
+    box-shadow: 0 0 25px rgba(229, 9, 20, 0.3);
+    padding: 40px 50px;
     width: 100%;
     max-width: 420px;
-    border-top: 3px solid #e50914; /* Rojo de la marca MLC */
-    background-color: #1a1a1a;
-    padding: 30px 40px;
-    border-radius: 6px;
-    box-shadow: 0 0 25px rgba(229, 9, 20, 0.4), 0 0 10px rgba(0, 0, 0, 0.5);
-    transition: all 0.3s ease;
-}
-
-.form-box:hover {
-    box-shadow: 0 0 30px rgba(229, 9, 20, 0.7);
-}
-
-/* ------------------------------------------------ */
-/* ESTILOS DE TÍTULO */
-/* ------------------------------------------------ */
-.form-box h2 {
-    font-size: 1.6rem;
-    color: #e50914;
     text-align: center;
-    margin-bottom: 30px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 0 0 5px rgba(229, 9, 20, 0.5);
-    font-family: 'Orbitron', sans-serif; /* Asegura la fuente en el título */
+    /* Para que el formulario no salte inmediatamente, usamos una animación */
+    animation: fadeIn 1.2s ease; 
 }
 
-/* ------------------------------------------------ */
-/* ESTILOS DEL FORMULARIO Y CAMPOS DE ENTRADA */
-/* ------------------------------------------------ */
-#resetForm {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+/* Estilo del título <h2> (Restablecer Contraseña) */
+.form-box h2 {
+    color: #e50914;
+    font-weight: 800;
+    margin-bottom: 25px;
+    text-shadow: 0 0 12px rgba(229, 9, 20, 0.8);
+    font-size: 1.8rem;
 }
 
+/* Estilo de las etiquetas <label> */
 .form-box label {
-    font-size: 0.9em;
-    color: #cccccc;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: -5px; 
     display: block;
+    text-align: left;
+    margin-top: 15px;
+    font-weight: 600;
+    color: #ccc;
+    font-size: 0.9rem;
 }
 
-/* Estilo para todos los inputs del formulario */
-.form-box input[type="password"] {
+/* Estilo de los campos de entrada <input> (para new-password y confirm-password) */
+.form-box input {
     width: 100%;
     padding: 12px;
-    background-color: #0a0a0a;
-    border: 1px solid #e50914;
-    color: #f5f5f5;
-    font-size: 1em;
+    margin-top: 6px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background-color: #222;
+    color: #fff;
     outline: none;
-    border-radius: 4px;
-    transition: box-shadow 0.3s ease, border-color 0.3s ease;
-    font-family: 'Orbitron', sans-serif; /* Aplica la fuente aquí */
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    font-family: 'Orbitron', sans-serif; /* Asegura la fuente */
 }
 
-/* Efecto al enfocar el campo */
-.form-box input[type="password"]:focus {
-    border-color: #ff0a1e;
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+/* Efecto al enfocar los campos de entrada */
+.form-box input:focus {
+    border-color: #e50914;
+    box-shadow: 0 0 8px rgba(229, 9, 20, 0.6);
 }
 
-/* ------------------------------------------------ */
-/* ESTILO DEL BOTÓN */
-/* ------------------------------------------------ */
-.form-box button[type="submit"] {
-    margin-top: 20px;
-    padding: 14px;
-    background: #e50914; 
-    color: #000000; /* Texto negro para contraste */
+/* Estilo del botón <button> */
+.form-box button {
+    width: 100%;
+    background-color: #e50914;
+    color: white;
+    font-weight: 700;
     border: none;
-    border-radius: 50px;
-    font-weight: 600;
-    font-size: 1.1em;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    padding: 14px;
+    margin-top: 30px;
+    border-radius: 6px;
     transition: all 0.3s ease;
-    cursor: pointer;
-    font-family: 'Orbitron', sans-serif; /* Aplica la fuente aquí */
+    font-size: 1rem;
+    text-transform: uppercase;
+    font-family: 'Orbitron', sans-serif; /* Asegura la fuente */
 }
 
-.form-box button[type="submit"]:hover {
-    background: #ff0a1e;
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
-    transform: translateY(-2px);
+/* Efecto al pasar el ratón sobre el botón */
+.form-box button:hover {
+    background-color: #ff1a1a;
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
 }
 
-/* ------------------------------------------------ */
-/* ESTILO DEL MENSAJE */
-/* ------------------------------------------------ */
+/* Estilo para el contenedor de mensajes (message-display) */
 #message-display {
-    text-align: center;
     padding: 10px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    /* Puedes usar las clases de tu style.css (custom-alert) para los estilos de color real */
     border: 1px solid #e50914;
     color: #e50914;
     background-color: #1a0000;
-    font-weight: 600;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    font-family: 'Orbitron', sans-serif; /* Aplica la fuente aquí */
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Definición de la animación de entrada (copiada de style.css) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
