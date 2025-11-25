@@ -77,13 +77,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         sendResetEmailBtn.addEventListener("click", async () => {
+            // *** CAMBIO CLAVE: FORZAR VALIDACIÓN NATIVA ***
+            // checkValidity() verifica si el input es válido (incluyendo type="email")
+            // reportValidity() muestra el mensaje de error nativo si no es válido.
+            if (!resetEmailInput.checkValidity()) {
+                resetEmailInput.reportValidity();
+                return; // Detiene la ejecución si la validación falla
+            }
+
             const email = resetEmailInput.value.trim();
             const apiUrl = "/api/forgotPassword";
 
-            if (!email) {
-                mostrarAlerta("Por favor, introduce tu correo electrónico.", "aviso");
-                return;
-            }
+            // Se elimina la verificación manual de !email ya que checkValidity cubre required
 
             sendResetEmailBtn.disabled = true;
             sendResetEmailBtn.textContent = "Enviando...";
@@ -94,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email }),
                 });
-
+                
                 // Intentar parsear el JSON de la respuesta
                 let data = {};
                 try {
