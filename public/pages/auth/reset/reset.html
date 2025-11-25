@@ -2,21 +2,27 @@
 <html lang="es">
 <head>
     <title>Restablecer Contraseña</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="reset.css">
 </head>
 <body>
-    <div id="message-display" style="display: none;"></div>
-    
-    <form id="reset-password-form">
-        <h2>Restablecer Contraseña</h2>
+    <div class="container">
+        <h1 class="main-title">RESTAURAR ACCESO</h1> 
         
-        <label for="new-password">Nueva Contraseña:</label>
-        <input type="password" id="new-password" required>
+        <div id="message-display" style="display: none;"></div>
+        
+        <form id="reset-password-form">
+            <h2>Restablecer Contraseña</h2>
+            
+            <label for="new-password">Nueva Contraseña:</label>
+            <input type="password" id="new-password" required>
 
-        <label for="confirm-password">Confirmar Contraseña:</label>
-        <input type="password" id="confirm-password" required>
+            <label for="confirm-password">Confirmar Contraseña:</label>
+            <input type="password" id="confirm-password" required>
 
-        <button type="submit">Restablecer Contraseña</button>
-    </form>
+            <button type="submit">Restablecer Contraseña</button>
+        </form>
+    </div>
 
     <script src="reset.js"></script>
 </body>

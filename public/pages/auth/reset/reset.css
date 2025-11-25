@@ -1,0 +1,132 @@
+/* ---------------------------------- */
+/* ESTILOS GLOBALES Y DE FONDO */
+/* ---------------------------------- */
+body {
+    /* Fondo negro sólido como en la imagen */
+    background-color: #000000;
+    /* Color de texto principal */
+    color: #ffffff; 
+    /* Fuente estilo tecnológico (Orbitron es la que se enlazó en el HTML) */
+    font-family: 'Orbitron', sans-serif;
+    /* Centrar el contenido en la pantalla */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px; 
+    box-sizing: border-box;
+}
+
+/* ---------------------------------- */
+/* ESTILOS DEL CONTENEDOR PRINCIPAL */
+/* ---------------------------------- */
+.container {
+    width: 100%;
+    max-width: 400px;
+    /* Borde superior rojo de 3px como el de la imagen */
+    border-top: 3px solid #ff0000; 
+    padding: 20px 30px;
+    /* Fondo ligeramente más oscuro */
+    background-color: #0a0a0a; 
+    border-radius: 5px;
+    /* Sombra roja sutil para un efecto de brillo (glow) */
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); 
+}
+
+/* ---------------------------------- */
+/* ESTILOS DE TÍTULOS */
+/* ---------------------------------- */
+.main-title {
+    /* Estilo para el título superior */
+    color: #ff0000;
+    text-align: center;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 1.5em;
+    font-weight: 700;
+}
+
+h2 {
+    /* Estilo del subtítulo "Restablecer Contraseña" */
+    color: #ff0000;
+    text-align: center;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1.2em;
+}
+
+/* ---------------------------------- */
+/* ESTILOS DEL FORMULARIO */
+/* ---------------------------------- */
+#reset-password-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Espacio entre elementos del formulario */
+}
+
+label {
+    /* Estilo de las etiquetas */
+    color: #ffffff;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: -5px; 
+}
+
+input[type="password"] {
+    /* Estilo de los campos de entrada */
+    padding: 10px;
+    border: 1px solid #ff0000; /* Borde rojo */
+    background-color: #1a0000; /* Fondo del input un poco más claro que el body */
+    color: #ffffff;
+    font-size: 1em;
+    outline: none;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+input[type="password"]:focus {
+    /* Efecto de brillo rojo al enfocar */
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+    border-color: #ff3333;
+}
+
+/* ---------------------------------- */
+/* ESTILO DEL BOTÓN */
+/* ---------------------------------- */
+button[type="submit"] {
+    /* Estilo del botón */
+    background-color: #ff0000;
+    color: #000000; /* Texto negro para contraste */
+    border: none;
+    padding: 12px;
+    font-size: 1.1em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+}
+
+button[type="submit"]:hover {
+    /* Efecto al pasar el ratón */
+    background-color: #ff3333;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+}
+
+/* ---------------------------------- */
+/* ESTILO DEL MENSAJE (oculto por defecto) */
+/* ---------------------------------- */
+#message-display {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ff0000;
+    color: #ff0000;
+    background-color: #1a0000;
+    font-weight: bold;
+}
