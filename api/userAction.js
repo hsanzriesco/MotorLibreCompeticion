@@ -2,7 +2,6 @@ import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
 
-// ⚠️ Esta configuración (export const config = { ... }) es para Next.js/Vercel y no es necesaria en Express.
 export const config = {
   api: { bodyParser: false },
 };
@@ -16,10 +15,6 @@ export default async function handler(req, res) {
   const { method, url } = req;
 
   try {
-    // ⚠️ ESTAS RUTAS SON IGNORADAS POR TU FRONTEND
-    // ===========================================================
-    // 🔸 CAMBIAR NOMBRE DE USUARIO
-    // ===========================================================
     if (method === "PUT" && url.includes("/updateName")) {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
@@ -32,10 +27,6 @@ export default async function handler(req, res) {
       await pool.query("UPDATE users SET name = $1 WHERE id = $2", [newName, id]);
       return res.status(200).json({ success: true, message: "Nombre actualizado correctamente." });
     }
-
-    // ===========================================================
-    // 🔸 CAMBIAR CONTRASEÑA
-    // ===========================================================
     if (method === "PUT" && url.includes("/updatePassword")) {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
@@ -50,10 +41,6 @@ export default async function handler(req, res) {
         .status(200)
         .json({ success: true, message: "Contraseña actualizada correctamente." });
     }
-
-    // ===========================================================
-    // 🔸 AÑADIR COCHE
-    // ===========================================================
     if (method === "POST" && url.includes("/addCar")) {
       const form = formidable({ multiples: false });
 
@@ -62,9 +49,6 @@ export default async function handler(req, res) {
           console.error("Error al procesar el archivo:", err);
           return res.status(500).json({ success: false, message: "Error al procesar archivo" });
         }
-
-        // Nota: formidable devuelve arrays para fields en algunas configuraciones, 
-        // pero asumimos el primer elemento si es un array
         const userId = Array.isArray(fields.userId) ? fields.userId[0] : fields.userId;
         const carName = Array.isArray(fields.carName) ? fields.carName[0] : fields.carName;
 
@@ -93,10 +77,6 @@ export default async function handler(req, res) {
       });
       return;
     }
-
-    // ===========================================================
-    // 🔸 OBTENER COCHES DE UN USUARIO
-    // ===========================================================
     if (method === "GET" && url.includes("/getCars")) {
       const userId = new URL(req.url, `http://${req.headers.host}`).searchParams.get("userId");
 
@@ -106,10 +86,6 @@ export default async function handler(req, res) {
       const { rows } = await pool.query("SELECT * FROM cars WHERE user_id = $1", [userId]);
       return res.status(200).json({ success: true, cars: rows });
     }
-
-    // ===========================================================
-    // ❌ MÉTODO NO SOPORTADO
-    // ===========================================================
     return res.status(405).json({
       success: false,
       message: "Ruta o método no válido en userActions.js",

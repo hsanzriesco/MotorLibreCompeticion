@@ -7,7 +7,6 @@
     --mlc-glow: rgba(229, 9, 20, 0.25);
 }
 
-/* Layout */
 body {
     background: linear-gradient(180deg, #0b0b0b 0%, #111 100%);
     color: #fff;
@@ -22,14 +21,12 @@ body {
     border-bottom: none;
 }
 
-/* Main */
 .main-perfil {
     margin-top: 90px;
     max-width: 1200px;
     padding: 30px 12px;
 }
 
-/* Card */
 .card-mlc {
     background: var(--mlc-panel);
     border: 1px solid rgba(229, 9, 20, 0.35);
@@ -38,7 +35,6 @@ body {
     padding: 18px;
 }
 
-/* Inputs */
 input,
 select,
 textarea,
@@ -68,7 +64,6 @@ textarea:focus,
     color: rgba(255, 255, 255, 0.55) !important;
 }
 
-/* Buttons */
 .btn-mlc-save {
     background: var(--mlc-red);
     color: white;
@@ -97,7 +92,6 @@ textarea:focus,
     border-radius: 8px;
 }
 
-/* Modal */
 .modal-mlc {
     background: linear-gradient(180deg, #0b0b0b, #111);
     border-radius: 12px;
@@ -112,21 +106,14 @@ textarea:focus,
     background: transparent;
 }
 
-/* Eliminar estilos antiguos */
 .car-item {
     display: none !important;
 }
 
-/* -------------------------------------------------------
-   NUEVO DISEÑO MÁS NÍTIDO Y ESPACIOSO PARA EL GARAJE 
----------------------------------------------------------*/
-
-/* Contenedor de secciones (Coches / Motos) */
 .garage-section {
     margin-bottom: 55px;
 }
 
-/* Grid más limpio y separado */
 .garage-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -134,7 +121,6 @@ textarea:focus,
     margin-top: 15px;
 }
 
-/* Tarjetas */
 .car-card {
     position: relative;
     display: flex;
@@ -155,7 +141,6 @@ textarea:focus,
     background-color: rgba(20, 20, 20, 0.95);
 }
 
-/* Imagen */
 .car-image-container {
     width: 100%;
     aspect-ratio: 16 / 9;
@@ -176,7 +161,6 @@ textarea:focus,
     transform: scale(1.05);
 }
 
-/* Contenido */
 .car-details-content {
     padding: 16px 14px;
     display: flex;
@@ -185,7 +169,6 @@ textarea:focus,
     flex-grow: 1;
 }
 
-/* Textos */
 .car-name {
     color: var(--mlc-red) !important;
     font-weight: 700;
@@ -201,7 +184,6 @@ textarea:focus,
     font-weight: 400;
 }
 
-/* Botón editar */
 .btn-edit-car {
     background: var(--mlc-red);
     color: white;
@@ -222,7 +204,6 @@ textarea:focus,
     background: #c70812;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .main-perfil {
         padding: 20px;
@@ -238,7 +219,6 @@ textarea:focus,
     }
 }
 
-/* Mejor visibilidad */
 .card-mlc label,
 .card-mlc h3,
 .card-mlc h4,
@@ -248,7 +228,6 @@ textarea:focus,
     color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* Títulos */
 .card-mlc .section-title,
 .card-mlc-title,
 .card-mlc h2 {
@@ -256,7 +235,6 @@ textarea:focus,
     font-weight: 700 !important;
 }
 
-/* Subtítulos */
 .form-group label,
 label {
     color: rgba(255, 255, 255, 0.75) !important;

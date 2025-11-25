@@ -1,6 +1,3 @@
-/* ===============================
-   CONTENEDOR DE LAS ALERTAS
-   =============================== */
 .alerta-container {
     position: fixed;
     top: 20px;
@@ -12,9 +9,6 @@
     pointer-events: none;
 }
 
-/* ===============================
-   ALERTA BASE
-   =============================== */
 .alerta {
     display: flex;
     align-items: center;
@@ -37,53 +31,37 @@
     backdrop-filter: blur(2px);
 }
 
-/* Cuando aparece */
 .alerta.mostrar {
     opacity: 1;
     transform: translateX(0);
 }
 
-/* ===============================
-   TIPOS DE ALERTA
-   =============================== */
-
-/* ÉXITO → VERDE */
 .alerta.exito {
     background: #28a745 !important;
     border-left: 6px solid #1f7a33 !important;
 }
 
-/* ERROR → ROJO */
 .alerta.error {
     background: #dc3545 !important;
     border-left: 6px solid #a12732 !important;
 }
 
-/* ADVERTENCIA → AMARILLO */
 .alerta.advertencia {
     background: #ffc107 !important;
     color: #000 !important;
     border-left: 6px solid #b68b00 !important;
 }
 
-/* INFO → AZUL */
 .alerta.info {
     background: #0dcaf0 !important;
     border-left: 6px solid #0aa1c4 !important;
 }
 
-/* ===============================
-   ICONOS
-   =============================== */
 .alerta i {
     font-size: 1.3rem;
     flex-shrink: 0;
 }
 
-/* =========================================================
-   CONFIRMACIÓN ESTILO NEGRO & ROJO (USADA POR mostrarConfirmacion)
-   - No requiere archivo nuevo; está aquí para mantener todo en 1 CSS
-   ========================================================= */
 .confirmacion-overlay {
     position: fixed;
     top: 0;
@@ -123,13 +101,11 @@
     transform: translateY(0) scale(1);
 }
 
-/* Título en rojo */
 .confirmacion-box h4 {
     margin: 0 0 8px 0;
     color: #e50914;
 }
 
-/* Texto */
 .confirmacion-box p {
     margin: 0;
     color: rgba(255, 255, 255, 0.92);
@@ -137,7 +113,6 @@
     line-height: 1.4;
 }
 
-/* Botones */
 .confirmacion-btns {
     margin-top: 18px;
     display: flex;

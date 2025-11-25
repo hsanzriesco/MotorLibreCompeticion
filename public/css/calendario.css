@@ -1,4 +1,3 @@
-/* Estilos comunes del calendario FullCalendar */
 #calendar {
     max-width: 900px;
     margin: 50px auto;
@@ -8,7 +7,6 @@
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
 }
 
-/* Estilos de la Modal de Visualización de Eventos (Usada en calendario.html) */
 .modal-event {
     position: fixed;
     top: 0;

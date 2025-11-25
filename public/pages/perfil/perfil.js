@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const noCarsMessage = document.getElementById('no-cars-message');
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
-
-    // ELEMENTOS DEL MODAL DE VEHÍCULO
     const carModal = document.getElementById('carModal');
     const carModalTitle = document.getElementById('carModalTitle');
     const carIdInput = document.getElementById('car-id');
@@ -18,13 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const carModelInput = document.getElementById('car-model');
     const carYearInput = document.getElementById('car-year');
     const carDescriptionInput = document.getElementById('car-description');
-
-    // ELEMENTOS DE TIPO DE VEHÍCULO
     const vehicleTypeSelect = document.getElementById('vehicle-type-select');
     const vehicleTypeInput = document.getElementById('vehicle-type');
     const vehicleNameLabel = document.getElementById('vehicle-name-label');
-
-    // ELEMENTOS DE IMAGEN
     const carPhotoFileInput = document.getElementById('carPhotoFile');
     const carPhotoUrlInput = document.getElementById('car-photo-url');
     const carPhotoPreview = document.getElementById('carPhotoPreview');
@@ -33,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentVehicle = null;
 
-    // --- Carga Inicial de Usuario ---
     const stored = sessionStorage.getItem('usuario');
     if (!stored) {
         mostrarAlerta("Sesión expirada. Inicia sesión.", 'error');
@@ -68,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }[c]));
     }
 
-    // RENDER VEHÍCULO
     function renderVehicle(vehicle) {
         const isCar = vehicle.type === 'car';
         const nameKey = isCar ? 'car_name' : 'motorcycle_name';
@@ -104,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
 
-    // CARGA VEHÍCULOS
     async function loadVehicles() {
         const allVehicles = [];
         const userId = encodeURIComponent(user.id);
@@ -112,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let carsHtml = '';
         let motorcyclesHtml = '';
 
-        // CARGAR COCHES
         try {
             const carsResp = await fetch(`/api/carGarage?user_id=${userId}`);
             const carsData = await carsResp.json();
@@ -129,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error al cargar coches:", e.message);
         }
 
-        // CARGAR MOTOS
         try {
             const bikesResp = await fetch(`/api/motosGarage?user_id=${userId}`);
             const bikesData = await bikesResp.json();
@@ -180,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // MODAL VEHÍCULO
     function updateCarModalUI(type, isEdit = false) {
         const isCar = type === 'car';
         vehicleTypeInput.value = type;
@@ -228,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCarModalUI(type, isEdit);
     }
 
-    // EVENTOS AÑADIR VEHÍCULO
     openAddCarBtn.addEventListener('click', () => {
         openCarModal(null);
         new bootstrap.Modal(carModal).show();
@@ -240,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // PREVISUALIZACIÓN DE IMAGEN
     carPhotoFileInput.addEventListener('change', function () {
         const file = this.files[0];
         if (file) {
@@ -267,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
         carPhotoPreview.src = '';
     });
 
-    // GUARDAR VEHÍCULO
     carForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -340,14 +325,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ELIMINAR VEHÍCULO
     deleteCarBtn.addEventListener('click', async () => {
         if (!currentVehicle) return;
 
         const isCar = currentVehicle.type === 'car';
         const itemName = isCar ? 'coche' : 'moto';
 
-        // Usa la función de confirmación antes de la eliminación
         const confirmar = await mostrarConfirmacion(`¿Seguro que quieres eliminar este ${itemName}?`, 'Eliminar');
         if (!confirmar) {
             mostrarAlerta('Eliminación cancelada', 'info');
@@ -377,10 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // CONFIRMACIONES (Se mantiene para la eliminación de vehículo y actualización de perfil)
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
-            // Si ya hay un modal activo, salimos sin resolver la promesa.
             if (document.getElementById('mlc-confirm-overlay')) {
                 return;
             }
@@ -471,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // GUARDAR PERFIL
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -521,23 +501,15 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarAlerta('Error al actualizar perfil: ' + error.message, 'error');
         }
     });
-
-    // ⛔ LÓGICA DE CERRAR SESIÓN (SIN CONFIRMACIÓN)
     logoutBtn.addEventListener('click', (e) => {
-        // Detiene el comportamiento por defecto inmediatamente
         e.preventDefault();
-
-        // 1. Muestra el mensaje de éxito inmediatamente
         mostrarAlerta('Sesión cerrada correctamente', 'exito');
-
-        // 2. Espera 1 segundo (1000ms) para que la alerta sea visible, luego limpia y redirige
         setTimeout(() => {
-            sessionStorage.removeItem('usuario'); // Limpia la sesión
-            window.location.href = '/index.html'; // Redirige
+            sessionStorage.removeItem('usuario');
+            window.location.href = '/index.html';
         }, 1000); 
     });
 
-    // INICIALIZAR
     loadVehicles();
 
     

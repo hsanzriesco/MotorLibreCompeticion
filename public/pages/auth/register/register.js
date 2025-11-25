@@ -1,29 +1,21 @@
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
-
-    // === ELEMENTOS PARA EL TOGGLE DE CONTRASEÑA ===
     const passwordInput = document.getElementById("password");
     const confirmPasswordInput = document.getElementById("confirmPassword");
     const togglePassword = document.getElementById("togglePassword");
     const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
 
-    // Función genérica para alternar la visibilidad
     function setupPasswordToggle(inputElement, iconElement) {
         iconElement.addEventListener('click', () => {
-            // Alterna el tipo de input
             const type = inputElement.getAttribute('type') === 'password' ? 'text' : 'password';
             inputElement.setAttribute('type', type);
-            
-            // Alterna el icono
             iconElement.classList.toggle('bi-eye');
             iconElement.classList.toggle('bi-eye-slash');
         });
     }
 
-    // Configurar los toggles para ambos campos
     setupPasswordToggle(passwordInput, togglePassword);
     setupPasswordToggle(confirmPasswordInput, toggleConfirmPassword);
-    // ==============================================
     
 
     function validatePassword(password) {
@@ -48,20 +40,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmPassword = confirmPasswordInput.value.trim();
 
         if (!name || !email || !password || !confirmPassword) {
-            // ✅ Uso de alerta global
             mostrarAlerta("Todos los campos son obligatorios.", "error"); 
             return;
         }
 
         if (password !== confirmPassword) {
-            // ✅ Uso de alerta global
             mostrarAlerta("Las contraseñas no coinciden.", "error");
             return;
         }
 
         const passwordError = validatePassword(password);
         if (passwordError) {
-            // ✅ Uso de alerta global
             mostrarAlerta(passwordError, "error");
             return;
         }
@@ -76,24 +65,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await res.json();
 
             if (res.status === 409) {
-                // ✅ Uso de alerta global
                 mostrarAlerta("El nombre o correo ya están en uso.", "error");
                 return;
             }
 
             if (result.success) {
-                // ✅ Uso de alerta global
-                mostrarAlerta("🎉 Usuario creado con éxito", "exito");
+                mostrarAlerta("Usuario creado con éxito", "exito");
                 setTimeout(() => {
                     window.location.href = "../login/login.html";
                 }, 1500);
             } else {
-                // ✅ Uso de alerta global
                 mostrarAlerta(result.message || "Error desconocido al registrar.", "error");
             }
         } catch {
-            // ✅ Uso de alerta global
-            mostrarAlerta("❌ Error al conectar con el servidor.", "error");
+            mostrarAlerta("Error al conectar con el servidor.", "error");
         }
     });
 });

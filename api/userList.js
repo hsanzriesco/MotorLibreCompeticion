@@ -30,7 +30,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // ⚠️ Contraseña en texto plano
       const result = await pool.query(
         `INSERT INTO users (name, email, password, role)
          VALUES ($1, $2, $3, $4)
@@ -65,7 +64,7 @@ export default async function handler(req, res) {
         name || null,
         email || null,
         role || null,
-        password || null, // ⚠️ texto plano
+        password || null,
         id,
       ]);
 

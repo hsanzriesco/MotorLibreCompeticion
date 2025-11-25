@@ -1,4 +1,3 @@
-// Obtener el token de la URL
 function getTokenFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('token');
@@ -7,12 +6,10 @@ function getTokenFromUrl() {
 document.addEventListener('DOMContentLoaded', () => {
     const token = getTokenFromUrl();
     if (!token) {
-        // Mostrar error si no hay token
         document.getElementById('reset-form-container').innerHTML = '<h2>Error: Missing reset token.</h2>';
         return;
     }
 
-    // Asignar el listener al formulario de restablecimiento
     const resetForm = document.getElementById('reset-form');
     resetForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -26,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('/api/resetPassword', { // URL relativa a tu API de Vercel
+            const response = await fetch('/api/resetPassword', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, newPassword })
@@ -36,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 alert('Password successfully reset! You can now log in.');
-                window.location.href = '/pages/auth/login/login.html'; // Redirigir al login
+                window.location.href = '/pages/auth/login/login.html';
             } else {
                 alert(`Reset failed: ${data.message}`);
             }

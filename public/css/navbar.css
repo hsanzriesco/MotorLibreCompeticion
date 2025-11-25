@@ -1,5 +1,3 @@
-/* ======== NAVBAR.CSS ======== */
-
 .navbar {
   background-color: #000 !important;
   border-bottom: 2px solid #dc3545 !important;
@@ -19,7 +17,6 @@
   color: white;
 }
 
-/* Offcanvas */
 .offcanvas {
   background-color: #111;
   color: white;
@@ -38,7 +35,6 @@
   color: #dc3545;
 }
 
-/* Login icon */
 #login-icon {
   color: white;
 }
