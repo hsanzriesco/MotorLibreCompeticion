@@ -15,7 +15,6 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    
 });
 
 export default async (req, res) => {
@@ -30,8 +29,8 @@ export default async (req, res) => {
     }
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
-        return res.status(500).json({ 
-            message: 'Internal Server Error: Missing critical environment variables (EMAIL_USER, EMAIL_PASS, JWT_SECRET, or DATABASE_URL).' 
+        return res.status(500).json({
+            message: 'Internal Server Error: Missing critical environment variables.'
         });
     }
 
@@ -40,17 +39,20 @@ export default async (req, res) => {
         const user = result.rows[0];
 
         if (!user) {
-            return res.status(200).json({ message: 'If the user exists, a password reset email has been sent.' });
+            console.log(`Intento de restablecimiento para email no encontrado: ${email}`);
+            return res.status(200).json({
+                message: 'Si el correo electrónico está registrado, se ha enviado un enlace para restablecer la contraseña.'
+            });
         }
-        
+
         const userId = user.id;
 
         const token = jwt.sign(
-            { id: userId }, 
-            process.env.JWT_SECRET, 
+            { id: userId },
+            process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
-        
+
         const expirationDate = new Date(Date.now() + 3600000);
 
         await pool.query(
@@ -59,29 +61,31 @@ export default async (req, res) => {
         );
 
         const resetURL = `https://motor-libre-competicion.vercel.app/pages/auth/reset/reset.html?token=${token}`;
-        
+
         const mailOptions = {
             from: `Motor Libre Competición <${process.env.EMAIL_USER}>`,
             to: user.email,
-            subject: 'Motor Libre Competición: Password Reset Request',
+            subject: 'Motor Libre Competición: Solicitud de Restablecimiento de Contraseña',
             html: `
-                <p>Hello,</p>
-                <p>You have requested a password reset. Click the link below to create a new password:</p>
+                <p>Hola,</p>
+                <p>Has solicitado un restablecimiento de contraseña. Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
                 <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
-                    Reset Password
+                    Restablecer Contraseña
                 </a>
-                <p style="margin-top: 20px;">This link will expire in 1 hour.</p>
-                <p>If you did not request this change, please ignore this email.</p>
+                <p style="margin-top: 20px;">Este enlace caducará en 1 hora.</p>
+                <p>Si no solicitaste este cambio, por favor, ignora este correo electrónico.</p>
             `,
         };
 
         await transporter.sendMail(mailOptions);
 
-        return res.status(200).json({ message: 'Password reset email sent successfully.' });
+        return res.status(200).json({
+            message: 'Si el correo electrónico está registrado, se ha enviado un enlace para restablecer la contraseña.'
+        });
 
     } catch (error) {
         console.error('FATAL ERROR during password reset process:', error.message || error);
-        
-        return res.status(500).json({ message: 'Internal Server Error. Failed to process password reset request. Check Vercel logs for details.' });
+
+        return res.status(500).json({ message: 'Internal Server Error. Falló al procesar la solicitud de restablecimiento.' });
     }
 };
