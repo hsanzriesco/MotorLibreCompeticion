@@ -9,22 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Verificar el token de restablecimiento
     const token = getTokenFromUrl();
     if (!token) {
-        // En lugar de innerHTML, usamos el sistema de alertas
-        // El formulario ya no se mostrará gracias al return, pero mostramos el error.
-        mostrarAlerta('Error: Falta el token de restablecimiento en la URL.', 'error', 0); // 0 = Alerta permanente
-        
-        // Opcional: Ocultar el formulario si no hay token
+        // Mostrar alerta de error permanente y modificar la caja del formulario
+        mostrarAlerta('Error: Falta el token de restablecimiento en la URL.', 'error', 0);
+
         const formBox = document.querySelector('.form-box');
         if (formBox) {
-            formBox.innerHTML = '<h2 class="form-box-error-title">Error: Token no encontrado.</h2><p>Por favor, usa el enlace enviado a tu correo.</p>';
+            formBox.innerHTML = '<h2 style="color:#e50914;">ERROR</h2><p style="color:#ccc;">Token no encontrado. Por favor, usa el enlace enviado a tu correo.</p>';
         }
         return;
     }
 
-    // El ID correcto en tu HTML es 'resetForm', no 'reset-form'
-    const resetForm = document.getElementById('resetForm'); 
-    
-    // 2. Asegurarse de que el formulario existe antes de añadir el Listener
+    // Usar el ID correcto del HTML: 'resetForm'
+    const resetForm = document.getElementById('resetForm');
+
+    // 2. Asegurarse de que el formulario existe
     if (!resetForm) {
         console.error("Error JS: Elemento con ID 'resetForm' no encontrado.");
         return;
@@ -39,15 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Validar que las contraseñas coincidan
         if (newPassword !== confirmPassword) {
-            // Reemplazamos alert() por mostrarAlerta()
             mostrarAlerta('Las contraseñas no coinciden.', 'error');
             return;
         }
-        
-        // Validación básica de longitud (opcional, pero buena práctica)
+
+        // Validación básica de longitud
         if (newPassword.length < 6) {
-             mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres.', 'advertencia');
-             return;
+            mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres.', 'advertencia');
+            return;
         }
 
         try {
@@ -57,25 +54,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ token, newPassword })
             });
 
-            const data = await response.json();
-
+            // 1. Verificar si la respuesta fue un éxito (código 200-299)
             if (response.ok) {
-                // Éxito: Reemplazamos alert() por mostrarAlerta()
+                const data = await response.json();
+
                 mostrarAlerta('¡Contraseña restablecida con éxito! Serás redirigido.', 'exito');
-                
-                // Redirigir después de mostrar el mensaje por un breve momento
+
                 setTimeout(() => {
                     window.location.href = '/pages/auth/login/login.html';
-                }, 2000); // Espera 2 segundos
-                
+                }, 2000);
+
             } else {
-                // Fallo de la API: Reemplazamos alert() por mostrarAlerta()
-                mostrarAlerta(`Fallo al restablecer: ${data.message || 'Error desconocido del servidor.'}`, 'error');
+                // 2. Manejar Fallo HTTP (400, 401, 500, etc.)
+                // Intentamos leer el mensaje de error del backend (asumimos que devuelve JSON)
+                let errorMessage = 'Error desconocido al restablecer la contraseña.';
+                try {
+                    const data = await response.json();
+                    errorMessage = data.message;
+                } catch (e) {
+                    // Si el servidor devuelve un error 500 que NO ES JSON
+                    errorMessage = `Error del servidor (${response.status}). Respuesta inesperada.`;
+                }
+
+                mostrarAlerta(`Fallo al restablecer: ${errorMessage}`, 'error');
             }
+
         } catch (error) {
             console.error('API Error:', error);
-            // Error de conexión: Reemplazamos alert() por mostrarAlerta()
-            mostrarAlerta('Error inesperado de conexión. Por favor, inténtalo de nuevo.', 'error');
+            mostrarAlerta('Error de red: No se pudo conectar al servidor. Intenta de nuevo.', 'error');
         }
     });
 });

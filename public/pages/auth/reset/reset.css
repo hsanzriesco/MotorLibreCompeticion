@@ -9,24 +9,10 @@ body {
     padding: 0;
     height: 100vh;
     display: flex;
-    justify-content: center;
-    /* Agregado para centrar horizontalmente */
-    align-items: center;
-    /* Agregado para centrar verticalmente */
+    justify-content: center; 
+    align-items: center; 
     flex-direction: column;
-    /* Necesario si se usa el navbar, aunque aquí solo centra el formulario */
 }
-
-/* El elemento form-container no está en tu HTML de reset, pero si lo tuvieras, usaría esto: */
-/*
-.form-container {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px 20px;
-}
-*/
 
 /* Estilo de la caja principal del formulario (form-box) */
 .form-box {
@@ -38,8 +24,8 @@ body {
     width: 100%;
     max-width: 420px;
     text-align: center;
-    /* Para que el formulario no salte inmediatamente, usamos una animación */
-    animation: fadeIn 1.2s ease;
+    /* Usa la animación definida en style.css */
+    animation: fadeIn 1.2s ease; 
 }
 
 /* Estilo del título <h2> (Restablecer Contraseña) */
@@ -61,7 +47,7 @@ body {
     font-size: 0.9rem;
 }
 
-/* Estilo de los campos de entrada <input> (para new-password y confirm-password) */
+/* Estilo de los campos de entrada <input> */
 .form-box input {
     width: 100%;
     padding: 12px;
@@ -74,7 +60,6 @@ body {
     transition: all 0.2s ease;
     font-size: 0.95rem;
     font-family: 'Orbitron', sans-serif;
-    /* Asegura la fuente */
 }
 
 /* Efecto al enfocar los campos de entrada */
@@ -97,39 +82,10 @@ body {
     font-size: 1rem;
     text-transform: uppercase;
     font-family: 'Orbitron', sans-serif;
-    /* Asegura la fuente */
 }
 
 /* Efecto al pasar el ratón sobre el botón */
 .form-box button:hover {
     background-color: #ff1a1a;
     box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
-}
-
-/* Estilo para el contenedor de mensajes (message-display) */
-#message-display {
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 6px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 0.9rem;
-    /* Puedes usar las clases de tu style.css (custom-alert) para los estilos de color real */
-    border: 1px solid #e50914;
-    color: #e50914;
-    background-color: #1a0000;
-    font-family: 'Orbitron', sans-serif;
-}
-
-/* Definición de la animación de entrada (copiada de style.css) */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
