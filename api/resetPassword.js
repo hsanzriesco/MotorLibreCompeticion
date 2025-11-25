@@ -1,11 +1,7 @@
 // **USANDO SINTAXIS ES MODULES (import)**
 import { Pool } from 'pg';
-// 🚨 CORRECCIÓN: Usar import * as para librerías CommonJS
-import * as bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-
-// NOTA: Es posible que necesites instalar el paquete 'dotenv' si usas .env localmente
-// import 'dotenv/config'; 
+import * as bcrypt from 'bcryptjs'; // (Ya corregido)
+import * as jwt from 'jsonwebtoken'; // 🚨 CORRECCIÓN: Usar import * as para librerías CommonJS
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -29,10 +25,14 @@ export default async (req, res) => {
     try {
         let decoded;
         try {
+            // La función 'verify' debe usarse correctamente del objeto jwt importado
             decoded = jwt.verify(token, process.env.JWT_SECRET);
         } catch (err) {
+            // Este catch maneja el token inválido o expirado
             return res.status(401).json({ message: 'Invalid or expired token.' });
         }
+
+        // ... (El resto de tu lógica de DB es correcta) ...
 
         const userId = decoded.user_id;
 
@@ -53,9 +53,6 @@ export default async (req, res) => {
             return res.status(401).json({ message: 'Token has expired.' });
         }
 
-        // 🚨 CAMBIO DE USO: Si el paquete no exporta funciones directamente, 
-        // a veces es necesario usar bcrypt.default.genSalt o simplemente bcrypt.genSalt 
-        // (La sintaxis import * as resuelve esto en la mayoría de los casos)
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
@@ -68,7 +65,7 @@ export default async (req, res) => {
 
     } catch (error) {
         console.error('Error resetting password:', error);
-        // Si el error es una falla en la función de bcrypt, caerá aquí y devolverá JSON 500
+        // Este catch maneja errores de DB o cualquier otro error interno.
         return res.status(500).json({ message: 'An error occurred while resetting the password.' });
     }
 };
