@@ -11,6 +11,30 @@
     <link rel="stylesheet" href="./login.css" />
     <link rel="icon" type="image/png" href="../../../img/imagen-tfg.png" />
     <link rel="stylesheet" href="../../../css/alertas.css" />
+
+    <!-- Estilo adicional para colocar el icono del ojo -->
+    <style>
+        .password-container {
+            position: relative;
+        }
+
+        .password-container input[type="password"],
+        .password-container input[type="text"] {
+            padding-right: 40px;
+            /* Asegura espacio para el icono */
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(calc(-50% + 15px));
+            /* Ajuste fino */
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 1.2em;
+        }
+    </style>
 </head>
 
 <body>
@@ -28,7 +52,12 @@
                 <input type="text" id="username" required placeholder="Ej. piloto123" />
 
                 <label for="password">Contraseña</label>
-                <input type="password" id="password" required placeholder="********" />
+                <!-- Contenedor para el campo de contraseña y el icono -->
+                <div class="password-container">
+                    <input type="password" id="password" required placeholder="********" />
+                    <!-- Icono de ojo de Bootstrap Icons -->
+                    <i class="bi bi-eye-slash toggle-password" id="togglePassword"></i>
+                </div>
 
                 <button type="submit">Iniciar sesión</button>
             </form>
@@ -37,17 +66,18 @@
                 ¿No tienes cuenta?
                 <a href="../register/register.html">Regístrate aquí</a>
             </p>
-            
+
             <p class="forgot-password-link">
                 <a href="#" id="forgotPasswordLink">Olvidé mi contraseña</a>
             </p>
-            
-            <div id="emailRequestForm" style="display:none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
+
+            <div id="emailRequestForm"
+                style="display:none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
                 <label for="resetEmail">Ingresa tu email:</label>
-                <input type="email" id="resetEmail" placeholder="ejemplo@correo.com" required/>
+                <input type="email" id="resetEmail" placeholder="ejemplo@correo.com" required />
                 <button type="button" id="sendResetEmailBtn" class="btn btn-sm btn-danger mt-2">Enviar Enlace</button>
             </div>
-            
+
         </div>
     </div>
 
