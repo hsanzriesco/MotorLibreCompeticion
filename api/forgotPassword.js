@@ -2,7 +2,8 @@
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken';
-// NO necesitamos 'googleapis' aquí, ya que usamos App Password.
+// ¡ATENCIÓN! La línea que causaba el error 500 estaba aquí.
+// Hemos eliminado cualquier rastro de importaciones de 'googleapis' o de 'auth/google'.
 
 // Database configuration
 const pool = new Pool({
@@ -15,6 +16,7 @@ const pool = new Pool({
 // ------------------------------------------------------------------
 // Configuracion del Transporter usando Contraseña de Aplicación (EMAIL_PASS)
 // ------------------------------------------------------------------
+// Nodemailer se conecta directamente a Gmail usando la clave de 16 caracteres.
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -40,10 +42,10 @@ export default async (req, res) => {
     }
 
     // Comprobación de variables críticas
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET) {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
          // Esta respuesta debe ser JSON para evitar el error de sintaxis en el cliente
         return res.status(500).json({ 
-            message: 'Internal Server Error: Missing EMAIL_USER, EMAIL_PASS, or JWT_SECRET environment variables.' 
+            message: 'Internal Server Error: Missing critical environment variables (EMAIL_USER, EMAIL_PASS, JWT_SECRET, or DATABASE_URL).' 
         });
     }
 
@@ -100,7 +102,7 @@ export default async (req, res) => {
         return res.status(200).json({ message: 'Password reset email sent successfully.' });
 
     } catch (error) {
-        // *** CAMBIO CRÍTICO: Imprime el error completo en la consola de Vercel.
+        // Imprime el error completo en la consola de Vercel.
         console.error('FATAL ERROR during password reset process:', error.message || error);
         
         // Respuesta JSON de error general
