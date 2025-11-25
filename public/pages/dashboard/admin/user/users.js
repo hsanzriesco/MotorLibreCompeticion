@@ -1,23 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
-
-    // ============================
-    // 🔐 Validación de acceso
-    // ============================
     const usuario =
         JSON.parse(localStorage.getItem("usuario")) ||
         JSON.parse(sessionStorage.getItem("usuario"));
 
     if (!usuario || usuario.role !== "admin") {
-        mostrarAlerta("❌ Acceso denegado. Solo administradores pueden acceder.", "error", 2000);
+        mostrarAlerta("Acceso denegado. Solo administradores pueden acceder.", "error", 2000);
         setTimeout(() => {
             window.location.href = "/pages/auth/login/login.html";
         }, 2000);
         return;
     }
 
-    // ============================
-    // 🔀 Redirección del logo
-    // ============================
     document.getElementById("logoRedirect").addEventListener("click", () => {
         if (usuario.role === "admin") {
             window.location.href = "/pages/dashboard/admin/admin.html";
@@ -26,7 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ============================
 
     const usersTableBody = document.getElementById("usersTableBody");
     const userModal = new bootstrap.Modal(document.getElementById("userModal"));
@@ -47,9 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const userToDeleteName = document.getElementById("userToDeleteName");
     let currentUserIdToDelete = null;
 
-    // ============================
-    // 📥 Cargar usuarios
-    // ============================
     async function cargarUsuarios() {
         try {
             const res = await fetch("/api/userList");
@@ -81,27 +70,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error(err);
-            usersTableBody.innerHTML = `<tr><td colspan="6">❌ Error al cargar usuarios</td></tr>`;
+            usersTableBody.innerHTML = `<tr><td colspan="6">Error al cargar usuarios</td></tr>`;
         }
     }
-
-    // ============================
-    // ➕ Nuevo usuario
-    // ============================
     btnAddUser.addEventListener("click", () => {
         userForm.reset();
         userId.value = "";
         userPassword.disabled = false;
 
-        confirmPasswordContainer.style.display = "block"; // mostrar confirmación al crear usuario
+        confirmPasswordContainer.style.display = "block";
 
         document.querySelector("#userModal .modal-title").textContent = "Nuevo Usuario";
         userModal.show();
     });
 
-    // ============================
-    // ✏️ Editar usuario
-    // ============================
     usersTableBody.addEventListener("click", async (e) => {
         const btn = e.target.closest("button");
         if (!btn) return;
@@ -119,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userEmail.value = user.email;
             userRole.value = user.role;
 
-            confirmPasswordContainer.style.display = "none"; // NO confirmar contraseña al editar
+            confirmPasswordContainer.style.display = "none";
             userPassword.value = "";
             userPassword.disabled = user.role === "user";
 
@@ -133,10 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
             deleteConfirmModal.show();
         }
     });
-
-    // ============================
-    // 🗑️ Confirmar eliminación
-    // ============================
     btnConfirmDelete.addEventListener("click", () => {
         eliminarUsuario(currentUserIdToDelete);
         deleteConfirmModal.hide();
@@ -152,9 +130,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ============================
-    // 💾 Guardar usuario
-    // ============================
     userForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -194,9 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ============================
-    // 👁 Mostrar/ocultar contraseña
-    // ============================
     document.addEventListener("click", (e) => {
         if (!e.target.classList.contains("togglePassword")) return;
 
