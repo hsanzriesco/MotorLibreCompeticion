@@ -1,3 +1,5 @@
+// La función mostrarAlerta está definida en alertas.js y se carga antes.
+
 function getTokenFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('token');
@@ -5,34 +7,31 @@ function getTokenFromUrl() {
 
 document.addEventListener('DOMContentLoaded', () => {
     const token = getTokenFromUrl();
-    
+
     // 1. Buscamos el contenedor del formulario para mensajes de error.
-    // NOTA: Este ID ('reset-form-container') no existe en tu HTML,
-    // por lo que he añadido un fallback. Si lo añades a tu HTML, funcionará.
-    const container = document.getElementById('reset-form-container'); 
-    
+    const container = document.getElementById('reset-form-container');
+
     if (!token) {
         // Manejo del error si falta el token
         if (container) {
-            container.innerHTML = '<h2>Error: Missing reset token.</h2>';
+            container.innerHTML = '<h2>Error: Token de restablecimiento faltante.</h2>';
         } else {
-            // Fallback si el contenedor no existe
-            console.error("Error: Missing reset token. Could not find 'reset-form-container' to display message.");
-            alert('Error: Missing reset token.');
+            // REEMPLAZADO: Usamos mostrarAlerta para el fallback
+            mostrarAlerta('Error: Token de restablecimiento faltante. No se puede continuar.', 'error');
+            console.error("Error: Missing reset token. Could not find 'reset-form-container'.");
         }
         return;
     }
 
-    // 2. CORRECCIÓN PRINCIPAL: Usamos el ID correcto del formulario ('reset-password-form')
+    // 2. Usamos el ID correcto del formulario ('reset-password-form')
     const resetForm = document.getElementById('reset-password-form');
-    
-    // Verificación de seguridad para el elemento del formulario
+
+    // Verificación de seguridad
     if (!resetForm) {
         console.error("CRITICAL ERROR: The form element with ID 'reset-password-form' was not found.");
-        // Si no se encuentra el formulario, detenemos la ejecución.
-        return; 
+        return;
     }
-    
+
     // Si el formulario existe, adjuntamos el escuchador de eventos
     resetForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -41,9 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmPassword = document.getElementById('confirm-password').value;
 
         if (newPassword !== confirmPassword) {
-            // Se recomienda usar tu función mostrarAlerta aquí, si está disponible.
-            // Por ahora, usamos alert.
-            alert('Passwords do not match.');
+            // REEMPLAZADO: Usamos mostrarAlerta para la validación
+            mostrarAlerta('Las contraseñas no coinciden. Por favor, revísalas.', 'advertencia');
             return;
         }
 
@@ -57,14 +55,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Password successfully reset! You can now log in.');
-                window.location.href = '/pages/auth/login/login.html';
+                // REEMPLAZADO: Usamos mostrarAlerta para el éxito
+                mostrarAlerta('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.', 'exito');
+
+                // Añadimos un pequeño retraso para que el usuario vea la alerta de éxito
+                setTimeout(() => {
+                    window.location.href = '/pages/auth/login/login.html';
+                }, 1800);
+
             } else {
-                alert(`Reset failed: ${data.message}`);
+                // REEMPLAZADO: Usamos mostrarAlerta para el error de API
+                mostrarAlerta(`Fallo al restablecer: ${data.message}`, 'error');
             }
         } catch (error) {
             console.error('API Error:', error);
-            alert('An unexpected error occurred. Please try again.');
+            // REEMPLAZADO: Usamos mostrarAlerta para el error de conexión
+            mostrarAlerta('Ocurrió un error inesperado. Por favor, inténtalo de nuevo.', 'error');
         }
     });
 });
