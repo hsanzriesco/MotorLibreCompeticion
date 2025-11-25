@@ -1,6 +1,4 @@
 document.addEventListener("DOMContentLoaded", async () => {
-
-    // ===== VERIFICAR SESIÓN (Sin cambios) =====
     const storedUser = sessionStorage.getItem("usuario");
 
     let usuario = null;
@@ -21,13 +19,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // ===== ELEMENTOS DEL DOM (IDs del HTML) =====
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
-
-    // --- ELEMENTOS DE EVENTOS (Ya existentes) ---
     if (calendarEl && eventModalEl) {
-        // Resto de declaraciones de eventos...
     }
     const eventModal = new bootstrap.Modal(eventModalEl);
     const form = document.getElementById("eventForm");
@@ -40,9 +34,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const endTimeInput = document.getElementById("end-time");
     const eventIdInput = document.getElementById("eventId");
 
-    // ⭐ ELEMENTOS DE IMAGEN CLAVE DE EVENTOS ⭐
-    const imageFileInput = document.getElementById("imageFile"); // input type="file"
-    const imageURLInput = document.getElementById("imageURL");   // input type="hidden"
+    const imageFileInput = document.getElementById("imageFile");
+    const imageURLInput = document.getElementById("imageURL");
     const currentImagePreview = document.getElementById("currentImagePreview");
     const currentImageContainer = document.getElementById("currentImageContainer");
     const clearImageBtn = document.getElementById("clearImageBtn");
@@ -53,10 +46,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     let selectedEvent = null;
 
 
-    // --- ELEMENTOS DEL GARAGE (NUEVOS) ---
     const carGarageForm = document.getElementById("carGarageForm");
-    const carModalEl = document.getElementById("carGarageModal"); // Asumiendo un ID para el modal del coche
-    // if (carModalEl) const carModal = new bootstrap.Modal(carModalEl); // Si existe un modal de coche
+    const carModalEl = document.getElementById("carGarageModal");
 
     const carIdInput = document.getElementById("carId");
     const carNameInput = document.getElementById("car_name");
@@ -64,15 +55,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const carYearInput = document.getElementById("year");
     const carDescriptionInput = document.getElementById("description");
 
-    // ⭐ ELEMENTOS DE IMAGEN CLAVE DEL GARAGE ⭐
-    const carPhotoFileInput = document.getElementById("carPhotoFile"); // input type="file" del coche (Clave)
-    const carPhotoUrlInput = document.getElementById("carPhotoURL");   // input type="hidden" del coche (Clave)
+    const carPhotoFileInput = document.getElementById("carPhotoFile");
+    const carPhotoUrlInput = document.getElementById("carPhotoURL");
     const carPhotoPreview = document.getElementById("carPhotoPreview");
     const carPhotoContainer = document.getElementById("carPhotoContainer");
     const clearCarPhotoBtn = document.getElementById("clearCarPhotoBtn");
 
 
-    // ... (Función showConfirmAlert sin cambios) ...
     function showConfirmAlert(message, onConfirm) {
         let confirmBox = document.getElementById("customConfirmContainer")?.querySelector(".custom-confirm");
 
@@ -107,7 +96,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
 
-    // ===== CARGAR EVENTOS (Sin cambios) =====
     async function fetchEvents() {
         try {
             const res = await fetch("/api/events");
@@ -131,9 +119,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // ==========================================================
-    // ⭐ LÓGICA DE EVENTOS (CALENDARIO) (Sin cambios funcionales) ⭐
-    // ==========================================================
     if (calendarEl) {
         const calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
@@ -149,7 +134,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 eventIdInput.value = "";
                 deleteEventBtn.style.display = "none";
 
-                // Lógica de imagen al crear: limpiar todo
                 imageFileInput.value = "";
                 imageURLInput.value = "";
                 currentImageContainer.style.display = "none";
@@ -168,11 +152,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 descriptionInput.value = extendedProps.description || "";
                 locationInput.value = extendedProps.location || "";
 
-                // ASIGNAR URL EXISTENTE a hidden y VACIAR input file
                 imageURLInput.value = currentURL;
                 imageFileInput.value = "";
 
-                // Lógica para previsualizar la imagen existente
                 if (currentURL) {
                     currentImagePreview.src = currentURL;
                     currentImageContainer.style.display = 'block';
@@ -203,11 +185,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         calendar.render();
-
-
-        // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DE IMAGEN DE EVENTOS =====
-
-        // Previsualizar nuevo archivo seleccionado (Usa URL.createObjectURL)
         imageFileInput.addEventListener('change', function () {
             const file = this.files[0];
 
@@ -225,23 +202,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
 
-        // Botón para eliminar la imagen
         clearImageBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            imageURLInput.value = ""; // INDICA al backend que la URL debe ser NULL
-            imageFileInput.value = ""; // Limpia el archivo subido
+            imageURLInput.value = "";
+            imageFileInput.value = "";
             currentImageContainer.style.display = 'none';
         });
 
 
-        // ===== GUARDAR EVENTO (CORRECCIÓN CLAVE EN LA LÓGICA DE FormData) =====
         saveEventBtn.addEventListener("click", async () => {
             const id = eventIdInput.value;
             const date = startDateInput.value;
             const startTime = startTimeInput.value;
             const endTime = endTimeInput.value;
 
-            // Validación de campos obligatorios
             if (!titleInput.value.trim() || !date || !startTime || !endTime) {
                 alert("Completa todos los campos obligatorios");
                 return;
@@ -250,7 +224,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const start = `${date}T${startTime}`;
             const end = `${date}T${endTime}`;
 
-            // 1. Crear FormData para enviar archivos al backend
             const formData = new FormData();
             formData.append('title', titleInput.value.trim());
             formData.append('description', descriptionInput.value.trim());
@@ -261,7 +234,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const file = imageFileInput.files[0];
             const currentURL = imageURLInput.value;
 
-            // ⭐ LÓGICA DE ADJUNTAR IMAGEN DE EVENTOS ⭐
             if (file) {
                 formData.append('imageFile', file);
             } else {
@@ -271,7 +243,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             try {
                 const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
                     method: id ? "PUT" : "POST",
-                    body: formData // Envía el FormData correctamente
+                    body: formData
                 });
 
                 const data = await res.json();
@@ -286,7 +258,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
 
-        // ===== ELIMINAR EVENTO (Sin cambios) =====
         deleteEventBtn.addEventListener("click", async () => {
             if (!selectedEvent || !selectedEvent.id) {
                 alert("No hay evento seleccionado");
@@ -307,18 +278,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             });
         });
-    } // Fin del bloque de Eventos/Calendario
-    // ==========================================================
-
-
-    // ==========================================================
-    // ⭐ LÓGICA DEL CAR GARAGE (NUEVA IMPLEMENTACIÓN) ⭐
-    // ==========================================================
+    }
     if (carGarageForm && usuario) {
 
-        // ===== LÓGICA DE PREVISUALIZACIÓN Y LIMPIEZA DEL COCHE =====
         if (carPhotoFileInput) {
-            // Previsualizar nuevo archivo
             carPhotoFileInput.addEventListener('change', function () {
                 const file = this.files[0];
 
@@ -327,7 +290,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     carPhotoPreview.src = fileUrl;
                     carPhotoContainer.style.display = 'block';
                 } else {
-                    // Si cancela, vuelve a mostrar la URL antigua si existe
                     if (carPhotoUrlInput.value) {
                         carPhotoPreview.src = carPhotoUrlInput.value;
                         carPhotoContainer.style.display = 'block';
@@ -339,20 +301,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (clearCarPhotoBtn) {
-            // Botón para eliminar la imagen
             clearCarPhotoBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                carPhotoUrlInput.value = ""; // INDICA al backend que la URL debe ser NULL
-                carPhotoFileInput.value = ""; // Limpia el archivo subido
+                carPhotoUrlInput.value = "";
+                carPhotoFileInput.value = "";
                 carPhotoContainer.style.display = 'none';
             });
         }
 
-        // ===== GUARDADO DEL COCHE (POST/PUT) =====
         carGarageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            // 1. Obtener datos básicos
             const id = carIdInput.value;
             const userId = usuario.id;
 
@@ -361,7 +320,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 2. Crear FormData para enviar el archivo
             const formData = new FormData();
             formData.append('user_id', userId);
             formData.append('car_name', carNameInput.value.trim());
@@ -369,30 +327,25 @@ document.addEventListener("DOMContentLoaded", async () => {
             formData.append('year', carYearInput.value.trim());
             formData.append('description', carDescriptionInput.value.trim());
 
-            // El ID solo se requiere en PUT y se añade al FormData
             if (id) {
                 formData.append('id', id);
             }
 
-            // 3. Lógica de Imagen
             const file = carPhotoFileInput.files[0];
             const currentURL = carPhotoUrlInput.value;
 
             if (file) {
-                // Caso 1: Nuevo archivo subido. Lo adjuntamos como 'imageFile' (nombre que espera carGarage.js)
                 formData.append('imageFile', file);
             } else {
-                // Caso 2: No hay archivo nuevo. Enviamos la URL existente/vacía como 'photoURL'
-                formData.append('photoURL', currentURL); // photoURL es el nombre que espera carGarage.js
+                formData.append('photoURL', currentURL);
             }
 
             try {
-                // Si es PUT, añadimos el ID como query parameter
                 const url = id ? `/api/carGarage?id=${id}` : "/api/carGarage";
 
                 const res = await fetch(url, {
                     method: id ? "PUT" : "POST",
-                    body: formData // Envía el FormData correctamente
+                    body: formData
                 });
 
                 const data = await res.json();
@@ -400,21 +353,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 alert(id ? "Coche actualizado correctamente" : "Coche añadido correctamente");
 
-                // Si tienes un modal de coche, lo cierras aquí:
-                // carModal.hide(); 
-                // Y recargas la lista de coches si tienes esa función:
-                // loadCarList(userId); 
-
             } catch (e) {
                 console.error("Error al guardar el coche:", e);
                 alert("Error al guardar el coche: " + e.message);
             }
         });
     }
-    // ==========================================================
 
-
-    // ... (Lógica de Logout sin cambios) ...
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
