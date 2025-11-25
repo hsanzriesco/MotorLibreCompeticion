@@ -2,46 +2,7 @@
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken';
-import { google } from 'googleapis'; // *** NEW: Import Google APIs for OAuth2
-
-// ------------------------------------------------------------------
-// Configuracion de OAuth2 (NECESARIA si App Passwords falla)
-// ------------------------------------------------------------------
-
-// Carga las variables de entorno de OAuth2
-const CLIENT_ID = process.env.OAUTH_CLIENT_ID;
-const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
-const REDIRECT_URI = process.env.OAUTH_REDIRECT_URI;
-const REFRESH_TOKEN = process.env.OAUTH_REFRESH_TOKEN;
-
-// Configura el cliente OAuth2
-const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
-oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-
-// Funcion para crear el Transporter usando un token de acceso temporal
-async function createTransporter() {
-    try {
-        // Obtiene un nuevo Access Token usando el Refresh Token
-        const accessToken = await oAuth2Client.getAccessToken();
-
-        return nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                type: 'OAuth2',
-                user: process.env.EMAIL_USER, // Tu cuenta de Gmail
-                clientId: CLIENT_ID,
-                clientSecret: CLIENT_SECRET,
-                refreshToken: REFRESH_TOKEN,
-                accessToken: accessToken.token, // Token temporal
-            },
-        });
-    } catch (error) {
-        console.error("Error al obtener el Access Token o crear Transporter:", error);
-        throw new Error("Fallo al configurar el servicio de correo con OAuth2.");
-    }
-}
-// ------------------------------------------------------------------
-
+// NO necesitamos 'googleapis' aquí, ya que usamos App Password.
 
 // Database configuration
 const pool = new Pool({
@@ -51,9 +12,24 @@ const pool = new Pool({
     }
 });
 
+// ------------------------------------------------------------------
+// Configuracion del Transporter usando Contraseña de Aplicación (EMAIL_PASS)
+// ------------------------------------------------------------------
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        // La cuenta de Gmail (EMAIL_USER)
+        user: process.env.EMAIL_USER,
+        // La Contraseña de Aplicación de 16 caracteres (EMAIL_PASS)
+        pass: process.env.EMAIL_PASS,
+    },
+});
+// ------------------------------------------------------------------
+
 
 export default async (req, res) => {
     if (req.method !== 'POST') {
+        // Asegura que si alguien intenta GET la API, obtenga un error Method Not Allowed
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
@@ -63,19 +39,16 @@ export default async (req, res) => {
         return res.status(400).json({ message: 'Email is required.' });
     }
 
-    // Comprueba que las variables OAuth2 esten definidas
-    if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
+    // Comprobación de variables críticas
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET) {
+         // Esta respuesta debe ser JSON para evitar el error de sintaxis en el cliente
         return res.status(500).json({ 
-            message: 'ERROR: Faltan variables de entorno OAuth2. Por favor, configura OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, y OAUTH_REFRESH_TOKEN.' 
+            message: 'Internal Server Error: Missing EMAIL_USER, EMAIL_PASS, or JWT_SECRET environment variables.' 
         });
     }
 
-    let transporter;
     try {
-        // 1. Crea el Transporter usando OAuth2 (obtiene un token de acceso)
-        transporter = await createTransporter();
-
-        // 2. Search for the user in the DB (Assumes ID column is 'id')
+        // 1. Search for the user in the DB (Assumes ID column is 'id')
         const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
@@ -86,7 +59,7 @@ export default async (req, res) => {
         
         const userId = user.id;
 
-        // 3. Generate the Reset Token (expires in 1h)
+        // 2. Generate the Reset Token (expires in 1h)
         const token = jwt.sign(
             { id: userId }, 
             process.env.JWT_SECRET, 
@@ -95,16 +68,17 @@ export default async (req, res) => {
         
         const expirationDate = new Date(Date.now() + 3600000); // 1 hour in milliseconds
 
-        // 4. Save the token and its expiration in the DB
+        // 3. Save the token and its expiration in the DB
         await pool.query(
             'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
             [token, expirationDate, userId]
         );
 
-        // 5. Reset URL: USING THE REAL VERCEl DOMAIN
+        // 4. Reset URL: USING THE REAL VERCEl DOMAIN
+        // NOTE: Asegúrate de que el dominio 'motor-libre-competicion.vercel.app' sea correcto.
         const resetURL = `https://motor-libre-competicion.vercel.app/pages/auth/reset/reset.html?token=${token}`;
         
-        // 6. Configure and Send the Email
+        // 5. Configure and Send the Email
         const mailOptions = {
             from: `Motor Libre Competición <${process.env.EMAIL_USER}>`,
             to: user.email,
@@ -122,13 +96,13 @@ export default async (req, res) => {
 
         await transporter.sendMail(mailOptions);
 
-        // 7. Success Response
+        // 6. Success Response (JSON)
         return res.status(200).json({ message: 'Password reset email sent successfully.' });
 
     } catch (error) {
         console.error('FATAL ERROR:', error);
         
-        // El error 500 ahora es más detallado
-        return res.status(500).json({ message: 'Internal Server Error. OAuth2/DB Configuration Failed.' });
+        // Respuesta JSON de error general
+        return res.status(500).json({ message: 'Internal Server Error. Failed to process password reset request.' });
     }
 };
