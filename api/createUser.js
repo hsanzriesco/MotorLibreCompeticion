@@ -19,7 +19,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
     }
     
-    // ATENCIÓN: Se usa la columna 'password' para almacenar el texto plano.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -31,7 +30,6 @@ export default async function handler(req, res) {
       )
     `);
 
-    // Verificar duplicados
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1 OR name = $2",
       [email, name]
@@ -45,7 +43,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Se inserta la contraseña en texto plano
     const result = await pool.query(
       "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
       [name, email, password, "user"] 
