@@ -25,6 +25,7 @@ const transporter = nodemailer.createTransport({
         // La Contraseña de Aplicación de 16 caracteres (EMAIL_PASS)
         pass: process.env.EMAIL_PASS,
     },
+    
 });
 // ------------------------------------------------------------------
 
