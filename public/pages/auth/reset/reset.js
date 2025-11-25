@@ -2,28 +2,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('reset-password-form');
     const newPasswordInput = document.getElementById('new-password');
     const confirmPasswordInput = document.getElementById('confirm-password');
-    const messageArea = document.getElementById('message-display'); // Usamos el ID de tu HTML
+    // messageArea se usará solo como fallback si 'mostrarAlerta' no está disponible
+    const messageArea = document.getElementById('message-display'); 
 
     // 1. Obtener el token de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
 
-    // Función auxiliar para mostrar mensajes
-    const displayMessage = (message, isError = false) => {
-        messageArea.textContent = message;
-        messageArea.style.display = 'block';
-        // Usamos estilos inline básicos ya que el CSS de la página es más complejo
-        messageArea.style.color = isError ? '#e50914' : '#4CAF50';
-        messageArea.style.fontWeight = 'bold';
-        messageArea.style.textAlign = 'center';
-        messageArea.style.marginTop = '20px';
+    // Función unificada para mostrar mensajes usando mostrarAlerta o fallback
+    const showAppAlert = (message, type) => {
+        // Verifica si la función global 'mostrarAlerta' existe (cargada desde alertas.js)
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta(message, type);
+            // Si usamos la alerta flotante, ocultamos el div de fallback.
+            messageArea.style.display = 'none'; 
+        } else {
+            // Fallback: usar el div #message-display
+            messageArea.textContent = message;
+            messageArea.style.display = 'block';
+            messageArea.style.color = (type === 'error' || type === 'advertencia') ? '#e50914' : '#4CAF50';
+            messageArea.style.fontWeight = 'bold';
+            messageArea.style.textAlign = 'center';
+            messageArea.style.marginTop = '20px';
+        }
     };
-
+    
     if (!token) {
-        displayMessage('Error: Enlace de restablecimiento inválido o faltante.', true);
+        // Usar la alerta de error al cargar la página si falta el token
+        showAppAlert('Error: Enlace de restablecimiento inválido o faltante.', 'error');
         form.style.display = 'none';
         return;
     }
+    
+    // Ocultar el messageArea inicial
+    messageArea.style.display = 'none';
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -33,16 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 2. Validación local
         if (newPassword.length < 6) {
-            displayMessage('La contraseña debe tener al menos 6 caracteres.', true);
+            showAppAlert('La contraseña debe tener al menos 6 caracteres.', 'error');
             return;
         }
         
         if (newPassword !== confirmPassword) {
-            displayMessage('Las contraseñas no coinciden.', true);
+            showAppAlert('Las contraseñas no coinciden.', 'error');
             return;
         }
         
-        displayMessage('Actualizando contraseña...', false); 
+        showAppAlert('Actualizando contraseña...', 'info'); 
 
         // Deshabilitar botón mientras se procesa
         const submitButton = form.querySelector('button');
@@ -52,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // 3. Enviar datos al endpoint del servidor
-            // La ruta es /api/resetPassword (ubicado en la raíz/api/resetPassword.js)
             const apiUrl = "/api/resetPassword"; 
             const res = await fetch(apiUrl, {
                 method: "POST",
@@ -63,7 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                displayMessage('¡Contraseña restablecida con éxito! Redirigiendo...', false);
+                showAppAlert('¡Contraseña restablecida con éxito! Redirigiendo...', 'exito');
+                
+                // CORRECCIÓN CLAVE: Limpiar sessionStorage
+                // Esto elimina cualquier dato guardado que pueda interferir con el login.
+                try {
+                    sessionStorage.clear();
+                    console.log("sessionStorage limpiado para evitar persistencia de la contraseña.");
+                } catch (e) {
+                    console.error("Error al limpiar sessionStorage:", e);
+                }
                 
                 // Redirigir al usuario al login después de 2.5 segundos
                 setTimeout(() => {
@@ -73,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
                 // Mostrar mensaje de error del servidor (token expirado/inválido)
-                displayMessage(data.message || 'Error al restablecer. El enlace pudo haber expirado o es inválido.', true);
+                showAppAlert(data.message || 'Error al restablecer. El enlace pudo haber expirado o es inválido.', 'error');
                 
                 // Si falla por token, ocultamos el formulario para evitar reintentos inútiles
                 if (data.message && (data.message.includes('expirado') || data.message.includes('inválido'))) {
@@ -82,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error("Error en la petición:", error);
-            displayMessage('Error de conexión con el servidor. Inténtalo más tarde.', true);
+            showAppAlert('Error de conexión con el servidor. Inténtalo más tarde.', 'error');
         } finally {
             // Restaurar el botón solo si el formulario no fue ocultado
             if (form.style.display !== 'none') {
