@@ -28,6 +28,12 @@ export default async (req, res) => {
         return res.status(400).json({ message: 'Email is required.' });
     }
 
+    // --- NUEVA VALIDACIÓN: Verificar si el correo tiene el símbolo @ ---
+    if (!email.includes('@')) {
+        return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido. Debe incluir el símbolo @.' });
+    }
+    // ------------------------------------------------------------------
+
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
         return res.status(500).json({
             message: 'Internal Server Error: Missing critical environment variables.'
@@ -38,15 +44,12 @@ export default async (req, res) => {
         const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
-        // --- CAMBIO CLAVE AQUÍ ---
         if (!user) {
             console.log(`Intento de restablecimiento para email no encontrado: ${email}`);
-            // Devolver 404 para que el cliente sepa que el email no existe
             return res.status(404).json({
                 message: 'Error: El correo electrónico no está registrado.'
             });
         }
-        // --------------------------
 
         const userId = user.id;
 
@@ -82,7 +85,6 @@ export default async (req, res) => {
 
         await transporter.sendMail(mailOptions);
 
-        // Devolver 200 (éxito) con mensaje de éxito de envío
         return res.status(200).json({
             message: 'Éxito: Se ha enviado un enlace para restablecer la contraseña a tu correo.'
         });
