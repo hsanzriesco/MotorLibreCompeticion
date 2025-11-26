@@ -5,6 +5,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
+    // NOTA: Asumo que la función mostrarAlerta existe y es accesible globalmente
+    function mostrarAlerta(message, type) {
+        console.log(`[ALERTA ${type.toUpperCase()}]: ${message}`);
+        // Implementación real de la alerta...
+    }
+
+    // --- Lógica del Formulario de Login ---
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -69,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // --- Lógica de Olvidé mi Contraseña (forgotPassword) ---
     if (forgotPasswordLink && emailRequestForm && sendResetEmailBtn) {
 
         forgotPasswordLink.addEventListener("click", (e) => {
@@ -94,13 +102,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email }),
                 });
 
-                if (res.ok || res.status === 200) {
+                // **CAMBIO CLAVE: Leer el cuerpo de la respuesta UNA SOLA VEZ como texto**
+                const responseBody = await res.text();
+
+                if (res.ok) { // Éxito (Códigos 200-299)
                     mostrarAlerta("Email enviado, revisa la bandeja de spam", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
-                } else {
-                    const errorData = await res.json();
-                    mostrarAlerta(errorData.message || "Error al solicitar el restablecimiento. Inténtalo más tarde.", "error");
+                } else { // Error (4xx, 5xx)
+                    let errorMessage = "Error al solicitar el restablecimiento. Inténtalo más tarde.";
+
+                    try {
+                        // 1. Intentamos analizar el cuerpo que ya leímos como JSON (para errores 400 o 500 controlados)
+                        const errorData = JSON.parse(responseBody);
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        // 2. Si falla el análisis JSON, asumimos que es el error HTML/texto del servidor (500 no controlado)
+                        console.error(`Respuesta de error no es JSON (Status: ${res.status}):`, responseBody);
+                        errorMessage = `Error interno del servidor (${res.status}). Revisa los logs de Vercel.`;
+                    }
+
+                    mostrarAlerta(errorMessage, "error");
                 }
             } catch (err) {
                 console.error("Error de conexión al solicitar restablecimiento:", err);
