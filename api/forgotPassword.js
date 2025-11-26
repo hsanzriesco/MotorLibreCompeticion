@@ -2,8 +2,8 @@
 // 1. Import required dependencies using ESM syntax (import)
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
-import jwt from 'jsonwebtoken';
-// ¡ATENCIÓN! Si tienes problemas de compatibilidad en Vercel, cambia 'import jwt from "jsonwebtoken";' por 'import * as jwt from "jsonwebtoken";'
+import * as jwt from 'jsonwebtoken'; // <-- CAMBIO A import * as
+// ¡ATENCIÓN! La sintaxis de importación ha sido ajustada para máxima compatibilidad.
 
 // Database configuration
 const pool = new Pool({
@@ -56,7 +56,7 @@ export default async (req, res) => {
         const userId = user.id;
 
         // 2. Generate the Reset Token (Payload: {id: userId})
-        const token = jwt.sign(
+        const token = jwt.sign( // Ya no es jwt.sign(), es jwt.sign(
             { id: userId }, // <-- El token contiene la propiedad 'id'
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
