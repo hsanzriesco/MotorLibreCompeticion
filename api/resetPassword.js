@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!token) {
         mostrarAlerta("Token de restablecimiento no encontrado. Asegúrate de usar el enlace completo enviado a tu email.", "error");
         // Ocultar el formulario si no hay token
-        if (form) form.style.display = 'none'; 
+        if (form) form.style.display = 'none';
         return;
     }
 
@@ -48,30 +48,48 @@ document.addEventListener("DOMContentLoaded", () => {
 
             try {
                 // 3. Enviar el token y la nueva contraseña al endpoint del backend
-                // Este endpoint llama a la lógica de server.js (o api/resetPassword.js si estás usando Vercel/similar)
                 const res = await fetch("/api/resetPassword", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ token, newPassword }),
                 });
 
-                const result = await res.json();
+                // --- MANEJO DE RESPUESTA MEJORADO ---
+                // Leemos siempre el cuerpo como texto para manejar errores no JSON (como 500)
+                const responseBody = await res.text();
+                let result = {};
+
+                // Si el status es 2xx, o si esperamos JSON (4xx que controlamos), intentamos parsear
+                if (res.ok || (responseBody && res.headers.get('content-type')?.includes('application/json'))) {
+                    try {
+                        result = JSON.parse(responseBody);
+                    } catch (e) {
+                        // El servidor devolvió algo que no es JSON a pesar del status esperado
+                        console.error("Error al parsear JSON:", e, "Respuesta:", responseBody);
+                        mostrarAlerta(`Error de formato de respuesta del servidor (${res.status}).`, "error");
+                        return;
+                    }
+                }
 
                 if (res.ok) {
+                    // Éxito (Status 200-299)
                     mostrarAlerta(result.message || "¡Contraseña restablecida con éxito! Serás redirigido al inicio de sesión.", "exito");
-                    
-                    // 4. Limpiar campos antes de redirigir (Solución al error 401 por autocompletado)
+
+                    // 4. Limpiar campos antes de redirigir
                     newPasswordInput.value = '';
                     confirmPasswordInput.value = '';
-                    
+
                     // Redirigir al login después de un breve retraso
                     setTimeout(() => {
                         window.location.href = "../login/login.html";
                     }, 2000);
-                    
+
                 } else {
-                    mostrarAlerta(result.message || "Error al restablecer la contraseña. El token puede haber expirado o ser inválido.", "error");
+                    // Fallo (Status 4xx o 5xx)
+                    const errorMessage = result.message || `Error del servidor (${res.status}). Revisa los logs de Vercel.`;
+                    mostrarAlerta(errorMessage, "error");
                 }
+                // --- FIN MANEJO DE RESPUESTA MEJORADO ---
 
             } catch (err) {
                 console.error("Error de conexión al restablecer la contraseña:", err);
