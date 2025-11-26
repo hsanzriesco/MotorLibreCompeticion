@@ -471,38 +471,26 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // ... (código anterior) ...
         try {
-            // 🛑 MODIFICADO: Apuntamos a la sub-ruta correcta para PUT
-            const resp = await fetch('/api/userAction/updateName', {
+            // 🛑 CAMBIO CLAVE: Usamos la ruta base con query parameter 'action'
+            const resp = await fetch('/api/userAction?action=updateName', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     id: user.id,
-                    newName: newName, // Enviamos como newName
-                    newEmail: newEmail // Enviamos como newEmail
+                    newName: newName,
+                    newEmail: newEmail
                 })
             });
 
             const json = await resp.json();
-            if (!resp.ok || !json.success) { // Aseguramos que se revise json.success del backend
+            if (!resp.ok || !json.success) {
                 throw new Error(json.message || 'Error al actualizar perfil.');
             }
-
-            user.name = newName;
-            user.email = newEmail;
-            sessionStorage.setItem('usuario', JSON.stringify(user));
-
-            userNameElement.textContent = newName || 'Usuario';
-            mostrarAlerta('Perfil actualizado correctamente', 'exito');
-
-        } catch (error) {
-            console.error('Error al actualizar perfil:', error);
-            // Mostramos el mensaje de error completo
-            mostrarAlerta('Error al actualizar perfil: ' + error.message, 'error');
-        }
-    });
+        });
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
         mostrarAlerta('Sesión cerrada correctamente', 'exito');
