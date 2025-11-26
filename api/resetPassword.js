@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let result = {};
 
                 // Si el status es 2xx, o si esperamos JSON (4xx que controlamos), intentamos parsear
+                // Esto previene el SyntaxError si el servidor devuelve HTML/texto plano en el 500
                 if (res.ok || (responseBody && res.headers.get('content-type')?.includes('application/json'))) {
                     try {
                         result = JSON.parse(responseBody);
