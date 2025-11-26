@@ -73,27 +73,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
-        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
-            <div class="car-card" role="button" tabindex="0">
-                <div class="car-image-container">
-                    <img src="${imgSrc}" 
-                            alt="Foto de ${escapeHtml(name)}" 
-                            loading="lazy"
-                            onerror="this.onerror=null;this.src='${defaultImg}';" />
-                </div>
-                <div class="car-details-content">
-                    <div class="car-name-group">
-                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
-                        <p class="car-model-year">
-                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
-                        </p>
-                    </div>
-                    <button class="btn btn-edit-car">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
+            <div class="car-card" role="button" tabindex="0">
+                <div class="car-image-container">
+                    <img src="${imgSrc}" 
+                            alt="Foto de ${escapeHtml(name)}" 
+                            loading="lazy"
+                            onerror="this.onerror=null;this.src='${defaultImg}';" />
+                </div>
+                <div class="car-details-content">
+                    <div class="car-name-group">
+                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
+                        <p class="car-model-year">
+                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
+                        </p>
+                    </div>
+                    <button class="btn btn-edit-car">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     }
 
     async function loadVehicles() {
@@ -430,15 +430,15 @@ document.addEventListener('DOMContentLoaded', () => {
             let resolved = false;
 
             function cleanup(x) {
-                if(resolved) return;
+                if (resolved) return;
                 resolved = true;
-                
+
                 btnCancel.removeEventListener('click', handleCancel);
                 btnConfirm.removeEventListener('click', handleConfirm);
                 document.removeEventListener('keydown', handleKeydown);
-                
+
                 overlay.remove();
-                
+
                 resolve(!!x);
             }
 
@@ -472,21 +472,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const resp = await fetch('/api/userAction', {
+            // 🛑 MODIFICADO: Apuntamos a la sub-ruta correcta para PUT
+            const resp = await fetch('/api/userAction/updateName', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     id: user.id,
-                    name: newName,
-                    email: newEmail
+                    newName: newName, // Enviamos como newName
+                    newEmail: newEmail // Enviamos como newEmail
                 })
             });
 
             const json = await resp.json();
-            if (!resp.ok || !json.ok) {
-                throw new Error(json.msg || 'Error al actualizar perfil.');
+            if (!resp.ok || !json.success) { // Aseguramos que se revise json.success del backend
+                throw new Error(json.message || 'Error al actualizar perfil.');
             }
 
             user.name = newName;
@@ -498,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error al actualizar perfil:', error);
+            // Mostramos el mensaje de error completo
             mostrarAlerta('Error al actualizar perfil: ' + error.message, 'error');
         }
     });
@@ -507,10 +509,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             sessionStorage.removeItem('usuario');
             window.location.href = '/index.html';
-        }, 1000); 
+        }, 1000);
     });
 
     loadVehicles();
 
-    
+
 });
