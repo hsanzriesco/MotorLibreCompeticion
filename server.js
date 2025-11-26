@@ -1,35 +1,19 @@
-// server.js (Modificado para usar import)
+// server.js (Asegúrate de que estás usando 'import' si el archivo es .mjs o tienes "type": "module" en package.json)
 
 import express from 'express';
 // ... otros imports ...
-import path from 'path';
-import cors from 'cors';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import forgotPasswordRouter from './app/forgotPassword.js'; // ⬅️ NUEVO IMPORT
 
-// ...
-// Importaciones de APIs: Debemos dejar de importar resetPasswordHandler si no lo usamos
-// import resetPasswordHandler from './api/resetPassword.js'; // <-- COMENTAR O ELIMINAR ESTA LÍNEA
+// ... resto de imports de handlers (loginUserHandler, etc.)
 
-// ...
 const app = express();
-// ...
-
-// app.use(express.urlencoded({ extended: true }));
-
+// ... (resto del setup)
 
 app.all('/api/usersList', usersListHandler);
 app.post('/api/loginUser', loginUserHandler);
 
+app.use('/api/auth', forgotPasswordRouter);
+
 app.all('/api/carGarage', carGarageHandler);
 
-// **¡ELIMINAR ESTA LÍNEA!** Vercel debe manejar api/resetPassword.js directamente.
-// app.post('/api/resetPassword', resetPasswordHandler); // <-- ELIMINAR ESTA LÍNEA
-
-// ...
-// app.use(express.static(path.join(__dirname, 'public')));
-// ...
-
-app.listen(PORT, () => {
-    // ...
-});
+// ... (resto del código)
