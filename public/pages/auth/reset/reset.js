@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const confirmPasswordInput = document.getElementById("confirmPassword");
 
     // Utilizamos la función global 'mostrarAlerta' de alertas.js
-    // Nota: Asume que '../../../js/alertas.js' define esta función globalmente.
     const mostrarAlerta = window.mostrarAlerta;
 
     // 1. Obtener el token de la URL
@@ -48,19 +47,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
             try {
                 // 3. Enviar el token y la nueva contraseña al endpoint del backend
-                // Este endpoint llama a la lógica de server.js (o api/resetPassword.js si estás usando Vercel/similar)
                 const res = await fetch("/api/resetPassword", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ token, newPassword }),
                 });
 
-                const result = await res.json();
+                // --- INICIO DE LA CORRECCIÓN CRÍTICA ---
+                // Leemos el cuerpo como texto para manejar errores 500 que no son JSON.
+                const responseBody = await res.text();
+                let result = {};
+
+                // Intentamos parsear solo si hay un cuerpo de respuesta.
+                if (responseBody) {
+                    try {
+                        result = JSON.parse(responseBody);
+                    } catch (e) {
+                        // Aquí se atrapa el SyntaxError. Si el servidor devuelve HTML/texto (ej. error 500), 
+                        // mostramos un error genérico y registramos la respuesta no válida.
+                        console.error("Error al parsear JSON:", e, "Respuesta del Servidor:", responseBody);
+                        mostrarAlerta(`Error del servidor (${res.status}). La respuesta no es válida.`, "error");
+                        // Terminamos la ejecución si el JSON es inválido, ya que no podemos continuar.
+                        return; 
+                    }
+                }
+                // --- FIN DE LA CORRECCIÓN CRÍTICA ---
 
                 if (res.ok) {
+                    // Éxito (Status 200-299)
                     mostrarAlerta(result.message || "¡Contraseña restablecida con éxito! Serás redirigido al inicio de sesión.", "exito");
                     
-                    // 4. Limpiar campos antes de redirigir (Solución al error 401 por autocompletado)
+                    // 4. Limpiar campos antes de redirigir
                     newPasswordInput.value = '';
                     confirmPasswordInput.value = '';
                     
@@ -70,7 +87,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     }, 2000);
                     
                 } else {
-                    mostrarAlerta(result.message || "Error al restablecer la contraseña. El token puede haber expirado o ser inválido.", "error");
+                    // Fallo (Status 4xx o 5xx)
+                    // Si el servidor devolvió un JSON de error (ej. 401: token inválido)
+                    const errorMessage = result.message || `Error del servidor (${res.status}). Por favor, inténtalo de nuevo.`;
+                    mostrarAlerta(errorMessage, "error");
                 }
 
             } catch (err) {
