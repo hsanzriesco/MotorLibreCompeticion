@@ -2,33 +2,27 @@
 // 1. Import required dependencies using ESM syntax (import)
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
-import { sign as jwtSign } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+// ¡ATENCIÓN! Si tienes problemas de compatibilidad en Vercel, cambia 'import jwt from "jsonwebtoken";' por 'import * as jwt from "jsonwebtoken";'
 
-// Validación de variables de entorno críticas al inicio
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
-    console.error('FATAL SERVER SETUP ERROR: Missing critical environment variables.');
-    // Si faltan, no inicializamos Pool ni Transporter para evitar posibles fallos de importación/runtime.
-    // El handler principal devolverá el error 500 controlado.
-}
-
-// Database configuration (solo se ejecutará si DATABASE_URL está definida)
-const pool = process.env.DATABASE_URL ? new Pool({
+// Database configuration
+const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false
     }
-}) : null;
+});
 
 // ------------------------------------------------------------------
-// Configuracion del Transporter (solo se ejecutará si las vars están definidas)
+// Configuracion del Transporter usando Contraseña de Aplicación (EMAIL_PASS)
 // ------------------------------------------------------------------
-const transporter = (process.env.EMAIL_USER && process.env.EMAIL_PASS) ? nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-}) : null;
+});
 // ------------------------------------------------------------------
 
 
@@ -39,17 +33,14 @@ export default async (req, res) => {
 
     const { email } = req.body;
 
-    // Validación de variables de entorno críticas y conexión
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL || !pool || !transporter) {
-        // Esta es la primera línea de defensa para el 500
-        console.error('Internal Server Error: Missing critical environment variables or failed initialization.');
-        return res.status(500).json({
-            message: 'Internal Server Error: El servicio de restablecimiento no está correctamente configurado.'
-        });
-    }
-
     if (!email) {
         return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
+        return res.status(500).json({
+            message: 'Internal Server Error: Missing critical environment variables (EMAIL_USER, EMAIL_PASS, JWT_SECRET, or DATABASE_URL).'
+        });
     }
 
     try {
@@ -65,8 +56,8 @@ export default async (req, res) => {
         const userId = user.id;
 
         // 2. Generate the Reset Token (Payload: {id: userId})
-        const token = jwtSign(
-            { id: userId },
+        const token = jwt.sign(
+            { id: userId }, // <-- El token contiene la propiedad 'id'
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -80,7 +71,6 @@ export default async (req, res) => {
         );
 
         // 4. Reset URL: USING THE REAL VERCEl DOMAIN
-        // Reemplaza esto con una variable de entorno como process.env.BASE_URL si fuera necesario.
         const resetURL = `https://motor-libre-competicion.vercel.app/pages/auth/reset/reset.html?token=${token}`;
 
         // 5. Configure and Send the Email
@@ -106,14 +96,6 @@ export default async (req, res) => {
 
     } catch (error) {
         console.error('FATAL ERROR during password reset process:', error.message || error);
-
-        // --- Pista para debug en Vercel Logs ---
-        if (error.code && error.code.startsWith('28')) {
-            console.error('DEBUG HINT: Database connection/authentication error suspected.');
-        } else if (error.command === 'MAIL FROM' || error.responseCode === 535) {
-            console.error('DEBUG HINT: Nodemailer (Email) authentication or configuration error suspected. Check EMAIL_PASS.');
-        }
-        // ----------------------------------------
 
         return res.status(500).json({ message: 'Internal Server Error. Failed to process password reset request. Check Vercel logs for details.' });
     }
