@@ -81,7 +81,7 @@ export default async (req, res) => {
         
         // 7. Configurar y Enviar el Correo
         const mailOptions = {
-            from: `Tu Aplicación <${process.env.EMAIL_USER}>`,
+            from: `Motor Libre Competicion <${process.env.EMAIL_USER}>`,
             to: user.email,
             subject: 'Solicitud de Restablecimiento de Contraseña',
             html: `
@@ -90,7 +90,6 @@ export default async (req, res) => {
                 <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
                     Restablecer Contraseña
                 </a>
-                <p style="margin-top: 20px;">Este enlace caduca en 1 hora.</p>
             `,
         };
 
