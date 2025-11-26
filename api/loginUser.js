@@ -1,4 +1,8 @@
+// api/loginUser.js
+
 import { Pool } from "pg";
+// ⚠️ IMPORTAR bcryptjs para poder comparar hashes
+import bcrypt from "bcryptjs"; 
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -11,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log("--- LOGIN INICIADO (INSEGURO) ---");
+    console.log("--- LOGIN INICIADO ---");
 
     const { username, password } = req.body;
 
@@ -19,18 +23,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Faltan datos" });
     }
 
+    // 1. OBTENER el hash de la contraseña (y otros datos) usando solo el username
     const { rows } = await pool.query(
-      "SELECT id, name, email, role FROM users WHERE name = $1 AND password = $2",
-      [username, password]
+      "SELECT id, name, email, role, password FROM users WHERE name = $1",
+      [username]
     );
 
     if (rows.length === 0) {
-      console.log(`Login fallido: Credenciales incorrectas para ${username}.`);
+      console.log(`Login fallido: Usuario no encontrado (${username}).`);
       return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
 
     const user = rows[0];
+    const hashedPassword = user.password; // El hash guardado en la DB
+
+    // 2. COMPARAR la contraseña ingresada con el hash almacenado
+    const match = await bcrypt.compare(password, hashedPassword);
+
+    if (!match) {
+        console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
+        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+    }
     
+    // Si llegamos aquí, la contraseña es correcta
+    
+    // 3. Respuesta Exitosa
     console.log(`LOGIN EXITOSO para ${username}.`);
     return res.status(200).json({
       success: true,
