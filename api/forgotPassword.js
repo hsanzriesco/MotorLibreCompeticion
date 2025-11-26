@@ -2,8 +2,7 @@
 // 1. Import required dependencies using ESM syntax (import)
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
-import * as jwt from 'jsonwebtoken'; // <-- CAMBIO A import * as
-// ¡ATENCIÓN! La sintaxis de importación ha sido ajustada para máxima compatibilidad.
+import * as jwt from 'jsonwebtoken';
 
 // Database configuration
 const pool = new Pool({
@@ -20,7 +19,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        pass: process.env.EMAIL_PASS, // ¡Asegúrate de que esta sea una Contraseña de Aplicación si usas Gmail!
     },
 });
 // ------------------------------------------------------------------
@@ -37,6 +36,7 @@ export default async (req, res) => {
         return res.status(400).json({ message: 'Email is required.' });
     }
 
+    // Validación de variables de entorno críticas
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
         return res.status(500).json({
             message: 'Internal Server Error: Missing critical environment variables (EMAIL_USER, EMAIL_PASS, JWT_SECRET, or DATABASE_URL).'
@@ -56,8 +56,8 @@ export default async (req, res) => {
         const userId = user.id;
 
         // 2. Generate the Reset Token (Payload: {id: userId})
-        const token = jwt.sign( // Ya no es jwt.sign(), es jwt.sign(
-            { id: userId }, // <-- El token contiene la propiedad 'id'
+        const token = jwt.sign(
+            { id: userId },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -79,14 +79,14 @@ export default async (req, res) => {
             to: user.email,
             subject: 'Motor Libre Competición: Password Reset Request',
             html: `
-                <p>Hello,</p>
-                <p>You have requested a password reset. Click the link below to create a new password:</p>
-                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
-                    Reset Password
-                </a>
-                <p style="margin-top: 20px;">This link will expire in 1 hour.</p>
-                <p>If you did not request this change, please ignore this email.</p>
-            `,
+                <p>Hello,</p>
+                <p>You have requested a password reset. Click the link below to create a new password:</p>
+                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
+                    Reset Password
+                </a>
+                <p style="margin-top: 20px;">This link will expire in 1 hour.</p>
+                <p>If you did not request this change, please ignore this email.</p>
+            `,
         };
 
         await transporter.sendMail(mailOptions);
@@ -96,6 +96,16 @@ export default async (req, res) => {
 
     } catch (error) {
         console.error('FATAL ERROR during password reset process:', error.message || error);
+
+        // --- Pista para debug en Vercel Logs ---
+        if (error.code && error.code.startsWith('28')) {
+            // PostgreSQL authentication/connection error codes typically start with '28'
+            console.error('DEBUG HINT: Database connection/authentication error suspected.');
+        } else if (error.command === 'MAIL FROM' || error.responseCode === 535) {
+            // Nodemailer error indicator (535 is often auth failure)
+            console.error('DEBUG HINT: Nodemailer (Email) authentication or configuration error suspected. Check EMAIL_PASS.');
+        }
+        // ----------------------------------------
 
         return res.status(500).json({ message: 'Internal Server Error. Failed to process password reset request. Check Vercel logs for details.' });
     }
