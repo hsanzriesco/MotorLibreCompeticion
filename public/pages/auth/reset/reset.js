@@ -1,87 +1,81 @@
-// La función mostrarAlerta se asume que está definida en alertas.js
+document.addEventListener("DOMContentLoaded", () => {
+    // Referencias a elementos del DOM
+    const form = document.getElementById("resetPasswordForm");
+    const newPasswordInput = document.getElementById("newPassword");
+    const confirmPasswordInput = document.getElementById("confirmPassword");
 
-function getTokenFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('token');
-}
+    // Utilizamos la función global 'mostrarAlerta' de alertas.js
+    // Nota: Asume que '../../../js/alertas.js' define esta función globalmente.
+    const mostrarAlerta = window.mostrarAlerta;
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Verificar el token de restablecimiento
-    const token = getTokenFromUrl();
+    // 1. Obtener el token de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
     if (!token) {
-        // Mostrar alerta de error permanente y modificar la caja del formulario
-        mostrarAlerta('Error: Falta el token de restablecimiento en la URL.', 'error', 0);
-
-        const formBox = document.querySelector('.form-box');
-        if (formBox) {
-            formBox.innerHTML = '<h2 style="color:#e50914;">ERROR</h2><p style="color:#ccc;">Token no encontrado. Por favor, usa el enlace enviado a tu correo.</p>';
-        }
+        mostrarAlerta("Token de restablecimiento no encontrado. Asegúrate de usar el enlace completo enviado a tu email.", "error");
+        // Ocultar el formulario si no hay token
+        if (form) form.style.display = 'none'; 
         return;
     }
 
-    // Usar el ID correcto del HTML: 'resetForm'
-    const resetForm = document.getElementById('resetForm');
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-    // 2. Asegurarse de que el formulario existe
-    if (!resetForm) {
-        console.error("Error JS: Elemento con ID 'resetForm' no encontrado.");
-        return;
-    }
+            const newPassword = newPasswordInput.value.trim();
+            const confirmPassword = confirmPasswordInput.value.trim();
 
-    // 3. Manejo del envío del formulario
-    resetForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const newPassword = document.getElementById('new-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-
-        // Validar que las contraseñas coincidan
-        if (newPassword !== confirmPassword) {
-            mostrarAlerta('Las contraseñas no coinciden.', 'error');
-            return;
-        }
-
-        // Validación básica de longitud
-        if (newPassword.length < 6) {
-            mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres.', 'advertencia');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/resetPassword', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, newPassword })
-            });
-
-            // 1. Verificar si la respuesta fue un éxito (código 200-299)
-            if (response.ok) {
-                const data = await response.json();
-
-                mostrarAlerta('¡Contraseña restablecida con éxito! Serás redirigido.', 'exito');
-
-                setTimeout(() => {
-                    window.location.href = '/pages/auth/login/login.html';
-                }, 2000);
-
-            } else {
-                // 2. Manejar Fallo HTTP (400, 401, 500, etc.)
-                // Intentamos leer el mensaje de error del backend (asumimos que devuelve JSON)
-                let errorMessage = 'Error desconocido al restablecer la contraseña.';
-                try {
-                    const data = await response.json();
-                    errorMessage = data.message;
-                } catch (e) {
-                    // Si el servidor devuelve un error 500 que NO ES JSON
-                    errorMessage = `Error del servidor (${response.status}). Respuesta inesperada.`;
-                }
-
-                mostrarAlerta(`Fallo al restablecer: ${errorMessage}`, 'error');
+            // 2. Validación de campos
+            if (!newPassword || !confirmPassword) {
+                mostrarAlerta("Por favor, completa ambos campos de contraseña.", "aviso");
+                return;
             }
 
-        } catch (error) {
-            console.error('API Error:', error);
-            mostrarAlerta('Error de red: No se pudo conectar al servidor. Intenta de nuevo.', 'error');
-        }
-    });
+            if (newPassword !== confirmPassword) {
+                mostrarAlerta("Las contraseñas no coinciden. Por favor, revísalas.", "aviso");
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                mostrarAlerta("La contraseña debe tener al menos 8 caracteres.", "aviso");
+                return;
+            }
+
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = "Actualizando...";
+
+            try {
+                // 3. Enviar el token y la nueva contraseña al endpoint del backend
+                // Este endpoint llama a la lógica de server.js (o api/resetPassword.js si estás usando Vercel/similar)
+                const res = await fetch("/api/resetPassword", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token, newPassword }),
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    mostrarAlerta(result.message || "¡Contraseña restablecida con éxito! Serás redirigido al inicio de sesión.", "exito");
+                    
+                    // Redirigir al login después de un breve retraso
+                    setTimeout(() => {
+                        window.location.href = "../login/login.html";
+                    }, 2000);
+                    
+                } else {
+                    mostrarAlerta(result.message || "Error al restablecer la contraseña. El token puede haber expirado o ser inválido.", "error");
+                }
+
+            } catch (err) {
+                console.error("Error de conexión al restablecer la contraseña:", err);
+                mostrarAlerta("Error de conexión con el servidor. Por favor, inténtalo más tarde.", "error");
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Actualizar Contraseña";
+            }
+        });
+    }
 });
