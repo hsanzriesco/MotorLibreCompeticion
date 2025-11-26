@@ -1,88 +1,85 @@
-// ⚠️ ATENCIÓN: Asegúrate de tener 'pg', 'bcryptjs', y 'jsonwebtoken' instalados.
-import { Pool } from 'pg';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+document.addEventListener("DOMContentLoaded", () => {
+    // Referencias a elementos del DOM
+    const form = document.getElementById("resetPasswordForm");
+    const newPasswordInput = document.getElementById("newPassword");
+    const confirmPasswordInput = document.getElementById("confirmPassword");
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
+    // Utilizamos la función global 'mostrarAlerta' de alertas.js
+    // Nota: Asume que '../../../js/alertas.js' define esta función globalmente.
+    const mostrarAlerta = window.mostrarAlerta;
+
+    // 1. Obtener el token de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        mostrarAlerta("Token de restablecimiento no encontrado. Asegúrate de usar el enlace completo enviado a tu email.", "error");
+        // Ocultar el formulario si no hay token
+        if (form) form.style.display = 'none'; 
+        return;
+    }
+
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const newPassword = newPasswordInput.value.trim();
+            const confirmPassword = confirmPasswordInput.value.trim();
+
+            // 2. Validación de campos
+            if (!newPassword || !confirmPassword) {
+                mostrarAlerta("Por favor, completa ambos campos de contraseña.", "aviso");
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                mostrarAlerta("Las contraseñas no coinciden. Por favor, revísalas.", "aviso");
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                mostrarAlerta("La contraseña debe tener al menos 8 caracteres.", "aviso");
+                return;
+            }
+
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = "Actualizando...";
+
+            try {
+                // 3. Enviar el token y la nueva contraseña al endpoint del backend
+                // Este endpoint llama a la lógica de server.js (o api/resetPassword.js si estás usando Vercel/similar)
+                const res = await fetch("/api/resetPassword", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token, newPassword }),
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    mostrarAlerta(result.message || "¡Contraseña restablecida con éxito! Serás redirigido al inicio de sesión.", "exito");
+                    
+                    // 4. Limpiar campos antes de redirigir (Solución al error 401 por autocompletado)
+                    newPasswordInput.value = '';
+                    confirmPasswordInput.value = '';
+                    
+                    // Redirigir al login después de un breve retraso
+                    setTimeout(() => {
+                        window.location.href = "../login/login.html";
+                    }, 2000);
+                    
+                } else {
+                    mostrarAlerta(result.message || "Error al restablecer la contraseña. El token puede haber expirado o ser inválido.", "error");
+                }
+
+            } catch (err) {
+                console.error("Error de conexión al restablecer la contraseña:", err);
+                mostrarAlerta("Error de conexión con el servidor. Por favor, inténtalo más tarde.", "error");
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Actualizar Contraseña";
+            }
+        });
     }
 });
-
-export default async (req, res) => { // Cambiado a export default para ESM
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method Not Allowed' });
-    }
-
-    const { token, newPassword } = req.body;
-
-    if (!token || !newPassword) {
-        return res.status(400).json({ message: 'Token y nueva contraseña son requeridos.' });
-    }
-    
-    if (!process.env.JWT_SECRET) {
-        return res.status(500).json({ message: 'Internal Server Error: Missing JWT_SECRET.' });
-    }
-
-
-    try {
-        let decoded;
-        try {
-            // 1. Verificar y decodificar el Token JWT
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (err) {
-            return res.status(401).json({ message: 'Token inválido o expirado.' });
-        }
-        
-        // Asumiendo que el ID del usuario está en el campo 'id' del token
-        const userId = decoded.id; 
-
-        // 2. Buscar el usuario y verificar la validez del token en la BD (Neon)
-        const result = await pool.query(
-            'SELECT reset_token, reset_token_expires FROM users WHERE id = $1',
-            [userId]
-        );
-
-        const user = result.rows[0];
-
-        if (!user || user.reset_token !== token) {
-            return res.status(401).json({ message: 'Token inválido o no coincide con el registro.' });
-        }
-        
-        // 3. Verificar expiración
-        const now = new Date();
-        if (now > new Date(user.reset_token_expires)) {
-            // Limpia el token expirado antes de devolver el error
-            await pool.query('UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE id = $1', [userId]);
-            return res.status(401).json({ message: 'El token ha expirado. Solicita un nuevo restablecimiento.' });
-        }
-
-        // 4. Hashear la nueva contraseña
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // 5. ACTUALIZACIÓN DE LA CONTRASEÑA y limpieza del token
-        await pool.query(
-            // Actualizamos 'password', limpiamos 'reset_token' y 'reset_token_expires'
-            'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
-            [hashedPassword, userId]
-        );
-
-        return res.status(200).json({ message: 'La contraseña ha sido restablecida con éxito.' });
-
-    } catch (error) {
-        console.error('Error al restablecer la contraseña:', error);
-        return res.status(500).json({ message: 'Ocurrió un error al procesar el restablecimiento de contraseña.' });
-    }
-    try {
-        const response = await fetch('/api/forgotPassword', { // <--- DEBE SER /api/forgotPassword
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: emailValue })
-        });
-        // ... manejar la respuesta
-    } catch (error) {
-        // ...
-    }
-};
