@@ -2,27 +2,33 @@
 // 1. Import required dependencies using ESM syntax (import)
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
-import { sign as jwtSign } from 'jsonwebtoken'; // ¡CAMBIO CLAVE AQUÍ! Importa 'sign' y lo renombra a 'jwtSign'
-// Nota: La importación de bcrypt debe estar en resetPassword.js
+import { sign as jwtSign } from 'jsonwebtoken';
 
-// Database configuration
-const pool = new Pool({
+// Validación de variables de entorno críticas al inicio
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
+    console.error('FATAL SERVER SETUP ERROR: Missing critical environment variables.');
+    // Si faltan, no inicializamos Pool ni Transporter para evitar posibles fallos de importación/runtime.
+    // El handler principal devolverá el error 500 controlado.
+}
+
+// Database configuration (solo se ejecutará si DATABASE_URL está definida)
+const pool = process.env.DATABASE_URL ? new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
         rejectUnauthorized: false
     }
-});
+}) : null;
 
 // ------------------------------------------------------------------
-// Configuracion del Transporter usando Contraseña de Aplicación (EMAIL_PASS)
+// Configuracion del Transporter (solo se ejecutará si las vars están definidas)
 // ------------------------------------------------------------------
-const transporter = nodemailer.createTransport({
+const transporter = (process.env.EMAIL_USER && process.env.EMAIL_PASS) ? nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // ¡Asegúrate de que esta sea una Contraseña de Aplicación si usas Gmail!
+        pass: process.env.EMAIL_PASS,
     },
-});
+}) : null;
 // ------------------------------------------------------------------
 
 
@@ -33,22 +39,20 @@ export default async (req, res) => {
 
     const { email } = req.body;
 
+    // Validación de variables de entorno críticas y conexión
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL || !pool || !transporter) {
+        // Esta es la primera línea de defensa para el 500
+        console.error('Internal Server Error: Missing critical environment variables or failed initialization.');
+        return res.status(500).json({
+            message: 'Internal Server Error: El servicio de restablecimiento no está correctamente configurado.'
+        });
+    }
+
     if (!email) {
         return res.status(400).json({ message: 'Email is required.' });
     }
 
-    // Validación de variables de entorno críticas
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
-        return res.status(500).json({
-            message: 'Internal Server Error: Missing critical environment variables (EMAIL_USER, EMAIL_PASS, JWT_SECRET, or DATABASE_URL).'
-        });
-    }
-
     try {
-        // *** Prueba de conexión rápida a la DB ***
-        const client = await pool.connect();
-        client.release(); // Libera la conexión inmediatamente
-
         // 1. Search for the user in the DB
         const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
@@ -61,7 +65,7 @@ export default async (req, res) => {
         const userId = user.id;
 
         // 2. Generate the Reset Token (Payload: {id: userId})
-        const token = jwtSign( // ¡USANDO jwtSign AHORA!
+        const token = jwtSign(
             { id: userId },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
@@ -76,6 +80,7 @@ export default async (req, res) => {
         );
 
         // 4. Reset URL: USING THE REAL VERCEl DOMAIN
+        // Reemplaza esto con una variable de entorno como process.env.BASE_URL si fuera necesario.
         const resetURL = `https://motor-libre-competicion.vercel.app/pages/auth/reset/reset.html?token=${token}`;
 
         // 5. Configure and Send the Email
@@ -84,14 +89,14 @@ export default async (req, res) => {
             to: user.email,
             subject: 'Motor Libre Competición: Password Reset Request',
             html: `
-                <p>Hello,</p>
-                <p>You have requested a password reset. Click the link below to create a new password:</p>
-                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
-                    Reset Password
-                </a>
-                <p style="margin-top: 20px;">This link will expire in 1 hour.</p>
-                <p>If you did not request this change, please ignore this email.</p>
-            `,
+                <p>Hello,</p>
+                <p>You have requested a password reset. Click the link below to create a new password:</p>
+                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
+                    Reset Password
+                </a>
+                <p style="margin-top: 20px;">This link will expire in 1 hour.</p>
+                <p>If you did not request this change, please ignore this email.</p>
+            `,
         };
 
         await transporter.sendMail(mailOptions);
@@ -104,10 +109,8 @@ export default async (req, res) => {
 
         // --- Pista para debug en Vercel Logs ---
         if (error.code && error.code.startsWith('28')) {
-            // PostgreSQL authentication/connection error codes typically start with '28'
             console.error('DEBUG HINT: Database connection/authentication error suspected.');
         } else if (error.command === 'MAIL FROM' || error.responseCode === 535) {
-            // Nodemailer error indicator (535 is often auth failure)
             console.error('DEBUG HINT: Nodemailer (Email) authentication or configuration error suspected. Check EMAIL_PASS.');
         }
         // ----------------------------------------

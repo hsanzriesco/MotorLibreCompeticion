@@ -5,6 +5,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
+    // Función auxiliar para mostrar alertas (asumiendo que existe)
+    function mostrarAlerta(message, type) {
+        console.log(`[ALERTA ${type.toUpperCase()}]: ${message}`);
+        // Implementación real de mostrarAlerta
+    }
+
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -94,15 +100,30 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email }),
                 });
 
-                if (res.ok || res.status === 200) {
+                if (res.ok) { // res.ok es true para códigos de estado 200-299
+                    // No es necesario leer el cuerpo JSON si el código 200 es suficiente
                     mostrarAlerta("Email enviado, revisa la bandeja de spam", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
                 } else {
-                    const errorData = await res.json();
-                    mostrarAlerta(errorData.message || "Error al solicitar el restablecimiento. Inténtalo más tarde.", "error");
+                    // Si no es ok (400, 500, etc.), intentamos leer el cuerpo para obtener el mensaje de error controlado.
+                    let errorMessage = "Error al solicitar el restablecimiento. Inténtalo más tarde.";
+
+                    try {
+                        // 1. Intentamos leer el JSON devuelto por el servidor (tu 400 o 500 controlado)
+                        const errorData = await res.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        // 2. Si falla la lectura de JSON (porque es el HTML de error de Vercel), registramos y damos un mensaje genérico.
+                        const errorBody = await res.text();
+                        console.error(`Respuesta de error no es JSON (Status: ${res.status}):`, errorBody);
+                        errorMessage = "Error interno del servidor. Revisa los logs de Vercel.";
+                    }
+
+                    mostrarAlerta(errorMessage, "error");
                 }
             } catch (err) {
+                // Esto captura errores de red (p. ej., servidor totalmente caído)
                 console.error("Error de conexión al solicitar restablecimiento:", err);
                 mostrarAlerta("Error de conexión con el servidor.", "error");
             } finally {
