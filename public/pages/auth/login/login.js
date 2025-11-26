@@ -5,12 +5,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
-    // Función auxiliar para mostrar alertas (asumiendo que existe)
+    // NOTA: Asumo que la función mostrarAlerta existe y es accesible globalmente
     function mostrarAlerta(message, type) {
         console.log(`[ALERTA ${type.toUpperCase()}]: ${message}`);
-        // Implementación real de mostrarAlerta
+        // Implementación real de la alerta...
     }
 
+    // --- Lógica del Formulario de Login ---
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -75,10 +76,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // --- Lógica de Olvidé mi Contraseña (forgotPassword) ---
     if (forgotPasswordLink && emailRequestForm && sendResetEmailBtn) {
 
         forgotPasswordLink.addEventListener("click", (e) => {
             e.preventDefault();
+            // Alterna la visibilidad del formulario de solicitud de email
             emailRequestForm.style.display = emailRequestForm.style.display === "none" ? "block" : "none";
         });
 
@@ -100,30 +103,31 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email }),
                 });
 
-                if (res.ok) { // res.ok es true para códigos de estado 200-299
-                    // No es necesario leer el cuerpo JSON si el código 200 es suficiente
+                // **PASO CLAVE: Leer el cuerpo de la respuesta UNA SOLA VEZ como texto**
+                const responseBody = await res.text();
+
+                if (res.ok) { // Éxito (Códigos 200-299)
                     mostrarAlerta("Email enviado, revisa la bandeja de spam", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
-                } else {
-                    // Si no es ok (400, 500, etc.), intentamos leer el cuerpo para obtener el mensaje de error controlado.
+                } else { // Error (4xx, 5xx)
                     let errorMessage = "Error al solicitar el restablecimiento. Inténtalo más tarde.";
 
                     try {
-                        // 1. Intentamos leer el JSON devuelto por el servidor (tu 400 o 500 controlado)
-                        const errorData = await res.json();
+                        // 1. Intentamos analizar el cuerpo que ya leímos como JSON
+                        const errorData = JSON.parse(responseBody);
                         errorMessage = errorData.message || errorMessage;
                     } catch (e) {
-                        // 2. Si falla la lectura de JSON (porque es el HTML de error de Vercel), registramos y damos un mensaje genérico.
-                        const errorBody = await res.text();
-                        console.error(`Respuesta de error no es JSON (Status: ${res.status}):`, errorBody);
-                        errorMessage = "Error interno del servidor. Revisa los logs de Vercel.";
+                        // 2. Si falla el análisis JSON, asumimos que es el error HTML/texto del servidor (500 no controlado)
+                        // Esto captura el 500 inicial que causaba el SyntaxError
+                        console.error(`Respuesta de error no es JSON (Status: ${res.status}):`, responseBody);
+                        errorMessage = `Error interno del servidor (${res.status}). Revisa los logs de Vercel.`;
                     }
 
                     mostrarAlerta(errorMessage, "error");
                 }
             } catch (err) {
-                // Esto captura errores de red (p. ej., servidor totalmente caído)
+                // Esto captura errores de red (p. ej., servidor totalmente caído, CORS)
                 console.error("Error de conexión al solicitar restablecimiento:", err);
                 mostrarAlerta("Error de conexión con el servidor.", "error");
             } finally {
