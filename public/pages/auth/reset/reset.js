@@ -12,8 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const token = urlParams.get('token');
 
     if (!token) {
+        // Alerta de error si no hay token en la URL
         mostrarAlerta("Token de restablecimiento no encontrado. Asegúrate de usar el enlace completo enviado a tu email.", "error");
-        // Ocultar el formulario si no hay token
         if (form) form.style.display = 'none'; 
         return;
     }
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const newPassword = newPasswordInput.value.trim();
             const confirmPassword = confirmPasswordInput.value.trim();
 
-            // 2. Validación de campos
+            // 2. Validación de campos (Usa 'aviso')
             if (!newPassword || !confirmPassword) {
                 mostrarAlerta("Por favor, completa ambos campos de contraseña.", "aviso");
                 return;
@@ -53,47 +53,43 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ token, newPassword }),
                 });
 
-                // --- INICIO DE LA CORRECCIÓN CRÍTICA ---
-                // Leemos el cuerpo como texto para manejar errores 500 que no son JSON.
+                // Lógica robusta para manejar JSON o texto plano (para evitar el SyntaxError)
                 const responseBody = await res.text();
                 let result = {};
 
-                // Intentamos parsear solo si hay un cuerpo de respuesta.
                 if (responseBody) {
                     try {
                         result = JSON.parse(responseBody);
                     } catch (e) {
-                        // Aquí se atrapa el SyntaxError. Si el servidor devuelve HTML/texto (ej. error 500), 
-                        // mostramos un error genérico y registramos la respuesta no válida.
-                        console.error("Error al parsear JSON:", e, "Respuesta del Servidor:", responseBody);
-                        mostrarAlerta(`Error del servidor (${res.status}). La respuesta no es válida.`, "error");
-                        // Terminamos la ejecución si el JSON es inválido, ya que no podemos continuar.
+                        // El servidor devolvió algo que NO era JSON (ej. 500 crudo)
+                        console.error("Error al parsear JSON:", e, "Respuesta:", responseBody);
+                        mostrarAlerta(`Error del servidor (${res.status}). Respuesta inesperada.`, "error");
                         return; 
                     }
                 }
-                // --- FIN DE LA CORRECCIÓN CRÍTICA ---
 
                 if (res.ok) {
                     // Éxito (Status 200-299)
+                    // Utiliza el tipo 'exito'
                     mostrarAlerta(result.message || "¡Contraseña restablecida con éxito! Serás redirigido al inicio de sesión.", "exito");
                     
-                    // 4. Limpiar campos antes de redirigir
+                    // Limpiar campos y redirigir
                     newPasswordInput.value = '';
                     confirmPasswordInput.value = '';
                     
-                    // Redirigir al login después de un breve retraso
                     setTimeout(() => {
                         window.location.href = "../login/login.html";
                     }, 2000);
                     
                 } else {
                     // Fallo (Status 4xx o 5xx)
-                    // Si el servidor devolvió un JSON de error (ej. 401: token inválido)
+                    // Utiliza el tipo 'error'
                     const errorMessage = result.message || `Error del servidor (${res.status}). Por favor, inténtalo de nuevo.`;
                     mostrarAlerta(errorMessage, "error");
                 }
 
             } catch (err) {
+                // Fallo de conexión de red (No se pudo llegar al servidor)
                 console.error("Error de conexión al restablecer la contraseña:", err);
                 mostrarAlerta("Error de conexión con el servidor. Por favor, inténtalo más tarde.", "error");
             } finally {
