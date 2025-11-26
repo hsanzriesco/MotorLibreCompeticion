@@ -60,6 +60,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (res.ok) {
                     mostrarAlerta(result.message || "¡Contraseña restablecida con éxito! Serás redirigido al inicio de sesión.", "exito");
                     
+                    // 4. Limpiar campos antes de redirigir (Solución al error 401 por autocompletado)
+                    newPasswordInput.value = '';
+                    confirmPasswordInput.value = '';
+                    
                     // Redirigir al login después de un breve retraso
                     setTimeout(() => {
                         window.location.href = "../login/login.html";
