@@ -5,11 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
-    // NOTA: Asumo que la función mostrarAlerta existe y es accesible globalmente
-    function mostrarAlerta(message, type) {
-        console.log(`[ALERTA ${type.toUpperCase()}]: ${message}`);
-        // Implementación real de la alerta...
-    }
+    // Utilizamos la función global 'mostrarAlerta' que se carga desde alertas.js
+    const mostrarAlerta = window.mostrarAlerta;
 
     // --- Lógica del Formulario de Login ---
     if (form) {
@@ -81,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         forgotPasswordLink.addEventListener("click", (e) => {
             e.preventDefault();
+            // Alternar la visibilidad del formulario de email
             emailRequestForm.style.display = emailRequestForm.style.display === "none" ? "block" : "none";
         });
 
@@ -90,6 +88,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!email) {
                 mostrarAlerta("Por favor, introduce tu correo electrónico.", "aviso");
                 return;
+            }
+            
+            // Validación básica de formato de email (opcional, pero útil)
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                 mostrarAlerta("Por favor, introduce un formato de email válido.", "aviso");
+                 return;
             }
 
             sendResetEmailBtn.disabled = true;
@@ -102,31 +106,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email }),
                 });
 
-                // **CAMBIO CLAVE: Leer el cuerpo de la respuesta UNA SOLA VEZ como texto**
-                const responseBody = await res.text();
-
-                if (res.ok) { // Éxito (Códigos 200-299)
-                    mostrarAlerta("Email enviado, revisa la bandeja de spam", "exito");
+                // **Mejora de Seguridad/Usabilidad:** // La API (forgotPassword) DEBE devolver un 200/204, incluso si el email no existe,
+                // para evitar la enumeración de usuarios. El mensaje de éxito debe ser genérico.
+                if (res.ok) { 
+                    // El servidor respondió correctamente (200-299)
+                    mostrarAlerta("Si el email está registrado, se ha enviado un enlace de restablecimiento. Revisa tu bandeja de entrada y spam.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
-                } else { // Error (4xx, 5xx)
-                    let errorMessage = "Error al solicitar el restablecimiento. Inténtalo más tarde.";
+                } else { 
+                    // El servidor devolvió un error (4xx, 5xx), lo cual es inesperado si la API sigue la práctica segura
+                    const responseBody = await res.text();
+                    let errorMessage = "Ocurrió un error inesperado al contactar con el servidor. Inténtalo más tarde.";
 
                     try {
-                        // 1. Intentamos analizar el cuerpo que ya leímos como JSON (para errores 400 o 500 controlados)
                         const errorData = JSON.parse(responseBody);
                         errorMessage = errorData.message || errorMessage;
                     } catch (e) {
-                        // 2. Si falla el análisis JSON, asumimos que es el error HTML/texto del servidor (500 no controlado)
                         console.error(`Respuesta de error no es JSON (Status: ${res.status}):`, responseBody);
-                        errorMessage = `Error interno del servidor (${res.status}). Revisa los logs de Vercel.`;
+                        // Si no es JSON, asumimos un error interno del servidor no controlado (500)
+                        errorMessage = `Error interno del servidor (${res.status}).`;
                     }
 
                     mostrarAlerta(errorMessage, "error");
                 }
             } catch (err) {
                 console.error("Error de conexión al solicitar restablecimiento:", err);
-                mostrarAlerta("Error de conexión con el servidor.", "error");
+                mostrarAlerta("Error de conexión con el servidor. Verifica tu red.", "error");
             } finally {
                 sendResetEmailBtn.disabled = false;
                 sendResetEmailBtn.textContent = "Enviar Enlace";

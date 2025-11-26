@@ -1,118 +1,106 @@
-// app/forgotPassword.js
-
-import express from 'express';
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+// ⚠️ ATENCIÓN: Asegúrate de tener 'pg', 'nodemailer', y 'jsonwebtoken' instalados.
+import { Pool } from 'pg';
 import nodemailer from 'nodemailer';
+import jwt from 'jsonwebtoken';
 
-const router = express.Router();
-
-// 🚨 1. CONFIGURACIÓN DE NODEMAILER (¡IMPRESCINDIBLE!)
-// Reemplaza con tus credenciales SMTP reales.
-const transporter = nodemailer.createTransport({
-    // Si usas Gmail, recuerda que necesitas una 'Contraseña de Aplicación' si tienes 2FA activado.
-    service: 'gmail', 
-    auth: {
-        user: 'tu_correo_de_envio@gmail.com', // ⬅️ Reemplaza
-        pass: 'tu_contraseña_o_app_password' // ⬅️ Reemplaza
+// ------------------------------------------------------------------
+// CONFIGURACIÓN DE CONEXIÓN A NEON
+// ------------------------------------------------------------------
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        // Configuraciones de SSL necesarias para Neon/PostgreSQL en la nube
+        rejectUnauthorized: false
     }
 });
 
-// 🚨 2. SIMULACIÓN DE LA BASE DE DATOS (¡DEBES REEMPLAZAR!)
-// Estas funciones DEBEN interactuar con tu base de datos (Mongoose, Sequelize, etc.)
-const DB = {
-    // ⚠️ DEBES MODIFICAR: Buscar usuario por email. Debe retornar el objeto usuario.
-    findByEmail: async (email) => { 
-        // Ejemplo: const user = await UserModel.findOne({ email });
-        // En tu caso, usa tu lógica real de DB.
-        console.log(`Buscando usuario con email: ${email}`);
-        return { _id: 'simulacion_id', email: email }; // Simulación de usuario encontrado
+// ------------------------------------------------------------------
+// CONFIGURACIÓN DE NODEMAILER (Gmail)
+// ------------------------------------------------------------------
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        // Usa las variables de entorno para tus credenciales de Gmail
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     },
-    // ⚠️ DEBES MODIFICAR: Guardar el token y la expiración en la DB.
-    updateUserToken: async (email, token, expiry) => { 
-        // Ejemplo: await UserModel.updateOne({ email }, { resetPasswordToken: token, resetPasswordExpires: expiry });
-        console.log(`DB: Token ${token} guardado para ${email}`);
-    },
-    // ⚠️ DEBES MODIFICAR: Buscar usuario por token.
-    findUserByToken: async (token) => { 
-        // Ejemplo: const user = await UserModel.findOne({ resetPasswordToken: token, resetPasswordExpires: { $gt: Date.now() } });
-        // Simulación:
-        if (token === 'fake-token-123') { // Usamos un token fijo para la simulación
-             return { email: 'simulacion@test.com', resetPasswordToken: 'fake-token-123', resetPasswordExpires: Date.now() + 3600000 };
-        }
-        return null;
-    },
-    // ⚠️ DEBES MODIFICAR: Actualizar la contraseña y limpiar el token.
-    updateUserPassword: async (email, newHash) => { 
-        // Ejemplo: await UserModel.updateOne({ email }, { password: newHash, resetPasswordToken: null, resetPasswordExpires: null });
-        console.log(`DB: Contraseña actualizada y token limpiado para ${email}`);
-    }
-};
-// -----------------------------------------------------------------
+});
 
-// ==========================================================
-// ENDPOINT 1: /forgot (Solicitar envío de correo)
-// ==========================================================
-router.post('/forgot', async (req, res) => {
+// FUNCIÓN HANDLER PRINCIPAL DE VERCELL
+export default async (req, res) => {
+    // 1. Verificación de método HTTP
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+
     const { email } = req.body;
 
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    // 2. Comprobación de variables de entorno críticas
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
+        console.error("FATAL: Missing critical environment variables.");
+        return res.status(500).json({ 
+            message: 'Internal Server Error: Missing critical environment variables.' 
+        });
+    }
+
     try {
-        const user = await DB.findByEmail(email);
+        // 3. VERIFICACIÓN DE CORREO EN NEON
+        const result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+        const user = result.rows[0];
 
-        if (!user || !user.email) {
-            // Respuesta segura (evita revelar emails registrados)
-            return res.status(200).json({ message: 'Si el correo existe en nuestro sistema, te enviaremos un enlace de restablecimiento.' });
+        if (!user) {
+            // Respuesta segura (evita la enumeración de usuarios)
+            return res.status(200).json({ message: 'Si el correo existe en nuestro sistema, se te enviará un enlace de restablecimiento.' });
         }
-
-        const token = crypto.randomBytes(20).toString('hex');
-        const tokenExpiry = Date.now() + 3600000; // 1 hora
         
-        await DB.updateUserToken(user.email, token, tokenExpiry);
+        const userId = user.id;
 
-        // ⚠️ Ajusta la URL de `reset.html` según tu estructura.
-        const resetUrl = `http://localhost:3000/pages/auth/reset.html?token=${token}`; 
+        // 4. Generar Token JWT (expira en 1 hora)
+        const token = jwt.sign(
+            { id: userId }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '1h' }
+        );
+        
+        const expirationDate = new Date(Date.now() + 3600000); // 1 hora
 
+        // 5. Guardar el token y la expiración en la BD de Neon
+        await pool.query(
+            // Asumiendo que las columnas son 'reset_token' y 'reset_token_expires'
+            'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+            [token, expirationDate, userId]
+        );
+
+        // 6. Configurar la URL de Restablecimiento
+        // ⚠️ IMPORTANTE: Reemplaza con el dominio real de tu aplicación (ej: https://tudominio.com)
+        const resetURL = `${req.headers.origin || 'http://localhost:3000'}/pages/auth/reset/reset.html?token=${token}`;
+        
+        // 7. Configurar y Enviar el Correo
         const mailOptions = {
+            from: `Tu Aplicación <${process.env.EMAIL_USER}>`,
             to: user.email,
-            from: 'tu_correo_de_envio@gmail.com',
-            subject: 'Restablecer Contraseña',
-            html: `<p>Haz clic en el enlace para restablecer tu contraseña. Caduca en 1 hora:</p>
-                   <a href="${resetUrl}">Restablecer Contraseña</a>`
+            subject: 'Solicitud de Restablecimiento de Contraseña',
+            html: `
+                <p>Hola,</p>
+                <p>Haz clic en el enlace para crear una nueva contraseña:</p>
+                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
+                    Restablecer Contraseña
+                </a>
+                <p style="margin-top: 20px;">Este enlace caduca en 1 hora.</p>
+            `,
         };
 
         await transporter.sendMail(mailOptions);
-        res.status(200).json({ message: 'Correo enviado. Revisa tu bandeja de entrada.' });
-        
-    } catch (err) {
-        // Esto captura errores de DB o FALLOS DE NODEMAILER.
-        console.error('Error en /forgot:', err); 
-        // 500 es apropiado para un fallo interno, como el envío de correo.
-        res.status(500).json({ message: 'Error interno del servidor al procesar la solicitud. ' + err.message });
+
+        return res.status(200).json({ message: 'Correo enviado. Revisa tu bandeja de entrada.' });
+
+    } catch (error) {
+        console.error('FATAL ERROR en forgotPassword:', error);
+        // Si hay un fallo de DB o Nodemailer, devolvemos 500 JSON.
+        return res.status(500).json({ message: 'Error interno del servidor. Inténtalo de nuevo.' });
     }
-});
-
-// ==========================================================
-// ENDPOINT 2: /reset (Restablecer la contraseña con el token)
-// ==========================================================
-router.post('/reset', async (req, res) => {
-    const { token, newPassword } = req.body;
-
-    try {
-        const user = await DB.findUserByToken(token);
-
-        if (!user || user.resetPasswordExpires < Date.now()) {
-            return res.status(400).json({ message: 'El token no es válido o ha expirado.' });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
-        await DB.updateUserPassword(user.email, hashedPassword); 
-        
-        res.status(200).json({ message: 'Contraseña restablecida con éxito.' });
-    } catch (err) {
-        console.error('Error en /reset:', err);
-        res.status(500).json({ message: 'Error al restablecer la contraseña.' });
-    }
-});
-
-export default router;
+};
