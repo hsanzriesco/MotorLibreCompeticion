@@ -78,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         sendResetEmailBtn.addEventListener("click", async () => {
             const email = resetEmailInput.value.trim();
+            const apiUrl = "/api/forgotPassword";
 
             if (!email) {
                 mostrarAlerta("Por favor, introduce tu correo electrónico.", "aviso");
@@ -88,19 +89,38 @@ document.addEventListener("DOMContentLoaded", () => {
             sendResetEmailBtn.textContent = "Enviando...";
 
             try {
-                const res = await fetch("/api/forgotPassword", {
+                const res = await fetch(apiUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email }),
                 });
 
+                // Intentar parsear el JSON de la respuesta
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    // Si no es JSON, asumir un error genérico del servidor
+                    console.error("Respuesta no JSON:", await res.text());
+                    mostrarAlerta("Error de servidor inesperado.", "error");
+                    return;
+                }
+
+
                 if (res.ok || res.status === 200) {
-                    mostrarAlerta("Email enviado, revisa la bandeja de spam", "exito");
+                    // Éxito: Código 200
+                    mostrarAlerta("Si el correo está registrado, recibirás un enlace de restablecimiento en breve. Revisa tu bandeja de spam.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
+                } else if (res.status === 400) {
+                    // Error de validación de formato (e.g., falta @).
+                    mostrarAlerta(data.message, "aviso");
+                } else if (res.status === 404) {
+                    // Error: Email no existe en la BD.
+                    mostrarAlerta(data.message, "error");
                 } else {
-                    const errorData = await res.json();
-                    mostrarAlerta(errorData.message || "Error al solicitar el restablecimiento. Inténtalo más tarde.", "error");
+                    // Otros errores (500, etc.)
+                    mostrarAlerta(data.message || "Error al solicitar el restablecimiento. Inténtalo más tarde.", "error");
                 }
             } catch (err) {
                 console.error("Error de conexión al solicitar restablecimiento:", err);
