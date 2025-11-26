@@ -12,9 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const token = urlParams.get('token');
 
     if (!token) {
-        // Alerta de error si no hay token en la URL
+        // Usa 'error' si el token falta en la URL
         mostrarAlerta("Token de restablecimiento no encontrado. Asegúrate de usar el enlace completo enviado a tu email.", "error");
-        if (form) form.style.display = 'none'; 
+        if (form) form.style.display = 'none';
         return;
     }
 
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const newPassword = newPasswordInput.value.trim();
             const confirmPassword = confirmPasswordInput.value.trim();
 
-            // 2. Validación de campos (Usa 'aviso')
+            // 2. Validación de campos (Usa 'aviso' para advertencias de usuario)
             if (!newPassword || !confirmPassword) {
                 mostrarAlerta("Por favor, completa ambos campos de contraseña.", "aviso");
                 return;
@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ token, newPassword }),
                 });
 
-                // Lógica robusta para manejar JSON o texto plano (para evitar el SyntaxError)
+                // Lógica robusta para evitar SyntaxError al leer la respuesta
                 const responseBody = await res.text();
                 let result = {};
 
@@ -61,35 +61,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     try {
                         result = JSON.parse(responseBody);
                     } catch (e) {
-                        // El servidor devolvió algo que NO era JSON (ej. 500 crudo)
                         console.error("Error al parsear JSON:", e, "Respuesta:", responseBody);
                         mostrarAlerta(`Error del servidor (${res.status}). Respuesta inesperada.`, "error");
-                        return; 
+                        return;
                     }
                 }
 
                 if (res.ok) {
-                    // Éxito (Status 200-299)
-                    // Utiliza el tipo 'exito'
+                    // Éxito: Usa 'exito'
                     mostrarAlerta(result.message || "¡Contraseña restablecida con éxito! Serás redirigido al inicio de sesión.", "exito");
-                    
-                    // Limpiar campos y redirigir
+
                     newPasswordInput.value = '';
                     confirmPasswordInput.value = '';
-                    
+
                     setTimeout(() => {
+                        // Redirigir al login después de un breve retraso
                         window.location.href = "../login/login.html";
                     }, 2000);
-                    
+
                 } else {
-                    // Fallo (Status 4xx o 5xx)
-                    // Utiliza el tipo 'error'
+                    // Fallo del Servidor: Usa 'error'
                     const errorMessage = result.message || `Error del servidor (${res.status}). Por favor, inténtalo de nuevo.`;
                     mostrarAlerta(errorMessage, "error");
                 }
 
             } catch (err) {
-                // Fallo de conexión de red (No se pudo llegar al servidor)
+                // Fallo de Conexión: Usa 'error'
                 console.error("Error de conexión al restablecer la contraseña:", err);
                 mostrarAlerta("Error de conexión con el servidor. Por favor, inténtalo más tarde.", "error");
             } finally {
