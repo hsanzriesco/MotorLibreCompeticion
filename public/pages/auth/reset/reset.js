@@ -4,6 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const newPasswordInput = document.getElementById("newPassword");
     const confirmPasswordInput = document.getElementById("confirmPassword");
 
+    // ⭐⭐ AGREGADO: Referencias para el toggle de visibilidad (asumiendo que existen en reset.html)
+    const toggleNewPassword = document.getElementById("toggleNewPassword");
+    const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
+
     // Utilizamos la función global 'mostrarAlerta' de alertas.js
     const mostrarAlerta = window.mostrarAlerta;
 
@@ -18,6 +22,39 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    // ⭐⭐⭐ FUNCIÓN DE VALIDACIÓN COPIADA DE register.js ⭐⭐⭐
+    function validatePassword(password) {
+        const lengthOK = password.length >= 8 && password.length <= 12;
+        const upperCaseOK = /[A-Z]/.test(password);
+        const numberOK = /[0-9]/.test(password);
+        const symbolOK = /[^A-Za-z0-9]/.test(password);
+
+        if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
+        if (!upperCaseOK) return "Debe contener al menos una letra mayúscula.";
+        if (!numberOK) return "Debe incluir al menos un número.";
+        if (!symbolOK) return "Debe incluir al menos un símbolo.";
+        return null;
+    }
+
+    // ⭐⭐ AGREGADO: Función de toggle (copiada de register.js)
+    function setupPasswordToggle(inputElement, iconElement) {
+        if (!iconElement) return; // Si el icono no existe, salimos
+        iconElement.addEventListener('click', () => {
+            const type = inputElement.getAttribute('type') === 'password' ? 'text' : 'password';
+            inputElement.setAttribute('type', type);
+            iconElement.classList.toggle('bi-eye');
+            iconElement.classList.toggle('bi-eye-slash');
+        });
+    }
+
+    if (newPasswordInput && toggleNewPassword) {
+        setupPasswordToggle(newPasswordInput, toggleNewPassword);
+    }
+    if (confirmPasswordInput && toggleConfirmPassword) {
+        setupPasswordToggle(confirmPasswordInput, toggleConfirmPassword);
+    }
+    // ⭐⭐ FIN AGREGADO
+
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -25,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const newPassword = newPasswordInput.value.trim();
             const confirmPassword = confirmPasswordInput.value.trim();
 
-            // 2. Validación de campos (Usa 'aviso' para advertencias de usuario)
+            // 2. Validación de campos
             if (!newPassword || !confirmPassword) {
                 mostrarAlerta("Por favor, completa ambos campos de contraseña.", "aviso");
                 return;
@@ -36,10 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            if (newPassword.length < 8) {
-                mostrarAlerta("La contraseña debe tener al menos 8 caracteres.", "aviso");
+            // ⭐⭐ AGREGADO: Validación de requisitos de contraseña
+            const passwordError = validatePassword(newPassword);
+            if (passwordError) {
+                mostrarAlerta(passwordError, "error");
                 return;
             }
+            // ⭐⭐ FIN AGREGADO
 
             const submitButton = form.querySelector('button[type="submit"]');
             submitButton.disabled = true;
