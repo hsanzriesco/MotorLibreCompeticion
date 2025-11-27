@@ -223,133 +223,99 @@
 
 
   <script>
-
     document.addEventListener("DOMContentLoaded", () => {
-
-      // ⭐ NUEVO: Referencias al modal y al botón de confirmación
-
+      // ⭐ Referencias al modal y al botón de confirmación
       const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
 
-      const logoutConfirmModal = new bootstrap.Modal(logoutConfirmModalEl);
+      // Se inicializa el modal solo si el elemento existe
+      const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
 
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
-
-
       // ⭐ Se buscan en ambos storage para mayor robustez
-
       const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-
       const usuario = storedUser ? JSON.parse(storedUser) : null;
 
-
-
       const bienvenida = document.getElementById("bienvenida");
-
       const userName = document.getElementById("user-name");
-
       const loginIcon = document.getElementById("login-icon");
-
       const logoutBtn = document.getElementById("logout-btn");
 
 
-
-
-
       if (usuario) {
-
+        // USUARIO LOGUEADO
         bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
-
         userName.textContent = usuario.name;
 
+        // ⭐ Muestra el nombre y oculta el ícono de login
         userName.style.display = "inline";
-
         loginIcon.style.display = "none";
 
-        logoutBtn.style.display = "block"; // Asegura que el botón de logout es visible
-
-
+        logoutBtn.style.display = "block";
 
         // ⭐ Si es admin, asegura la redirección al panel
-
         if (usuario.role === "admin") {
-
           document.getElementById("logo-link").href = "./pages/dashboard/admin/admin.html";
-
         }
 
-
-
       } else {
-
+        // NO HAY USUARIO LOGUEADO
         userName.style.display = "none";
 
-        loginIcon.style.display = "inline";
+        // ⭐ IMPORTANTE: Forzamos la visibilidad del ícono de login
+        // Usamos "block" por si "inline" está siendo sobrescrito por tu CSS
+        loginIcon.style.display = "inline"; // Intenta con inline primero (como en tu código original)
+        // Si sigue sin verse, prueba con: loginIcon.style.display = "block";
 
-        logoutBtn.style.display = "none"; // Oculta el botón de logout si no hay sesión
-
+        logoutBtn.style.display = "none"; // Oculta el botón de logout
       }
-
-
 
       // 🔑 1. Mostrar el modal al hacer clic en el botón del menú
-
       if (logoutBtn) {
-
         logoutBtn.addEventListener("click", (e) => {
-
           e.preventDefault();
 
-          logoutConfirmModal.show();
+          // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado
+          if (!usuario) {
+            mostrarAlerta("❌ No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
+
+            const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+            if (offcanvasMenu) offcanvasMenu.hide();
+            return;
+          }
+
+          // Si hay usuario, mostrar el modal de confirmación
+          if (logoutConfirmModal) {
+            logoutConfirmModal.show();
+          }
 
           // Ocultar el offcanvas al abrir el modal (mejor UX)
-
           const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-
           if (offcanvasMenu) offcanvasMenu.hide();
-
         });
-
       }
 
-
-
       // 🔑 2. Cerrar sesión al confirmar en el modal
-
       if (btnConfirmLogout) {
-
         btnConfirmLogout.addEventListener("click", () => {
 
-          logoutConfirmModal.hide(); // Ocultar el modal
-
-
+          if (logoutConfirmModal) {
+            logoutConfirmModal.hide(); // Ocultar el modal
+          }
 
           // Limpiar la sesión (usando ambos)
-
           sessionStorage.removeItem("usuario");
-
           localStorage.removeItem("usuario");
-
-
 
           mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
-
-
           // Redirigir
-
           setTimeout(() => {
-
             window.location.href = "./pages/auth/login/login.html";
-
           }, 1500);
-
         });
-
       }
-
     });
-
   </script>
 
 
