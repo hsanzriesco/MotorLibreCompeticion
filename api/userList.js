@@ -2,7 +2,7 @@
 // Maneja GET (listar), POST (crear con hashing), y DELETE
 
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // <-- ¡NECESARIO PARA HASHEAR!
+import bcrypt from "bcryptjs";
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -11,10 +11,10 @@ const pool = new Pool({
 
 export default async function handler(req, res) {
     const { method } = req;
-    
+
     try {
         // =================================================================================
-        // GET: LISTAR TODOS LOS USUARIOS (Llamado por users.js al cargar)
+        // GET: LISTAR TODOS LOS USUARIOS
         // =================================================================================
         if (method === "GET") {
             const result = await pool.query(
@@ -22,9 +22,9 @@ export default async function handler(req, res) {
             );
             return res.status(200).json({ success: true, data: result.rows });
         }
-        
+
         // =================================================================================
-        // POST: CREAR NUEVO USUARIO (Llamado por users.js desde el modal de administrador)
+        // POST: CREAR NUEVO USUARIO (Con HASHING de contraseña)
         // =================================================================================
         if (method === "POST") {
             const { name, email, password, role } = req.body;
@@ -70,18 +70,14 @@ export default async function handler(req, res) {
 
             return res.status(200).json({ success: true, message: "Usuario eliminado correctamente." });
         }
-        
-        // =================================================================================
-        // PUT: ACTUALIZAR (La actualización de contraseña/nombre debe estar en userAction.js,
-        // pero lo dejamos aquí si tu cliente lo espera)
-        // =================================================================================
-         if (method === "PUT") {
-             // Tu cliente (users.js) no parece enviar la acción "PUT" a /api/userList,
-             // solo "POST" y "DELETE", pero si quieres agregar la lógica de actualización aquí,
-             // solo maneja name/email/role y deja la contraseña para userAction.js.
-             return res.status(405).json({ success: false, message: "Método PUT no implementado en userList.js." });
-         }
 
+        // =================================================================================
+        // PUT: ACTUALIZAR (Placeholder)
+        // =================================================================================
+        if (method === "PUT") {
+            // Este método se deja aquí para mostrar que no está implementado en este archivo.
+            return res.status(405).json({ success: false, message: "Método PUT no implementado en userList.js." });
+        }
 
         // Método no permitido
         return res.status(405).json({ success: false, message: "Método no permitido." });

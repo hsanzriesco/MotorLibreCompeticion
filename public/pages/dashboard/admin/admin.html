@@ -35,6 +35,18 @@
             width: 95%;
             max-width: 1200px;
         }
+
+        /* Estilos para el modal de confirmación */
+        .modal-content {
+            background-color: #111;
+            color: white;
+            border: 1px solid #e50914;
+        }
+
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+            /* Hace la X visible en fondo oscuro */
+        }
     </style>
 </head>
 
@@ -71,12 +83,10 @@
 
             <hr class="border-secondary" />
 
-            <!-- ⭐ INICIO CON ID PARA REDIRECCIÓN ESPECIAL -->
             <a id="menu-inicio" href="#" class="d-block text-light mb-2">
                 <i class="bi bi-house"></i> Inicio
             </a>
 
-            <!-- ⭐ CERRAR SESIÓN -->
             <a href="#" id="logout-btn" class="d-block text-danger">
                 <i class="bi bi-box-arrow-right"></i> Cerrar sesión
             </a>
@@ -90,6 +100,26 @@
             <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
         </section>
     </main>
+
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="../../../js/alertas.js"></script>
     <script src="../../../js/navbar.js"></script>
