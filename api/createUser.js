@@ -1,5 +1,5 @@
 // api/createUser.js
-// Archivo corregido con Hasheo de Contraseñas para el registro.
+// Versión revisada para solucionar 'syntax error at or near "**"'
 
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
@@ -30,21 +30,24 @@ export default async function handler(req, res) {
         .json({ success: false, message: "Faltan campos requeridos" });
     }
 
-    // ⚠️ Recomendación: Mover la creación de la tabla a un script de inicialización
-    // Dejo el CREATE TABLE AQUÍ por si no lo haces en otro sitio:
+    // ⚠️ ATENCIÓN: La creación de la tabla podría causar el error si hay un typo.
+    // Asumiendo que la tabla ya existe y tiene las columnas NOT NULL relajadas (como vimos en el log).
+    // Si la eliminas de aquí, el error desaparece si era un typo en esta consulta.
+    /*
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) UNIQUE,
-        email VARCHAR(100) UNIQUE,
-        password TEXT NOT NULL,  
-        role VARCHAR(50) DEFAULT 'user',
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE,
+        email VARCHAR(100) UNIQUE,
+        password TEXT NOT NULL,  
+        role VARCHAR(50) DEFAULT 'user',
         reset_token TEXT,
         reset_token_expires TIMESTAMP,
         car_garages VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    */
 
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1 OR name = $2",
@@ -63,9 +66,10 @@ export default async function handler(req, res) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Consulta INSERT limpia (anteriormente línea 45)
     const result = await pool.query(
       "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-      [name, email, hashedPassword, roleToAssign] // ⬅️ USAR EL HASHED PASSWORD
+      [name, email, hashedPassword, roleToAssign]
     );
     console.log(`Usuario ${name} insertado en DB.`);
 
