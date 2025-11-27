@@ -1,4 +1,5 @@
 import pkg from "pg";
+import bcrypt from "bcryptjs";
 
 const { Pool } = pkg;
 let pool;
