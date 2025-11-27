@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
+import bcrypt from "bcryptjs";
 
 export const config = {
   api: { bodyParser: false },
