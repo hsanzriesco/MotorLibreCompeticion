@@ -166,7 +166,7 @@
         logoutBtn.addEventListener("click", (e) => {
           e.preventDefault();
 
-          // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado
+          // 🛑 VALIDACIÓN AGREGADA: Mostrar error si no hay usuario logueado
           if (!usuario) {
             mostrarAlerta("❌ No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
 
