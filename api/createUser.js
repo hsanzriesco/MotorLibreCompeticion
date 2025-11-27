@@ -1,8 +1,8 @@
 // api/createUser.js
-// Archivo corregido con Hasheo de Contraseñas para el registro público o creación base.
+// Archivo corregido con Hasheo de Contraseñas para el registro.
 
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // ⬅️ IMPORTADO para hashear
+import bcrypt from "bcryptjs";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     console.log("--- REGISTRO INICIADO (SEGURO) ---");
     const { name, email, password } = req.body;
 
-    // Asignamos un rol por defecto (ej. 'user') si no se proporciona
+    // Si no viene el rol, asignamos 'user' por defecto
     const roleToAssign = req.body.role || 'user';
 
     if (!name || !email || !password) {
@@ -30,7 +30,8 @@ export default async function handler(req, res) {
         .json({ success: false, message: "Faltan campos requeridos" });
     }
 
-    // Asegurarse de que la tabla existe (se recomienda mover esto a migraciones)
+    // ⚠️ Recomendación: Mover la creación de la tabla a un script de inicialización
+    // Dejo el CREATE TABLE AQUÍ por si no lo haces en otro sitio:
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -38,6 +39,9 @@ export default async function handler(req, res) {
         email VARCHAR(100) UNIQUE,
         password TEXT NOT NULL,  
         role VARCHAR(50) DEFAULT 'user',
+        reset_token TEXT,
+        reset_token_expires TIMESTAMP,
+        car_garages VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);

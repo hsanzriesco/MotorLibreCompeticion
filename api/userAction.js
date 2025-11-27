@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     try {
 
         // =================================================================================
-        // 1. ACTUALIZACIÓN DE CONTRASEÑA (Ahora hashea la nueva contraseña)
+        // 1. ACTUALIZACIÓN DE CONTRASEÑA (Hashea la nueva contraseña)
         // =================================================================================
         if (method === "PUT" && action === "updatePassword") {
             const body = await getBody(req);
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-            await pool.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, id]); // ⬅️ USAMOS EL HASH
+            await pool.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, id]);
             return res
                 .status(200)
                 .json({ success: true, message: "Contraseña actualizada correctamente." });

@@ -2,7 +2,7 @@
 // Archivo corregido para verificar contraseñas hasheadas.
 
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // ⬅️ IMPORTADO para comparar el hash
+import bcrypt from "bcryptjs";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -39,7 +39,6 @@ export default async function handler(req, res) {
     const hashedPassword = user.password; // El hash guardado en la DB
 
     // 2. COMPARAR la contraseña ingresada (texto plano) con el hash almacenado
-    // 🔑 LÓGICA CLAVE: Usamos bcrypt.compare()
     const match = await bcrypt.compare(password, hashedPassword);
 
     // Si la comparación falla
