@@ -1,8 +1,8 @@
 // api/createUser.js
-// Archivo corregido con Hasheo de Contraseñas
+// Archivo corregido con Hasheo de Contraseñas para el registro público o creación base.
 
 import { Pool } from "pg";
-import bcrypt from "bcryptjs"; // ⬅️ 1. IMPORTAR bcrypt
+import bcrypt from "bcryptjs"; // ⬅️ IMPORTADO para hashear
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -20,12 +20,17 @@ export default async function handler(req, res) {
     console.log("--- REGISTRO INICIADO (SEGURO) ---");
     const { name, email, password } = req.body;
 
+    // Asignamos un rol por defecto (ej. 'user') si no se proporciona
+    const roleToAssign = req.body.role || 'user';
+
     if (!name || !email || !password) {
       console.error("Error 400: Campos requeridos faltantes.");
       return res
         .status(400)
         .json({ success: false, message: "Faltan campos requeridos" });
-    } // Es buena práctica crear la tabla si no existe, pero en producción esto se haría con migraciones.
+    }
+
+    // Asegurarse de que la tabla existe (se recomienda mover esto a migraciones)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -48,13 +53,15 @@ export default async function handler(req, res) {
         success: false,
         message: "El nombre o correo ya están registrados.",
       });
-    } // ⬇️ 2. HASHEO DE CONTRASEÑA
+    }
 
+    // 🔑 HASHEO DE CONTRASEÑA
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt); // ⬆️ Ahora 'hashedPassword' es el valor seguro para guardar.
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const result = await pool.query(
       "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-      [name, email, hashedPassword, "user"] // ⬅️ 3. USAR EL HASHED PASSWORD AQUÍ
+      [name, email, hashedPassword, roleToAssign] // ⬅️ USAR EL HASHED PASSWORD
     );
     console.log(`Usuario ${name} insertado en DB.`);
 

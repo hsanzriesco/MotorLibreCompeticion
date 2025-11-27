@@ -1,4 +1,5 @@
 // api/loginUser.js
+// Archivo corregido para verificar contraseñas hasheadas.
 
 import { Pool } from "pg";
 import bcrypt from "bcryptjs"; // ⬅️ IMPORTADO para comparar el hash
@@ -39,16 +40,15 @@ export default async function handler(req, res) {
 
     // 2. COMPARAR la contraseña ingresada (texto plano) con el hash almacenado
     // 🔑 LÓGICA CLAVE: Usamos bcrypt.compare()
-    const match = await bcrypt.compare(password, hashedPassword); 
+    const match = await bcrypt.compare(password, hashedPassword);
 
     // Si la comparación falla
     if (!match) {
-        console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
-        return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+      console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
+      return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     }
-    
+
     // 3. Respuesta Exitosa
-    // NOTA: Se recomienda generar un JWT o una sesión aquí para mantener al usuario logueado.
     console.log(`LOGIN EXITOSO para ${username}.`);
     return res.status(200).json({
       success: true,
