@@ -12,7 +12,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
         sessionStorage.removeItem("usuario");
-        alert("Acceso denegado. Inicia sesión como administrador.");
+        // 🚨 ALERTA: Acceso denegado
+        mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000); 
         setTimeout(() => {
             window.location.href = "/pages/auth/login/login.html";
         }, 1500);
@@ -62,38 +63,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const clearCarPhotoBtn = document.getElementById("clearCarPhotoBtn");
 
 
+    // ❌ SE ELIMINA LA FUNCIÓN OBSOLETA showConfirmAlert, 
+    // Y AHORA SE USA mostrarConfirmacion() de alertas.js
+    /*
     function showConfirmAlert(message, onConfirm) {
-        let confirmBox = document.getElementById("customConfirmContainer")?.querySelector(".custom-confirm");
-
-        if (!confirmBox) {
-            confirmBox = document.createElement("div");
-            confirmBox.className = "custom-confirm";
-            const container = document.getElementById("customConfirmContainer");
-            if (container) container.appendChild(confirmBox);
-        }
-
-        confirmBox.innerHTML = `
-            <div class="confirm-content">
-                <p>${message}</p>
-                <div class="buttons">
-                    <button id="confirmYes" class="btn btn-danger">Sí</button>
-                    <button id="confirmNo" class="btn btn-secondary">No</button>
-                </div>
-            </div>
-        `;
-        confirmBox.classList.add("show");
-
-        document.getElementById("confirmNo").onclick = () => {
-            confirmBox.classList.remove("show");
-            setTimeout(() => confirmBox.innerHTML = "", 300);
-        };
-
-        document.getElementById("confirmYes").onclick = () => {
-            confirmBox.classList.remove("show");
-            setTimeout(() => confirmBox.innerHTML = "", 300);
-            onConfirm();
-        };
+        // ... Lógica antigua ...
     }
+    */
 
 
     async function fetchEvents() {
@@ -114,7 +90,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             }));
         } catch (e) {
             console.error("Error al obtener eventos:", e);
-            alert("Error al cargar los eventos: " + e.message);
+            // 🚨 ALERTA: Error al cargar eventos
+            mostrarAlerta("Error al cargar los eventos: " + e.message, "error"); 
             return [];
         }
     }
@@ -166,12 +143,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (event.start) {
                     const startDate = new Date(event.start);
                     startDateInput.value = startDate.toISOString().split("T")[0];
-                    startTimeInput.value = startDate.toTimeString().slice(0, 5);
+                    // Asegurar que el tiempo esté en formato HH:MM (slice(0, 5))
+                    startTimeInput.value = startDate.toTimeString().slice(0, 5); 
                 }
 
                 if (event.end) {
                     const endDate = new Date(event.end);
-                    endTimeInput.value = endDate.toTimeString().slice(0, 5);
+                    // Asegurar que el tiempo esté en formato HH:MM (slice(0, 5))
+                    endTimeInput.value = endDate.toTimeString().slice(0, 5); 
                 }
 
                 deleteEventBtn.style.display = "inline-block";
@@ -217,7 +196,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const endTime = endTimeInput.value;
 
             if (!titleInput.value.trim() || !date || !startTime || !endTime) {
-                alert("Completa todos los campos obligatorios");
+                // 🚨 ALERTA: Campos incompletos
+                mostrarAlerta("Completa todos los campos obligatorios", "advertencia"); 
                 return;
             }
 
@@ -249,36 +229,47 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.message || "Fallo en la respuesta del servidor.");
 
-                alert(id ? "Evento actualizado correctamente" : "Evento creado correctamente");
+                // 🟢 ALERTA: Éxito
+                mostrarAlerta(id ? "Evento actualizado correctamente" : "Evento creado correctamente", "exito");
                 eventModal.hide();
                 calendar.refetchEvents();
             } catch (e) {
                 console.error("Error al guardar:", e);
-                alert("Error al guardar evento: " + e.message);
+                // 🔴 ALERTA: Error al guardar
+                mostrarAlerta("Error al guardar evento: " + e.message, "error"); 
             }
         });
 
         deleteEventBtn.addEventListener("click", async () => {
             if (!selectedEvent || !selectedEvent.id) {
-                alert("No hay evento seleccionado");
+                // 🚨 ALERTA: No hay evento seleccionado
+                mostrarAlerta("No hay evento seleccionado", "info"); 
                 return;
             }
 
-            showConfirmAlert("¿Eliminar este evento?", async () => {
+            // ❓ CONFIRMACIÓN: Eliminar evento
+            const confirmado = await mostrarConfirmacion("¿Estás seguro de que quieres eliminar este evento?");
+
+            if (confirmado) {
                 try {
                     const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
                     const data = await res.json();
                     if (!data.success) throw new Error();
 
-                    alert("Evento eliminado correctamente");
+                    // 🟢 ALERTA: Éxito
+                    mostrarAlerta("Evento eliminado correctamente", "exito");
                     eventModal.hide();
                     calendar.refetchEvents();
                 } catch {
-                    alert("Error al eliminar evento");
+                    // 🔴 ALERTA: Error al eliminar
+                    mostrarAlerta("Error al eliminar evento", "error"); 
                 }
-            });
+            }
         });
     }
+    
+    // --- Lógica de Coche ---
+    
     if (carGarageForm && usuario) {
 
         if (carPhotoFileInput) {
@@ -316,7 +307,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const userId = usuario.id;
 
             if (!carNameInput.value.trim() || !userId) {
-                alert("El nombre del coche y el usuario son obligatorios.");
+                // 🚨 ALERTA: Campos obligatorios
+                mostrarAlerta("El nombre del coche y el usuario son obligatorios.", "advertencia"); 
                 return;
             }
 
@@ -351,25 +343,33 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const data = await res.json();
                 if (!data.ok) throw new Error(data.msg || "Fallo en la respuesta del servidor.");
 
-                alert(id ? "Coche actualizado correctamente" : "Coche añadido correctamente");
+                // 🟢 ALERTA: Éxito
+                mostrarAlerta(id ? "Coche actualizado correctamente" : "Coche añadido correctamente", "exito");
 
             } catch (e) {
                 console.error("Error al guardar el coche:", e);
-                alert("Error al guardar el coche: " + e.message);
+                // 🔴 ALERTA: Error al guardar
+                mostrarAlerta("Error al guardar el coche: " + e.message, "error");
             }
         });
     }
 
+    // --- Lógica de Cerrar Sesión ---
+    
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
+        logoutBtn.addEventListener("click", async (e) => {
             e.preventDefault();
-            showConfirmAlert("¿Deseas cerrar sesión?", () => {
+            
+            // ❓ CONFIRMACIÓN: Cerrar sesión
+            const confirmado = await mostrarConfirmacion("¿Deseas cerrar sesión?");
+
+            if (confirmado) {
                 sessionStorage.removeItem("usuario");
                 setTimeout(() => {
                     window.location.href = "/pages/auth/login/login.html";
                 }, 800);
-            });
+            }
         });
     }
 });
