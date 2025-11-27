@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
         sessionStorage.removeItem("usuario");
         // 🚨 ALERTA: Acceso denegado
-        mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000); 
+        mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000);
         setTimeout(() => {
             window.location.href = "/pages/auth/login/login.html";
         }, 1500);
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const deleteEventBtn = document.getElementById("deleteEventBtn");
 
     let selectedEvent = null;
-
+    let eventInitialState = null; // 🔑 NUEVO: Para guardar el estado inicial
 
     const carGarageForm = document.getElementById("carGarageForm");
     const carModalEl = document.getElementById("carGarageModal");
@@ -62,14 +62,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     const carPhotoContainer = document.getElementById("carPhotoContainer");
     const clearCarPhotoBtn = document.getElementById("clearCarPhotoBtn");
 
+    // --- FUNCIONES DE ESTADO ---
 
-    // ❌ SE ELIMINA LA FUNCIÓN OBSOLETA showConfirmAlert, 
-    // Y AHORA SE USA mostrarConfirmacion() de alertas.js
-    /*
-    function showConfirmAlert(message, onConfirm) {
-        // ... Lógica antigua ...
+    // 🔑 NUEVO: Captura el estado actual del formulario de evento
+    function captureEventState() {
+        const date = startDateInput.value;
+        const startTime = startTimeInput.value;
+        const endTime = endTimeInput.value;
+
+        return {
+            id: eventIdInput.value,
+            title: titleInput.value.trim(),
+            description: descriptionInput.value.trim(),
+            location: locationInput.value.trim(),
+            start: date && startTime ? `${date}T${startTime}` : null,
+            end: date && endTime ? `${date}T${endTime}` : null,
+            imageURL: imageURLInput.value,
+            // Nota: fileInput no se compara aquí, se maneja por separado si hay un archivo.
+        };
     }
-    */
+
+    // 🔑 NUEVO: Compara el estado actual con el estado inicial
+    function hasEventChanged() {
+        if (!eventInitialState) return true; // Si es un nuevo evento, siempre hay cambios.
+
+        const currentState = captureEventState();
+
+        // 1. Comprobar campos de texto/fechas/URL (Excluyendo el archivo)
+        const fieldsChanged =
+            currentState.title !== eventInitialState.title ||
+            currentState.description !== eventInitialState.description ||
+            currentState.location !== eventInitialState.location ||
+            currentState.start !== eventInitialState.start ||
+            currentState.end !== eventInitialState.end ||
+            currentState.imageURL !== eventInitialState.imageURL;
+
+        // 2. Comprobar si se ha seleccionado un nuevo archivo (imageFile)
+        const fileChanged = imageFileInput.files.length > 0;
+
+        return fieldsChanged || fileChanged;
+    }
+
+    // --- FIN FUNCIONES DE ESTADO ---
 
 
     async function fetchEvents() {
@@ -91,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (e) {
             console.error("Error al obtener eventos:", e);
             // 🚨 ALERTA: Error al cargar eventos
-            mostrarAlerta("Error al cargar los eventos: " + e.message, "error"); 
+            mostrarAlerta("Error al cargar los eventos: " + e.message, "error");
             return [];
         }
     }
@@ -115,6 +149,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 imageURLInput.value = "";
                 currentImageContainer.style.display = "none";
 
+                eventInitialState = captureEventState(); // 🔑 NUEVO: Capturar estado inicial (vacío)
                 eventModal.show();
             },
 
@@ -143,17 +178,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (event.start) {
                     const startDate = new Date(event.start);
                     startDateInput.value = startDate.toISOString().split("T")[0];
-                    // Asegurar que el tiempo esté en formato HH:MM (slice(0, 5))
-                    startTimeInput.value = startDate.toTimeString().slice(0, 5); 
+                    startTimeInput.value = startDate.toTimeString().slice(0, 5);
                 }
 
                 if (event.end) {
                     const endDate = new Date(event.end);
-                    // Asegurar que el tiempo esté en formato HH:MM (slice(0, 5))
-                    endTimeInput.value = endDate.toTimeString().slice(0, 5); 
+                    endTimeInput.value = endDate.toTimeString().slice(0, 5);
                 }
 
                 deleteEventBtn.style.display = "inline-block";
+                eventInitialState = captureEventState(); // 🔑 NUEVO: Capturar estado inicial (cargado)
                 eventModal.show();
             },
 
@@ -195,11 +229,32 @@ document.addEventListener("DOMContentLoaded", async () => {
             const startTime = startTimeInput.value;
             const endTime = endTimeInput.value;
 
-            if (!titleInput.value.trim() || !date || !startTime || !endTime) {
-                // 🚨 ALERTA: Campos incompletos
-                mostrarAlerta("Completa todos los campos obligatorios", "advertencia"); 
+            // 1. 🔑 NUEVO: COMPROBACIÓN DE CAMBIOS
+            if (id && !hasEventChanged()) {
+                // 🟡 ALERTA: No hay cambios
+                mostrarAlerta("No hay cambios para guardar.", "info");
+                eventModal.hide(); // Opcional: cierra el modal si no hay acción a tomar
                 return;
             }
+
+
+            if (!titleInput.value.trim() || !date || !startTime || !endTime) {
+                // 🚨 ALERTA: Campos incompletos
+                mostrarAlerta("Completa todos los campos obligatorios", "advertencia");
+                return;
+            }
+
+            // 2. 🔑 NUEVO: CONFIRMACIÓN ANTES DE GUARDAR
+            let confirmado = true;
+            if (id) { // Solo si estamos editando un evento existente
+                confirmado = await mostrarConfirmacion("¿Deseas guardar los cambios realizados en el evento?");
+            }
+
+            if (!confirmado) {
+                return;
+            }
+
+            // --- Lógica de guardado (solo si hay cambios o es evento nuevo) ---
 
             const start = `${date}T${startTime}`;
             const end = `${date}T${endTime}`;
@@ -236,14 +291,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             } catch (e) {
                 console.error("Error al guardar:", e);
                 // 🔴 ALERTA: Error al guardar
-                mostrarAlerta("Error al guardar evento: " + e.message, "error"); 
+                mostrarAlerta("Error al guardar evento: " + e.message, "error");
             }
         });
 
         deleteEventBtn.addEventListener("click", async () => {
             if (!selectedEvent || !selectedEvent.id) {
                 // 🚨 ALERTA: No hay evento seleccionado
-                mostrarAlerta("No hay evento seleccionado", "info"); 
+                mostrarAlerta("No hay evento seleccionado", "info");
                 return;
             }
 
@@ -262,14 +317,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                     calendar.refetchEvents();
                 } catch {
                     // 🔴 ALERTA: Error al eliminar
-                    mostrarAlerta("Error al eliminar evento", "error"); 
+                    mostrarAlerta("Error al eliminar evento", "error");
                 }
             }
         });
     }
-    
+
     // --- Lógica de Coche ---
-    
+
     if (carGarageForm && usuario) {
 
         if (carPhotoFileInput) {
@@ -308,7 +363,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (!carNameInput.value.trim() || !userId) {
                 // 🚨 ALERTA: Campos obligatorios
-                mostrarAlerta("El nombre del coche y el usuario son obligatorios.", "advertencia"); 
+                mostrarAlerta("El nombre del coche y el usuario son obligatorios.", "advertencia");
                 return;
             }
 
@@ -355,12 +410,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // --- Lógica de Cerrar Sesión ---
-    
+
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", async (e) => {
             e.preventDefault();
-            
+
             // ❓ CONFIRMACIÓN: Cerrar sesión
             const confirmado = await mostrarConfirmacion("¿Deseas cerrar sesión?");
 
