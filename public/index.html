@@ -2,18 +2,25 @@
 <html lang="es">
 
 <head>
+   
   <meta charset="UTF-8">
+   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Motor Libre Competición</title>
+    <title>Motor Libre Competición</title>
 
+   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+   
   <link rel="stylesheet" href="./css/style.css">
+   
   <link rel="stylesheet" href="./css/alertas.css">
+   
   <link rel="icon" type="image/png" href="./img/imagen-tfg.png">
 
 
-  <style>
+    <style>
     body {
       background-color: #111;
       color: white;
@@ -40,83 +47,89 @@
 
 <body>
 
-  <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
-    <a id="logo-link" href="./index.html" class="navbar-brand d-flex align-items-center">
-      <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
-    </a>
+        <a id="logo-link" href="./index.html" class="navbar-brand d-flex align-items-center">
+            <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+          </a>
 
-    <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center">
 
-      <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
-        <i class="bi bi-person-circle fs-4"></i>
-      </a>
+            <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
+                <i class="bi bi-person-circle fs-4"></i>
+              </a>
 
-      <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
 
-      <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"        
         data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-        <i class="bi bi-list fs-4"></i>
-      </button>
+                <i class="bi bi-list fs-4"></i>
+              </button>
 
-    </div>
-  </nav>
+          </div>
+      </nav>
 
-  <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-    <div class="offcanvas-header border-bottom border-secondary">
-      <h5 class="offcanvas-title">Menú</h5>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+          </div>
 
-    <div class="offcanvas-body">
+        <div class="offcanvas-body">
 
-      <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
-        Calendario
-      </a>
+            <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
+                Calendario
+              </a>
 
-      <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
-        Mi perfil
-      </a>
+            <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
+                Mi perfil
+              </a>
 
+           
       <hr class="border-secondary">
 
-      <a href="#" id="logout-btn" class="d-block text-danger">
-        Cerrar sesión
-      </a>
+                  <a href="#" id="logout-btn" class="d-block text-danger">
+                Cerrar sesión
+              </a>
+         
     </div>
-  </div>
+      </div>
 
-  <main class="text-center mt-5">
-    <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
-    <h4 id="bienvenida" class="mt-3 text-danger"></h4>
-  </main>
+    <main class="text-center mt-5">
+        <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
+        <h4 id="bienvenida" class="mt-3 text-danger"></h4>
+      </main>
 
-  <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+      <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"    
     aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content">
-        <div class="modal-header border-danger">
-          <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
-        </div>
-        <div class="modal-footer border-danger">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
-        </div>
-      </div>
-    </div>
-  </div>
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            aria-label="Close"></button>
+                  </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+                  </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                  </div>
+              </div>
+            </div>
+      </div>
 
+   
   <script src="./js/alertas.js"></script>
 
+   
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // ⭐ NUEVO: Referencias al modal y al botón de confirmación
+
+      // ⭐ Referencias al modal y al botón de confirmación
       const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-      const logoutConfirmModal = new bootstrap.Modal(logoutConfirmModalEl);
+      const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
       // ⭐ Se buscan en ambos storage para mayor robustez
@@ -134,7 +147,7 @@
         userName.textContent = usuario.name;
         userName.style.display = "inline";
         loginIcon.style.display = "none";
-        logoutBtn.style.display = "block"; // Asegura que el botón de logout es visible
+        logoutBtn.style.display = "block";
 
         // ⭐ Si es admin, asegura la redirección al panel
         if (usuario.role === "admin") {
@@ -142,6 +155,7 @@
         }
 
       } else {
+        // No hay usuario logueado
         userName.style.display = "none";
         loginIcon.style.display = "inline";
         logoutBtn.style.display = "none"; // Oculta el botón de logout si no hay sesión
@@ -151,7 +165,22 @@
       if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
           e.preventDefault();
-          logoutConfirmModal.show();
+
+          // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado
+          if (!usuario) {
+            mostrarAlerta("❌ No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
+
+            // Ocultar el offcanvas si está abierto
+            const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+            if (offcanvasMenu) offcanvasMenu.hide();
+            return;
+          }
+
+          // Si hay usuario, mostrar el modal de confirmación
+          if (logoutConfirmModal) {
+            logoutConfirmModal.show();
+          }
+
           // Ocultar el offcanvas al abrir el modal (mejor UX)
           const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
           if (offcanvasMenu) offcanvasMenu.hide();
@@ -161,7 +190,10 @@
       // 🔑 2. Cerrar sesión al confirmar en el modal
       if (btnConfirmLogout) {
         btnConfirmLogout.addEventListener("click", () => {
-          logoutConfirmModal.hide(); // Ocultar el modal
+
+          if (logoutConfirmModal) {
+            logoutConfirmModal.hide(); // Ocultar el modal
+          }
 
           // Limpiar la sesión (usando ambos)
           sessionStorage.removeItem("usuario");
@@ -178,6 +210,7 @@
     });
   </script>
 
+   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
