@@ -6,6 +6,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modalLoc = document.getElementById("modalLoc");
     const modalStart = document.getElementById("modalStart");
     const modalEnd = document.getElementById("modalEnd");
+    // <-- NUEVOS ELEMENTOS DEL MODAL
+    const registerBtn = document.getElementById("btn-register-event");
+    const statusSpan = document.getElementById("registration-status");
+    // ---------------------------------
     const DATE_OPTIONS = {
         year: 'numeric',
         month: 'long',
@@ -50,6 +54,86 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, 1500);
     });
 
+    // --- NUEVAS FUNCIONES DE INSCRIPCIÓN ---
+
+    async function checkRegistrationStatus(eventId, userId) {
+        if (!userId) return false;
+
+        try {
+            const res = await fetch(`/api/events?action=checkRegistration&event_id=${eventId}&user_id=${userId}`);
+            const data = await res.json();
+            return data.success && data.isRegistered;
+        } catch (error) {
+            console.error("Error al verificar inscripción:", error);
+            return false;
+        }
+    }
+
+    async function handleRegistration(eventId, userId) {
+        if (!userId) {
+            mostrarAlerta("Debes iniciar sesión para inscribirte.", 'advertencia');
+            // Redirigir si no está logueado
+            setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
+            return;
+        }
+
+        registerBtn.disabled = true;
+        statusSpan.textContent = "Inscribiendo...";
+
+        try {
+            const res = await fetch('/api/events?action=register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // El backend espera user_id y event_id en el cuerpo
+                body: JSON.stringify({
+                    user_id: userId,
+                    event_id: eventId
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                mostrarAlerta(data.message, 'exito');
+                // Actualiza el estado visual después de una inscripción exitosa
+                updateRegistrationUI(true);
+            } else {
+                mostrarAlerta(data.message || 'Error desconocido al inscribir.', 'error');
+                registerBtn.disabled = false; // Habilita el botón si falla
+                statusSpan.textContent = "";
+            }
+        } catch (error) {
+            console.error("Error de red al inscribir:", error);
+            mostrarAlerta('Error de red. Inténtalo de nuevo.', 'error');
+            registerBtn.disabled = false;
+            statusSpan.textContent = "";
+        }
+    }
+
+    function updateRegistrationUI(isRegistered) {
+        if (isRegistered) {
+            registerBtn.style.display = 'none';
+            statusSpan.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i> Estás **inscrito**';
+        } else {
+            registerBtn.style.display = 'inline-block';
+            registerBtn.disabled = false;
+            statusSpan.textContent = "";
+        }
+    }
+
+    registerBtn.addEventListener('click', (e) => {
+        const eventId = e.currentTarget.getAttribute('data-event-id');
+        if (eventId && usuario && usuario.id) {
+            handleRegistration(parseInt(eventId), usuario.id);
+        } else if (!usuario) {
+            handleRegistration(null, null); // Esto disparará la alerta de login
+        }
+    });
+
+    // ----------------------------------------
+
 
     const calendarEl = document.getElementById("calendar");
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -68,9 +152,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
         },
-        eventClick: (info) => {
+        eventClick: async (info) => { // <-- CAMBIO: Hacemos eventClick async para la verificación
             const e = info.event;
             const extendedProps = e.extendedProps;
+            const eventId = e.id; // FullCalendar usa 'id' para el ID del evento
+
             modalTitle.textContent = e.title;
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
@@ -86,10 +172,23 @@ document.addEventListener("DOMContentLoaded", async () => {
                 modalImageContainer.style.display = "none";
             }
 
+            // --- Lógica de Inscripción al abrir el modal ---
+            registerBtn.setAttribute('data-event-id', eventId);
+
+            if (usuario && usuario.id) {
+                const isRegistered = await checkRegistrationStatus(eventId, usuario.id);
+                updateRegistrationUI(isRegistered);
+            } else {
+                // Si no hay usuario logueado, muestra el botón 'Inscribirse' pero al hacer click pedirá login.
+                updateRegistrationUI(false);
+                registerBtn.disabled = false;
+            }
+            // ---------------------------------------------
+
+
             const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
             eventModal.show();
         },
     });
     calendar.render();
-
 });
