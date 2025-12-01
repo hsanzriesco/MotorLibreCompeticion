@@ -30,8 +30,28 @@ function parseMultipart(req) {
     });
 }
 
+// NUEVA FUNCIÓN AÑADIDA: Para leer el cuerpo JSON manualmente cuando bodyParser está desactivado
+function readJsonBody(req) {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            try {
+                if (!body) return resolve({}); // Objeto vacío si no hay cuerpo
+                resolve(JSON.parse(body));
+            } catch (e) {
+                reject(new Error("Error al parsear el cuerpo JSON de la solicitud."));
+            }
+        });
+    });
+}
+// FIN DE LA NUEVA FUNCIÓN
+
+
 export default async function handler(req, res) {
-    const { id, action } = req.query; // <-- CAMBIO 1: Obtener 'action'
+    const { id, action } = req.query;
     let pool;
 
     const requiredEnvVars = [
@@ -80,13 +100,13 @@ export default async function handler(req, res) {
             if (!action) {
                 const result = await client.query(
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
-                    FROM events
-                    ORDER BY start ASC`
+                    FROM events
+                    ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // <-- CAMBIO 2: Lógica GET para verificar inscripción
+            // Lógica GET para verificar inscripción
             if (action === 'checkRegistration') {
                 const { user_id, event_id } = req.query;
 
@@ -96,7 +116,7 @@ export default async function handler(req, res) {
 
                 const result = await client.query(
                     `SELECT * FROM event_registrations 
-                     WHERE user_id = $1 AND event_id = $2`,
+                     WHERE user_id = $1 AND event_id = $2`,
                     [user_id, event_id]
                 );
 
@@ -106,9 +126,11 @@ export default async function handler(req, res) {
 
 
         if (req.method === "POST") {
-            // <-- CAMBIO 3: Lógica POST para registrar inscripción
+            // Lógica POST para registrar inscripción
             if (action === 'register') {
-                const { user_id, event_id } = JSON.parse(req.body); // Asumiendo que el cuerpo es JSON plano
+                // MODIFICACIÓN CLAVE: Usar la nueva función para leer JSON
+                const jsonBody = await readJsonBody(req);
+                const { user_id, event_id } = jsonBody;
 
                 if (!user_id || !event_id) {
                     return res.status(400).json({ success: false, message: "Faltan IDs de usuario o evento." });
@@ -117,7 +139,7 @@ export default async function handler(req, res) {
                 // 1. Verificar si ya está inscrito
                 const check = await client.query(
                     `SELECT id FROM event_registrations 
-                     WHERE user_id = $1 AND event_id = $2`,
+                     WHERE user_id = $1 AND event_id = $2`,
                     [user_id, event_id]
                 );
 
@@ -128,8 +150,8 @@ export default async function handler(req, res) {
                 // 2. Insertar inscripción
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, registered_at)
-                     VALUES ($1, $2, NOW())
-                     RETURNING id`,
+                     VALUES ($1, $2, NOW())
+                     RETURNING id`,
                     [user_id, event_id]
                 );
 
@@ -172,28 +194,14 @@ export default async function handler(req, res) {
 
             let result;
 
-            if (req.method === "POST") {
+            if (!action) { // Asegúrate de que esto solo se ejecute si no es una acción específica (como 'register')
                 result = await client.query(
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING *`,
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING *`,
                     [title, description, location, start, end, finalImageUrl]
                 );
                 return res.status(201).json({ success: true, data: result.rows[0] });
-
-            } else if (req.method === "PUT") {
-                if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
-
-                result = await client.query(
-                    `UPDATE events
-                    SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6
-                    WHERE id = $7
-                    RETURNING *`,
-                    [title, description, location, start, end, finalImageUrl, id]
-                );
-
-                if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Evento no encontrado." });
-                return res.status(200).json({ success: true, data: result.rows[0] });
             }
         }
 
@@ -234,9 +242,9 @@ export default async function handler(req, res) {
 
             const result = await client.query(
                 `UPDATE events
-                SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6
-                WHERE id = $7
-                RETURNING *`,
+                SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6
+                WHERE id = $7
+                RETURNING *`,
                 [title, description, location, start, end, finalImageUrl, id]
             );
 
@@ -269,7 +277,10 @@ export default async function handler(req, res) {
             errorMessage = 'Error de formato de fecha/hora o ID inválido al intentar guardar en la DB.';
         } else if (error.code === '23505') { // Código de error de duplicidad (ej: unique constraint violation)
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
+        } else if (error.message.includes("Error al parsear el cuerpo JSON")) {
+            errorMessage = 'Error al recibir los datos de inscripción. Inténtalo de nuevo.';
         }
+
 
         return res.status(500).json({ success: false, message: errorMessage });
     } finally {
