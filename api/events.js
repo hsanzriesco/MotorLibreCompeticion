@@ -8,6 +8,30 @@ export const config = {
     },
 };
 
+// ===============================================
+// FUNCIONES DE PARSEO
+// ===============================================
+
+// Función para leer el cuerpo JSON puro (usado solo por 'register')
+function readJsonBody(req) {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            try {
+                if (!body) return resolve({});
+                resolve(JSON.parse(body));
+            } catch (e) {
+                // Capturar el error de JSON vacío o malformado
+                reject(new Error("Error al parsear el cuerpo JSON de la solicitud (Unexpected end of JSON input)."));
+            }
+        });
+    });
+}
+
+// Función para parsear Multipart/Form-Data (usado por POST/PUT para eventos con imagen)
 function parseMultipart(req) {
     return new Promise((resolve, reject) => {
         const form = formidable({
@@ -29,72 +53,50 @@ function parseMultipart(req) {
         });
     });
 }
-
-function readJsonBody(req) {
-    return new Promise((resolve, reject) => {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-        req.on('end', () => {
-            try {
-                if (!body) return resolve({});
-                resolve(JSON.parse(body));
-            } catch (e) {
-                reject(new Error("Error al parsear el cuerpo JSON de la solicitud."));
-            }
-        });
-    });
-}
-
+// ===============================================
 
 export default async function handler(req, res) {
     const { id, action } = req.query;
     let pool;
+    let client;
 
+    // 1. VERIFICACIÓN DE ENTORNO (Debe ir siempre primero)
     const requiredEnvVars = [
         "DATABASE_URL",
         "CLOUDINARY_CLOUD_NAME",
         "CLOUDINARY_API_KEY",
         "CLOUDINARY_API_SECRET",
     ];
-
     const missingVars = requiredEnvVars.filter(name => !process.env[name]);
 
     if (missingVars.length > 0) {
         console.error("FATAL ERROR: Faltan variables de entorno:", missingVars.join(", "));
         return res.status(500).json({
             success: false,
-            message: `Error de configuración del servidor. Faltan las variables de entorno: ${missingVars.join(", ")}.`,
+            message: `Error de configuración: Faltan las variables de entorno: ${missingVars.join(", ")}.`,
         });
     }
 
     try {
+        // Configuración de Cloudinary
         cloudinary.config({
             cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
             api_key: process.env.CLOUDINARY_API_KEY,
             api_secret: process.env.CLOUDINARY_API_SECRET,
         });
-    } catch (configError) {
-        console.error("Error al configurar Cloudinary:", configError.message);
-        return res.status(500).json({
-            success: false,
-            message: "Error de autenticación de Cloudinary. Revisa que las claves sean correctas.",
+
+        // Inicialización de Pool y conexión a DB
+        pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false },
         });
-    }
-
-    pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-    });
-
-    let client;
-
-    try {
         client = await pool.connect();
 
+        // ===============================================
+        // MANEJADOR GET
+        // ===============================================
         if (req.method === "GET") {
-            // Lógica para obtener todos los eventos (existente)
+            // GET: Cargar todos los eventos (si no hay 'action')
             if (!action) {
                 const result = await client.query(
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
@@ -104,7 +106,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // Lógica GET para verificar inscripción
+            // GET: Verificar inscripción
             if (action === 'checkRegistration') {
                 const { user_id, event_id } = req.query;
 
@@ -122,20 +124,20 @@ export default async function handler(req, res) {
             }
         }
 
-
+        // ===============================================
+        // MANEJADOR POST
+        // ===============================================
         if (req.method === "POST") {
-
-            // Lógica POST para registrar inscripción
+            // POST: Registrar inscripción (requiere JSON Body)
             if (action === 'register') {
-                // Leer el JSON SOLO si la acción es 'register'
-                const jsonBody = await readJsonBody(req);
+                const jsonBody = await readJsonBody(req); // Leer JSON Body aquí
                 const { user_id, event_id } = jsonBody;
 
                 if (!user_id || !event_id) {
                     return res.status(400).json({ success: false, message: "Faltan IDs de usuario o evento." });
                 }
 
-                // 1. Verificar si ya está inscrito
+                // Verificación e inserción
                 const check = await client.query(
                     `SELECT id FROM event_registrations 
                      WHERE user_id = $1 AND event_id = $2`,
@@ -146,7 +148,6 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 2. Insertar inscripción
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, registered_at)
                      VALUES ($1, $2, NOW())
@@ -159,10 +160,9 @@ export default async function handler(req, res) {
             // ----------------------------------------------------
 
 
-            // Lógica existente para crear evento (POST sin action)
-            // Leer Multipart SOLO si NO fue una acción 'register'
+            // POST: Crear evento (requiere Multipart/Form-Data)
             if (!action) {
-                const { fields, files } = await parseMultipart(req); // Lectura del cuerpo para subida de archivos
+                const { fields, files } = await parseMultipart(req); // Leer Multipart Body aquí
 
                 const { title, description, location, start, end, imageURL } = fields;
                 const file = files.imageFile?.[0];
@@ -177,38 +177,29 @@ export default async function handler(req, res) {
                 let finalImageUrl = imageURL || null;
 
                 if (file && file.size > 0) {
-                    try {
-                        const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
-                            folder: "motor_libre_competicion_events",
-                            resource_type: "auto",
-                        });
-                        finalImageUrl = uploadResponse.secure_url;
-                    } catch (cloudinaryError) {
-                        console.error("Cloudinary Upload Error:", cloudinaryError);
-                        const errorDetails = cloudinaryError.http_code ? ` (Code: ${cloudinaryError.http_code})` : '';
-                        throw new Error(`Cloudinary Upload Failed${errorDetails}: ${cloudinaryError.message}`);
-                    }
-
-                } else if (req.method === "PUT" && imageURL === '') {
-                    finalImageUrl = null;
+                    const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
+                        folder: "motor_libre_competicion_events",
+                        resource_type: "auto",
+                    });
+                    finalImageUrl = uploadResponse.secure_url;
                 }
 
-                let result;
-
-                result = await client.query(
+                const result = await client.query(
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING *`,
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING *`,
                     [title, description, location, start, end, finalImageUrl]
                 );
                 return res.status(201).json({ success: true, data: result.rows[0] });
             }
         }
 
+        // ===============================================
+        // MANEJADOR PUT
+        // ===============================================
         if (req.method === "PUT") {
-            // Lógica existente de PUT (edición de eventos)
-            // Leer Multipart SOLO en PUT
-            const { fields, files } = await parseMultipart(req);
+            // PUT: Editar evento (requiere Multipart/Form-Data)
+            const { fields, files } = await parseMultipart(req); // Leer Multipart Body aquí
 
             const { title, description, location, start, end, imageURL } = fields;
             const file = files.imageFile?.[0];
@@ -223,19 +214,12 @@ export default async function handler(req, res) {
             let finalImageUrl = imageURL || null;
 
             if (file && file.size > 0) {
-                try {
-                    const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
-                        folder: "motor_libre_competicion_events",
-                        resource_type: "auto",
-                    });
-                    finalImageUrl = uploadResponse.secure_url;
-                } catch (cloudinaryError) {
-                    console.error("Cloudinary Upload Error:", cloudinaryError);
-                    const errorDetails = cloudinaryError.http_code ? ` (Code: ${cloudinaryError.http_code})` : '';
-                    throw new Error(`Cloudinary Upload Failed${errorDetails}: ${cloudinaryError.message}`);
-                }
-
-            } else if (req.method === "PUT" && imageURL === '') {
+                const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
+                    folder: "motor_libre_competicion_events",
+                    resource_type: "auto",
+                });
+                finalImageUrl = uploadResponse.secure_url;
+            } else if (imageURL === '') {
                 finalImageUrl = null;
             }
 
@@ -253,13 +237,18 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: result.rows[0] });
         }
 
-
+        // ===============================================
+        // MANEJADOR DELETE
+        // ===============================================
         if (req.method === "DELETE") {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
             await client.query("DELETE FROM events WHERE id = $1", [id]);
             return res.status(200).json({ success: true, message: "Evento eliminado correctamente." });
         }
 
+        // ===============================================
+        // MÉTODO NO PERMITIDO
+        // ===============================================
         res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
         return res.status(405).json({ success: false, message: `Método ${req.method} no permitido.` });
 
@@ -268,18 +257,18 @@ export default async function handler(req, res) {
 
         let errorMessage = 'Error interno del servidor.';
 
-        if (error.message.includes('Cloudinary Upload Failed')) {
+        if (error.message.includes('Error al parsear el cuerpo JSON')) {
+            errorMessage = 'Error de formato de datos (JSON) en la solicitud.';
+        } else if (error.message.includes('Cloudinary Upload Failed')) {
             errorMessage = `Error al subir la imagen: ${error.message}`;
         } else if (error.message.includes('Cloudinary')) {
             errorMessage = 'Error de autenticación de Cloudinary. Revisa tus credenciales.';
-        } else if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('timeout')) {
+        } else if (error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
             errorMessage = 'Error de conexión a la base de datos o timeout. Revisa la DATABASE_URL.';
         } else if (error.code === '22007' || error.code === '22P02') {
             errorMessage = 'Error de formato de fecha/hora o ID inválido al intentar guardar en la DB.';
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
-        } else if (error.message.includes("Error al parsear el cuerpo JSON")) {
-            errorMessage = 'Error al recibir los datos de inscripción. Inténtalo de nuevo.';
         }
 
         return res.status(500).json({ success: false, message: errorMessage });
