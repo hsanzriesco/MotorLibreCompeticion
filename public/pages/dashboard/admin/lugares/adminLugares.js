@@ -1,157 +1,133 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const locationsTableBody = document.getElementById('locationsTableBody');
-    const locationForm = document.getElementById('locationForm');
-    const locationIdInput = document.getElementById('locationId');
-    const btnCancelEdit = document.getElementById('btnCancelEdit');
-    const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestión de Lugares - Administrador</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
     
-    let locationToDeleteId = null;
+    <link rel="stylesheet" href="../../../../css/navbar.css" />
+    <link rel="stylesheet" href="../../../../css/style.css" />
+    <link rel="stylesheet" href="../../../../css/alertas.css" />
+    <link rel="icon" href="../../../../img/imagen-tfg.png" type="image/png" />
 
-    // Función para limpiar el formulario
-    const resetForm = () => {
-        locationForm.reset();
-        locationIdInput.value = '';
-        btnCancelEdit.style.display = 'none';
-        document.querySelector('button[type="submit"]').textContent = 'Guardar Lugar';
-    };
-
-    // Función para cargar la tabla
-    const loadLocations = async () => {
-        locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando lugares...</td></tr>';
-        
-        try {
-            const response = await fetch('/api/locations');
-            const data = await response.json();
-
-            if (data.success && data.data.length > 0) {
-                locationsTableBody.innerHTML = data.data.map(location => `
-                    <tr>
-                        <td>${location.id}</td>
-                        <td>${location.name}</td>
-                        <td>${location.city || '-'}</td>
-                        <td>${location.country || '-'}</td>
-                        <td>${location.capacity || '-'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-info text-white me-2" onclick="editLocation(${location.id})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal" onclick="setLocationToDelete(${location.id})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            } else {
-                locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No hay lugares registrados.</td></tr>';
-            }
-        } catch (error) {
-            console.error('Error al cargar los lugares:', error);
-            locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al conectar con la API.</td></tr>';
+    <style>
+        body { background-color: #111; color: #fff; }
+        main { margin-top: 80px; padding: 20px; min-height: 100vh; }
+        .admin-section {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(229, 9, 20, 0.5);
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.25);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem auto;
+            max-width: 1200px;
         }
-    };
+        .form-control, .form-select { background-color: #333; color: white; border-color: #e50914; }
+        .form-control:focus { background-color: #444; color: white; border-color: #e50914; box-shadow: 0 0 0 0.25rem rgba(229, 9, 20, 0.5); }
+        .table { color: #fff; }
+        .table-dark th { border-bottom-color: #e50914; }
+        .btn-danger { background-color: #e50914; border-color: #e50914; }
+        .btn-danger:hover { background-color: #c40711; border-color: #c40711; }
+    </style>
+</head>
 
-    // Función global para establecer el ID a eliminar
-    window.setLocationToDelete = (id) => {
-        locationToDeleteId = id;
-    };
+<body>
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+        <a id="logo-link" href="../admin.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
+        </a>
+        <h3 class="text-light m-0">Gestión de Lugares</h3>
+    </nav>
 
-    // Función global para editar
-    window.editLocation = async (id) => {
-        try {
-            const response = await fetch(`/api/locations?id=${id}`);
-            const data = await response.json();
-
-            if (data.success) {
-                const location = data.data;
-                locationIdInput.value = location.id;
-                document.getElementById('name').value = location.name;
-                document.getElementById('address').value = location.address;
-                document.getElementById('city').value = location.city;
-                document.getElementById('country').value = location.country;
-                document.getElementById('capacity').value = location.capacity;
+    <main>
+        <div class="container">
+            <section class="admin-section">
+                <h2 class="mb-4 text-center">Formulario de Lugar</h2>
                 
-                document.querySelector('button[type="submit"]').textContent = 'Actualizar Lugar';
-                btnCancelEdit.style.display = 'inline-block';
-            } else {
-                mostrarAlerta('error', 'Error', data.message || 'No se pudo cargar el lugar para editar.');
-            }
-        } catch (error) {
-            console.error('Error al cargar datos para edición:', error);
-            mostrarAlerta('error', 'Error', 'Fallo en la comunicación con el servidor.');
-        }
-    };
+                <form id="locationForm">
+                    <input type="hidden" id="locationId">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Nombre del Lugar *</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="address" class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="address">
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label for="city" class="form-label">Ciudad</label>
+                            <input type="text" class="form-control" id="city">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="country" class="form-label">País</label>
+                            <input type="text" class="form-control" id="country" value="España">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="capacity" class="form-label">Capacidad (pax)</label>
+                            <input type="number" class="form-control" id="capacity">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-danger">Guardar Lugar</button>
+                        <button type="button" class="btn btn-secondary" id="btnCancelEdit" style="display: none;">Cancelar Edición</button>
+                    </div>
+                </form>
+            </section>
 
-    // Manejador del formulario (Crear/Actualizar)
-    locationForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+            <section class="admin-section mt-4">
+                <h2 class="mb-4 text-center">Lugares Registrados</h2>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Ciudad</th>
+                                <th>País</th>
+                                <th>Capacidad</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="locationsTableBody">
+                            <tr><td colspan="6" class="text-center">Cargando lugares...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
 
-        const id = locationIdInput.value;
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? `/api/locations?id=${id}` : '/api/locations';
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="background-color: #111; color: white; border: 1px solid #e50914;">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="deleteConfirmModalLabel">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar este lugar? Esta acción es irreversible.</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmDelete">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        const locationData = {
-            name: document.getElementById('name').value,
-            address: document.getElementById('address').value,
-            city: document.getElementById('city').value,
-            country: document.getElementById('country').value,
-            capacity: document.getElementById('capacity').value,
-        };
+    <script src="../../../../js/alertas.js"></script>
+    <script src="../../../../js/navbar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./adminLugares.js"></script>
+</body>
 
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(locationData),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                mostrarAlerta('success', 'Éxito', data.message);
-                resetForm();
-                loadLocations();
-            } else {
-                mostrarAlerta('error', 'Error', data.message || 'Ocurrió un error al guardar el lugar.');
-            }
-        } catch (error) {
-            console.error('Error al enviar formulario:', error);
-            mostrarAlerta('error', 'Error', 'Fallo en la comunicación con el servidor.');
-        }
-    });
-
-    // Cancelar edición
-    btnCancelEdit.addEventListener('click', resetForm);
-
-    // Confirmar eliminación
-    btnConfirmDelete.addEventListener('click', async () => {
-        if (!locationToDeleteId) return;
-
-        try {
-            const response = await fetch(`/api/locations?id=${locationToDeleteId}`, {
-                method: 'DELETE',
-            });
-            
-            const data = await response.json();
-
-            if (data.success) {
-                mostrarAlerta('success', 'Éxito', data.message);
-                loadLocations();
-                locationToDeleteId = null;
-                // Cerrar el modal manualmente
-                const modalElement = document.getElementById('deleteConfirmModal');
-                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-                modal.hide();
-            } else {
-                mostrarAlerta('error', 'Error', data.message || 'Ocurrió un error al eliminar el lugar.');
-            }
-        } catch (error) {
-            console.error('Error al eliminar:', error);
-            mostrarAlerta('error', 'Error', 'Fallo en la comunicación con el servidor.');
-        }
-    });
-
-    // Cargar la tabla al inicio
-    loadLocations();
-});
+</html>
