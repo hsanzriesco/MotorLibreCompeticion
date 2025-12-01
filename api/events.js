@@ -30,7 +30,6 @@ function parseMultipart(req) {
     });
 }
 
-// NUEVA FUNCIÓN AÑADIDA: Para leer el cuerpo JSON manualmente cuando bodyParser está desactivado
 function readJsonBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -39,7 +38,7 @@ function readJsonBody(req) {
         });
         req.on('end', () => {
             try {
-                if (!body) return resolve({}); // Objeto vacío si no hay cuerpo
+                if (!body) return resolve({});
                 resolve(JSON.parse(body));
             } catch (e) {
                 reject(new Error("Error al parsear el cuerpo JSON de la solicitud."));
@@ -47,7 +46,6 @@ function readJsonBody(req) {
         });
     });
 }
-// FIN DE LA NUEVA FUNCIÓN
 
 
 export default async function handler(req, res) {
@@ -126,9 +124,10 @@ export default async function handler(req, res) {
 
 
         if (req.method === "POST") {
+
             // Lógica POST para registrar inscripción
             if (action === 'register') {
-                // MODIFICACIÓN CLAVE: Usar la nueva función para leer JSON
+                // Leer el JSON SOLO si la acción es 'register'
                 const jsonBody = await readJsonBody(req);
                 const { user_id, event_id } = jsonBody;
 
@@ -161,44 +160,45 @@ export default async function handler(req, res) {
 
 
             // Lógica existente para crear evento (POST sin action)
-            const { fields, files } = await parseMultipart(req);
+            // Leer Multipart SOLO si NO fue una acción 'register'
+            if (!action) {
+                const { fields, files } = await parseMultipart(req); // Lectura del cuerpo para subida de archivos
 
-            const { title, description, location, start, end, imageURL } = fields;
-            const file = files.imageFile?.[0];
+                const { title, description, location, start, end, imageURL } = fields;
+                const file = files.imageFile?.[0];
 
-            if (!title || !start || !end) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Faltan campos obligatorios (título, inicio, fin).",
-                });
-            }
-
-            let finalImageUrl = imageURL || null;
-
-            if (file && file.size > 0) {
-                try {
-                    const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
-                        folder: "motor_libre_competicion_events",
-                        resource_type: "auto",
+                if (!title || !start || !end) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Faltan campos obligatorios (título, inicio, fin).",
                     });
-                    finalImageUrl = uploadResponse.secure_url;
-                } catch (cloudinaryError) {
-                    console.error("Cloudinary Upload Error:", cloudinaryError);
-                    const errorDetails = cloudinaryError.http_code ? ` (Code: ${cloudinaryError.http_code})` : '';
-                    throw new Error(`Cloudinary Upload Failed${errorDetails}: ${cloudinaryError.message}`);
                 }
 
-            } else if (req.method === "PUT" && imageURL === '') {
-                finalImageUrl = null;
-            }
+                let finalImageUrl = imageURL || null;
 
-            let result;
+                if (file && file.size > 0) {
+                    try {
+                        const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
+                            folder: "motor_libre_competicion_events",
+                            resource_type: "auto",
+                        });
+                        finalImageUrl = uploadResponse.secure_url;
+                    } catch (cloudinaryError) {
+                        console.error("Cloudinary Upload Error:", cloudinaryError);
+                        const errorDetails = cloudinaryError.http_code ? ` (Code: ${cloudinaryError.http_code})` : '';
+                        throw new Error(`Cloudinary Upload Failed${errorDetails}: ${cloudinaryError.message}`);
+                    }
 
-            if (!action) { // Asegúrate de que esto solo se ejecute si no es una acción específica (como 'register')
+                } else if (req.method === "PUT" && imageURL === '') {
+                    finalImageUrl = null;
+                }
+
+                let result;
+
                 result = await client.query(
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING *`,
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING *`,
                     [title, description, location, start, end, finalImageUrl]
                 );
                 return res.status(201).json({ success: true, data: result.rows[0] });
@@ -207,6 +207,7 @@ export default async function handler(req, res) {
 
         if (req.method === "PUT") {
             // Lógica existente de PUT (edición de eventos)
+            // Leer Multipart SOLO en PUT
             const { fields, files } = await parseMultipart(req);
 
             const { title, description, location, start, end, imageURL } = fields;
@@ -275,12 +276,11 @@ export default async function handler(req, res) {
             errorMessage = 'Error de conexión a la base de datos o timeout. Revisa la DATABASE_URL.';
         } else if (error.code === '22007' || error.code === '22P02') {
             errorMessage = 'Error de formato de fecha/hora o ID inválido al intentar guardar en la DB.';
-        } else if (error.code === '23505') { // Código de error de duplicidad (ej: unique constraint violation)
+        } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.message.includes("Error al parsear el cuerpo JSON")) {
             errorMessage = 'Error al recibir los datos de inscripción. Inténtalo de nuevo.';
         }
-
 
         return res.status(500).json({ success: false, message: errorMessage });
     } finally {
