@@ -19,18 +19,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 
-    // --- INICIO DE LA SECCIÓN CORREGIDA ---
-    const stored = localStorage.getItem('usuario');
+    // --- CAMBIO CLAVE DE LOCALSTORAGE A SESSIONSTORAGE ---
+    const stored = sessionStorage.getItem('usuario'); // AHORA LEE DE SESSIONSTORAGE
     let usuario = null;
     try {
         if (stored) {
-            // Se asume que el objeto JSON guardado contiene la clave 'id' para el usuario.
             usuario = JSON.parse(stored);
         }
     } catch (e) {
         console.error("Error al parsear usuario:", e);
     }
-    // --- FIN DE LA SECCIÓN CORREGIDA ---
+    // ----------------------------------------------------
 
     const userName = document.getElementById("user-name");
     const loginIcon = document.getElementById("login-icon");
@@ -43,7 +42,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("logout-btn").addEventListener("click", (e) => {
         e.preventDefault();
 
-        localStorage.removeItem("usuario");
+        // --- CORRECCIÓN DE LOGOUT: Remover de SESSIONSTORAGE ---
+        sessionStorage.removeItem("usuario");
 
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, 1500);
     });
 
-    // --- NUEVAS FUNCIONES DE INSCRIPCIÓN ---
+    // --- RESTO DE LAS FUNCIONES (MANTENIDAS DEL ÚLTIMO CÓDIGO) ---
 
     async function checkRegistrationStatus(eventId, userId) {
         if (!userId) return false;
@@ -75,10 +75,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function handleRegistration(eventId, userId) {
-        // Esta validación requiere que 'usuario' se haya cargado correctamente con su 'id'
         if (!userId) {
             mostrarAlerta("Debes iniciar sesión para inscribirte.", 'advertencia');
-            // Redirigir si no está logueado
             setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
             return;
         }
@@ -92,7 +90,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                // El backend espera user_id y event_id en el cuerpo
                 body: JSON.stringify({
                     user_id: userId,
                     event_id: eventId
@@ -103,11 +100,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (res.ok && data.success) {
                 mostrarAlerta(data.message, 'exito');
-                // Actualiza el estado visual después de una inscripción exitosa
                 updateRegistrationUI(true);
             } else {
                 mostrarAlerta(data.message || 'Error desconocido al inscribir.', 'error');
-                registerBtn.disabled = false; // Habilita el botón si falla
+                registerBtn.disabled = false;
                 statusSpan.textContent = "";
             }
         } catch (error) {
@@ -131,18 +127,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     registerBtn.addEventListener('click', (e) => {
         const eventId = e.currentTarget.getAttribute('data-event-id');
-        // Aseguramos que el ID del usuario se pase correctamente si existe
-        const userId = usuario ? usuario.id : null;
+        const userId = (usuario && usuario.id) ? usuario.id : null;
 
         if (eventId && userId) {
             handleRegistration(parseInt(eventId), userId);
-        } else if (!userId) {
-            handleRegistration(null, null); // Esto disparará la alerta de login
+        } else {
+            handleRegistration(null, null);
         }
     });
-
-    // ----------------------------------------
-
 
     const calendarEl = document.getElementById("calendar");
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -164,7 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         eventClick: async (info) => {
             const e = info.event;
             const extendedProps = e.extendedProps;
-            const eventId = e.id; // FullCalendar usa 'id' para el ID del evento
+            const eventId = e.id;
 
             modalTitle.textContent = e.title;
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
@@ -181,20 +173,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 modalImageContainer.style.display = "none";
             }
 
-            // --- Lógica de Inscripción al abrir el modal ---
             registerBtn.setAttribute('data-event-id', eventId);
 
-            // Validamos si usuario existe y tiene ID antes de revisar el estado
-            if (usuario && usuario.id) {
-                const isRegistered = await checkRegistrationStatus(eventId, usuario.id);
+            const userId = (usuario && usuario.id) ? usuario.id : null;
+
+            if (userId) {
+                const isRegistered = await checkRegistrationStatus(eventId, userId);
                 updateRegistrationUI(isRegistered);
             } else {
-                // Si no hay usuario logueado, muestra el botón 'Inscribirse' pero al hacer click pedirá login.
                 updateRegistrationUI(false);
                 registerBtn.disabled = false;
             }
-            // ---------------------------------------------
-
 
             const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
             eventModal.show();
