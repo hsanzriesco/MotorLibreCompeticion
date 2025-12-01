@@ -97,8 +97,8 @@ export default async function handler(req, res) {
             if (!action) {
                 const result = await client.query(
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
-                    FROM events
-                    ORDER BY start ASC`
+                    FROM events
+                    ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
             }
@@ -110,10 +110,9 @@ export default async function handler(req, res) {
                 if (!user_id || !event_id) {
                     return res.status(400).json({ success: false, message: "Faltan IDs de usuario o evento." });
                 }
-                // Consulta limpia
+                // Consulta limpia de cualquier carácter invisible
                 const result = await client.query(
-                    `SELECT id FROM event_registrations 
-                     WHERE user_id = $1 AND event_id = $2`,
+                    `SELECT id FROM event_registrations WHERE user_id = $1 AND event_id = $2`,
                     [user_id, event_id]
                 );
 
@@ -144,8 +143,7 @@ export default async function handler(req, res) {
 
                 // 1. Verificar si ya está inscrito (Consulta limpia)
                 const check = await client.query(
-                    `SELECT id FROM event_registrations 
-                     WHERE user_id = $1 AND event_id = $2`,
+                    `SELECT id FROM event_registrations WHERE user_id = $1 AND event_id = $2`,
                     [parsedUserId, parsedEventId]
                 );
 
@@ -155,9 +153,7 @@ export default async function handler(req, res) {
 
                 // 2. Insertar inscripción (Consulta limpia)
                 const result = await client.query(
-                    `INSERT INTO event_registrations (user_id, event_id, registered_at)
-                     VALUES ($1, $2, NOW())
-                     RETURNING id`,
+                    `INSERT INTO event_registrations (user_id, event_id, registered_at) VALUES ($1, $2, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId]
                 );
 
@@ -276,7 +272,8 @@ export default async function handler(req, res) {
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.code === '42601') {
-            errorMessage = 'Error de sintaxis SQL. Revise la estructura de la consulta.';
+            // El error 42601 ahora probablemente significa que la tabla o columna no existe.
+            errorMessage = 'Error de sintaxis SQL. Revise que la tabla "event_registrations" y sus columnas (user_id, event_id, registered_at) existan y estén escritas correctamente.';
         }
 
         return res.status(500).json({ success: false, message: errorMessage });
