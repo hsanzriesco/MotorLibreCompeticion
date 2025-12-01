@@ -96,21 +96,20 @@ export default async function handler(req, res) {
             // GET: Cargar todos los eventos
             if (!action) {
                 const result = await client.query(
-                    `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
-                    FROM events
-                    ORDER BY start ASC`
+                    `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url FROM events ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // GET: Verificar inscripción
+            // GET: Verificar inscripción (Consulta crítica limpiada)
             if (action === 'checkRegistration') {
                 const { user_id, event_id } = req.query;
 
                 if (!user_id || !event_id) {
                     return res.status(400).json({ success: false, message: "Faltan IDs de usuario o evento." });
                 }
-                // Consulta limpia de cualquier carácter invisible
+
+                // LÍNEA CLAVE: SQL en una sola línea para evitar problemas de espacio oculto.
                 const result = await client.query(
                     `SELECT id FROM event_registrations WHERE user_id = $1 AND event_id = $2`,
                     [user_id, event_id]
@@ -141,7 +140,7 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "Los IDs de usuario o evento deben ser números válidos." });
                 }
 
-                // 1. Verificar si ya está inscrito (Consulta limpia)
+                // 1. Verificar si ya está inscrito (Consulta crítica limpiada)
                 const check = await client.query(
                     `SELECT id FROM event_registrations WHERE user_id = $1 AND event_id = $2`,
                     [parsedUserId, parsedEventId]
@@ -151,7 +150,7 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 2. Insertar inscripción (Consulta limpia)
+                // 2. Insertar inscripción (Consulta crítica limpiada)
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, registered_at) VALUES ($1, $2, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId]
@@ -187,9 +186,7 @@ export default async function handler(req, res) {
                 }
 
                 const result = await client.query(
-                    `INSERT INTO events (title, description, location, event_start, event_end, image_url)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING *`,
+                    `INSERT INTO events (title, description, location, event_start, event_end, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
                     [title, description, location, start, end, finalImageUrl]
                 );
                 return res.status(201).json({ success: true, data: result.rows[0] });
@@ -228,10 +225,7 @@ export default async function handler(req, res) {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
             const result = await client.query(
-                `UPDATE events
-                SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6
-                WHERE id = $7
-                RETURNING *`,
+                `UPDATE events SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6 WHERE id = $7 RETURNING *`,
                 [title, description, location, start, end, finalImageUrl, id]
             );
 
@@ -272,9 +266,13 @@ export default async function handler(req, res) {
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.code === '42601') {
-            // El error 42601 ahora probablemente significa que la tabla o columna no existe.
+            // Mensaje más útil para el error 42601, indicando dónde buscar.
             errorMessage = 'Error de sintaxis SQL. Revise que la tabla "event_registrations" y sus columnas (user_id, event_id, registered_at) existan y estén escritas correctamente.';
+        } else if (error.code === '42P01') {
+            // El error 42P01 (relation does not exist) es común si falta la tabla.
+            errorMessage = `Error: La tabla requerida (${error.message.match(/"(.*?)"/) ? error.message.match(/"(.*?)"/)[1] : 'desconocida'}) no existe en la base de datos de Neon.`;
         }
+
 
         return res.status(500).json({ success: false, message: errorMessage });
     } finally {
