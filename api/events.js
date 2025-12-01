@@ -12,7 +12,6 @@ export const config = {
 // FUNCIONES DE PARSEO
 // ===============================================
 
-// Función para leer el cuerpo JSON puro (usado solo por 'register')
 function readJsonBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -24,14 +23,12 @@ function readJsonBody(req) {
                 if (!body) return resolve({});
                 resolve(JSON.parse(body));
             } catch (e) {
-                // Error de JSON vacío o malformado
                 reject(new Error("Error al parsear el cuerpo JSON de la solicitud (Unexpected end of JSON input)."));
             }
         });
     });
 }
 
-// Función para parsear Multipart/Form-Data (usado por POST/PUT para eventos con imagen)
 function parseMultipart(req) {
     return new Promise((resolve, reject) => {
         const form = formidable({
@@ -96,9 +93,8 @@ export default async function handler(req, res) {
         // MANEJADOR GET
         // ===============================================
         if (req.method === "GET") {
-            // GET: Cargar todos los eventos (si no hay 'action')
+            // GET: Cargar todos los eventos
             if (!action) {
-                // CONSULTA SQL CORREGIDA: Eliminamos el carácter \u00A0
                 const result = await client.query(
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
                     FROM events
@@ -114,9 +110,9 @@ export default async function handler(req, res) {
                 if (!user_id || !event_id) {
                     return res.status(400).json({ success: false, message: "Faltan IDs de usuario o evento." });
                 }
-
+                // Consulta limpia
                 const result = await client.query(
-                    `SELECT * FROM event_registrations 
+                    `SELECT id FROM event_registrations 
                      WHERE user_id = $1 AND event_id = $2`,
                     [user_id, event_id]
                 );
@@ -129,7 +125,7 @@ export default async function handler(req, res) {
         // MANEJADOR POST
         // ===============================================
         if (req.method === "POST") {
-            // POST: Registrar inscripción (requiere JSON Body)
+            // POST: Registrar inscripción
             if (action === 'register') {
                 const jsonBody = await readJsonBody(req);
                 const { user_id, event_id } = jsonBody;
@@ -138,22 +134,31 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "Faltan IDs de usuario o evento." });
                 }
 
-                // Verificación e inserción
+                // Conversión forzada a entero para asegurar que no haya inyecciones o formatos inválidos
+                const parsedUserId = parseInt(user_id);
+                const parsedEventId = parseInt(event_id);
+
+                if (isNaN(parsedUserId) || isNaN(parsedEventId)) {
+                    return res.status(400).json({ success: false, message: "Los IDs de usuario o evento deben ser números válidos." });
+                }
+
+                // 1. Verificar si ya está inscrito (Consulta limpia)
                 const check = await client.query(
                     `SELECT id FROM event_registrations 
                      WHERE user_id = $1 AND event_id = $2`,
-                    [user_id, event_id]
+                    [parsedUserId, parsedEventId]
                 );
 
                 if (check.rows.length > 0) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
+                // 2. Insertar inscripción (Consulta limpia)
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, registered_at)
                      VALUES ($1, $2, NOW())
                      RETURNING id`,
-                    [user_id, event_id]
+                    [parsedUserId, parsedEventId]
                 );
 
                 return res.status(201).json({ success: true, message: "Inscripción al evento exitosa.", registrationId: result.rows[0].id });
@@ -161,7 +166,7 @@ export default async function handler(req, res) {
             // ----------------------------------------------------
 
 
-            // POST: Crear evento (requiere Multipart/Form-Data)
+            // POST: Crear evento 
             if (!action) {
                 const { fields, files } = await parseMultipart(req);
 
@@ -199,7 +204,7 @@ export default async function handler(req, res) {
         // MANEJADOR PUT
         // ===============================================
         if (req.method === "PUT") {
-            // PUT: Editar evento (requiere Multipart/Form-Data)
+            // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
 
             const { title, description, location, start, end, imageURL } = fields;
@@ -271,7 +276,7 @@ export default async function handler(req, res) {
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.code === '42601') {
-            errorMessage = 'Error de sintaxis SQL. Revise que la consulta de eventos no contenga espacios invisibles.';
+            errorMessage = 'Error de sintaxis SQL. Revise la estructura de la consulta.';
         }
 
         return res.status(500).json({ success: false, message: errorMessage });
