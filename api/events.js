@@ -24,7 +24,7 @@ function readJsonBody(req) {
                 if (!body) return resolve({});
                 resolve(JSON.parse(body));
             } catch (e) {
-                // Capturar el error de JSON vacío o malformado
+                // Error de JSON vacío o malformado
                 reject(new Error("Error al parsear el cuerpo JSON de la solicitud (Unexpected end of JSON input)."));
             }
         });
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     let pool;
     let client;
 
-    // 1. VERIFICACIÓN DE ENTORNO (Debe ir siempre primero)
+    // 1. VERIFICACIÓN DE ENTORNO
     const requiredEnvVars = [
         "DATABASE_URL",
         "CLOUDINARY_CLOUD_NAME",
@@ -98,10 +98,11 @@ export default async function handler(req, res) {
         if (req.method === "GET") {
             // GET: Cargar todos los eventos (si no hay 'action')
             if (!action) {
+                // CONSULTA SQL CORREGIDA: Eliminamos el carácter \u00A0
                 const result = await client.query(
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url
-                    FROM events
-                    ORDER BY start ASC`
+                    FROM events
+                    ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
             }
@@ -130,7 +131,7 @@ export default async function handler(req, res) {
         if (req.method === "POST") {
             // POST: Registrar inscripción (requiere JSON Body)
             if (action === 'register') {
-                const jsonBody = await readJsonBody(req); // Leer JSON Body aquí
+                const jsonBody = await readJsonBody(req);
                 const { user_id, event_id } = jsonBody;
 
                 if (!user_id || !event_id) {
@@ -162,7 +163,7 @@ export default async function handler(req, res) {
 
             // POST: Crear evento (requiere Multipart/Form-Data)
             if (!action) {
-                const { fields, files } = await parseMultipart(req); // Leer Multipart Body aquí
+                const { fields, files } = await parseMultipart(req);
 
                 const { title, description, location, start, end, imageURL } = fields;
                 const file = files.imageFile?.[0];
@@ -199,7 +200,7 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "PUT") {
             // PUT: Editar evento (requiere Multipart/Form-Data)
-            const { fields, files } = await parseMultipart(req); // Leer Multipart Body aquí
+            const { fields, files } = await parseMultipart(req);
 
             const { title, description, location, start, end, imageURL } = fields;
             const file = files.imageFile?.[0];
@@ -269,6 +270,8 @@ export default async function handler(req, res) {
             errorMessage = 'Error de formato de fecha/hora o ID inválido al intentar guardar en la DB.';
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
+        } else if (error.code === '42601') {
+            errorMessage = 'Error de sintaxis SQL. Revise que la consulta de eventos no contenga espacios invisibles.';
         }
 
         return res.status(500).json({ success: false, message: errorMessage });
