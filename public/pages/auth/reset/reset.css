@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* ⭐ CENTRADO ABSOLUTO EN EL VIEWPORT (SOLUCIÓN FORZADA) ⭐ */
+/* ⭐ ESTILOS CLAVE DE LAYOUT Y CENTRADO ⭐ */
 body {
     font-family: 'Orbitron', sans-serif;
     background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
@@ -20,15 +20,14 @@ body {
     align-items: center;
     /* Centrado vertical */
 
-    /* ⭐ CORRECCIÓN CLAVE: Usamos !important para anular el padding de login.css ⭐ */
+    /* CORRECCIÓN CLAVE: Anula el padding vertical de login.css */
     padding: 0 20px !important;
 
     min-height: 500px;
 }
 
 /* ---------------------------------------------------- */
-
-/* ESTILOS DE LA CAJA (form-box) - Sin cambios */
+/* ESTILOS DE LA CAJA (form-box) - AÑADIMOS REFUERZO MARGIN */
 /* ---------------------------------------------------- */
 .form-box {
     background-color: rgba(20, 20, 20, 0.92);
@@ -39,6 +38,9 @@ body {
     width: 100%;
     max-width: 420px;
     text-align: center;
+
+    /* ⭐ REFUERZO: Aseguramos que no tenga margen vertical exterior ⭐ */
+    margin: 0 auto;
 }
 
 .form-box h2 {
