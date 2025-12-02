@@ -150,11 +150,37 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 2. Insertar inscripción (Consulta crítica limpiada)
+                // ⭐⭐⭐ INICIO DE LA MODIFICACIÓN CLAVE ⭐⭐⭐
+
+                // 2. Obtener el nombre del usuario y el título del evento
+                const dataQuery = `
+                    SELECT
+                        u.name AS user_name,
+                        e.title AS event_title
+                    FROM
+                        users u,
+                        events e
+                    WHERE
+                        u.id = $1 AND e.id = $2;
+                `;
+
+                const dataResult = await client.query(dataQuery, [parsedUserId, parsedEventId]);
+
+                if (dataResult.rows.length === 0) {
+                    return res.status(404).json({ success: false, message: 'Usuario o evento no encontrado para obtener los nombres.' });
+                }
+
+                const { user_name, event_title } = dataResult.rows[0];
+
+
+                // 3. Insertar inscripción CON los nombres (Actualización del INSERT)
                 const result = await client.query(
-                    `INSERT INTO event_registrations (user_id, event_id, registered_at) VALUES ($1, $2, NOW()) RETURNING id`,
-                    [parsedUserId, parsedEventId]
+                    `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
+                    [parsedUserId, parsedEventId, user_name, event_title]
                 );
+
+                // ⭐⭐⭐ FIN DE LA MODIFICACIÓN CLAVE ⭐⭐⭐
+
 
                 return res.status(201).json({ success: true, message: "Inscripción al evento exitosa.", registrationId: result.rows[0].id });
             }
