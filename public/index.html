@@ -164,7 +164,7 @@
 
           // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado
           if (!usuario) {
-            mostrarAlerta("❌ No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
+            mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
 
             const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
             if (offcanvasMenu) offcanvasMenu.hide();

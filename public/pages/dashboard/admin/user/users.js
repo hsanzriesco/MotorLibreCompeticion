@@ -19,6 +19,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    function validatePassword(password) {
+        const lengthOK = password.length >= 8 && password.length <= 12;
+        const upperCaseOK = /[A-Z]/.test(password);
+        const numberOK = /[0-9]/.test(password);
+        const symbolOK = /[^A-Za-z0-9]/.test(password);
+
+        if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
+        if (!upperCaseOK) return "Debe contener al menos una letra mayúscula.";
+        if (!numberOK) return "Debe incluir al menos un número.";
+        if (!symbolOK) return "Debe incluir al menos un símbolo.";
+        return null;
+    }
 
     const usersTableBody = document.getElementById("usersTableBody");
     const userModal = new bootstrap.Modal(document.getElementById("userModal"));
@@ -35,6 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const userPassword2 = document.getElementById("userPassword2");
     const userRole = document.getElementById("userRole");
     const confirmPasswordContainer = document.getElementById("confirmPasswordContainer");
+
+    const passwordHelp = document.getElementById("passwordHelp");
 
     const userToDeleteName = document.getElementById("userToDeleteName");
     let currentUserIdToDelete = null;
@@ -73,12 +87,14 @@ document.addEventListener("DOMContentLoaded", () => {
             usersTableBody.innerHTML = `<tr><td colspan="6">Error al cargar usuarios</td></tr>`;
         }
     }
+
     btnAddUser.addEventListener("click", () => {
         userForm.reset();
         userId.value = "";
         userPassword.disabled = false;
 
         confirmPasswordContainer.style.display = "block";
+        if (passwordHelp) passwordHelp.style.display = "block";
 
         document.querySelector("#userModal .modal-title").textContent = "Nuevo Usuario";
         userModal.show();
@@ -102,7 +118,10 @@ document.addEventListener("DOMContentLoaded", () => {
             userRole.value = user.role;
 
             confirmPasswordContainer.style.display = "none";
+            if (passwordHelp) passwordHelp.style.display = "none";
+
             userPassword.value = "";
+            userPassword2.value = "";
             userPassword.disabled = user.role === "user";
 
             document.querySelector("#userModal .modal-title").textContent = "Editar Usuario";
@@ -115,6 +134,19 @@ document.addEventListener("DOMContentLoaded", () => {
             deleteConfirmModal.show();
         }
     });
+
+    userPassword.addEventListener('input', () => {
+        const passwordValue = userPassword.value.trim();
+        if (passwordValue.length > 0) {
+            confirmPasswordContainer.style.display = "block";
+            if (passwordHelp) passwordHelp.style.display = "block";
+        } else if (userId.value !== "") {
+            confirmPasswordContainer.style.display = "none";
+            if (passwordHelp) passwordHelp.style.display = "none";
+        }
+    });
+
+
     btnConfirmDelete.addEventListener("click", () => {
         eliminarUsuario(currentUserIdToDelete);
         deleteConfirmModal.hide();
@@ -134,13 +166,26 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
 
         const creating = userId.value === "";
+        const newPassword = userPassword.value.trim();
+        const changingPassword = newPassword.length > 0;
 
-        if (creating) {
-            if (!userPassword.value.trim())
-                return mostrarAlerta("La contraseña es obligatoria.", "error");
+        if (creating || changingPassword) {
+            if (newPassword === "" && creating) {
+                return mostrarAlerta("La contraseña es obligatoria para un nuevo usuario.", "error");
+            }
 
-            if (userPassword.value !== userPassword2.value)
+            if (newPassword !== userPassword2.value.trim()) {
                 return mostrarAlerta("Las contraseñas no coinciden.", "error");
+            }
+
+            const passwordError = validatePassword(newPassword);
+            if (passwordError) {
+                return mostrarAlerta(passwordError, "error");
+            }
+        }
+
+        if (!userName.value.trim() || !userEmail.value.trim()) {
+            return mostrarAlerta("El nombre y el email son obligatorios.", "error");
         }
 
         const payload = {
@@ -148,8 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
             name: userName.value,
             email: userEmail.value,
             role: userRole.value,
-            password: userPassword.disabled ? undefined :
-                userPassword.value.trim() || undefined
+            password: changingPassword ? newPassword : undefined
         };
 
         const method = creating ? "POST" : "PUT";
@@ -162,10 +206,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const data = await res.json();
 
+        if (res.status === 409) {
+            return mostrarAlerta("El nombre o correo ya están en uso.", "error");
+        }
+
+
         if (data.success) {
             mostrarAlerta(creating ? "Usuario creado" : "Usuario actualizado", "exito");
             userModal.hide();
             cargarUsuarios();
+        } else {
+            mostrarAlerta(data.message || "Error al guardar el usuario.", "error");
         }
     });
 
