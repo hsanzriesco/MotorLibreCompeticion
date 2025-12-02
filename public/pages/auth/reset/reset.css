@@ -97,15 +97,15 @@ body {
 /* Contenedor de la contraseña */
 .password-wrapper {
     position: relative;
-    /* Esencial para el posicionamiento del icono */
+    /* Clave para posicionar el icono */
 }
 
 /* Ajuste del input dentro del wrapper */
 .password-wrapper input.custom-input.form-control {
     margin-top: 0;
-    /* Asegura que el margen no desplace el input dentro del wrapper */
+    /* Anula el margen superior del input general */
     padding-right: 40px;
-    /* Hace espacio para que el icono no cubra el texto */
+    /* Hace espacio para el icono */
 }
 
 /* Estilo para el icono */
@@ -123,9 +123,4 @@ body {
     font-size: 1.25rem;
     z-index: 2;
     /* Asegura que el icono esté encima del input */
-    transition: color 0.2s ease;
-}
-
-.password-wrapper .bi:hover {
-    color: #ff1a1a;
 }
