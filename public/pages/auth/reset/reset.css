@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* Estilos de body y contenedor principal copiados de login.css para asegurar el centrado */
+/* Mantenemos tus estilos originales de caja */
 body {
     font-family: 'Orbitron', sans-serif;
     background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
@@ -14,7 +14,6 @@ body {
     flex-direction: column;
 }
 
-/* Estilo de la caja principal del formulario (form-box) */
 .form-box {
     background-color: rgba(20, 20, 20, 0.92);
     border: 1px solid #e50914;
@@ -24,11 +23,9 @@ body {
     width: 100%;
     max-width: 420px;
     text-align: center;
-    /* Usa la animación definida en style.css */
     animation: fadeIn 1.2s ease;
 }
 
-/* Estilo del título <h2> (Restablecer Contraseña) */
 .form-box h2 {
     color: #e50914;
     font-weight: 800;
@@ -37,41 +34,26 @@ body {
     font-size: 1.8rem;
 }
 
-/* Estilo de las etiquetas <label> */
 .form-box label {
     display: block;
     text-align: left;
-    /* Ajustado el margin-top para que se vea mejor con el wrapper */
-    margin-top: 10px;
+    margin-top: 15px;
     font-weight: 600;
     color: #ccc;
     font-size: 0.9rem;
 }
 
-/* Estilo de los campos de entrada <input> */
 .form-box input {
+    /* El input por defecto es gestionado por custom-input form-control */
     width: 100%;
-    padding: 12px;
-    margin-top: 6px;
-    border-radius: 6px;
-    border: 1px solid #333;
-    background-color: #222;
-    color: #fff;
-    outline: none;
-    transition: all 0.2s ease;
-    font-size: 0.95rem;
-    font-family: 'Orbitron', sans-serif;
-    /* Eliminado el margin-bottom para que el password-wrapper lo controle */
-    margin-bottom: 0;
+    /* ... otros estilos originales ... */
 }
 
-/* Efecto al enfocar los campos de entrada */
 .form-box input:focus {
     border-color: #e50914;
     box-shadow: 0 0 8px rgba(229, 9, 20, 0.6);
 }
 
-/* Estilo del botón <button> */
 .form-box button {
     width: 100%;
     background-color: #e50914;
@@ -87,26 +69,22 @@ body {
     font-family: 'Orbitron', sans-serif;
 }
 
-/* Efecto al pasar el ratón sobre el botón */
 .form-box button:hover {
     background-color: #ff1a1a;
     box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
 }
 
-/* ⭐⭐⭐ CÓDIGO AÑADIDO PARA EL ICONO DEL OJO ⭐⭐⭐ */
+/* ⭐⭐⭐ CÓDIGO MINIMAL AÑADIDO PARA EL ICONO DEL OJO ⭐⭐⭐ */
 .password-wrapper {
     position: relative;
-    margin-bottom: 15px;
-    /* Controla el espacio inferior del campo */
-    margin-top: 6px;
-    /* Espacio superior para compensar el input */
+    /* Mantenemos el margen por defecto de mb-3, pero aseguramos el posicionamiento */
 }
 
 .password-wrapper input {
     /* Ajusta el padding derecho del input para dar espacio al icono */
     padding-right: 35px !important;
+    /* El input no debe tener margin-bottom si el wrapper es el que controla el espacio */
     margin-bottom: 0 !important;
-    margin-top: 0 !important;
 }
 
 .password-wrapper i {
@@ -118,6 +96,8 @@ body {
     color: #e50914;
     font-size: 1.1rem;
     transition: color 0.2s;
+    z-index: 10;
+    /* Asegura que el icono esté por encima del input */
 }
 
 .password-wrapper i:hover {
