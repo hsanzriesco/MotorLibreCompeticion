@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* Mantenemos tus estilos originales de caja */
+/* ESTILO DEL LAYOUT (COPIADO DE register.css) */
 body {
     font-family: 'Orbitron', sans-serif;
     background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
@@ -9,11 +9,25 @@ body {
     padding: 0;
     height: 100vh;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    /* Necesario para organizar el navbar y el contenido */
     flex-direction: column;
 }
 
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    /* Calcula la altura total menos la altura del navbar (aprox. 80px) */
+    height: calc(100vh - 80px);
+    min-height: 500px;
+    padding: 20px 20px;
+}
+
+/* FIN ESTILO DEL LAYOUT */
+
+
+/* ESTILOS DE LA CAJA (form-box) - MANTENEMOS TU ESTILO ORIGINAL */
 .form-box {
     background-color: rgba(20, 20, 20, 0.92);
     border: 1px solid #e50914;
@@ -34,6 +48,9 @@ body {
     font-size: 1.8rem;
 }
 
+/* ... (Otros estilos de .form-box label, input, button, etc., que ya tenías) ... */
+
+/* Estilo de las etiquetas <label> */
 .form-box label {
     display: block;
     text-align: left;
@@ -43,10 +60,10 @@ body {
     font-size: 0.9rem;
 }
 
+/* Estilo de los campos de entrada <input> */
 .form-box input {
     /* El input por defecto es gestionado por custom-input form-control */
     width: 100%;
-    /* ... otros estilos originales ... */
 }
 
 .form-box input:focus {
@@ -74,16 +91,19 @@ body {
     box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
 }
 
-/* ⭐⭐⭐ CÓDIGO MINIMAL AÑADIDO PARA EL ICONO DEL OJO ⭐⭐⭐ */
+/* FIN ESTILOS DE LA CAJA */
+
+
+/* ⭐⭐⭐ ESTILOS DEL ICONO DEL OJO (MÍNIMOS Y NECESARIOS) ⭐⭐⭐ */
 .password-wrapper {
     position: relative;
-    /* Mantenemos el margen por defecto de mb-3, pero aseguramos el posicionamiento */
+    /* QUITAMOS el margin-bottom aquí, lo gestiona mb-3 en el HTML */
 }
 
 .password-wrapper input {
     /* Ajusta el padding derecho del input para dar espacio al icono */
     padding-right: 35px !important;
-    /* El input no debe tener margin-bottom si el wrapper es el que controla el espacio */
+    /* El input no debe tener margin-bottom ya que está dentro de mb-3 */
     margin-bottom: 0 !important;
 }
 
@@ -97,11 +117,10 @@ body {
     font-size: 1.1rem;
     transition: color 0.2s;
     z-index: 10;
-    /* Asegura que el icono esté por encima del input */
 }
 
 .password-wrapper i:hover {
     color: #ff1a1a;
 }
 
-/* ⭐⭐⭐ FIN CÓDIGO AÑADIDO ⭐⭐⭐ */
+/* ⭐⭐⭐ FIN ESTILOS DEL ICONO DEL OJO ⭐⭐⭐ */
