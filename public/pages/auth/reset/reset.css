@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
 
-/* ⭐ ESTILOS CLAVE PARA EL LAYOUT Y CENTRADO ⭐ */
+/* ⭐ CENTRADO ABSOLUTO EN EL VIEWPORT ⭐ */
 body {
     font-family: 'Orbitron', sans-serif;
     background: radial-gradient(circle at center, #0a0a0a 0%, #121212 100%);
@@ -8,16 +8,15 @@ body {
     margin: 0;
     padding: 0;
     height: 100vh;
-    /* Configuración Flex para centrar el contenido (Navbar + Formulario) */
+    /* 1. Usar Flexbox en el body para organizar Navbar y Formulario */
     display: flex;
     flex-direction: column;
-    /* Apila el Navbar y el Formulario */
 }
 
 .form-container {
-    /* El contenedor del formulario debe crecer para ocupar el espacio restante */
+    /* 2. El contenedor del formulario debe crecer para ocupar todo el espacio vertical debajo del Navbar */
     flex-grow: 1;
-    /* Configuración Flex para centrar el contenido (el formulario) */
+    /* 3. Usar Flexbox para centrar el contenido (el form-box) */
     display: flex;
     justify-content: center;
     /* Centrado horizontal */
@@ -26,13 +25,12 @@ body {
 
     padding: 1rem;
     min-height: 500px;
-    padding: 20px;
 }
 
-/* --- Fin Estilos de Centrado --- */
 /* ---------------------------------------------------- */
 
 /* ESTILOS DE LA CAJA (form-box) - Tu diseño original */
+/* ---------------------------------------------------- */
 .form-box {
     background-color: rgba(20, 20, 20, 0.92);
     border: 1px solid #e50914;
@@ -99,6 +97,7 @@ body {
 }
 
 .password-wrapper input {
+    /* Ajusta el padding derecho para el icono */
     padding-right: 35px !important;
     margin-bottom: 0 !important;
 }
