@@ -23,7 +23,10 @@ body {
     align-items: center;
     /* Centrado vertical */
 
-    padding: 1rem;
+    /* ⭐ CORRECCIÓN CLAVE: Sobrescribir el padding vertical de login.css ⭐ */
+    padding: 0 20px;
+    /* Mantenemos 0px vertical y 20px horizontal (de tu login.css) */
+
     min-height: 500px;
 }
 
@@ -40,7 +43,7 @@ body {
     width: 100%;
     max-width: 420px;
     text-align: center;
-    animation: fadeIn 1.2s ease;
+    /* (Se asume que la animación fadeIn está definida en otro lugar, como en navbar.css o alertas.css) */
 }
 
 .form-box h2 {
@@ -89,7 +92,7 @@ body {
     box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
 }
 
-/* --- Estilos del Icono del Ojo --- */
+/* --- Estilos del Icono del Ojo (Para la funcionalidad) --- */
 
 .password-wrapper {
     position: relative;
@@ -97,7 +100,6 @@ body {
 }
 
 .password-wrapper input {
-    /* Ajusta el padding derecho para el icono */
     padding-right: 35px !important;
     margin-bottom: 0 !important;
 }
