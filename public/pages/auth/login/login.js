@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             sendResetEmailBtn.disabled = true;
-            sendResetEmailBtn.textContent = "Enviando...";
+            sendResetEmailBtn.textContent = "Verificando...";
 
             try {
                 const res = await fetch("/api/forgotPassword", {
@@ -118,22 +118,29 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email }),
                 });
 
+                // Intentamos leer el cuerpo de la respuesta, incluso si es un error.
+                let result;
+                try {
+                    result = await res.json();
+                } catch (e) {
+                    result = { message: "Respuesta del servidor no válida." };
+                }
+
+                // Si el servidor responde con 200 OK (el correo existe y se envió el enlace)
                 if (res.ok) {
-                    mostrarAlerta("Si el email está registrado, se ha enviado un enlace de restablecimiento. Revisa tu bandeja de entrada y spam.", "exito");
+                    mostrarAlerta("Se ha enviado un enlace de restablecimiento. Revisa tu bandeja de entrada y spam.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
-                } else {
-                    const responseBody = await res.text();
-                    let errorMessage = "Ocurrió un error inesperado al contactar con el servidor. Inténtalo más tarde.";
-
-                    try {
-                        const errorData = JSON.parse(responseBody);
-                        errorMessage = errorData.message || errorMessage;
-                    } catch (e) {
-                        console.error(`Respuesta de error no es JSON (Status: ${res.status}):`, responseBody);
-                        errorMessage = `Error interno del servidor (${res.status}).`;
-                    }
-
+                }
+                // Si el servidor responde con 404 (el correo NO existe, gracias a la modificación en el backend)
+                else if (res.status === 404) {
+                    const errorMessage = result.message || "El correo electrónico ingresado no se encuentra registrado.";
+                    // Muestra alerta de ERROR
+                    mostrarAlerta(errorMessage, "error");
+                }
+                // Manejo de otros errores (400, 500, etc.)
+                else {
+                    const errorMessage = result.message || `Error interno del servidor (${res.status}).`;
                     mostrarAlerta(errorMessage, "error");
                 }
             } catch (err) {
