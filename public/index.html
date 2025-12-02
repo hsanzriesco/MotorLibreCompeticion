@@ -49,8 +49,7 @@
 
     <div class="d-flex align-items-center">
 
-      <a href="#" id="login-icon" class="text-light me-3" data-bs-toggle="modal" data-bs-target="#loginConfirmModal"
-        style="cursor: pointer;">
+      <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
         <i class="bi bi-person-circle fs-4"></i>
       </a>
 
@@ -93,24 +92,6 @@
     <h4 id="bienvenida" class="mt-3 text-danger"></h4>
   </main>
 
-  <div class="modal fade" id="loginConfirmModal" tabindex="-1" aria-labelledby="loginConfirmModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content">
-        <div class="modal-header border-danger">
-          <h5 class="modal-title" id="loginConfirmModalLabel">Confirmar Inicio de Sesión</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>¿Estás seguro de que deseas ir a la página de inicio de sesión?</p>
-        </div>
-        <div class="modal-footer border-danger">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="btnConfirmLogin">Iniciar Sesión</button>
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -133,58 +114,50 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Referencias existentes para Logout
+      // Referencias para Logout
       const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
+
+      // Se inicializa el modal solo si el elemento existe
       const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
+
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
-      const logoutBtn = document.getElementById("logout-btn");
 
-      // ⭐ NUEVAS REFERENCIAS para Login
-      const loginConfirmModalEl = document.getElementById("loginConfirmModal");
-      const loginConfirmModal = loginConfirmModalEl ? new bootstrap.Modal(loginConfirmModalEl) : null;
-      const btnConfirmLogin = document.getElementById("btnConfirmLogin");
-
-      // Elementos de la UI
+      // Elementos de la UI y usuario
       const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
       const usuario = storedUser ? JSON.parse(storedUser) : null;
+
       const bienvenida = document.getElementById("bienvenida");
       const userName = document.getElementById("user-name");
       const loginIcon = document.getElementById("login-icon");
+      const logoutBtn = document.getElementById("logout-btn");
 
 
       if (usuario) {
         // USUARIO LOGUEADO
         bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
         userName.textContent = usuario.name;
+
+        // Muestra el nombre y oculta el ícono de login
         userName.style.display = "inline";
-        loginIcon.style.display = "none"; // Oculta el icono de Login
+        loginIcon.style.display = "none";
+
         logoutBtn.style.display = "block";
 
+        // Si es admin, asegura la redirección al panel
         if (usuario.role === "admin") {
           document.getElementById("logo-link").href = "./pages/dashboard/admin/admin.html";
         }
+
       } else {
         // NO HAY USUARIO LOGUEADO
         userName.style.display = "none";
         loginIcon.style.display = "inline"; // Muestra el icono de Login
-        logoutBtn.style.display = "none";
+        logoutBtn.style.display = "none"; // Oculta el botón de logout
       }
 
-      // --- LÓGICA DE CONFIRMACIÓN DE LOGIN (NUEVO) ---
-      if (btnConfirmLogin) {
-        btnConfirmLogin.addEventListener("click", () => {
-          if (loginConfirmModal) {
-            loginConfirmModal.hide(); // Ocultar el modal de login
-          }
+      // --- LÓGICA DE CONFIRMACIÓN DE LOGOUT (Mantenida) ---
 
-          // Redirigir a la página de login
-          window.location.href = "./pages/auth/login/login.html";
-        });
-      }
-
-      // --- LÓGICA DE CONFIRMACIÓN DE LOGOUT (EXISTENTE) ---
-
-      // 🔑 1. Mostrar el modal de Logout
+      // 🔑 1. Mostrar el modal al hacer clic en el botón del menú
       if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
           e.preventDefault();
@@ -209,7 +182,7 @@
         });
       }
 
-      // 🔑 2. Cerrar sesión al confirmar
+      // 🔑 2. Cerrar sesión al confirmar en el modal
       if (btnConfirmLogout) {
         btnConfirmLogout.addEventListener("click", () => {
 
