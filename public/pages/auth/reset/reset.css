@@ -8,12 +8,15 @@ body {
     margin: 0;
     padding: 0;
     height: 100vh;
-    /* Configuración Flex para apilar Navbar y Formulario */
+    /* Configuración Flex para centrar el contenido (Navbar + Formulario) */
     display: flex;
     flex-direction: column;
+    /* Apila el Navbar y el Formulario */
 }
 
 .form-container {
+    /* El contenedor del formulario debe crecer para ocupar el espacio restante */
+    flex-grow: 1;
     /* Configuración Flex para centrar el contenido (el formulario) */
     display: flex;
     justify-content: center;
@@ -21,19 +24,15 @@ body {
     align-items: center;
     /* Centrado vertical */
 
-    /* Asegura que ocupe todo el espacio vertical restante bajo el navbar */
-    flex-grow: 1;
-
     padding: 1rem;
     min-height: 500px;
-    /* Mantiene un tamaño mínimo */
     padding: 20px;
 }
 
 /* --- Fin Estilos de Centrado --- */
 /* ---------------------------------------------------- */
 
-/* ESTILOS DE LA CAJA (form-box) - Sin cambios en tu diseño original */
+/* ESTILOS DE LA CAJA (form-box) - Tu diseño original */
 .form-box {
     background-color: rgba(20, 20, 20, 0.92);
     border: 1px solid #e50914;
@@ -63,8 +62,6 @@ body {
     font-size: 0.9rem;
 }
 
-/* El input original no tiene margin-bottom, lo maneja mb-3 */
-/* Las clases de Bootstrap (custom-input form-control) manejan la apariencia del input */
 .form-box input {
     width: 100%;
 }
@@ -98,14 +95,11 @@ body {
 
 .password-wrapper {
     position: relative;
-    /* Importante: margin-top debe ser 0 para que no interfiera con el label */
     margin-top: 0;
 }
 
 .password-wrapper input {
-    /* Ajusta el padding derecho del input para dar espacio al icono */
     padding-right: 35px !important;
-    /* El input no debe tener margin-bottom, lo gestiona el div mb-3 */
     margin-bottom: 0 !important;
 }
 
