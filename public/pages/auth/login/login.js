@@ -5,8 +5,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
-    // Utilizamos la función global 'mostrarAlerta' que se carga desde alertas.js
+    // Elementos para el toggle de contraseña
+    const passwordInput = document.getElementById("password");
+    const togglePassword = document.getElementById("togglePassword"); // ID del icono en el HTML
+
     const mostrarAlerta = window.mostrarAlerta;
+
+    // --- Lógica del Toggle de Contraseña ---
+    if (passwordInput && togglePassword) {
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            // Alternar las clases de los iconos de Bootstrap
+            togglePassword.classList.toggle('bi-eye');
+            togglePassword.classList.toggle('bi-eye-slash');
+        });
+    }
 
     // --- Lógica del Formulario de Login ---
     if (form) {
@@ -78,7 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         forgotPasswordLink.addEventListener("click", (e) => {
             e.preventDefault();
-            // Alternar la visibilidad del formulario de email
             emailRequestForm.style.display = emailRequestForm.style.display === "none" ? "block" : "none";
         });
 
@@ -89,11 +102,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 mostrarAlerta("Por favor, introduce tu correo electrónico.", "aviso");
                 return;
             }
-            
-            // Validación básica de formato de email (opcional, pero útil)
+
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                 mostrarAlerta("Por favor, introduce un formato de email válido.", "aviso");
-                 return;
+                mostrarAlerta("Por favor, introduce un formato de email válido.", "aviso");
+                return;
             }
 
             sendResetEmailBtn.disabled = true;
@@ -106,15 +118,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email }),
                 });
 
-                // **Mejora de Seguridad/Usabilidad:** // La API (forgotPassword) DEBE devolver un 200/204, incluso si el email no existe,
-                // para evitar la enumeración de usuarios. El mensaje de éxito debe ser genérico.
-                if (res.ok) { 
-                    // El servidor respondió correctamente (200-299)
+                if (res.ok) {
                     mostrarAlerta("Si el email está registrado, se ha enviado un enlace de restablecimiento. Revisa tu bandeja de entrada y spam.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
-                } else { 
-                    // El servidor devolvió un error (4xx, 5xx), lo cual es inesperado si la API sigue la práctica segura
+                } else {
                     const responseBody = await res.text();
                     let errorMessage = "Ocurrió un error inesperado al contactar con el servidor. Inténtalo más tarde.";
 
@@ -123,7 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         errorMessage = errorData.message || errorMessage;
                     } catch (e) {
                         console.error(`Respuesta de error no es JSON (Status: ${res.status}):`, responseBody);
-                        // Si no es JSON, asumimos un error interno del servidor no controlado (500)
                         errorMessage = `Error interno del servidor (${res.status}).`;
                     }
 
