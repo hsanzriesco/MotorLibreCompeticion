@@ -92,22 +92,21 @@ body {
 
 
 /* =================================================== */
-/* === ESTILOS AÑADIDOS PARA EL TOGGLE DE CONTRASEÑA === */
+/* === ESTILOS AÑADIDOS PARA EL ICONO DE CONTRASEÑA === */
 /* =================================================== */
 
-/* Contenedor de la contraseña (usando mb-3 para Bootstrap) */
+/* Contenedor de la contraseña */
 .password-wrapper {
     position: relative;
-    /* Ajuste: quitamos margin-top si el input en reset.html ya usa mb-3 y el label es independiente */
+    /* Clave para posicionar el icono */
 }
 
-/* Ajuste del input dentro del wrapper para dejar espacio al icono */
+/* Ajuste del input dentro del wrapper */
 .password-wrapper input {
-    /* El input ya tiene 100% de ancho gracias a .form-box input */
+    /* Deja espacio a la derecha para que el icono no tape el texto */
     padding-right: 40px;
-    /* Crucial: Deja espacio a la derecha */
     margin-top: 0;
-    /* Asegura que el margin del input no interfiera con el wrapper */
+    /* Asegura que el margin se maneje desde el mb-3 o el label */
 }
 
 /* Estilo para el icono */
@@ -123,7 +122,6 @@ body {
     color: #e50914;
     /* Color rojo de tu tema */
     font-size: 1.25rem;
-    /* Tamaño del icono */
     z-index: 2;
     /* Asegura que el icono esté por encima del input */
     transition: color 0.2s ease;
