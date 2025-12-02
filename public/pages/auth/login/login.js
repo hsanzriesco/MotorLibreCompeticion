@@ -126,19 +126,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     result = { message: "Respuesta del servidor no válida." };
                 }
 
-                // Si el servidor responde con 200 OK (el correo existe y se envió el enlace)
+                // ⭐⭐ Lógica modificada para verificar el estado de la respuesta del servidor ⭐⭐
+
+                // 1. Correo EXISTE (servidor devuelve 200 OK) -> Alerta de ÉXITO
                 if (res.ok) {
                     mostrarAlerta("Se ha enviado un enlace de restablecimiento. Revisa tu bandeja de entrada y spam.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
                 }
-                // Si el servidor responde con 404 (el correo NO existe, gracias a la modificación en el backend)
+                // 2. Correo NO EXISTE (servidor devuelve 404 Not Found) -> Alerta de ERROR
                 else if (res.status === 404) {
                     const errorMessage = result.message || "El correo electrónico ingresado no se encuentra registrado.";
-                    // Muestra alerta de ERROR
                     mostrarAlerta(errorMessage, "error");
                 }
-                // Manejo de otros errores (400, 500, etc.)
+                // 3. Otros Errores (400, 500, etc.) -> Alerta de ERROR
                 else {
                     const errorMessage = result.message || `Error interno del servidor (${res.status}).`;
                     mostrarAlerta(errorMessage, "error");

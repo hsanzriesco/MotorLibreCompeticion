@@ -42,8 +42,8 @@ export default async (req, res) => {
     // 2. Comprobación de variables de entorno críticas
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
         console.error("FATAL: Missing critical environment variables.");
-        return res.status(500).json({ 
-            message: 'Internal Server Error: Missing critical environment variables.' 
+        return res.status(500).json({
+            message: 'Internal Server Error: Missing critical environment variables.'
         });
     }
 
@@ -53,19 +53,19 @@ export default async (req, res) => {
         const user = result.rows[0];
 
         if (!user) {
-            // Respuesta segura (evita la enumeración de usuarios)
-            return res.status(200).json({ message: 'Si el correo existe en nuestro sistema, se te enviará un enlace de restablecimiento.' });
+            // ⭐⭐ MODIFICACIÓN CLAVE: Si el correo NO existe, devolvemos 404 Not Found.
+            return res.status(404).json({ message: 'El correo electrónico ingresado no se encuentra registrado.' });
         }
-        
+
         const userId = user.id;
 
         // 4. Generar Token JWT (expira en 1 hora)
         const token = jwt.sign(
-            { id: userId }, 
-            process.env.JWT_SECRET, 
+            { id: userId },
+            process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
-        
+
         const expirationDate = new Date(Date.now() + 3600000); // 1 hora
 
         // 5. Guardar el token y la expiración en la BD de Neon
@@ -78,23 +78,24 @@ export default async (req, res) => {
         // 6. Configurar la URL de Restablecimiento
         // ⚠️ IMPORTANTE: Reemplaza con el dominio real de tu aplicación (ej: https://tudominio.com)
         const resetURL = `${req.headers.origin || 'http://localhost:3000'}/pages/auth/reset/reset.html?token=${token}`;
-        
+
         // 7. Configurar y Enviar el Correo
         const mailOptions = {
             from: `Motor Libre Competicion <${process.env.EMAIL_USER}>`,
             to: user.email,
             subject: 'Solicitud de Restablecimiento de Contraseña',
             html: `
-                <p>Hola,</p>
-                <p>Haz clic en el enlace para crear una nueva contraseña:</p>
-                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
-                    Restablecer Contraseña
-                </a>
-            `,
+                <p>Hola,</p>
+                <p>Haz clic en el enlace para crear una nueva contraseña:</p>
+                <a href="${resetURL}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
+                    Restablecer Contraseña
+                </a>
+            `,
         };
 
         await transporter.sendMail(mailOptions);
 
+        // Si llega aquí, el correo fue encontrado y enviado
         return res.status(200).json({ message: 'Correo enviado. Revisa tu bandeja de entrada.' });
 
     } catch (error) {
