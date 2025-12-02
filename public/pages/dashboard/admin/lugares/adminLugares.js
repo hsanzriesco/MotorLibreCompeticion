@@ -1,11 +1,14 @@
+// En pages/dashboard/admin/lugares/adminLugares.js
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Definimos las variables necesarias
     const locationsTableBody = document.getElementById('locationsTableBody');
     const locationForm = document.getElementById('locationForm');
     const locationIdInput = document.getElementById('locationId');
     const btnCancelEdit = document.getElementById('btnCancelEdit');
-    const btnConfirmDelete = document.getElementById('btnConfirmDelete');
-    
-    let locationToDeleteId = null;
+
+    // NOTA: Se eliminan: locationToDeleteId, btnConfirmDelete, setLocationToDelete 
+    //       y el modal de Bootstrap, ya que usamos las funciones de alertas.js.
 
     // Función para limpiar el formulario
     const resetForm = () => {
@@ -17,45 +20,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función para cargar la tabla
     const loadLocations = async () => {
+        // 1. Mostrar mensaje de carga usando la función personalizada o mensaje simple
         locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando lugares...</td></tr>';
-        
+
         try {
             const response = await fetch('/api/locations');
             const data = await response.json();
 
-            if (data.success && data.data.length > 0) {
-                locationsTableBody.innerHTML = data.data.map(location => `
-                    <tr>
-                        <td>${location.id}</td>
-                        <td>${location.name}</td>
-                        <td>${location.city || '-'}</td>
-                        <td>${location.country || '-'}</td>
-                        <td>${location.capacity || '-'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-info text-white me-2" onclick="editLocation(${location.id})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal" onclick="setLocationToDelete(${location.id})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+            if (data.success) {
+                if (data.data.length > 0) {
+                    locationsTableBody.innerHTML = data.data.map(location => `
+                        <tr>
+                            <td>${location.id}</td>
+                            <td>${location.name}</td>
+                            <td>${location.city || '-'}</td>
+                            <td>${location.country || '-'}</td>
+                            <td>${location.capacity || '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info text-white me-2" onclick="editLocation(${location.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" data-location-id="${location.id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No hay lugares registrados.</td></tr>';
+                }
             } else {
-                locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No hay lugares registrados.</td></tr>';
+                // Usamos la función de alerta personalizada
+                locationsTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error de la API: ${data.message || 'No se pudieron cargar los lugares.'}</td></tr>`;
             }
         } catch (error) {
             console.error('Error al cargar los lugares:', error);
-            locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al conectar con la API.</td></tr>';
+            // Usamos la función de alerta personalizada
+            locationsTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al conectar con el servidor.</td></tr>';
         }
     };
 
-    // Función global para establecer el ID a eliminar
-    window.setLocationToDelete = (id) => {
-        locationToDeleteId = id;
-    };
-
-    // Función global para editar
+    // Función global para editar (se llama desde el botón 'onclick')
     window.editLocation = async (id) => {
         try {
             const response = await fetch(`/api/locations?id=${id}`);
@@ -69,15 +74,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('city').value = location.city;
                 document.getElementById('country').value = location.country;
                 document.getElementById('capacity').value = location.capacity;
-                
+
                 document.querySelector('button[type="submit"]').textContent = 'Actualizar Lugar';
                 btnCancelEdit.style.display = 'inline-block';
             } else {
-                mostrarAlerta('error', 'Error', data.message || 'No se pudo cargar el lugar para editar.');
+                // Usamos la función de alerta personalizada
+                mostrarAlerta(data.message || 'No se pudo cargar el lugar para editar.', 'error');
             }
         } catch (error) {
             console.error('Error al cargar datos para edición:', error);
-            mostrarAlerta('error', 'Error', 'Fallo en la comunicación con el servidor.');
+            // Usamos la función de alerta personalizada
+            mostrarAlerta('Fallo en la comunicación con el servidor.', 'error');
         }
     };
 
@@ -109,46 +116,58 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.success) {
-                mostrarAlerta('success', 'Éxito', data.message);
+                // Usamos la función de alerta personalizada
+                mostrarAlerta(data.message, 'exito');
                 resetForm();
                 loadLocations();
             } else {
-                mostrarAlerta('error', 'Error', data.message || 'Ocurrió un error al guardar el lugar.');
+                // Usamos la función de alerta personalizada
+                mostrarAlerta(data.message || 'Ocurrió un error al guardar el lugar.', 'error');
             }
         } catch (error) {
             console.error('Error al enviar formulario:', error);
-            mostrarAlerta('error', 'Error', 'Fallo en la comunicación con el servidor.');
+            // Usamos la función de alerta personalizada
+            mostrarAlerta('Fallo en la comunicación con el servidor.', 'error');
         }
     });
 
     // Cancelar edición
     btnCancelEdit.addEventListener('click', resetForm);
 
-    // Confirmar eliminación
-    btnConfirmDelete.addEventListener('click', async () => {
-        if (!locationToDeleteId) return;
+    // DELEGACIÓN DE EVENTOS PARA ELIMINACIÓN (Usando mostrarConfirmacion)
+    locationsTableBody.addEventListener('click', async (e) => {
+        // Buscamos el botón de eliminación
+        const deleteButton = e.target.closest('.btn-danger');
 
-        try {
-            const response = await fetch(`/api/locations?id=${locationToDeleteId}`, {
-                method: 'DELETE',
-            });
-            
-            const data = await response.json();
+        if (deleteButton) {
+            const id = deleteButton.dataset.locationId;
 
-            if (data.success) {
-                mostrarAlerta('success', 'Éxito', data.message);
-                loadLocations();
-                locationToDeleteId = null;
-                // Cerrar el modal manualmente
-                const modalElement = document.getElementById('deleteConfirmModal');
-                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-                modal.hide();
-            } else {
-                mostrarAlerta('error', 'Error', data.message || 'Ocurrió un error al eliminar el lugar.');
+            if (id) {
+                // 1. Mostramos la confirmación personalizada
+                const confirmed = await mostrarConfirmacion('¿Estás seguro de que deseas eliminar este lugar? Esta acción es irreversible.');
+
+                if (confirmed) {
+                    try {
+                        const response = await fetch(`/api/locations?id=${id}`, {
+                            method: 'DELETE',
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // 2. Usamos alerta de éxito
+                            mostrarAlerta('Lugar eliminado correctamente.', 'exito');
+                            loadLocations();
+                        } else {
+                            // 3. Usamos alerta de error
+                            mostrarAlerta(data.message || 'Ocurrió un error al eliminar el lugar.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error al eliminar:', error);
+                        mostrarAlerta('Fallo en la comunicación con el servidor al eliminar.', 'error');
+                    }
+                }
             }
-        } catch (error) {
-            console.error('Error al eliminar:', error);
-            mostrarAlerta('error', 'Error', 'Fallo en la comunicación con el servidor.');
         }
     });
 
