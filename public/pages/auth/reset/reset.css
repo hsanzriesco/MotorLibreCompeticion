@@ -90,10 +90,9 @@ body {
     box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
 }
 
-
-/* =================================================== */
+/* ============================================== */
 /* === ESTILOS AÑADIDOS SOLO PARA EL ICONO DEL OJO === */
-/* =================================================== */
+/* ============================================== */
 
 /* Contenedor de la contraseña */
 .password-wrapper {
@@ -102,11 +101,12 @@ body {
 }
 
 /* Ajuste del input dentro del wrapper */
-.password-wrapper input {
-    /* Deja espacio a la derecha para que el icono no tape el texto */
-    padding-right: 40px;
+/* Usamos el input dentro de .password-wrapper para anular el margin-top de 6px y darle padding a la derecha */
+.password-wrapper input.custom-input.form-control {
     margin-top: 0;
-    /* Anula el margin-top del input general si se aplica al wrapper */
+    /* Anula el margen superior del input general */
+    padding-right: 40px;
+    /* Deja espacio a la derecha para el icono */
 }
 
 /* Estilo para el icono */
