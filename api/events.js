@@ -23,7 +23,8 @@ function readJsonBody(req) {
                 if (!body) return resolve({});
                 resolve(JSON.parse(body));
             } catch (e) {
-                reject(new Error("Error al parsear el cuerpo JSON de la solicitud (Unexpected end of JSON input)."));
+                // Captura el error específico 'Unexpected end of JSON input' o cualquier otro error de parseo
+                reject(new Error("Error al parsear el cuerpo JSON de la solicitud."));
             }
         });
     });
@@ -42,10 +43,12 @@ function parseMultipart(req) {
                 return reject(err);
             }
 
+            // formidable devuelve arrays si se usa `multiples: false`, los convertimos a valores únicos
             const singleFields = Object.fromEntries(
                 Object.entries(fields).map(([key, value]) => [key, value[0]])
             );
 
+            // Asegurar que `files.imageFile` sea un array para consistencia si no hay archivo
             resolve({ fields: singleFields, files });
         });
     });
@@ -117,7 +120,35 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, isRegistered: result.rows.length > 0 });
             }
 
-            // 🚀 NUEVO: Obtener lista de inscritos para un evento
+            // 🆕 GET: Obtener solo el CONTEO de inscritos para un evento
+            if (action === 'getRegistrationCount') {
+                const { event_id } = req.query;
+
+                if (!event_id) {
+                    return res.status(400).json({ success: false, message: "Falta el ID del evento para obtener el conteo de inscritos." });
+                }
+
+                const parsedEventId = parseInt(event_id);
+                if (isNaN(parsedEventId)) {
+                    return res.status(400).json({ success: false, message: "El ID del evento debe ser un número válido." });
+                }
+
+                // Consulta eficiente para obtener SOLO el conteo
+                const result = await client.query(
+                    `SELECT COUNT(id) AS count FROM event_registrations WHERE event_id = $1`,
+                    [parsedEventId]
+                );
+
+                const count = parseInt(result.rows[0].count, 10);
+
+                return res.status(200).json({
+                    success: true,
+                    registrationCount: count
+                });
+            }
+
+
+            // 🚀 GET: Obtener lista de inscritos para un evento
             if (action === 'getRegistrations') {
                 const { event_id } = req.query;
 
