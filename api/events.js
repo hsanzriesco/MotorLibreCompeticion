@@ -96,7 +96,6 @@ export default async function handler(req, res) {
             // GET: Cargar todos los eventos
             if (!action) {
                 const result = await client.query(
-                    // 🟢 MODIFICADO: Añadir capacidad_max al SELECT
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url, capacidad_max FROM events ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
@@ -116,6 +115,32 @@ export default async function handler(req, res) {
                 );
 
                 return res.status(200).json({ success: true, isRegistered: result.rows.length > 0 });
+            }
+
+            // 🚀 NUEVO: Obtener lista de inscritos para un evento
+            if (action === 'getRegistrations') {
+                const { event_id } = req.query;
+
+                if (!event_id) {
+                    return res.status(400).json({ success: false, message: "Falta el ID del evento para obtener los inscritos." });
+                }
+
+                const parsedEventId = parseInt(event_id);
+                if (isNaN(parsedEventId)) {
+                    return res.status(400).json({ success: false, message: "El ID del evento debe ser un número válido." });
+                }
+
+                // 🟢 Se selecciona la información relevante de los usuarios inscritos
+                const result = await client.query(
+                    `SELECT id, user_id, usuario_inscrito, registered_at FROM event_registrations WHERE event_id = $1 ORDER BY registered_at ASC`,
+                    [parsedEventId]
+                );
+
+                return res.status(200).json({
+                    success: true,
+                    data: result.rows,
+                    totalRegistrations: result.rows.length // Útil para el frontend
+                });
             }
         }
 
@@ -149,7 +174,7 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 🟢 NUEVO/MODIFICADO: Verificar si quedan cupos (capacidad_max > num_inscritos)
+                // 2. Verificar si quedan cupos (capacidad_max > num_inscritos)
                 const capacityCheck = await client.query(`
                     SELECT 
                         e.capacidad_max, 
@@ -162,14 +187,14 @@ export default async function handler(req, res) {
 
                 if (capacityCheck.rows.length > 0) {
                     const { capacidad_max, num_inscritos } = capacityCheck.rows[0];
-                    const maxCapacity = parseInt(capacidad_max); // Asegurar que sea número
+                    const maxCapacity = parseInt(capacidad_max);
 
                     if (maxCapacity > 0 && num_inscritos >= maxCapacity) {
                         return res.status(403).json({ success: false, message: "Aforo completo. No se puede realizar la inscripción." });
                     }
                 }
 
-                // 2. Obtener el nombre del usuario y el título del evento
+                // 3. Obtener el nombre del usuario y el título del evento
                 const dataQuery = `
                     SELECT
                         u.name AS user_name,
@@ -190,7 +215,7 @@ export default async function handler(req, res) {
                 const { user_name, event_title } = dataResult.rows[0];
 
 
-                // 3. Insertar inscripción CON los nombres
+                // 4. Insertar inscripción CON los nombres
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId, user_name, event_title]
@@ -205,7 +230,6 @@ export default async function handler(req, res) {
             if (!action) {
                 const { fields, files } = await parseMultipart(req);
 
-                // 🟢 MODIFICADO: Extraer capacidad_max
                 const { title, description, location, start, end, imageURL, capacidad_max } = fields;
                 const file = files.imageFile?.[0];
 
@@ -216,7 +240,6 @@ export default async function handler(req, res) {
                     });
                 }
 
-                // 🟢 NUEVO: Parsear capacidad_max a entero, usando 0 si no es válido
                 const parsedCapacidadMax = parseInt(capacidad_max) || 0;
 
 
@@ -230,7 +253,6 @@ export default async function handler(req, res) {
                     finalImageUrl = uploadResponse.secure_url;
                 }
 
-                // 🟢 MODIFICADO: Incluir capacidad_max en la consulta INSERT
                 const result = await client.query(
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url, capacidad_max) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
                     [title, description, location, start, end, finalImageUrl, parsedCapacidadMax]
@@ -246,7 +268,6 @@ export default async function handler(req, res) {
             // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
 
-            // 🟢 MODIFICADO: Extraer capacidad_max
             const { title, description, location, start, end, imageURL, capacidad_max } = fields;
             const file = files.imageFile?.[0];
 
@@ -257,7 +278,6 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 🟢 NUEVO: Parsear capacidad_max a entero, usando 0 si no es válido
             const parsedCapacidadMax = parseInt(capacidad_max) || 0;
 
             let finalImageUrl = imageURL || null;
@@ -274,7 +294,6 @@ export default async function handler(req, res) {
 
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
-            // 🟢 MODIFICADO: Incluir capacidad_max en la consulta UPDATE ($7) y ajustar el ID ($8)
             const result = await client.query(
                 `UPDATE events SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6, capacidad_max = $7 WHERE id = $8 RETURNING *`,
                 [title, description, location, start, end, finalImageUrl, parsedCapacidadMax, id]
@@ -288,7 +307,7 @@ export default async function handler(req, res) {
         // MANEJADOR DELETE 
         // ===============================================
         if (req.method === "DELETE") {
-            // 🟢 NUEVO: Cancelar inscripción
+            // Cancelar inscripción
             if (action === 'cancel') {
                 const { user_id, event_id } = req.query;
 
@@ -308,10 +327,10 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, message: "Inscripción cancelada correctamente." });
             }
 
-            // DELETE: Eliminar evento (Lógica existente)
+            // Eliminar evento
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
-            // 🟢 NUEVO: Eliminar inscripciones relacionadas antes de eliminar el evento
+            // Eliminar inscripciones relacionadas antes de eliminar el evento
             await client.query("DELETE FROM event_registrations WHERE event_id = $1", [id]);
 
             // Eliminar el evento
