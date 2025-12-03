@@ -114,9 +114,10 @@ export default async function handler(req, res) {
             }
 
             // 🔑 MODIFICADO: GET: Obtener TODOS los resultados de carrera para el panel de administración
+            // ESTA CONSULTA YA ESTABA CORRECTA (Usa JOIN para obtener el nombre)
             if (action === 'getAllResults') {
                 const result = await client.query(
-                    // 🟢 Se incluye la columna er.points
+                    // 🟢 Se incluye la columna er.points y se obtiene el nombre del usuario mediante JOIN
                     `SELECT er.result_id, er.event_id, er.user_id, er.position, er.best_lap_time, er.points, u.name AS user 
                      FROM event_results er
                      JOIN users u ON er.user_id = u.id 
@@ -211,30 +212,30 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "POST") {
 
-            // 🔑 MODIFICADO: POST: Añadir un resultado de carrera
+            // 🔑 CORREGIDO: POST: Añadir un resultado de carrera
             if (action === 'addResult') {
                 const jsonBody = await readJsonBody(req);
-                // 🔑 Desestructuramos el cuerpo
-                const { event_id, user_id, position, best_lap_time, user } = jsonBody;
+                // 🔑 Desestructuramos el cuerpo. NO NECESITAMOS 'user' aquí.
+                const { event_id, user_id, position, best_lap_time } = jsonBody;
                 let { points } = jsonBody; // Usamos 'let' para poder modificar 'points'
 
-                // 🟢 MODIFICACIÓN CLAVE: Sanear 'points'. Si es vacío o nulo, forzar a '0'
+                // 🟢 Sanear 'points'. Si es vacío o nulo, forzar a '0'
                 if (points === "" || points === null || points === undefined) {
                     points = 0;
                 }
 
-                // 🔑 Validar campos obligatorios (excluyendo points, que ya ha sido saneado)
-                if (!event_id || !user_id || !position || !best_lap_time || !user) {
+                // 🔑 Validar campos obligatorios (NO incluimos 'user')
+                if (!event_id || !user_id || !position || !best_lap_time) {
                     return res.status(400).json({ success: false, message: "Faltan campos obligatorios para añadir el resultado." });
                 }
 
                 const result = await client.query(
-                    // 🟢 Añadir la columna points y el valor $6
-                    `INSERT INTO event_results (event_id, user_id, position, best_lap_time, "user", points) 
-                     VALUES ($1, $2, $3, $4, $5, $6) 
+                    // 🟢 Quitamos la columna "user"
+                    `INSERT INTO event_results (event_id, user_id, position, best_lap_time, points) 
+                     VALUES ($1, $2, $3, $4, $5) 
                      RETURNING result_id`,
-                    // El parseInt(points) ahora es seguro porque points es '0' o la cadena numérica válida
-                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user, parseInt(points)]
+                    // 🟢 Quitamos el parámetro 'user'
+                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, parseInt(points)]
                 );
 
                 return res.status(201).json({ success: true, message: "Resultado añadido correctamente.", resultId: result.rows[0].result_id });
@@ -363,31 +364,31 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "PUT") {
 
-            // 🔑 MODIFICADO: PUT: Editar un resultado de carrera
+            // 🔑 CORREGIDO: PUT: Editar un resultado de carrera
             if (action === 'editResult') {
                 const jsonBody = await readJsonBody(req);
-                // 🔑 Desestructuramos el cuerpo
-                const { result_id, event_id, user_id, position, best_lap_time, user } = jsonBody;
+                // 🔑 Desestructuramos el cuerpo. NO NECESITAMOS 'user' aquí.
+                const { result_id, event_id, user_id, position, best_lap_time } = jsonBody;
                 let { points } = jsonBody; // Usamos 'let' para poder modificar 'points'
 
-                // 🟢 MODIFICACIÓN CLAVE: Sanear 'points'. Si es vacío o nulo, forzar a '0'
+                // 🟢 Sanear 'points'. Si es vacío o nulo, forzar a '0'
                 if (points === "" || points === null || points === undefined) {
                     points = 0;
                 }
 
-                // 🔑 Validar campos obligatorios (excluyendo points, que ya ha sido saneado)
-                if (!result_id || !event_id || !user_id || !position || !best_lap_time || !user) {
+                // 🔑 Validar campos obligatorios (NO incluimos 'user')
+                if (!result_id || !event_id || !user_id || !position || !best_lap_time) {
                     return res.status(400).json({ success: false, message: "Faltan campos obligatorios para editar el resultado." });
                 }
 
                 const result = await client.query(
-                    // 🟢 Añadir la columna points al UPDATE y el valor $6
+                    // 🟢 Quitamos la columna "user" del SET
                     `UPDATE event_results 
-                     SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, "user" = $5, points = $6
-                     WHERE result_id = $7 
+                     SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, points = $5
+                     WHERE result_id = $6 
                      RETURNING result_id`,
-                    // El parseInt(points) ahora es seguro
-                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user, parseInt(points), parseInt(result_id)]
+                    // 🟢 Ajustamos los parámetros a 6 (quitamos 'user' y result_id es $6)
+                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, parseInt(points), parseInt(result_id)]
                 );
 
                 if (result.rows.length === 0) {
@@ -511,8 +512,11 @@ export default async function handler(req, res) {
 
         // 🚨 Manejo de errores de PostgreSQL más específicos
         if (error.code === '42703' && error.message.includes('points')) {
-            // Este es el error más probable si la columna no existe.
+            // Este error puede indicar que falta la columna 'points'
             errorMessage = 'Error de Base de Datos: La columna "points" no existe en la tabla "event_results".';
+        } else if (error.code === '42703' && error.message.includes('user')) {
+            // Este es el error que vimos, indicando que la columna "user" NO existe (y está bien, debe usar JOIN)
+            errorMessage = 'Error de Base de Datos: Columna "user" no encontrada. Por favor, asegúrese de que la base de datos esté sincronizada y si no es necesaria, revise la consulta.';
         } else if (error.code === '22P02') {
             // Este error (22P02) incluye la sintaxis de entrada inválida, que es lo que ocurre con NaN/vacío.
             errorMessage = 'Error de Base de Datos: Valor de ID o dato numérico (ej. puntos) inválido. Asegúrese de que todos los números sean válidos y que los campos obligatorios no estén vacíos.';
