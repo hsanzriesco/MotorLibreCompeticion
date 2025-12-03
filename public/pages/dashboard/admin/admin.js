@@ -55,8 +55,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     let eventInitialState = null; // 🔑 NUEVO: Para guardar el estado inicial
 
     const carGarageForm = document.getElementById("carGarageForm");
-    // const carModalEl = document.getElementById("carGarageModal"); // Asumimos que carModalEl está en otra vista/lógica
-    // const carModalEl = document.getElementById("carGarageModal"); // Asumimos que carModalEl está en otra vista/lógica
     const carModalEl = document.getElementById("carGarageModal"); // Mantengo esto si existe en el DOM
 
     // Variables de coche omitidas para simplicidad si no se usan, pero se mantienen si son necesarias.
@@ -124,6 +122,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- FIN FUNCIONES DE ESTADO ---
 
+    let calendar; // 💡 Declara la variable calendar aquí para que sea accesible globalmente en el script
 
     async function fetchEvents() {
         try {
@@ -153,7 +152,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (calendarEl) {
-        const calendar = new FullCalendar.Calendar(calendarEl, {
+        // 💡 Asigna la instancia a la variable calendar
+        calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
             selectable: true,
             editable: false,
@@ -236,7 +236,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         calendar.render();
 
-        // 🔑 Función de gestión de eventos (Crear/Actualizar)
+    } // 🚨 FIN DEL BLOQUE IF (calendarEl)
+
+    // ---------------------------------------------------------------------
+    // 🚀 SOLUCIÓN: MOVER LOS LISTENERS FUERA DEL BLOQUE IF (calendarEl)
+    // ---------------------------------------------------------------------
+
+    // 🔑 Función de gestión de eventos (Crear/Actualizar)
+    if (saveEventBtn) {
         saveEventBtn.addEventListener("click", async () => {
             const eventId = eventIdInput.value;
             const title = titleInput.value.trim();
@@ -271,7 +278,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             // Determinar si es crear o actualizar y la URL
             const isUpdate = !!eventId;
-            const method = isUpdate ? "PUT" : "POST";
+            // const method = isUpdate ? "PUT" : "POST"; // No es necesario si siempre se usa POST con action
             const url = isUpdate ? `/api/events?id=${eventId}` : "/api/events";
             formData.set("action", isUpdate ? "update" : "create");
             if (isUpdate) formData.set("id", eventId);
@@ -294,7 +301,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (json.success) {
                     mostrarAlerta("Éxito", `Evento ${isUpdate ? "actualizado" : "creado"} correctamente.`, "success");
                     eventModal.hide();
-                    calendar.refetchEvents();
+                    // 💡 Comprobar si calendar existe antes de refetchEvents
+                    if (calendar) calendar.refetchEvents();
                 } else {
                     mostrarAlerta("Error", json.message || `Fallo al ${isUpdate ? "actualizar" : "crear"} el evento.`, "error");
                 }
@@ -303,8 +311,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                 mostrarAlerta("Error de Red", "No se pudo conectar con el servidor.", "error");
             }
         });
+    }
 
-        // 🔑 Función para eliminar evento
+    // 🔑 Función para eliminar evento
+    if (deleteEventBtn) {
         deleteEventBtn.addEventListener("click", () => {
             const eventId = eventIdInput.value;
             if (!eventId) return;
@@ -325,7 +335,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                         if (json.success) {
                             mostrarAlerta("Eliminado", "Evento eliminado correctamente.", "success");
                             eventModal.hide();
-                            calendar.refetchEvents();
+                            // 💡 Comprobar si calendar existe antes de refetchEvents
+                            if (calendar) calendar.refetchEvents();
                         } else {
                             mostrarAlerta("Error", json.message || "Fallo al eliminar el evento.", "error");
                         }
@@ -336,16 +347,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             );
         });
+    }
 
-        // 🔑 Limpiar imagen
+    // 🔑 Limpiar imagen
+    if (clearImageBtn) {
         clearImageBtn.addEventListener('click', () => {
             imageURLInput.value = ''; // Borra la URL del campo oculto
             imageFileInput.value = ''; // Borra el archivo seleccionado
             currentImagePreview.src = '';
             currentImageContainer.style.display = 'none';
         });
+    }
 
-        // 🔑 Actualizar previsualización si se selecciona un archivo
+    // 🔑 Actualizar previsualización si se selecciona un archivo
+    if (imageFileInput) {
         imageFileInput.addEventListener('change', function () {
             if (this.files && this.files[0]) {
                 // Si hay un archivo, ocultamos el contenedor de la imagen previa por URL
@@ -356,15 +371,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                 currentImageContainer.style.display = 'block';
             }
         });
+    }
 
-        // Evento para reabrir el modal de evento al cerrar el de coche (si aplica)
-        if (carModalEl) {
-            carModalEl.addEventListener('hidden.bs.modal', () => {
-                if (eventIdInput.value) {
-                    eventModal.show();
-                }
-            });
-        }
+    // Evento para reabrir el modal de evento al cerrar el de coche (si aplica)
+    if (carModalEl) {
+        carModalEl.addEventListener('hidden.bs.modal', () => {
+            if (eventIdInput.value) {
+                eventModal.show();
+            }
+        });
     }
 
     // --- Logout Logic ---
