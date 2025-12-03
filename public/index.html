@@ -2,21 +2,29 @@
 <html lang="es">
 
 <head>
+   
   <meta charset="UTF-8">
+   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Motor Libre Competición</title>
+    <title>Motor Libre Competición</title>
 
+   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+   
   <link rel="stylesheet" href="./css/style.css">
+   
   <link rel="stylesheet" href="./css/alertas.css">
 
-  <link rel="stylesheet" href="./css/footer.css">
+   
+  <link rel="stylesheet" href="./pieDePagina/footer.css">
 
+   
   <link rel="icon" type="image/png" href="./img/imagen-tfg.png">
 
 
-  <style>
+    <style>
     body {
       background-color: #111;
       color: white;
@@ -51,146 +59,85 @@
 
 <body>
 
-  <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
-    <a id="logo-link" href="./index.html" class="navbar-brand d-flex align-items-center">
-      <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
-    </a>
+        <a id="logo-link" href="./index.html" class="navbar-brand d-flex align-items-center">
+            <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+          </a>
 
-    <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center">
 
-      <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
-        <i class="bi bi-person-circle fs-4"></i>
-      </a>
+            <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
+                <i class="bi bi-person-circle fs-4"></i>
+              </a>
 
-      <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
 
-      <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"        
         data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-        <i class="bi bi-list fs-4"></i>
-      </button>
+                <i class="bi bi-list fs-4"></i>
+              </button>
 
-    </div>
-  </nav>
+          </div>
+      </nav>
 
-  <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-    <div class="offcanvas-header border-bottom border-secondary">
-      <h5 class="offcanvas-title">Menú</h5>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+          </div>
 
-    <div class="offcanvas-body">
+        <div class="offcanvas-body">
 
-      <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
-        Calendario
-      </a>
+            <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
+                Calendario
+              </a>
 
-      <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
-        Mi perfil
-      </a>
+            <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
+                Mi perfil
+              </a>
 
+           
       <hr class="border-secondary">
 
-      <a href="#" id="logout-btn" class="d-block text-danger">
-        Cerrar sesión
-      </a>
+            <a href="#" id="logout-btn" class="d-block text-danger">
+                Cerrar sesión
+              </a>
+         
     </div>
-  </div>
+      </div>
 
-  <main class="text-center mt-5">
-    <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
-    <h4 id="bienvenida" class="mt-3 text-danger"></h4>
-  </main>
+    <main class="text-center mt-5">
+        <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
+        <h4 id="bienvenida" class="mt-3 text-danger"></h4>
+      </main>
 
-  <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"    
     aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content">
-        <div class="modal-header border-danger">
-          <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
-        </div>
-        <div class="modal-footer border-danger">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
-        </div>
-      </div>
-    </div>
-  </div>
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            aria-label="Close"></button>
+                  </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+                  </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                  </div>
+              </div>
+          </div>
+      </div>
 
+  <div id="footer-placeholder"></div>
 
-  <footer id="main-footer" class="bg-dark text-white pt-5 pb-4">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-4 mb-4">
-          <h5 class="text-uppercase mb-3 logo-text">Tu Marca</h5>
-          <p>
-            Ofrecemos las mejores soluciones y servicios para mantener tu
-            vida digital y tus vehículos siempre a punto. Innovación y confianza.
-          </p>
-          <p class="copyright-mobile d-md-none mt-3">
-            &copy; 2025 Tu Marca. Todos los derechos reservados.
-          </p>
-        </div>
-
-        <div class="col-md-2 col-6 mb-4">
-          <h6 class="text-uppercase font-weight-bold">Servicios</h6>
-          <hr class="mb-3 mt-0 d-inline-block mx-auto" style="width: 60px;">
-          <ul class="list-unstyled">
-            <li><a href="/index.html" class="text-white">Inicio</a></li>
-            <li><a href="/perfil.html" class="text-white">Mi Perfil</a></li>
-            <li><a href="#" class="text-white">Nuestros Planes</a></li>
-            <li><a href="#" class="text-white">Ayuda y Soporte</a></li>
-          </ul>
-        </div>
-
-        <div class="col-md-3 col-6 mb-4">
-          <h6 class="text-uppercase font-weight-bold">Empresa</h6>
-          <hr class="mb-3 mt-0 d-inline-block mx-auto" style="width: 60px;">
-          <ul class="list-unstyled">
-            <li><a href="#" class="text-white">Sobre Nosotros</a></li>
-            <li><a href="#" class="text-white">Política de Privacidad</a></li>
-            <li><a href="#" class="text-white">Términos de Uso</a></li>
-            <li><a href="#" class="text-white">Trabaja con Nosotros</a></li>
-          </ul>
-        </div>
-
-        <div class="col-md-3 mb-4">
-          <h6 class="text-uppercase font-weight-bold">Contacto</h6>
-          <hr class="mb-3 mt-0 d-inline-block mx-auto" style="width: 60px;">
-          <p>
-            <i class="bi bi-geo-alt-fill me-2"></i> Calle Ficticia 123, Ciudad
-          </p>
-          <p>
-            <i class="bi bi-envelope-fill me-2"></i> info@tumerca.com
-          </p>
-          <p>
-            <i class="bi bi-phone-fill me-2"></i> +34 123 456 789
-          </p>
-
-          <div class="social-icons mt-3">
-            <a href="#" class="text-white me-3"><i class="bi bi-facebook fs-5"></i></a>
-            <a href="#" class="text-white me-3"><i class="bi bi-twitter fs-5"></i></a>
-            <a href="#" class="text-white me-3"><i class="bi bi-instagram fs-5"></i></a>
-            <a href="#" class="text-white me-3"><i class="bi bi-linkedin fs-5"></i></a>
-          </div>
-        </div>
-      </div>
-
-      <div class="row mt-3 copyright-desktop d-none d-md-block">
-        <div class="col-12 text-center">
-          <p class="mb-0 border-top pt-3">
-            &copy; 2025 Tu Marca. Todos los derechos reservados. Diseñado para la comunidad.
-          </p>
-        </div>
-      </div>
-    </div>
-  </footer>
+   
   <script src="./js/alertas.js"></script>
 
+   
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Referencias para Logout
@@ -285,7 +232,10 @@
   </script>
 
 
+   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="./pieDePagina/cargar-footer.js"></script>
 
 </body>
 
