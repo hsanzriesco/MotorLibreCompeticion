@@ -34,33 +34,34 @@
       filter: invert(1) grayscale(100%) brightness(200%);
     }
 
-    /* Estilos específicos para el panel de podio */
-    .podium-card {
-      border-radius: 6px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-      transition: transform 0.2s;
+    /* Estilos específicos para la tabla */
+    .table-competicion {
+      --bs-table-bg: #212529;
+      /* Fondo de tabla más oscuro */
+      --bs-table-color: white;
     }
 
-    .podium-card:hover {
-      transform: translateY(-5px);
+    .table-competicion thead th {
+      color: #e50914;
+      /* Color rojo para los encabezados */
+      border-bottom-color: #e50914;
     }
 
-    .card-first {
-      background-color: #e50914 !important;
-      /* Rojo principal */
-      height: 200px;
+    .table-competicion tbody tr:hover {
+      background-color: #343a40 !important;
+      /* Resaltar fila al pasar el mouse */
     }
 
-    .card-second {
-      background-color: #555 !important;
-      /* Gris oscuro */
-      height: 150px;
+    .text-oro {
+      color: gold;
     }
 
-    .card-third {
-      background-color: #555 !important;
-      /* Gris oscuro */
-      height: 120px;
+    .text-plata {
+      color: silver;
+    }
+
+    .text-bronce {
+      color: #cd7f32;
     }
   </style>
 
@@ -119,46 +120,89 @@
     <h4 id="bienvenida" class="mt-3 text-danger"></h4>
 
     <div class="container mt-5 mb-5">
-      <h2 class="text-danger mb-4 text-center"><i class="bi bi-speedometer me-2"></i> Podio Reciente</h2>
+      <h2 class="text-danger mb-4 text-start"><i class="bi bi-bar-chart-fill me-2"></i> Top 10 - Clasificación General
+      </h2>
 
-      <p class="text-secondary small fw-bold text-uppercase">Rally de Invierno - Categoría GT-Pro</p>
+      <p class="text-secondary small fw-bold text-start text-uppercase">Resultados acumulados hasta la Etapa 5</p>
 
-      <div class="row justify-content-center align-items-end g-0">
-
-        <div class="col-4 col-md-3">
-          <div class="podium-card card card-second border-bottom border-danger border-5 mx-auto">
-            <div class="card-body p-2 text-center">
-              <h1 class="display-5 fw-bold text-light mt-1">2º</h1>
-              <p class="mb-0 small fw-bold">Juan López</p>
-              <p class="mb-0 small text-danger">Tiempo: 1:35.45</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-4 col-md-3">
-          <div class="podium-card card card-first border-bottom border-light border-5 mx-auto">
-            <div class="card-body p-2 text-center">
-              <i class="bi bi-trophy-fill text-warning fs-3"></i>
-              <h1 class="display-3 fw-bold text-light">1º</h1>
-              <p class="mb-0 small fw-bold">Equipo Fénix</p>
-              <p class="mb-0 small">Tiempo: 1:34.99</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-4 col-md-3">
-          <div class="podium-card card card-third border-bottom border-danger border-5 mx-auto">
-            <div class="card-body p-2 text-center">
-              <h1 class="display-5 fw-bold text-light mt-0">3º</h1>
-              <p class="mb-0 small fw-bold">Marta Cruz</p>
-              <p class="mb-0 small text-danger">Tiempo: 1:36.12</p>
-            </div>
-          </div>
-        </div>
+      <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover table-competicion text-start">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Piloto / Equipo</th>
+              <th scope="col" class="text-center">Categoría</th>
+              <th scope="col" class="text-end">Puntos Totales</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row" class="text-oro">1</th>
+              <td>Equipo Fénix</td>
+              <td class="text-center">GT-Pro</td>
+              <td class="text-end fw-bold text-oro">285</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-plata">2</th>
+              <td>Marta Cruz</td>
+              <td class="text-center">T2</td>
+              <td class="text-end fw-bold text-plata">250</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-bronce">3</th>
+              <td>Juan López</td>
+              <td class="text-center">GT-Pro</td>
+              <td class="text-end fw-bold text-bronce">235</td>
+            </tr>
+            <tr>
+              <th scope="row">4</th>
+              <td>Racing Legends Team</td>
+              <td class="text-center">GT-Pro</td>
+              <td class="text-end">210</td>
+            </tr>
+            <tr>
+              <th scope="row">5</th>
+              <td>Escudería K-2</td>
+              <td class="text-center">T2</td>
+              <td class="text-end">195</td>
+            </tr>
+            <tr>
+              <th scope="row">6</th>
+              <td>Pablo Rivas</td>
+              <td class="text-center">GT-Am</td>
+              <td class="text-end">180</td>
+            </tr>
+            <tr>
+              <th scope="row">7</th>
+              <td>Alpha Motor Club</td>
+              <td class="text-center">T2</td>
+              <td class="text-end">175</td>
+            </tr>
+            <tr>
+              <th scope="row">8</th>
+              <td>Daniela Gómez</td>
+              <td class="text-center">GT-Am</td>
+              <td class="text-end">160</td>
+            </tr>
+            <tr>
+              <th scope="row">9</th>
+              <td>GTSport SL</td>
+              <td class="text-center">GT-Pro</td>
+              <td class="text-end">155</td>
+            </tr>
+            <tr>
+              <th scope="row">10</th>
+              <td>Carlos Sáinz Jr.</td>
+              <td class="text-center">GT-Am</td>
+              <td class="text-end">140</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <div class="text-center mt-4">
-        <a href="#" class="btn btn-sm btn-outline-danger">Ver Clasificación Completa <i class="bi bi-table"></i></a>
+      <div class="text-end mt-3">
+        <a href="./pages/calendario/calendario.html" class="btn btn-sm btn-danger">Ver Calendario Completo <i
+            class="bi bi-arrow-right"></i></a>
       </div>
     </div>
   </main>
