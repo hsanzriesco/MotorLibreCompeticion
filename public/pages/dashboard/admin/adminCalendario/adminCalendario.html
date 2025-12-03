@@ -11,6 +11,8 @@
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="../../../../css/navbar.css" />
     <link rel="stylesheet" href="../../../../css/style.css" />
     <link rel="icon" href="../../../../img/imagen-tfg.png" type="image/png" />
@@ -19,11 +21,24 @@
     <link rel="stylesheet" href="../../../../css/calendario.css" />
 
     <style>
+        /* 🚀 MODIFICADO: APLICAR ORBITRON A TODA LA PÁGINA */
         body {
             background-color: #111;
             color: #fff;
             padding-top: 80px;
+            /* Aplicamos Orbitron */
+            font-family: 'Orbitron', sans-serif;
         }
+
+        /* 🚀 OPCIONAL: Forzar Orbitron en inputs/botones/modals de Bootstrap si no heredan */
+        .modal-content,
+        .form-control,
+        .form-select,
+        button {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* --- ESTILOS EXISTENTES SE MANTIENEN IGUAL --- */
 
         .modal-content {
             background-color: #111;
@@ -446,6 +461,8 @@
 
                 return false; // Detiene el flujo de ejecución.
             }
+            // NOTA: La validación de que NO sea texto (solo números) se maneja en admin.js antes de enviar al servidor, 
+            // pero esta validación de negativo es la más crítica para el campo 'number'.
         });
     </script>
 </body>
