@@ -6,8 +6,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modalLoc = document.getElementById("modalLoc");
     const modalStart = document.getElementById("modalStart");
     const modalEnd = document.getElementById("modalEnd");
-    // <-- NUEVOS ELEMENTOS DEL MODAL
+    // <-- ELEMENTOS DEL MODAL
     const registerBtn = document.getElementById("btn-register-event");
+    const cancelBtn = document.getElementById("btn-cancel-event"); // 🟢 NUEVO
     const statusSpan = document.getElementById("registration-status");
     // ---------------------------------
     const DATE_OPTIONS = {
@@ -19,8 +20,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 
-    // --- CAMBIO CLAVE DE LOCALSTORAGE A SESSIONSTORAGE ---
-    const stored = sessionStorage.getItem('usuario'); // AHORA LEE DE SESSIONSTORAGE
+    // --- GESTIÓN DE USUARIO ---
+    const stored = sessionStorage.getItem('usuario');
     let usuario = null;
     try {
         if (stored) {
@@ -42,7 +43,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("logout-btn").addEventListener("click", (e) => {
         e.preventDefault();
 
-        // --- CORRECCIÓN DE LOGOUT: Remover de SESSIONSTORAGE ---
         sessionStorage.removeItem("usuario");
 
         if (typeof mostrarAlerta === 'function') {
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, 1500);
     });
 
-    // --- RESTO DE LAS FUNCIONES (MANTENIDAS DEL ÚLTIMO CÓDIGO) ---
+    // --- FUNCIONES DE REGISTRO Y CANCELACIÓN ---
 
     async function checkRegistrationStatus(eventId, userId) {
         if (!userId) return false;
@@ -114,16 +114,61 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // 🟢 NUEVA FUNCIÓN: Manejar la cancelación
+    async function handleCancelRegistration(eventId, userId) {
+        if (!userId) {
+            mostrarAlerta("Error: Debes iniciar sesión para cancelar.", 'error');
+            return;
+        }
+
+        cancelBtn.disabled = true;
+        statusSpan.textContent = "Cancelando inscripción...";
+
+        try {
+            // Usamos DELETE para eliminar el registro en la DB
+            const res = await fetch(`/api/events?action=cancel&user_id=${userId}&event_id=${eventId}`, {
+                method: 'DELETE',
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                mostrarAlerta(data.message, 'exito');
+                // Actualizar la UI: NO registrado
+                updateRegistrationUI(false);
+            } else {
+                mostrarAlerta(data.message || 'Error desconocido al cancelar.', 'error');
+                cancelBtn.disabled = false;
+                statusSpan.textContent = "";
+            }
+        } catch (error) {
+            console.error("Error de red al cancelar:", error);
+            mostrarAlerta('Error de red. Inténtalo de nuevo.', 'error');
+            cancelBtn.disabled = false;
+            statusSpan.textContent = "";
+        }
+    }
+    // ----------------------------------------------------------------------
+
+
+    // 🟢 MODIFICACIÓN: Ajustar updateRegistrationUI para el botón de cancelar
     function updateRegistrationUI(isRegistered) {
         if (isRegistered) {
             registerBtn.style.display = 'none';
+            cancelBtn.style.display = 'inline-block'; // 🟢 Mostrar cancelar
+            cancelBtn.disabled = false;
             statusSpan.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i> Estás **inscrito**';
         } else {
             registerBtn.style.display = 'inline-block';
             registerBtn.disabled = false;
+            cancelBtn.style.display = 'none'; // 🟢 Ocultar cancelar
             statusSpan.textContent = "";
         }
     }
+
+    // ----------------------------------------------------------------------
+    // LISTENERS
+    // ----------------------------------------------------------------------
 
     registerBtn.addEventListener('click', (e) => {
         const eventId = e.currentTarget.getAttribute('data-event-id');
@@ -135,6 +180,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             handleRegistration(null, null);
         }
     });
+
+    // 🟢 NUEVO EVENT LISTENER para el botón de Cancelar
+    cancelBtn.addEventListener('click', (e) => {
+        const eventId = e.currentTarget.getAttribute('data-event-id');
+        const userId = (usuario && usuario.id) ? usuario.id : null;
+
+        if (eventId && userId) {
+            handleCancelRegistration(parseInt(eventId), userId);
+        } else {
+            mostrarAlerta('Error: Información de usuario o evento faltante.', 'error');
+        }
+    });
+    // ----------------------------------------------------------------------
+
 
     const calendarEl = document.getElementById("calendar");
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -174,6 +233,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             registerBtn.setAttribute('data-event-id', eventId);
+            cancelBtn.setAttribute('data-event-id', eventId); // 🟢 Asignar eventId al botón de cancelar
 
             const userId = (usuario && usuario.id) ? usuario.id : null;
 
