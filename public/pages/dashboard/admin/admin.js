@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const titleInput = document.getElementById("title");
     const descriptionInput = document.getElementById("description");
     const locationInput = document.getElementById("location");
+    // 💡 NUEVO: Variable para el input de capacidad
+    const capacityInput = document.getElementById("capacity");
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
     const endTimeInput = document.getElementById("end-time");
@@ -64,17 +66,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- FUNCIONES DE ESTADO ---
 
-    // 🔑 NUEVO: Captura el estado actual del formulario de evento
+    // 🔑 Modificado: Captura el estado actual del formulario de evento
     function captureEventState() {
         const date = startDateInput.value;
         const startTime = startTimeInput.value;
         const endTime = endTimeInput.value;
+        // Convertir la capacidad a un número entero o 0 para la comparación
+        const capacity = parseInt(capacityInput.value) || 0;
 
         return {
             id: eventIdInput.value,
             title: titleInput.value.trim(),
             description: descriptionInput.value.trim(),
             location: locationInput.value.trim(),
+            // 💡 Nuevo: Incluir capacidad para la comparación
+            capacity: capacity,
             start: date && startTime ? `${date}T${startTime}` : null,
             end: date && endTime ? `${date}T${endTime}` : null,
             imageURL: imageURLInput.value,
@@ -82,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
     }
 
-    // 🔑 NUEVO: Compara el estado actual con el estado inicial
+    // 🔑 Modificado: Compara el estado actual con el estado inicial
     function hasEventChanged() {
         if (!eventInitialState) return true; // Si es un nuevo evento, siempre hay cambios.
 
@@ -93,6 +99,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentState.title !== eventInitialState.title ||
             currentState.description !== eventInitialState.description ||
             currentState.location !== eventInitialState.location ||
+            // 💡 Nuevo: Comparar la capacidad
+            currentState.capacity !== eventInitialState.capacity ||
             currentState.start !== eventInitialState.start ||
             currentState.end !== eventInitialState.end ||
             currentState.imageURL !== eventInitialState.imageURL;
@@ -119,6 +127,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 extendedProps: {
                     description: e.description,
                     location: e.location,
+                    // 💡 ASUMIDO: Tu API devuelve capacidad_max como 'capacity'
+                    capacity: e.capacidad_max || 0,
                     image_url: e.image_url
                 }
             }));
@@ -143,6 +153,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 form.reset();
                 startDateInput.value = info.startStr.split("T")[0];
                 eventIdInput.value = "";
+                // 💡 Nuevo: Resetear capacidad a 0 al crear un evento
+                capacityInput.value = 0;
                 deleteEventBtn.style.display = "none";
 
                 imageFileInput.value = "";
@@ -163,6 +175,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 titleInput.value = event.title;
                 descriptionInput.value = extendedProps.description || "";
                 locationInput.value = extendedProps.location || "";
+                // 💡 Nuevo: Cargar la capacidad al hacer clic en el evento
+                capacityInput.value = extendedProps.capacity || 0;
 
                 imageURLInput.value = currentURL;
                 imageFileInput.value = "";
@@ -263,6 +277,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             formData.append('title', titleInput.value.trim());
             formData.append('description', descriptionInput.value.trim());
             formData.append('location', locationInput.value.trim());
+            // 💡 Nuevo: Añadir la capacidad al FormData
+            formData.append('capacidad_max', capacityInput.value.trim());
             formData.append('start', start);
             formData.append('end', end);
 
