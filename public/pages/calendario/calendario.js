@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
+    // Inicialización de Modales de Bootstrap
+    const eventViewModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
+
+    // --- ELEMENTOS DEL MODAL DE VISTA (eventViewModal) ---
     const modalImageContainer = document.getElementById("event-image-container");
     const modalImage = document.getElementById("modalImage");
     const modalTitle = document.getElementById("modalTitle");
@@ -6,11 +10,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modalLoc = document.getElementById("modalLoc");
     const modalStart = document.getElementById("modalStart");
     const modalEnd = document.getElementById("modalEnd");
-    // <-- ELEMENTOS DEL MODAL
+
+    // --- ELEMENTOS DE INSCRIPCIÓN/CANCELACIÓN ---
     const registerBtn = document.getElementById("btn-register-event");
     const cancelBtn = document.getElementById("btn-cancel-event");
     const statusSpan = document.getElementById("registration-status");
-    // ---------------------------------
+
     const DATE_OPTIONS = {
         year: 'numeric',
         month: 'long',
@@ -34,72 +39,144 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const userName = document.getElementById("user-name");
     const loginIcon = document.getElementById("login-icon");
+    const logoutBtn = document.getElementById("logout-btn");
+    const calendarEl = document.getElementById("calendar");
 
     if (usuario) {
         userName.textContent = usuario.name;
         loginIcon.style.display = "none";
     }
 
-    // 🔴 LÓGICA DE CIERRE DE SESIÓN MODIFICADA PARA AÑADIR CONFIRMACIÓN
-    document.getElementById("logout-btn").addEventListener("click", (e) => {
+    // 🔴 LÓGICA DE CIERRE DE SESIÓN PARA USUARIO
+    logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
-
-        // 🟢 AÑADIDO: Muestra la ventana de confirmación
-        if (!confirm("¿Estás seguro de que quieres cerrar sesión?")) {
-            return; // Detiene el proceso si el usuario hace clic en "Cancelar"
-        }
-
         sessionStorage.removeItem("usuario");
-
         if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta("Has cerrado sesión correctamente.", 'error', 1500);
+            mostrarAlerta("Cierre de sesión exitoso.", 'exito', 1200);
         }
-
-        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-        if (offcanvasMenu) {
-            offcanvasMenu.hide();
-        }
-
         setTimeout(() => {
-            window.location.href = "../auth/login/login.html";
-        }, 1500);
+            window.location.href = "../../index.html";
+        }, 1200);
     });
-    // ----------------------------------------------------------------------
 
-    // --- FUNCIONES DE REGISTRO Y CANCELACIÓN ---
+    // ----------------------------------------------------
+    // INICIALIZACIÓN DEL CALENDARIO FULLCALENDAR
+    // ----------------------------------------------------
 
-    async function checkRegistrationStatus(eventId, userId) {
-        if (!userId) return false;
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        locale: "es",
+        // En la vista de usuario, 'editable' debe ser false
+        editable: false,
+        selectable: false,
+
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+
+        // Función para cargar eventos (fetch)
+        events: async (fetchInfo, successCallback, failureCallback) => {
+            try {
+                // RUTA: Apunta a /api/events
+                const res = await fetch("/api/events");
+                const data = await res.json();
+
+                if (data.success && Array.isArray(data.data)) {
+                    // Mapear eventos
+                    const formattedEvents = data.data.map(e => ({
+                        id: e.id,
+                        title: e.title,
+                        start: e.event_start,
+                        end: e.event_end,
+                        color: '#e50914', // Color de evento (rojo)
+                        extendedProps: {
+                            description: e.description,
+                            location: e.location,
+                            image_url: e.image_url
+                        },
+                    }));
+                    successCallback(formattedEvents);
+                } else {
+                    successCallback([]);
+                }
+            } catch (err) {
+                failureCallback(err);
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Error al cargar eventos.", 'error');
+                }
+            }
+        },
+
+        // Al hacer clic en un evento existente (Ver evento)
+        eventClick: (info) => {
+            const e = info.event;
+            const extendedProps = e.extendedProps;
+
+            // Lógica para mostrar la información en el modal
+            modalTitle.textContent = e.title;
+            modalDesc.textContent = extendedProps.description || 'Sin descripción.';
+            modalLoc.textContent = extendedProps.location || 'Ubicación no especificada.';
+
+            // Formatear fechas
+            const start = e.start.toLocaleString('es-ES', DATE_OPTIONS);
+            const end = e.end ? e.end.toLocaleString('es-ES', DATE_OPTIONS) : 'No especificado';
+
+            modalStart.textContent = start;
+            modalEnd.textContent = end;
+
+            // Mostrar imagen si existe
+            if (extendedProps.image_url) {
+                modalImage.src = extendedProps.image_url;
+                modalImageContainer.style.display = 'block';
+            } else {
+                modalImageContainer.style.display = 'none';
+            }
+
+            // Configurar botones de inscripción/cancelación (Requiere la lógica de la API /api/userAction)
+            registerBtn.setAttribute('data-event-id', e.id);
+            cancelBtn.setAttribute('data-event-id', e.id);
+
+            // Lógica de estado de inscripción (Simulación/Placeholder)
+            // Aquí deberías hacer un fetch al backend para ver si el usuario está inscrito
+            if (usuario) {
+                statusSpan.textContent = 'Verificando estado...';
+                // Lógica de fetch real para verificar inscripción...
+                registerBtn.style.display = 'inline-block';
+                cancelBtn.style.display = 'none';
+                statusSpan.textContent = ''; // Limpiar después de la verificación
+            } else {
+                statusSpan.textContent = 'Inicia sesión para inscribirte.';
+                registerBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+            }
+
+            eventViewModal.show();
+        }
+    });
+
+    calendar.render();
+
+    // ----------------------------------------------------
+    // LÓGICA DE INSCRIPCIÓN Y CANCELACIÓN (PLACEHOLDER)
+    // ----------------------------------------------------
+
+    async function handleEventAction(action, eventId) {
+        if (!usuario) {
+            return mostrarAlerta('Debes iniciar sesión para realizar esta acción.', 'aviso');
+        }
+
+        const url = `/api/userAction`; // Asumiendo que esta API maneja las acciones
 
         try {
-            const res = await fetch(`/api/events?action=checkRegistration&event_id=${eventId}&user_id=${userId}`);
-            const data = await res.json();
-            return data.success && data.isRegistered;
-        } catch (error) {
-            console.error("Error al verificar inscripción:", error);
-            return false;
-        }
-    }
-
-    async function handleRegistration(eventId, userId) {
-        if (!userId) {
-            mostrarAlerta("Debes iniciar sesión para inscribirte.", 'advertencia');
-            setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
-            return;
-        }
-
-        registerBtn.disabled = true;
-        statusSpan.textContent = "Inscribiendo...";
-
-        try {
-            const res = await fetch('/api/events?action=register', {
+            const res = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: userId,
-                    event_id: eventId
+                    eventId: eventId,
+                    userId: usuario.id,
+                    action: action // 'register' o 'cancel'
                 })
             });
 
@@ -107,147 +184,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (res.ok && data.success) {
                 mostrarAlerta(data.message, 'exito');
-                updateRegistrationUI(true);
+                eventViewModal.hide();
+                calendar.refetchEvents(); // Opcional: recargar para actualizar colores/estado
             } else {
-                mostrarAlerta(data.message || 'Error desconocido al inscribir.', 'error');
-                registerBtn.disabled = false;
-                statusSpan.textContent = "";
+                mostrarAlerta(data.message || `Error al ${action === 'register' ? 'inscribirse' : 'cancelar'}.`, 'error');
             }
         } catch (error) {
-            console.error("Error de red al inscribir:", error);
-            mostrarAlerta('Error de red. Inténtalo de nuevo.', 'error');
-            registerBtn.disabled = false;
-            statusSpan.textContent = "";
+            console.error('Error de red:', error);
+            mostrarAlerta('Error de red al intentar la acción.', 'error');
         }
     }
 
-    async function handleCancelRegistration(eventId, userId) {
-        if (!userId) {
-            mostrarAlerta("Error: Debes iniciar sesión para cancelar.", 'error');
-            return;
-        }
-
-        cancelBtn.disabled = true;
-        statusSpan.textContent = "Cancelando inscripción...";
-
-        try {
-            const res = await fetch(`/api/events?action=cancel&user_id=${userId}&event_id=${eventId}`, {
-                method: 'DELETE',
-            });
-
-            const data = await res.json();
-
-            if (res.ok && data.success) {
-                mostrarAlerta(data.message, 'exito');
-                updateRegistrationUI(false);
-            } else {
-                mostrarAlerta(data.message || 'Error desconocido al cancelar.', 'error');
-                cancelBtn.disabled = false;
-                statusSpan.textContent = "";
-            }
-        } catch (error) {
-            console.error("Error de red al cancelar:", error);
-            mostrarAlerta('Error de red. Inténtalo de nuevo.', 'error');
-            cancelBtn.disabled = false;
-            statusSpan.textContent = "";
-        }
-    }
-
-    function updateRegistrationUI(isRegistered) {
-        if (isRegistered) {
-            registerBtn.style.display = 'none';
-            cancelBtn.style.display = 'inline-block';
-            cancelBtn.disabled = false;
-            statusSpan.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i> Estás **inscrito**';
-        } else {
-            registerBtn.style.display = 'inline-block';
-            registerBtn.disabled = false;
-            cancelBtn.style.display = 'none';
-            statusSpan.textContent = "";
-        }
-    }
-
-    // ----------------------------------------------------------------------
-    // LISTENERS
-    // ----------------------------------------------------------------------
-
-    registerBtn.addEventListener('click', (e) => {
-        const eventId = e.currentTarget.getAttribute('data-event-id');
-        const userId = (usuario && usuario.id) ? usuario.id : null;
-
-        if (eventId && userId) {
-            handleRegistration(parseInt(eventId), userId);
-        } else {
-            handleRegistration(null, null);
-        }
+    registerBtn.addEventListener('click', () => {
+        const eventId = registerBtn.getAttribute('data-event-id');
+        handleEventAction('register', eventId);
     });
 
-    cancelBtn.addEventListener('click', (e) => {
-        const eventId = e.currentTarget.getAttribute('data-event-id');
-        const userId = (usuario && usuario.id) ? usuario.id : null;
-
-        if (eventId && userId) {
-            handleCancelRegistration(parseInt(eventId), userId);
-        } else {
-            mostrarAlerta('Error: Información de usuario o evento faltante.', 'error');
-        }
+    cancelBtn.addEventListener('click', () => {
+        const eventId = cancelBtn.getAttribute('data-event-id');
+        handleEventAction('cancel', eventId);
     });
-    // ----------------------------------------------------------------------
-
-
-    const calendarEl = document.getElementById("calendar");
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        locale: "es",
-        events: async (fetchInfo, successCallback, failureCallback) => {
-            try {
-                const res = await fetch("/api/events");
-                const data = await res.json();
-                if (data.success && Array.isArray(data.data)) successCallback(data.data);
-                else successCallback([]);
-            } catch (err) {
-                failureCallback(err);
-                if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta("Error al cargar los eventos del calendario.", 'error');
-                }
-            }
-        },
-        eventClick: async (info) => {
-            const e = info.event;
-            const extendedProps = e.extendedProps;
-            const eventId = e.id;
-
-            modalTitle.textContent = e.title;
-            modalDesc.textContent = extendedProps.description || "Sin descripción.";
-            modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
-            modalStart.textContent = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
-            modalEnd.textContent = new Date(e.end).toLocaleDateString("es-ES", DATE_OPTIONS);
-            const imageUrl = extendedProps.image_url;
-
-            if (imageUrl) {
-                modalImage.src = imageUrl;
-                modalImageContainer.style.display = "block";
-            } else {
-                modalImage.src = "";
-                modalImageContainer.style.display = "none";
-            }
-
-            registerBtn.setAttribute('data-event-id', eventId);
-            cancelBtn.setAttribute('data-event-id', eventId);
-
-            const userId = (usuario && usuario.id) ? usuario.id : null;
-
-            if (userId) {
-                const isRegistered = await checkRegistrationStatus(eventId, userId);
-                updateRegistrationUI(isRegistered);
-            } else {
-                updateRegistrationUI(false);
-                registerBtn.disabled = false;
-            }
-
-            const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
-            eventModal.show();
-        },
-    });
-    calendar.render();
 });
