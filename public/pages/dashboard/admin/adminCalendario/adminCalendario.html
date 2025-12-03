@@ -32,11 +32,11 @@
             box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
         }
 
-        /* Estilo específico para el modal de inscritos */
+        /* 🔴 MODIFICADO: Estilo para que el modal de inscritos use el color rojo Netflix */
         #registrationsModal .modal-content {
-            border: 1px solid #ffc107;
-            /* Borde amarillo para distinguirlo */
-            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+            border: 1px solid #e50914;
+            /* Rojo Netflix */
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
         }
 
         .btn-danger {
@@ -105,7 +105,21 @@
         /* Estilos para la tabla de inscritos */
         #registrationsTable th {
             background-color: #333;
+            /* El color de fondo del encabezado se mantiene oscuro */
             color: #ffc107;
+            /* El color del texto del encabezado se mantiene amarillo para contraste */
+        }
+
+        /* 🔴 NUEVO: Aseguramos el borde del encabezado del modal en rojo */
+        #registrationsModal .modal-header {
+            border-bottom: 1px solid #e50914;
+            /* Rojo Netflix */
+        }
+
+        /* 🔴 NUEVO: Aseguramos el borde del pie del modal en rojo */
+        #registrationsModal .modal-footer {
+            border-top: 1px solid #e50914;
+            /* Rojo Netflix */
         }
     </style>
 </head>
@@ -264,7 +278,7 @@
     <div class="modal fade" id="registrationsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
-                <div class="modal-header border-warning">
+                <div class="modal-header border-danger">
                     <h5 class="modal-title fw-bold text-warning">
                         📋 Lista de Usuarios Inscritos
                     </h5>
@@ -290,7 +304,7 @@
                     </p>
                 </div>
 
-                <div class="modal-footer border-warning">
+                <div class="modal-footer border-danger">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
