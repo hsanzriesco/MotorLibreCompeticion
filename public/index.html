@@ -1,421 +1,337 @@
 <!DOCTYPE html>
-
 <html lang="es">
 
-
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Motor Libre Competición</title>
 
-
-
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
   <link rel="stylesheet" href="./css/style.css">
-
   <link rel="stylesheet" href="./css/alertas.css">
-
   <link rel="icon" type="image/png" href="./img/imagen-tfg.png">
 
-
-
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 
 
   <style>
+    /* 🚀 MODIFICADO: APLICAR ORBITRON A TODA LA PÁGINA */
     body {
-
       background-color: #111;
-
       color: white;
-
+      padding-top: 100px;
+      /* Espacio para el navbar */
+      font-family: 'Orbitron', sans-serif;
     }
-
-
 
     main {
-
-      padding-top: 100px;
-
-      /* Espacio para el navbar */
-
+      /* Se mantiene el padding-top, ajustado en el body */
+      padding-bottom: 50px;
     }
-
-
 
     /* Estilos para el modal de confirmación */
-
     .modal-content {
-
       background-color: #111;
-
       color: white;
-
       border: 1px solid #e50914;
-
     }
-
-
 
     .btn-close-white {
-
       filter: invert(1) grayscale(100%) brightness(200%);
-
       /* Hace la X visible en fondo oscuro */
+    }
 
+    /* 🚀 NUEVOS ESTILOS PARA LA TABLA DE RESULTADOS */
+    .results-container {
+      max-width: 900px;
+      margin: 40px auto;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background-color: #1a1a1a;
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.3);
+    }
+
+    .results-container h2 {
+      border-bottom: 2px solid #e50914;
+      padding-bottom: 15px;
+      margin-bottom: 25px;
+      color: #e50914;
+      text-shadow: 0 0 5px rgba(229, 9, 20, 0.7);
+    }
+
+    .table-results th {
+      background-color: #333;
+      color: #ffc107;
+      text-transform: uppercase;
+    }
+
+    .table-results td,
+    .table-results th {
+      vertical-align: middle;
     }
   </style>
-
-
-
 </head>
-
-
 
 <body>
 
-
-
   <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
-
-
     <a id="logo-link" href="./index.html" class="navbar-brand d-flex align-items-center">
-
       <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
-
     </a>
-
-
 
     <div class="d-flex align-items-center">
 
-
-
       <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
-
         <i class="bi bi-person-circle fs-4"></i>
-
       </a>
-
-
 
       <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
 
-
-
       <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-
         <i class="bi bi-list fs-4"></i>
-
       </button>
 
-
-
     </div>
-
   </nav>
 
-
-
   <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-
     <div class="offcanvas-header border-bottom border-secondary">
-
       <h5 class="offcanvas-title">Menú</h5>
-
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-
     </div>
-
-
 
     <div class="offcanvas-body">
 
-
-
       <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
-
         Calendario
-
       </a>
-
-
 
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
-
         Mi perfil
-
       </a>
-
-
 
       <hr class="border-secondary">
 
-
-
       <a href="#" id="logout-btn" class="d-block text-danger">
-
         Cerrar sesión
-
       </a>
-
     </div>
-
   </div>
 
+  <main class="container">
+    <h1 class="text-light text-center">Bienvenido a Motor Libre Competición</h1>
+    <h4 id="bienvenida" class="mt-3 text-danger text-center"></h4>
 
-
-  <main class="text-center mt-5">
-
-    <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
-
-    <h4 id="bienvenida" class="mt-3 text-danger"></h4>
-
+    <div class="results-container p-4 mt-5">
+      <h2 class="text-center">Últimos Resultados Registrados 🏁</h2>
+      <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover table-results">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Evento ID</th>
+              <th>Resultado</th>
+              <th>Unidad</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTableBody">
+            <tr>
+              <td colspan="5" class="text-center text-muted">Cargando últimos resultados...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </main>
-
-
 
   <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
     aria-hidden="true">
-
     <div class="modal-dialog modal-dialog-centered modal-sm">
-
       <div class="modal-content">
-
         <div class="modal-header border-danger">
-
           <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
-
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-
         </div>
-
         <div class="modal-body">
-
           <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
-
         </div>
-
         <div class="modal-footer border-danger">
-
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-
           <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
-
         </div>
-
       </div>
-
     </div>
-
   </div>
 
   <script src="./js/alertas.js"></script>
 
-
-
   <script>
+    // Función de utilidad para formatear la fecha
+    function formatResultDate(isoString) {
+      if (!isoString) return 'N/A';
+      try {
+        const date = new Date(isoString);
+        return date.toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).replace(',', ''); // Quita la coma si el locale la usa
+      } catch (e) {
+        return isoString;
+      }
+    }
+
+    // 🚀 FUNCIÓN CLAVE: Cargar los resultados
+    async function fetchLatestResults() {
+      const resultsTableBody = document.getElementById('resultsTableBody');
+
+      // Reemplaza esto con tu endpoint real de la API
+      const API_ENDPOINT = "/api/resultados?action=getLatest&limit=10";
+
+      try {
+        const response = await fetch(API_ENDPOINT);
+
+        // Si la respuesta no es 200 OK, lanzamos un error
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `Error del servidor: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+          resultsTableBody.innerHTML = ''; // Limpiar el mensaje de carga
+
+          result.data.forEach(res => {
+            const row = `
+                            <tr>
+                                <td>${res.nombre_usuario || 'Anónimo'}</td>
+                                <td>${res.evento_id}</td>
+                                <td><strong>${res.valor_resultado}</strong></td>
+                                <td>${res.unidad_medida || ''}</td>
+                                <td>${formatResultDate(res.fecha_registro)}</td>
+                            </tr>
+                        `;
+            resultsTableBody.innerHTML += row;
+          });
+        } else {
+          // Si la API devuelve éxito pero no hay datos
+          resultsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-warning">No se encontraron resultados aún.</td></tr>';
+        }
+      } catch (error) {
+        console.error("Error al cargar resultados:", error);
+        // Muestra un mensaje de error más claro al usuario
+        resultsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar resultados. Por favor, intenta de nuevo más tarde.</td></tr>';
+        if (typeof mostrarAlerta === 'function') {
+          mostrarAlerta(`Error al cargar resultados: ${error.message}`, 'error', 5000);
+        }
+      }
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
+      // 🚀 LLAMADA A LA FUNCIÓN DE RESULTADOS
+      fetchLatestResults();
 
       // Referencias para Logout
-
       const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
 
-
-
       // Se inicializa el modal solo si el elemento existe
-
       const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
-
-
 
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
-
-
       // Elementos de la UI y usuario
-
       const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-
       const usuario = storedUser ? JSON.parse(storedUser) : null;
 
-
-
       const bienvenida = document.getElementById("bienvenida");
-
       const userName = document.getElementById("user-name");
-
       const loginIcon = document.getElementById("login-icon");
-
       const logoutBtn = document.getElementById("logout-btn");
 
 
-
-
-
       if (usuario) {
-
         // USUARIO LOGUEADO
-
         bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
-
         userName.textContent = usuario.name;
 
-
-
         // Muestra el nombre y oculta el ícono de login
-
         userName.style.display = "inline";
-
         loginIcon.style.display = "none";
-
-
 
         logoutBtn.style.display = "block";
 
-
-
         // Si es admin, asegura la redirección al panel
-
         if (usuario.role === "admin") {
-
           document.getElementById("logo-link").href = "./pages/dashboard/admin/admin.html";
-
         }
 
-
-
       } else {
-
         // NO HAY USUARIO LOGUEADO
-
         userName.style.display = "none";
-
         loginIcon.style.display = "inline"; // Muestra el icono de Login
-
         logoutBtn.style.display = "none"; // Oculta el botón de logout
-
       }
-
-
 
       // --- LÓGICA DE CONFIRMACIÓN DE LOGOUT (Mantenida) ---
 
-
-
       // 🔑 1. Mostrar el modal al hacer clic en el botón del menú
-
       if (logoutBtn) {
-
         logoutBtn.addEventListener("click", (e) => {
-
           e.preventDefault();
 
-
-
           // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado
-
           if (!usuario) {
-
             mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
 
-
-
             const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-
             if (offcanvasMenu) offcanvasMenu.hide();
-
             return;
-
           }
-
-
 
           // Si hay usuario, mostrar el modal de confirmación
-
           if (logoutConfirmModal) {
-
             logoutConfirmModal.show();
-
           }
-
-
 
           // Ocultar el offcanvas al abrir el modal (mejor UX)
-
           const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-
           if (offcanvasMenu) offcanvasMenu.hide();
-
         });
-
       }
 
-
-
       // 🔑 2. Cerrar sesión al confirmar en el modal
-
       if (btnConfirmLogout) {
-
         btnConfirmLogout.addEventListener("click", () => {
 
-
-
           if (logoutConfirmModal) {
-
             logoutConfirmModal.hide(); // Ocultar el modal
-
           }
 
-
-
           // Limpiar la sesión (usando ambos)
-
           sessionStorage.removeItem("usuario");
-
           localStorage.removeItem("usuario");
-
-
 
           mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
-
-
           // Redirigir
-
           setTimeout(() => {
-
             window.location.href = "./pages/auth/login/login.html";
-
           }, 1500);
-
         });
-
       }
-
     });
-
   </script>
-
-
-
 
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-
-
 </body>
-
-
 
 </html>
