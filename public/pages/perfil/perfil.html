@@ -16,8 +16,7 @@
     <link rel="stylesheet" href="./perfil.css" />
 
     <style>
-        /* 🚀 ESTILOS DEL MODAL DE CONFIRMACIÓN (COPIADOS DE index.html) */
-        /* Asegura que cualquier modal tenga el estilo MLC */
+        /* ESTILOS DEL MODAL DE CONFIRMACIÓN */
         .modal-content {
             background-color: #111;
             color: white;
@@ -26,7 +25,6 @@
 
         .btn-close-white {
             filter: invert(1) grayscale(100%) brightness(200%);
-            /* Hace la X visible en fondo oscuro */
         }
     </style>
 
@@ -222,61 +220,50 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // 🚀 LÓGICA DE CIERRE DE SESIÓN (ADAPTADA DE index.html)
+        // LÓGICA DE CIERRE DE SESIÓN (REVISADA)
         document.addEventListener("DOMContentLoaded", () => {
-            // Referencias para Logout
             const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
             const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
             const btnConfirmLogout = document.getElementById("btnConfirmLogout");
             const logoutBtn = document.getElementById("logout-btn");
+
+            // Función para obtener los datos del usuario (usada para la validación de seguridad)
             const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
             const usuario = storedUser ? JSON.parse(storedUser) : null;
 
 
-            // 🔑 1. Mostrar el modal al hacer clic en el botón del menú
+            // 🔑 1. Manejar el click en el botón del offcanvas (Solo muestra el modal si hay sesión)
             if (logoutBtn) {
                 logoutBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-
-                    // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado (por si acaso)
+                    // Si el usuario no existe, previene que el botón abra el modal y lanza alerta
                     if (!usuario) {
-                        // Asumiendo que 'mostrarAlerta' está disponible desde alertas.js
-                        mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
-
+                        e.preventDefault();
+                        mostrarAlerta("Debes iniciar sesión para cerrarla.", 'error', 3000);
                         const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
                         if (offcanvasMenu) offcanvasMenu.hide();
                         return;
                     }
-
-                    // Si hay usuario, mostrar el modal de confirmación
-                    if (logoutConfirmModal) {
-                        logoutConfirmModal.show();
-                    }
-
-                    // Ocultar el offcanvas al abrir el modal (mejor UX)
-                    const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-                    if (offcanvasMenu) offcanvasMenu.hide();
+                    // Si el usuario existe, el 'data-bs-toggle' se encarga de abrir el modal
                 });
             }
 
             // 🔑 2. Cerrar sesión al confirmar en el modal
             if (btnConfirmLogout) {
                 btnConfirmLogout.addEventListener("click", () => {
-
                     if (logoutConfirmModal) {
                         logoutConfirmModal.hide(); // Ocultar el modal
                     }
 
-                    // Limpiar la sesión (usando ambos)
+                    // --- PASOS CRÍTICOS DE CIERRE DE SESIÓN ---
                     sessionStorage.removeItem("usuario");
                     localStorage.removeItem("usuario");
-                    localStorage.removeItem("token"); // Opcional, si el token se guarda aquí
+                    localStorage.removeItem("token");
+                    // ------------------------------------------
 
-                    // Asumiendo que 'mostrarAlerta' está disponible desde alertas.js
+                    // 🛑 ÚNICA ALERTA DE ÉXITO 🛑
                     mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
                     // Redirigir a la página de inicio de sesión
-                    // Se usa la ruta relativa, asumiendo que perfil.html está en pages/perfil/
                     setTimeout(() => {
                         window.location.href = '../auth/login/login.html';
                     }, 1500);
