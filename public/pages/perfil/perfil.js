@@ -80,9 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="car-card" role="button" tabindex="0">
                 <div class="car-image-container">
                     <img src="${imgSrc}" 
-                            alt="Foto de ${escapeHtml(name)}" 
-                            loading="lazy"
-                            onerror="this.onerror=null;this.src='${defaultImg}';" />
+                             alt="Foto de ${escapeHtml(name)}" 
+                             loading="lazy"
+                             onerror="this.onerror=null;this.src='${defaultImg}';" />
                 </div>
                 <div class="car-details-content">
                     <div class="car-name-group">
@@ -334,6 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCar = currentVehicle.type === 'car';
         const itemName = isCar ? 'coche' : 'moto';
 
+        // Utilizamos la función 'mostrarConfirmacion' para la validación
         const confirmar = await mostrarConfirmacion(`¿Seguro que quieres eliminar este ${itemName}?`, 'Eliminar');
         if (!confirmar) {
             mostrarAlerta('Eliminación cancelada', 'info');
@@ -363,6 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // La función mostrarConfirmacion es correcta y se mantiene
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             if (document.getElementById('mlc-confirm-overlay')) {
@@ -507,16 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        mostrarAlerta('Sesión cerrada correctamente', 'exito');
-        setTimeout(() => {
-            sessionStorage.removeItem('usuario');
-            window.location.href = '/index.html';
-        }, 1000);
-    });
+    // ❌ LÓGICA DE CIERRE DE SESIÓN ELIMINADA DE AQUÍ
+    // Ya está correctamente en el bloque <script> final de perfil.html
 
     loadVehicles();
-
-
 });
