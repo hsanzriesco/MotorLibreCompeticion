@@ -26,7 +26,7 @@
             padding-top: 100px;
         }
 
-        /* 🔴 NUEVO ESTILO: Para asegurar que el texto del botón outline se vea en el modal oscuro */
+        /* Estilos para el modal del evento */
         .btn-outline-danger {
             color: white;
             /* Texto blanco */
@@ -73,7 +73,8 @@
             </a>
             <a href="../perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
             <hr class="border-secondary">
-            <a href="#" id="logout-btn" class="d-block text-danger">
+            <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
+                data-bs-target="#logoutConfirmModal">
                 Cerrar sesión
             </a>
         </div>
@@ -120,9 +121,39 @@
         </div>
     </div>
 
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-dark text-white border border-danger">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar
+                        Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="../../js/alertas.js"></script>
     <script src="./calendario.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 🚀 NUEVA LÓGICA DE CIERRE DE SESIÓN
+        document.getElementById('btnConfirmLogout').addEventListener('click', () => {
+            // Eliminar token de localStorage (o la lógica de cierre de sesión que uses)
+            localStorage.removeItem('token');
+            // Redirigir al login o a la página de inicio
+            window.location.href = '../auth/login/login.html';
+        });
+    </script>
 </body>
 
 </html>

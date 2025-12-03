@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             registerBtn.style.display = 'none';
             cancelBtn.style.display = 'inline-block'; // 🟢 Mostrar cancelar
             cancelBtn.disabled = false;
-            statusSpan.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i> Estás **inscrito**';
+            statusSpan.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i> Estás inscrito';
         } else {
             registerBtn.style.display = 'inline-block';
             registerBtn.disabled = false;
