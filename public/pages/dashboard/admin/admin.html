@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,31 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Fuente base y estilos generales */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f0f0f;
-            color: #fff;
-        }
-
-        .btn-primary {
-            background-color: #e50914;
-            color: white;
-            border: none;
-        }
-
-        .btn-primary:hover {
-            background-color: #c40711;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #0f0f0f; color: #fff; }
+        .btn-primary { background-color: #e50914; color: white; border: none; }
+        .btn-primary:hover { background-color: #c40711; }
     </style>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
+    
     <link rel="stylesheet" href="alertas.css">
 
     <script src="alertas.js"></script>
 
-</head>
-
+    </head>
 <body class="p-8">
 
     <div class="max-w-4xl mx-auto">
@@ -41,29 +27,19 @@
         <div class="bg-gray-900 p-6 rounded-xl shadow-lg mb-8">
             <h2 class="text-xl font-semibold mb-4 text-gray-300">Prueba de Alertas y Confirmación</h2>
             <div class="flex flex-wrap gap-4">
-                <button onclick="testAlerta('exito')"
-                    class="px-4 py-2 rounded-lg font-bold bg-green-600 hover:bg-green-700 transition">Alerta
-                    Éxito</button>
-                <button onclick="testAlerta('error')"
-                    class="px-4 py-2 rounded-lg font-bold bg-red-600 hover:bg-red-700 transition">Alerta Error</button>
-                <button onclick="testAlerta('advertencia')"
-                    class="px-4 py-2 rounded-lg font-bold bg-yellow-500 text-gray-900 hover:bg-yellow-600 transition">Alerta
-                    Advertencia</button>
-                <button onclick="testAlerta('info')"
-                    class="px-4 py-2 rounded-lg font-bold bg-blue-500 hover:bg-blue-600 transition">Alerta Info</button>
-                <button onclick="testConfirmacion()"
-                    class="px-4 py-2 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 transition">Mostrar
-                    Confirmación</button>
+                <button onclick="testAlerta('exito')" class="px-4 py-2 rounded-lg font-bold bg-green-600 hover:bg-green-700 transition">Alerta Éxito</button>
+                <button onclick="testAlerta('error')" class="px-4 py-2 rounded-lg font-bold bg-red-600 hover:bg-red-700 transition">Alerta Error</button>
+                <button onclick="testAlerta('advertencia')" class="px-4 py-2 rounded-lg font-bold bg-yellow-500 text-gray-900 hover:bg-yellow-600 transition">Alerta Advertencia</button>
+                <button onclick="testAlerta('info')" class="px-4 py-2 rounded-lg font-bold bg-blue-500 hover:bg-blue-600 transition">Alerta Info</button>
+                <button onclick="testConfirmacion()" class="px-4 py-2 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 transition">Mostrar Confirmación</button>
             </div>
         </div>
 
         <div class="bg-gray-900 p-6 rounded-xl shadow-lg min-h-[300px]">
             <h2 class="text-xl font-semibold mb-4 text-gray-300">Gestión de Resultados</h2>
             <p class="text-gray-500">Aquí se cargará la lógica y las tablas de resultados.</p>
-
-            <button id="saveResultBtn"
-                class="mt-4 px-6 py-2 rounded-lg font-bold btn-primary hover:bg-red-700 transition">Guardar Resultado
-                (Simulado)</button>
+            
+            <button id="saveResultBtn" class="mt-4 px-6 py-2 rounded-lg font-bold btn-primary hover:bg-red-700 transition">Guardar Resultado (Simulado)</button>
         </div>
     </div>
 
@@ -74,7 +50,7 @@
 
         function testAlerta(tipo) {
             let mensaje;
-            switch (tipo) {
+            switch(tipo) {
                 case 'exito':
                     mensaje = "¡Resultado guardado correctamente!";
                     break;
@@ -91,13 +67,13 @@
                     break;
             }
             // Llama a la función global disponible gracias a alertas.js
-            mostrarAlerta(mensaje, tipo);
+            mostrarAlerta(mensaje, tipo); 
         }
 
         async function testConfirmacion() {
             // Llama a la función global disponible gracias a alertas.js
             const confirmado = await mostrarConfirmacion("¿Deseas realmente eliminar este evento? Esto afectará a todos los resultados asociados.");
-
+            
             if (confirmado) {
                 mostrarAlerta("Elemento marcado para eliminación.", 'advertencia', 3000);
             } else {
@@ -107,20 +83,19 @@
 
         // Simulación de la función handleSaveResult que tenías antes
         document.getElementById('saveResultBtn').addEventListener('click', () => {
-            // Simulación de una llamada API exitosa/fallida
-            const success = Math.random() > 0.5;
+             // Simulación de una llamada API exitosa/fallida
+             const success = Math.random() > 0.5;
 
-            if (success) {
+             if (success) {
                 testAlerta('exito');
-            } else {
+             } else {
                 testAlerta('error');
-            }
+             }
         });
 
         // NOTA IMPORTANTE: Para que los íconos funcionen, debes asegurarte de que el enlace de 
-        // Bootstrap Icons esté activo y que tus archivos alertas.css y alertas.js estén accesibles
+        // Bootstrap Icons esté activo y que tus archivos alertas.css y alertas.js estén accesibles 
         // en las rutas indicadas (en este caso, en la misma carpeta).
     </script>
 </body>
-
 </html>
