@@ -15,6 +15,21 @@
     <link rel="stylesheet" href="../../css/alertas.css" />
     <link rel="stylesheet" href="./perfil.css" />
 
+    <style>
+        /* 🚀 ESTILOS DEL MODAL DE CONFIRMACIÓN (COPIADOS DE index.html) */
+        /* Asegura que cualquier modal tenga el estilo MLC */
+        .modal-content {
+            background-color: #111;
+            color: white;
+            border: 1px solid #e50914;
+        }
+
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+            /* Hace la X visible en fondo oscuro */
+        }
+    </style>
+
 </head>
 
 <body>
@@ -54,7 +69,8 @@
             </a>
 
             <hr class="border-secondary" />
-            <a href="#" id="logout-btn" class="d-block text-danger">
+            <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
+                data-bs-target="#logoutConfirmModal">
                 Cerrar sesión
             </a>
 
@@ -114,7 +130,6 @@
         </div>
     </main>
 
-    <!-- Modal de vehículos (único modal que queda) -->
     <div class="modal fade" id="carModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content modal-mlc">
@@ -181,10 +196,94 @@
         </div>
     </div>
 
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar
+                        Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="../../js/alertas.js"></script>
     <script src="../../js/navbar.js"></script>
     <script src="./perfil.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 🚀 LÓGICA DE CIERRE DE SESIÓN (ADAPTADA DE index.html)
+        document.addEventListener("DOMContentLoaded", () => {
+            // Referencias para Logout
+            const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
+            const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
+            const btnConfirmLogout = document.getElementById("btnConfirmLogout");
+            const logoutBtn = document.getElementById("logout-btn");
+            const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+            const usuario = storedUser ? JSON.parse(storedUser) : null;
+
+
+            // 🔑 1. Mostrar el modal al hacer clic en el botón del menú
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+
+                    // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado (por si acaso)
+                    if (!usuario) {
+                        // Asumiendo que 'mostrarAlerta' está disponible desde alertas.js
+                        mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
+
+                        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                        if (offcanvasMenu) offcanvasMenu.hide();
+                        return;
+                    }
+
+                    // Si hay usuario, mostrar el modal de confirmación
+                    if (logoutConfirmModal) {
+                        logoutConfirmModal.show();
+                    }
+
+                    // Ocultar el offcanvas al abrir el modal (mejor UX)
+                    const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                    if (offcanvasMenu) offcanvasMenu.hide();
+                });
+            }
+
+            // 🔑 2. Cerrar sesión al confirmar en el modal
+            if (btnConfirmLogout) {
+                btnConfirmLogout.addEventListener("click", () => {
+
+                    if (logoutConfirmModal) {
+                        logoutConfirmModal.hide(); // Ocultar el modal
+                    }
+
+                    // Limpiar la sesión (usando ambos)
+                    sessionStorage.removeItem("usuario");
+                    localStorage.removeItem("usuario");
+                    localStorage.removeItem("token"); // Opcional, si el token se guarda aquí
+
+                    // Asumiendo que 'mostrarAlerta' está disponible desde alertas.js
+                    mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
+
+                    // Redirigir a la página de inicio de sesión
+                    // Se usa la ruta relativa, asumiendo que perfil.html está en pages/perfil/
+                    setTimeout(() => {
+                        window.location.href = '../auth/login/login.html';
+                    }, 1500);
+                });
+            }
+        });
+    </script>
 
 </body>
 
