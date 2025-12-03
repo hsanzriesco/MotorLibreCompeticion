@@ -120,7 +120,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, isRegistered: result.rows.length > 0 });
             }
 
-            // GET: Obtener solo el CONTEO de inscritos para un evento
+            // 🆕 GET: Obtener solo el CONTEO de inscritos para un evento
             if (action === 'getRegistrationCount') {
                 const { event_id } = req.query;
 
@@ -148,7 +148,7 @@ export default async function handler(req, res) {
             }
 
 
-            // GET: Obtener lista de inscritos para un evento
+            // 🚀 GET: Obtener lista de inscritos para un evento
             if (action === 'getRegistrations') {
                 const { event_id } = req.query;
 
@@ -163,8 +163,7 @@ export default async function handler(req, res) {
 
                 // 🟢 Se selecciona la información relevante de los usuarios inscritos
                 const result = await client.query(
-                    // Se incluye el campo 'email_inscrito' para ser consistente con el registro
-                    `SELECT id, user_id, usuario_inscrito, email_inscrito, registered_at FROM event_registrations WHERE event_id = $1 ORDER BY registered_at ASC`,
+                    `SELECT id, user_id, usuario_inscrito, registered_at FROM event_registrations WHERE event_id = $1 ORDER BY registered_at ASC`,
                     [parsedEventId]
                 );
 
@@ -226,11 +225,10 @@ export default async function handler(req, res) {
                     }
                 }
 
-                // 3. Obtener el nombre y EMAIL del usuario, y el título del evento
+                // 3. Obtener el nombre del usuario y el título del evento
                 const dataQuery = `
                     SELECT
                         u.name AS user_name,
-                        u.email AS user_email,   /* <--- MODIFICACIÓN: Se añade el email */
                         e.title AS event_title
                     FROM
                         users u,
@@ -245,13 +243,13 @@ export default async function handler(req, res) {
                     return res.status(404).json({ success: false, message: 'Usuario o evento no encontrado para obtener los nombres.' });
                 }
 
-                const { user_name, user_email, event_title } = dataResult.rows[0]; // <--- MODIFICACIÓN: Se añade user_email
+                const { user_name, event_title } = dataResult.rows[0];
 
 
-                // 4. Insertar inscripción CON el nombre y el email
+                // 4. Insertar inscripción CON los nombres
                 const result = await client.query(
-                    `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, email_inscrito, registered_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id`, // <--- MODIFICACIÓN: Se añade email_inscrito ($5)
-                    [parsedUserId, parsedEventId, user_name, event_title, user_email] // <--- MODIFICACIÓN: Se pasa user_email
+                    `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
+                    [parsedUserId, parsedEventId, user_name, event_title]
                 );
 
                 return res.status(201).json({ success: true, message: "Inscripción al evento exitosa.", registrationId: result.rows[0].id });
@@ -398,7 +396,7 @@ export default async function handler(req, res) {
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.code === '42601') {
-            errorMessage = 'Error de sintaxis SQL. Revise que las tablas y sus columnas existan y estén escritas correctamente.';
+            errorMessage = 'Error de sintaxis SQL. Revise que la tabla "event_registrations" y sus columnas (user_id, event_id, registered_at) existan y estén escritas correctamente.';
         } else if (error.code === '42P01') {
             errorMessage = `Error: La tabla requerida (${error.message.match(/"(.*?)"/) ? error.message.match(/"(.*?)"/)[1] : 'desconocida'}) no existe en la base de datos.`;
         }
