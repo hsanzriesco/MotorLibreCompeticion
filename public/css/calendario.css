@@ -44,3 +44,37 @@
 .close-modal:hover {
     background: #e60000;
 }
+
+/* =========================================== */
+/* NUEVO ESTILO: Botón de Cancelar Inscripción (Estilo Rojo/Negro) */
+/* =========================================== */
+
+.btn-custom-cancel {
+    /* Fondo rojo fuerte, similar a INICIAR SESIÓN */
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    /* Fuente impactante */
+    font-family: 'Oswald', sans-serif;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+/* Efecto al pasar el ratón (Hover) */
+.btn-custom-cancel:hover {
+    background-color: #c82333;
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
+    color: white;
+}
+
+/* Estilo cuando está deshabilitado */
+.btn-custom-cancel:disabled {
+    background-color: #6c757d;
+    opacity: 0.65;
+    cursor: not-allowed;
+    box-shadow: none;
+}
