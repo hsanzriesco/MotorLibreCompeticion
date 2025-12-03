@@ -1,20 +1,20 @@
 // api/top10-clasificacion.js
 import { Pool } from "pg";
 
-// 1. Configuración de la conexión a la DB
+// Dominio permitido para acceder a esta API (TU FRONTEND)
+const ALLOWED_ORIGIN = 'https://motor-libre-competicion.vercel.app';
+
+// Configuración de la conexión a la DB
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
 });
 
-// Dominio permitido para acceder a esta API (TU FRONTEND)
-const ALLOWED_ORIGIN = 'https://motor-libre-competicion.vercel.app';
-
 export default async function handler(req, res) {
     let client;
 
     // ===============================================
-    // 🛑 LÓGICA DE CORS MANUAL (Solución al error) 🛑
+    // 🛑 SOLUCIÓN CORS MANUAL (Sin Paquetes) 🛑
     // ===============================================
 
     // 1. Establece el encabezado clave que exige tu navegador
@@ -31,7 +31,6 @@ export default async function handler(req, res) {
     // ===============================================
 
 
-    // Aseguramos que solo se procesen solicitudes GET
     if (req.method !== 'GET') {
         res.setHeader('Allow', ['GET', 'OPTIONS']);
         return res.status(405).json({ success: false, message: `Método ${req.method} no permitido.` });
@@ -40,20 +39,38 @@ export default async function handler(req, res) {
     try {
         client = await pool.connect();
 
-        // 🚀 CONSULTA PARA OBTENER EL TOP 10
-        // **IMPORTANTE:** Debes reemplazar 'nombre_de_tu_tabla_resultados', 'score_column', y 'tiempo_column' 
-        // por los nombres reales de tu base de datos.
+        // 🚀 CONSULTA PARA OBTENER EL TOP 10 DE LA TABLA event_results
+        // La clasificación se basa en la POSICIÓN (menor es mejor)
+        // y se desempata por el TIEMPO DE VUELTA (menor es mejor).
         const result = await client.query(
-            `SELECT 
+            // Utilizamos DISTINCT ON (user) para obtener la mejor posición/tiempo de cada usuario, 
+            // aunque si la tabla solo guarda 1 resultado por evento, no sería necesario.
+            // Asumo que quieres la mejor posición global.
+            `WITH RankedResults AS (
+                SELECT 
+                    user_id,
+                    "user" AS user_name,
+                    position,
+                    best_lap_time,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY user_id 
+                        ORDER BY position ASC, best_lap_time ASC
+                    ) as rn
+                FROM 
+                    event_results 
+            )
+            SELECT 
                 user_name, 
-                score_column AS score, 
-                tiempo_column AS tiempo,
-                RANK() OVER (ORDER BY score_column DESC, tiempo_column ASC) AS rank
+                position, 
+                best_lap_time,
+                RANK() OVER (ORDER BY position ASC, best_lap_time ASC) AS rank
             FROM 
-                nombre_de_tu_tabla_resultados 
+                RankedResults
+            WHERE
+                rn = 1 -- Obtiene el mejor resultado de cada usuario
             ORDER BY 
-                score_column DESC, 
-                tiempo_column ASC 
+                position ASC, 
+                best_lap_time ASC 
             LIMIT 10`
         );
 
@@ -62,6 +79,7 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("Error al cargar el Top 10:", error);
+        // Si hay un error, el frontend recibirá una respuesta 500
         return res.status(500).json({ success: false, message: "Error interno del servidor al obtener el Top 10." });
     } finally {
         if (client) {
