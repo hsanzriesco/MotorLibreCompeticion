@@ -278,8 +278,9 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>ID Usuario</th>
-                                    <th>Nombre Completo</th>
+                                    <th>Nombre de Usuario</th>
+                                    <th>Correo Electrónico</th>
+                                    <th>Garaje</th>
                                     <th>Fecha de Inscripción</th>
                                 </tr>
                             </thead>
@@ -359,19 +360,20 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Nota: El conteo ya debería estar actualizado en 'current-registered-count' por admin.js
-                    // Pero lo actualizamos si los datos son frescos (aunque no es estrictamente necesario si admin.js lo hace)
-                    // currentRegisteredCount.textContent = result.data.length; 
-
                     if (result.data.length > 0) {
                         let htmlContent = '';
                         result.data.forEach((reg, index) => {
-                            // Asumiendo que `usuario_inscrito` contiene el nombre completo.
+                            // 🚀 MODIFICADO: Ahora incluimos los nuevos campos
+                            const garageInfo = reg.garage_details || 'N/A'; // Asume que reg.garage_details contiene la info del garaje
+                            const email = reg.email || 'N/A'; // Asume que reg.email contiene el correo
+                            const username = reg.username || reg.usuario_inscrito; // Usa 'username' si está disponible, sino 'usuario_inscrito'
+
                             htmlContent += `
                                 <tr>
                                     <td>${index + 1}</td>
-                                    <td>${reg.user_id}</td>
-                                    <td>${reg.usuario_inscrito || 'N/A'}</td> 
+                                    <td>${username}</td> 
+                                    <td>${email}</td>
+                                    <td>${garageInfo}</td>
                                     <td>${formatRegistrationDate(reg.registered_at)}</td>
                                 </tr>
                             `;
