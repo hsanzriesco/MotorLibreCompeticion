@@ -4,19 +4,16 @@
 #calendar {
     max-width: 900px;
     margin: 50px auto;
-    background: #1c1c1c;
-    /* Fondo gris oscuro */
+    background: #1c1c1c; /* Fondo gris oscuro */
     padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
-    /* Sombra roja de tu tema */
+    box-shadow: 0 0 10px rgba(229, 9, 20, 0.5); /* Sombra roja de tu tema */
     font-family: 'Orbitron', sans-serif;
 }
 
 /* --- Cabecera del Calendario (Título y botones) --- */
 .fc-toolbar-title {
-    color: white !important;
-    /* Título blanco */
+    color: white !important; /* Título blanco */
     font-weight: 600;
 }
 
@@ -39,10 +36,8 @@
 
 /* --- Cabecera de los Días de la Semana (dom, lun, mar...) --- */
 .fc-theme-standard th {
-    background-color: #111;
-    /* Fondo más oscuro para la cabecera de días */
-    color: #4CAF50;
-    /* Color verde lima/ciber para los nombres de los días */
+    background-color: #111; /* Fondo más oscuro para la cabecera de días */
+    color: #4CAF50; /* Color verde lima/ciber para los nombres de los días */
     font-weight: 800;
     text-transform: uppercase;
     border: 1px solid #333;
@@ -52,15 +47,12 @@
 .fc-daygrid-body {
     border: 1px solid #333;
 }
-
 .fc-daygrid-day {
     background-color: #1c1c1c;
     border: 1px solid #333;
 }
-
 .fc-daygrid-day-number {
-    color: #4CAF50;
-    /* Números de los días en verde lima */
+    color: #4CAF50; /* Números de los días en verde lima */
     font-weight: 600;
 }
 
@@ -71,27 +63,22 @@
 
 /* Días del mes anterior/siguiente */
 .fc-day-other .fc-daygrid-day-number {
-    color: #555;
-    /* Días fuera de mes en gris oscuro */
+    color: #555; /* Días fuera de mes en gris oscuro */
 }
 
 /* --- Estilos de Eventos --- */
 .fc-event {
     border: none !important;
-    background-color: #e50914 !important;
-    /* Rojo de tu tema */
+    background-color: #e50914 !important; /* Rojo de tu tema */
     color: white !important;
     border-radius: 4px;
     padding: 2px 5px;
     font-size: 0.9rem;
     font-weight: 600;
-    cursor: pointer;
-    /* Indica que se puede hacer clic para editar */
+    cursor: pointer; /* Indica que se puede hacer clic para editar */
 }
-
 .fc-event-title {
-    white-space: normal;
-    /* Permite que el título se ajuste en varias líneas */
+    white-space: normal; /* Permite que el título se ajuste en varias líneas */
 }
 
 /* Estilos de drag and drop (opcional) */
