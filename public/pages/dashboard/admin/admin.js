@@ -13,7 +13,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
         sessionStorage.removeItem("usuario");
-        mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000);
+        // Asegúrate de que 'mostrarAlerta' esté disponible globalmente o importada
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000);
+        }
         setTimeout(() => {
             window.location.href = "/pages/auth/login/login.html";
         }, 1500);
@@ -24,12 +27,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
     if (!calendarEl || !eventModalEl) {
-        // En caso de que no existan los elementos necesarios
         console.error("No se encontraron los elementos 'calendar' o 'eventModal'");
-        return;
+        // Si no estamos en la página del calendario, la ejecución puede terminar aquí.
+        if (window.location.pathname.includes('/adminCalendario.html')) {
+            return;
+        }
     }
 
-    const eventModal = new bootstrap.Modal(eventModalEl);
+    // Solo inicializamos modales y variables de calendario si estamos en la página del calendario
+    let calendar;
+    let eventModal;
+
+    // Si estamos en la página de calendario, inicializamos las variables
+    if (calendarEl && eventModalEl) {
+        eventModal = new bootstrap.Modal(eventModalEl);
+    }
+
     const form = document.getElementById("eventForm");
 
     const titleInput = document.getElementById("title");
@@ -57,11 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const registrationsBtnContainer = document.getElementById('registrations-button-container');
     const currentRegisteredCount = document.getElementById('current-registered-count');
 
-    // Nota: Las variables de los modales (registrationsModal, eventModal, etc.)
-    // se manejan en el script INLINE de adminCalendario.html, ¡que es correcto!
-
-
-    // --- FUNCIONES DE ESTADO (SE MANTIENEN IGUAL) ---
+    // --- FUNCIONES DE ESTADO (SE MODIFICAN CON CAPACITY) ---
     function captureEventState() {
         const date = startDateInput.value;
         const startTime = startTimeInput.value;
@@ -72,7 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             title: titleInput.value.trim(),
             description: descriptionInput.value.trim(),
             location: locationInput.value.trim(),
-            capacity: capacityInput.value.trim(), // 🔑 NUEVO: Capacidad
+            capacity: capacityInput.value.trim(), // 🔑 MODIFICADO
             start: date && startTime ? `${date}T${startTime}` : null,
             end: date && endTime ? `${date}T${endTime}` : null,
             imageURL: imageURLInput.value,
@@ -88,7 +97,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentState.title !== eventInitialState.title ||
             currentState.description !== eventInitialState.description ||
             currentState.location !== eventInitialState.location ||
-            currentState.capacity !== eventInitialState.capacity || // 🔑 NUEVO: Capacidad
+            currentState.capacity !== eventInitialState.capacity || // 🔑 MODIFICADO
             currentState.start !== eventInitialState.start ||
             currentState.end !== eventInitialState.end ||
             currentState.imageURL !== eventInitialState.imageURL;
@@ -102,7 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function loadEventRegistrationCount(eventId) {
         if (!eventId) {
             registrationsBtnContainer.style.display = 'none';
-            return;
+            return 0;
         }
 
         try {
@@ -113,18 +122,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const count = result.count || 0;
                 currentRegisteredCount.textContent = count;
 
-                // Solo mostrar el botón si hay un ID de evento (evento ya guardado)
+                // Mostrar el botón solo si hay un ID de evento
                 registrationsBtnContainer.style.display = eventId ? 'block' : 'none';
 
                 return count;
             } else {
                 console.error("Fallo al obtener el conteo de inscritos:", result.message);
+                currentRegisteredCount.textContent = '0';
                 registrationsBtnContainer.style.display = 'none';
                 return 0;
             }
 
         } catch (error) {
             console.error("Error de red al obtener el conteo de inscritos:", error);
+            currentRegisteredCount.textContent = '0';
             registrationsBtnContainer.style.display = 'none';
             return 0;
         }
@@ -146,19 +157,21 @@ document.addEventListener("DOMContentLoaded", async () => {
                 extendedProps: {
                     description: e.description,
                     location: e.location,
-                    capacity: e.capacity, // 🔑 NUEVO: Capacidad
+                    capacity: e.capacity, // 🔑 MODIFICADO
                     image_url: e.image_url
                 }
             }));
         } catch (e) {
             console.error("Error al obtener eventos:", e);
-            mostrarAlerta("Error al cargar los eventos: " + e.message, "error");
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta("Error al cargar los eventos: " + e.message, "error");
+            }
             return [];
         }
     }
 
     if (calendarEl) {
-        const calendar = new FullCalendar.Calendar(calendarEl, {
+        calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
             selectable: true,
             editable: false,
@@ -191,7 +204,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 titleInput.value = event.title;
                 descriptionInput.value = extendedProps.description || "";
                 locationInput.value = extendedProps.location || "";
-                capacityInput.value = extendedProps.capacity || ""; // 🔑 NUEVO: Capacidad
+                capacityInput.value = extendedProps.capacity || ""; // 🔑 MODIFICADO
 
                 imageURLInput.value = currentURL;
                 imageFileInput.value = "";
@@ -232,7 +245,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         calendar.render();
 
-        // --- MANEJADORES DE EVENTOS (Se mantienen o modifican ligeramente) ---
+        // --- MANEJADORES DE EVENTOS (Se modifican para guardar la capacidad) ---
 
         imageFileInput.addEventListener('change', function () {
             const file = this.files[0];
@@ -264,25 +277,34 @@ document.addEventListener("DOMContentLoaded", async () => {
             const date = startDateInput.value;
             const startTime = startTimeInput.value;
             const endTime = endTimeInput.value;
-            const capacity = capacityInput.value.trim(); // 🔑 NUEVO: Capacidad
+            const capacity = capacityInput.value.trim(); // 🔑 MODIFICADO
 
             // 1. COMPROBACIÓN DE CAMBIOS
             if (id && !hasEventChanged()) {
-                mostrarAlerta("No hay cambios para guardar.", "info");
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("No hay cambios para guardar.", "info");
+                }
                 eventModal.hide();
                 return;
             }
 
 
             if (!titleInput.value.trim() || !date || !startTime || !endTime) {
-                mostrarAlerta("Completa todos los campos obligatorios", "advertencia");
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Completa todos los campos obligatorios", "advertencia");
+                }
                 return;
             }
 
             // 2. CONFIRMACIÓN ANTES DE GUARDAR
             let confirmado = true;
             if (id) {
-                confirmado = await mostrarConfirmacion("¿Deseas guardar los cambios realizados en el evento?");
+                // Asegúrate de que 'mostrarConfirmacion' esté disponible
+                if (typeof mostrarConfirmacion === 'function') {
+                    confirmado = await mostrarConfirmacion("¿Deseas guardar los cambios realizados en el evento?");
+                } else {
+                    confirmado = confirm("¿Deseas guardar los cambios realizados en el evento?");
+                }
             }
 
             if (!confirmado) {
@@ -298,7 +320,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             formData.append('title', titleInput.value.trim());
             formData.append('description', descriptionInput.value.trim());
             formData.append('location', locationInput.value.trim());
-            formData.append('capacity', capacity); // 🔑 NUEVO: Capacidad
+            formData.append('capacity', capacity); // 🔑 MODIFICADO
             formData.append('start', start);
             formData.append('end', end);
 
@@ -320,43 +342,57 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.message || "Fallo en la respuesta del servidor.");
 
-                mostrarAlerta(id ? "Evento actualizado correctamente" : "Evento creado correctamente", "exito");
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta(id ? "Evento actualizado correctamente" : "Evento creado correctamente", "exito");
+                }
                 eventModal.hide();
                 calendar.refetchEvents();
             } catch (e) {
                 console.error("Error al guardar:", e);
-                mostrarAlerta("Error al guardar evento: " + e.message, "error");
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Error al guardar evento: " + e.message, "error");
+                }
             }
         });
 
         deleteEventBtn.addEventListener("click", async () => {
             if (!selectedEvent || !selectedEvent.id) {
-                mostrarAlerta("No hay evento seleccionado", "info");
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("No hay evento seleccionado", "info");
+                }
                 return;
             }
 
-            const confirmado = await mostrarConfirmacion("¿Estás seguro de que quieres eliminar este evento?");
+            let confirmado;
+            if (typeof mostrarConfirmacion === 'function') {
+                confirmado = await mostrarConfirmacion("¿Estás seguro de que quieres eliminar este evento?");
+            } else {
+                confirmado = confirm("¿Estás seguro de que quieres eliminar este evento?");
+            }
 
             if (confirmado) {
                 try {
                     const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
                     const data = await res.json();
-                    if (!data.success) throw new Error();
+                    if (!data.success) throw new Error(data.message || "Fallo al eliminar.");
 
-                    mostrarAlerta("Evento eliminado correctamente", "exito");
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta("Evento eliminado correctamente", "exito");
+                    }
                     eventModal.hide();
                     calendar.refetchEvents();
-                } catch {
-                    mostrarAlerta("Error al eliminar evento", "error");
+                } catch (e) {
+                    console.error("Error al eliminar:", e);
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta("Error al eliminar evento", "error");
+                    }
                 }
             }
         });
     }
 
-    // --- Lógica de Coche (El resto de tu código, incompleto pero se mantiene la estructura) ---
+    // --- Lógica de Coche (El resto de tu código, SE MANTIENE IGUAL) ---
 
-    // El resto de la lógica de Coche/Garaje que tenías aquí...
-    // Dejo el final del archivo como lo tenías:
     const carGarageForm = document.getElementById("carGarageForm");
     const carModalEl = document.getElementById("carGarageModal");
 
@@ -386,6 +422,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     if (carPhotoUrlInput.value) {
                         carPhotoPreview.src = carPhotoUrlInput.value;
                         carPhotoContainer.style.display = 'block';
+                    } else {
+                        carPhotoContainer.style.display = 'none';
                     }
                 }
             });
