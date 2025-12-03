@@ -40,8 +40,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         loginIcon.style.display = "none";
     }
 
+    // 🔴 LÓGICA DE CIERRE DE SESIÓN MODIFICADA PARA AÑADIR CONFIRMACIÓN
     document.getElementById("logout-btn").addEventListener("click", (e) => {
         e.preventDefault();
+
+        // 🟢 AÑADIDO: Muestra la ventana de confirmación
+        if (!confirm("¿Estás seguro de que quieres cerrar sesión?")) {
+            return; // Detiene el proceso si el usuario hace clic en "Cancelar"
+        }
 
         sessionStorage.removeItem("usuario");
 
@@ -58,6 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = "../auth/login/login.html";
         }, 1500);
     });
+    // ----------------------------------------------------------------------
 
     // --- FUNCIONES DE REGISTRO Y CANCELACIÓN ---
 
