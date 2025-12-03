@@ -25,6 +25,22 @@
         main {
             padding-top: 100px;
         }
+
+        /* 🔴 NUEVO ESTILO: Para asegurar que el texto del botón outline se vea en el modal oscuro */
+        .btn-outline-danger {
+            color: white;
+            /* Texto blanco */
+            border-color: #e50914;
+            /* Borde rojo */
+        }
+
+        .btn-outline-danger:hover {
+            color: white;
+            /* Texto blanco en hover */
+            background-color: #e50914;
+            /* Fondo rojo en hover */
+            border-color: #e50914;
+        }
     </style>
 </head>
 
@@ -90,7 +106,7 @@
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-custom-cancel" id="btn-cancel-event" data-event-id=""
+                    <button type="button" class="btn btn-outline-danger" id="btn-cancel-event" data-event-id=""
                         style="display: none;">
                         Cancelar Inscripción
                     </button>
