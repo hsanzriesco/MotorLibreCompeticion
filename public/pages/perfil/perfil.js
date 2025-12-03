@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const carList = document.getElementById('car-list');
     const userNameElement = document.getElementById('user-name');
     const loginIcon = document.getElementById('login-icon');
-    const logoutBtn = document.getElementById('logout-btn');
+    // const logoutBtn = document.getElementById('logout-btn'); // No se usa si no tiene listener
     const noCarsMessage = document.getElementById('no-cars-message');
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
@@ -27,10 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentVehicle = null;
 
-    // 🛑 LÓGICA DE AUTENTICACIÓN ACTUALIZADA 🛑
+    // 🛑 LÓGICA DE AUTENTICACIÓN 🛑
     const stored = sessionStorage.getItem('usuario');
     if (!stored) {
-        // Mensaje requerido: "tienes que iniciar sesion para entrar a tu perfil"
         mostrarAlerta("Tienes que iniciar sesión para entrar a tu perfil", 'error');
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
         return; // Detiene la ejecución del script
@@ -334,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCar = currentVehicle.type === 'car';
         const itemName = isCar ? 'coche' : 'moto';
 
-        // Utilizamos la función 'mostrarConfirmacion' para la validación
         const confirmar = await mostrarConfirmacion(`¿Seguro que quieres eliminar este ${itemName}?`, 'Eliminar');
         if (!confirmar) {
             mostrarAlerta('Eliminación cancelada', 'info');
@@ -364,7 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // La función mostrarConfirmacion es correcta y se mantiene
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             if (document.getElementById('mlc-confirm-overlay')) {
@@ -477,7 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // 🛑 MODIFICADO: Cambiado a la ruta base con el query parameter 'action'
             const resp = await fetch('/api/userAction?action=updateName', {
                 method: 'PUT',
                 headers: {
@@ -491,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const json = await resp.json();
-            if (!resp.ok || !json.success) { // Aseguramos que se revise json.success del backend
+            if (!resp.ok || !json.success) {
                 throw new Error(json.message || 'Error al actualizar perfil.');
             }
 
@@ -504,13 +500,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error al actualizar perfil:', error);
-            // Mostramos el mensaje de error completo
             mostrarAlerta('Error al actualizar perfil: ' + error.message, 'error');
         }
     });
-
-    // ❌ LÓGICA DE CIERRE DE SESIÓN ELIMINADA DE AQUÍ
-    // Ya está correctamente en el bloque <script> final de perfil.html
 
     loadVehicles();
 });
