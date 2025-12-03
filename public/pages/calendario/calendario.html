@@ -129,6 +129,65 @@
         </div>
     </div>
 
+    <div class="modal fade" id="eventCreateEditModal" tabindex="-1" aria-labelledby="eventCreateEditModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border border-danger">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eventCreateEditModalLabel">Crear Nuevo Evento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="eventForm">
+                        <div class="mb-3">
+                            <label for="eventTitle" class="form-label">Título del Evento</label>
+                            <input type="text" class="form-control" id="eventTitle" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="eventDescription" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="eventDescription" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="eventImageUrl" class="form-label">URL de la Imagen (Opcional)</label>
+                            <input type="url" class="form-control" id="eventImageUrl">
+                        </div>
+
+                        <hr class="border-secondary">
+
+                        <div class="mb-3">
+                            <label for="eventLocation" class="form-label">Lugar</label>
+                            <select class="form-select" id="eventLocation" required>
+                                <option value="">Selecciona un Lugar...</option>
+                                </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="eventStart" class="form-label">Inicio</label>
+                            <input type="datetime-local" class="form-control" id="eventStart" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="eventEnd" class="form-label">Fin</label>
+                            <input type="datetime-local" class="form-control" id="eventEnd" required>
+                        </div>
+
+                        <input type="hidden" id="eventId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger" form="eventForm" id="btnSaveEvent">
+                        Guardar Evento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -216,4 +275,4 @@
     </script>
 </body>
 
-</html> 
+</html>
