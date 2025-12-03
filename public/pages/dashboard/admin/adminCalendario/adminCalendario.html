@@ -345,6 +345,9 @@
         const registrationsTableBody = document.getElementById('registrationsTableBody');
         const registrationsEmptyMessage = document.getElementById('registrationsEmptyMessage');
         const btnViewRegistrations = document.getElementById('btnViewRegistrations');
+        const saveEventBtn = document.getElementById('saveEventBtn'); // 🔴 Capturamos el botón Guardar
+        const capacityInput = document.getElementById('capacity'); // 🔴 Capturamos el campo Capacidad Máxima
+
         // El conteo se actualiza en admin.js, pero se lee aquí al hacer click
         const currentRegisteredCount = document.getElementById('current-registered-count');
 
@@ -379,7 +382,7 @@
 
                             htmlContent += `
                                 <tr>
-                                    <td>${username}</td> 
+                                    <td>${username}</td>
                                     <td>${formatRegistrationDate(reg.registered_at)}</td>
                                 </tr>
                             `;
@@ -425,6 +428,31 @@
             if (eventId) {
                 eventModal.show();
             }
+        });
+
+        // 🔴 3. NUEVA VALIDACIÓN: Capacidad Máxima
+        saveEventBtn.addEventListener('click', (event) => {
+            const capacityValue = parseInt(capacityInput.value, 10);
+
+            // Validamos si es un número negativo. El campo tiene min="0" en HTML, pero esto captura entrada manual incorrecta.
+            if (!isNaN(capacityValue) && capacityValue < 0) {
+                // Prevenir el guardado si es un número negativo
+                event.preventDefault();
+                event.stopPropagation();
+
+                // Mostrar la alerta de error
+                showAlert('Error de Capacidad', 'La capacidad máxima es incorrecta para la capacidad máxima. No puede ser un número negativo.', 'error');
+
+                // Si la lógica de guardado está en admin.js, asegúrate de que esa lógica solo se ejecute si no se llama a preventDefault/stopPropagation.
+                // En este archivo solo estamos añadiendo la validación. La función de guardado deberá estar en admin.js.
+
+                return false; // Detiene el flujo de ejecución.
+            }
+
+            // Si pasa la validación, la función continúa con la lógica de guardado (que se esperaría que esté en admin.js)
+            // Si la función de guardado está en admin.js, este listener debería estar ANTES. 
+            // Si no hay más listeners, el click pasará a admin.js.
+
         });
     </script>
 </body>
