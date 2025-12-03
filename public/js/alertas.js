@@ -1,8 +1,9 @@
 function mostrarAlerta(mensaje, tipo, duracion = 4000) {
-    let container = document.getElementById('alerta-container');
+    // CORRECCIÓN: Usar 'alertas-container' para coincidir con admin.html
+    let container = document.getElementById('alertas-container');
     if (!container) {
         container = document.createElement('div');
-        container.id = 'alerta-container';
+        container.id = 'alertas-container'; // ID corregido
         container.classList.add('alerta-container');
         document.body.appendChild(container);
     }
@@ -16,7 +17,9 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000) {
             iconoClase = 'bi-check-circle-fill';
             break;
         case 'error':
-            iconoClase = 'bi-x-octagon-fill';
+            // Si quieres el icono hexagonal customizado: USA 'icono-error-custom'
+            // Si quieres el icono estándar de Bootstrap: USA 'bi-x-octagon-fill'
+            iconoClase = 'bi-x-octagon-fill'; 
             break;
         case 'advertencia':
             iconoClase = 'bi-exclamation-triangle-fill';
