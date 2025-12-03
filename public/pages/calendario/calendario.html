@@ -1,437 +1,219 @@
 <!DOCTYPE html>
-
 <html lang="es">
 
-
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Calendario - Motor Libre Competición</title>
 
-
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
-
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-
     <link rel="icon" type="image/png" href="../../img/imagen-tfg.png">
-
     <link rel="stylesheet" href="../../css/style.css">
 
-
-
     <link rel="stylesheet" href="../../css/alertas.css">
-
     <link rel="stylesheet" href="../../css/calendario.css">
 
-
-
     <style>
-
         body {
-
             background-color: #111;
-
             color: white;
-
         }
-
-
 
         main {
-
             padding-top: 100px;
-
         }
-
-
 
         /* 🚀 ESTILOS DEL MODAL DE CONFIRMACIÓN (COPIADOS DE index.html) */
-
         .modal-content {
-
             background-color: #111;
-
             color: white;
-
             border: 1px solid #e50914;
-
         }
-
-
 
         .btn-close-white {
-
             filter: invert(1) grayscale(100%) brightness(200%);
-
             /* Hace la X visible en fondo oscuro */
-
         }
-
-
 
         /* Estilos para el botón de cancelar inscripción */
-
         .btn-outline-danger {
-
             color: white;
-
             border-color: #e50914;
-
         }
-
-
 
         .btn-outline-danger:hover {
-
             color: white;
-
             background-color: #e50914;
-
             border-color: #e50914;
-
         }
-
     </style>
-
 </head>
 
-
-
 <body>
-
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
-
         <a href="../../index.html" class="navbar-brand d-flex align-items-center">
-
             <img src="../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
-
         </a>
 
-
-
         <div class="d-flex align-items-center">
-
             <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
-
                 <i class="bi bi-person-circle fs-4"></i>
-
             </a>
-
             <span id="user-name" class="text-light me-3"></span>
-
             <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
-
                 data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-
                 <i class="bi bi-list fs-4"></i>
-
             </button>
-
         </div>
-
     </nav>
 
-
-
     <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-
         <div class="offcanvas-header border-bottom border-secondary">
-
             <h5 class="offcanvas-title">Menú</h5>
-
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-
         </div>
-
         <div class="offcanvas-body">
-
             <a href="./calendario.html" class="d-block text-danger fw-bold mb-2">
-
                 Calendario
-
             </a>
-
             <a href="../perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
-
             <hr class="border-secondary">
-
             <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
-
                 data-bs-target="#logoutConfirmModal">
-
                 Cerrar sesión
-
             </a>
-
         </div>
-
     </div>
-
-
 
     <main class="text-center">
-
         <h1 class="text-light mt-5">Calendario de Eventos</h1>
-
         <div id="calendar"></div>
-
     </main>
 
-
-
     <div class="modal fade" id="eventViewModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
-
         <div class="modal-dialog modal-dialog-centered modal-lg">
-
             <div class="modal-content bg-dark text-white border border-danger">
-
                 <div class="modal-header">
-
                     <h5 class="modal-title" id="modalTitle"></h5>
-
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-
                         aria-label="Close"></button>
-
                 </div>
-
                 <div class="modal-body">
-
                     <div id="event-image-container" class="mb-3 text-center" style="display: none;">
-
                         <img id="modalImage" src="" alt="Imagen del evento" class="img-fluid rounded shadow"
-
                             style="max-height: 400px; object-fit: cover; width: 100%;">
-
                     </div>
-
                     <p class="lead" id="modalDesc"></p>
-
                     <hr class="border-secondary">
-
                     <p class="mb-1"><i class="bi bi-geo-alt-fill me-2 text-danger"></i> <span id="modalLoc"></span></p>
-
                     <p class="mb-1"><i class="bi bi-clock-fill me-2 text-danger"></i> Inicio: <span
-
                             id="modalStart"></span></p>
-
                     <p class="mb-0"><i class="bi bi-clock-fill me-2 text-danger"></i> Fin: <span id="modalEnd"></span>
-
                     </p>
-
                 </div>
-
                 <div class="modal-footer">
-
                     <button type="button" class="btn btn-outline-danger" id="btn-cancel-event" data-event-id=""
-
                         style="display: none;">
-
                         Cancelar Inscripción
-
                     </button>
-
                     <button type="button" class="btn btn-danger" id="btn-register-event" data-event-id="">
-
                         Inscribirse
-
                     </button>
-
                     <span id="registration-status" class="text-white me-auto"></span>
-
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
-
 
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
-
         aria-hidden="true">
-
         <div class="modal-dialog modal-dialog-centered modal-sm">
-
             <div class="modal-content">
-
                 <div class="modal-header border-danger">
-
                     <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
-
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-
                         aria-label="Close"></button>
-
                 </div>
-
                 <div class="modal-body">
-
                     <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
-
                 </div>
-
                 <div class="modal-footer border-danger">
-
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-
                     <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar
-
                         Sesión</button>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
     <script src="../../js/alertas.js"></script>
-
     <script src="./calendario.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-
-
     <script>
-
         // 🚀 LÓGICA DE CIERRE DE SESIÓN (ADAPTADA DE index.html)
-
         document.addEventListener("DOMContentLoaded", () => {
-
             // Referencias para Logout
-
             const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-
             const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
-
             const btnConfirmLogout = document.getElementById("btnConfirmLogout");
-
             const logoutBtn = document.getElementById("logout-btn");
-
             const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-
             const usuario = storedUser ? JSON.parse(storedUser) : null;
 
-
-
             // 🔑 1. Mostrar el modal al hacer clic en el botón del menú
-
             if (logoutBtn) {
-
                 logoutBtn.addEventListener("click", (e) => {
-
                     e.preventDefault();
 
-
-
                     // 🛑 VALIDACIÓN: Mostrar error si no hay usuario logueado (por si acaso)
-
                     if (!usuario) {
-
                         // Asumiendo que 'mostrarAlerta' está disponible desde alertas.js
-
                         mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
 
-
-
                         const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-
                         if (offcanvasMenu) offcanvasMenu.hide();
-
                         return;
-
                     }
-
-
 
                     // Si hay usuario, mostrar el modal de confirmación
-
                     if (logoutConfirmModal) {
-
                         logoutConfirmModal.show();
-
                     }
-
-
 
                     // Ocultar el offcanvas al abrir el modal (mejor UX)
-
                     const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-
                     if (offcanvasMenu) offcanvasMenu.hide();
-
                 });
-
             }
-
-
 
             // 🔑 2. Cerrar sesión al confirmar en el modal
-
             if (btnConfirmLogout) {
-
                 btnConfirmLogout.addEventListener("click", () => {
 
-
-
                     if (logoutConfirmModal) {
-
                         logoutConfirmModal.hide(); // Ocultar el modal
-
                     }
 
-
-
                     // Limpiar la sesión (usando ambos)
-
                     sessionStorage.removeItem("usuario");
-
                     localStorage.removeItem("usuario");
-
                     localStorage.removeItem("token"); // Opcional, si el token se guarda aquí
 
-
-
                     // Asumiendo que 'mostrarAlerta' está disponible desde alertas.js
-
                     mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
-
-
                     // Redirigir a la página de inicio de sesión
-
                     setTimeout(() => {
-
                         window.location.href = '../auth/login/login.html';
-
                     }, 1500);
-
                 });
-
             }
-
         });
-
     </script>
-
 </body>
 
-
-
-</html>
+</html> 
