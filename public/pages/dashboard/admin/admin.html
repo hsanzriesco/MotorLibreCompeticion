@@ -127,7 +127,8 @@
             <p class="text-secondary">Aquí puedes registrar, modificar o eliminar los resultados de los pilotos en cada
                 evento.</p>
 
-            <button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal" data-bs-target="#addResultModal">
+            <button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal" data-bs-target="#addResultModal"
+                id="add-result-btn">
                 <i class="bi bi-plus-circle-fill me-2"></i>Añadir Nuevo Resultado
             </button>
 
@@ -136,39 +137,17 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Evento</th>
-                            <th>Piloto/Usuario</th>
+                            <th>Evento (ID)</th>
+                            <th>Piloto (ID)</th>
+                            <th>Nombre Piloto</th>
                             <th>Posición</th>
-                            <th>Puntos</th>
+                            <th>Mejor Vuelta</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="results-list">
                         <tr>
-                            <td>1</td>
-                            <td>Rally de Verano</td>
-                            <td>Equipo Fénix (ID: 101)</td>
-                            <td>1</td>
-                            <td>25</td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-info me-2"><i class="bi bi-pencil"></i>
-                                    Editar</button>
-                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i>
-                                    Eliminar</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Rally de Verano</td>
-                            <td>Marta Cruz (ID: 105)</td>
-                            <td>2</td>
-                            <td>18</td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-info me-2"><i class="bi bi-pencil"></i>
-                                    Editar</button>
-                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i>
-                                    Eliminar</button>
-                            </td>
+                            <td colspan="7" class="text-center text-secondary">Cargando resultados...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -196,20 +175,18 @@
                 </div>
                 <div class="modal-body">
                     <form id="result-form">
+                        <input type="hidden" id="result-id-input">
+
                         <div class="mb-3">
                             <label for="event-select" class="form-label">Evento</label>
                             <select class="form-select bg-dark text-light border-secondary" id="event-select" required>
                                 <option value="">Selecciona un Evento</option>
-                                <option value="1">Rally de Verano</option>
-                                <option value="2">Desafío de Montaña</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="user-select" class="form-label">Piloto / Usuario</label>
                             <select class="form-select bg-dark text-light border-secondary" id="user-select" required>
                                 <option value="">Selecciona un Piloto</option>
-                                <option value="101">Equipo Fénix</option>
-                                <option value="105">Marta Cruz</option>
                             </select>
                         </div>
                         <div class="row">
@@ -221,13 +198,13 @@
                             <div class="col-md-6 mb-3">
                                 <label for="points-input" class="form-label">Puntos Obtenidos</label>
                                 <input type="number" class="form-control bg-dark text-light border-secondary"
-                                    id="points-input" min="0" required>
+                                    id="points-input" min="0" disabled>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="time-input" class="form-label">Mejor Tiempo (Ej: 00:01:30)</label>
                             <input type="text" class="form-control bg-dark text-light border-secondary" id="time-input"
-                                placeholder="Formato HH:MM:SS">
+                                placeholder="Formato HH:MM:SS.ms" required>
                         </div>
                     </form>
                 </div>
@@ -261,32 +238,49 @@
     </div>
 
     <script src="../../../js/alertas.js"></script>
-    <script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script id="admin-results-script">
         document.addEventListener("DOMContentLoaded", function () {
-            // Lógica para mostrar la sección correcta al hacer clic en el menú
+
+            // --- VARIABLES GLOBALES Y SELECTORES ---
+            const API_URL = '/api/events';
+            const RESULTS_LIST = document.getElementById('results-list');
+            const RESULT_FORM = document.getElementById('result-form');
+            const BTN_SAVE_RESULT = document.getElementById('btnSaveResult');
+            const ADD_RESULT_MODAL = new bootstrap.Modal(document.getElementById('addResultModal'));
+            const MODAL_TITLE = document.getElementById('addResultModalLabel');
+
+            // --- SELECTORES DE FORMULARIO ---
+            const RESULT_ID_INPUT = document.getElementById('result-id-input');
+            const EVENT_SELECT = document.getElementById('event-select');
+            const USER_SELECT = document.getElementById('user-select');
+            const POSITION_INPUT = document.getElementById('position-input');
+            const TIME_INPUT = document.getElementById('time-input');
+
+            // Almacén local de datos (para precargar edición)
+            let allResults = [];
+
+            // --- LÓGICA DE NAVEGACIÓN (Originalmente presente) ---
             const linkResultados = document.getElementById('link-resultados');
             const resultsSection = document.getElementById('results-management');
             const defaultSection = document.getElementById('default-panel');
             const offcanvasElement = document.getElementById('offcanvasMenu');
             const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement) || new bootstrap.Offcanvas(offcanvasElement);
 
-
-            function showSection(sectionToShow, linkElement) {
-                // Ocultar todas las secciones excepto la barra de navegación
+            function showSection(sectionToShow) {
                 document.querySelectorAll('main section').forEach(section => {
                     section.style.display = 'none';
                 });
-
-                // Mostrar la sección solicitada
                 if (sectionToShow) {
                     sectionToShow.style.display = 'block';
+                    if (sectionToShow.id === 'results-management') {
+                        loadResults(); // Cargar resultados cuando se muestra la sección
+                    }
                 }
-
-                // Cerrar el menú Offcanvas
                 offcanvas.hide();
             }
 
-            // Manejar clic en el enlace de Resultados
             if (linkResultados && resultsSection) {
                 linkResultados.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -294,7 +288,6 @@
                 });
             }
 
-            // Manejar clic en el enlace de Inicio (vuelve al panel por defecto)
             const menuInicio = document.getElementById('menu-inicio');
             if (menuInicio && defaultSection) {
                 menuInicio.addEventListener('click', function (e) {
@@ -303,25 +296,189 @@
                 });
             }
 
-            // Lógica de Navbar/Login/Logout (Asumo que está en navbar.js o global)
-            // Aquí iría el código de tu archivo navbar.js si no lo tienes cargado globalmente.
-            // Para el modal de logout, el código en navbar.js debe gestionar el botón #logout-btn.
-
-            // Mostrar la sección de resultados por defecto si la URL lo indica (opcional)
             if (window.location.hash === '#results-management') {
                 showSection(resultsSection);
             } else {
                 showSection(defaultSection);
             }
 
-            // --- Faltaría aquí el JS para: ---
-            // 1. Cargar las listas de Eventos (events) y Pilotos (users) en el modal.
-            // 2. Lógica para Guardar, Editar y Eliminar resultados (Comunicación con tu API).
-            // 3. Cargar la lista de resultados en la tabla.
+            // --- 1. CARGAR DATOS DE BASES DE DATOS (READ) ---
+
+            // **NOTA: Necesitarías dos funciones adicionales: loadEvents() y loadUsers()
+            // para poblar los SELECT del modal. Asumiré que EVENTOS y USUARIOS tienen APIs GET.**
+            // Ejemplo de API GET: /api/events?action=getAllEvents y /api/users?action=getAllUsers
+
+            async function loadResults() {
+                RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-secondary">Cargando resultados...</td></tr>';
+                try {
+                    const response = await fetch(`${API_URL}?action=getAllResults`);
+                    const data = await response.json();
+
+                    if (data.success && data.data) {
+                        allResults = data.data; // Almacenar para edición
+                        RESULTS_LIST.innerHTML = '';
+
+                        if (allResults.length === 0) {
+                            RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-warning">No hay resultados registrados.</td></tr>';
+                            return;
+                        }
+
+                        data.data.forEach(result => {
+                            const row = RESULTS_LIST.insertRow();
+                            row.dataset.resultId = result.result_id; // Para referencia rápida
+                            row.innerHTML = `
+                                <td>${result.result_id}</td>
+                                <td>${result.event_id}</td>
+                                <td>${result.user_id}</td>
+                                <td>${result.user}</td> <td>${result.position}</td>
+                                <td>${result.best_lap_time}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-info me-2 edit-btn" data-id="${result.result_id}"><i class="bi bi-pencil"></i> Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${result.result_id}"><i class="bi bi-trash"></i> Eliminar</button>
+                                </td>
+                            `;
+                        });
+
+                        document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEditClick));
+                        document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDeleteClick));
+
+                    } else {
+                        RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${data.message || 'Error al cargar los resultados.'}</td></tr>`;
+                    }
+                } catch (error) {
+                    console.error('Error al cargar los resultados:', error);
+                    RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error de red o servidor.</td></tr>`;
+                }
+            }
+
+
+            // --- 2. MANEJO DE FORMULARIO (CREATE / UPDATE) ---
+
+            // Listener para el botón de guardar
+            BTN_SAVE_RESULT.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (RESULT_FORM.checkValidity()) {
+                    handleSaveResult();
+                } else {
+                    RESULT_FORM.reportValidity(); // Mostrar errores de validación nativos
+                }
+            });
+
+            async function handleSaveResult() {
+                const resultId = RESULT_ID_INPUT.value;
+
+                // Recoger datos del formulario
+                const resultData = {
+                    event_id: EVENT_SELECT.value,
+                    user_id: USER_SELECT.value,
+                    position: POSITION_INPUT.value,
+                    best_lap_time: TIME_INPUT.value,
+                    // Nota: Aquí estamos asumiendo que el nombre del piloto lo tomas del texto del select
+                    // Esto es un riesgo. Lo ideal es que la API use user_id para obtener el nombre.
+                    // Para evitar el error "column 'user' does not exist" de antes, usamos el nombre 'user' de la columna original.
+                    user: USER_SELECT.options[USER_SELECT.selectedIndex].text,
+                };
+
+                let url = `${API_URL}?action=addResult`;
+                let method = 'POST';
+
+                if (resultId) {
+                    // Edición (UPDATE)
+                    url = `${API_URL}?action=editResult`;
+                    method = 'PUT';
+                    resultData.result_id = resultId;
+                }
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(resultData)
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        mostrarAlerta(data.message, 'success');
+                        ADD_RESULT_MODAL.hide(); // Cerrar modal
+                        loadResults(); // Recargar la tabla
+                    } else {
+                        mostrarAlerta('Error: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    mostrarAlerta('Error de conexión al guardar el resultado.', 'error');
+                    console.error('Error al guardar:', error);
+                }
+            }
+
+            // --- 3. MANEJO DE EDICIÓN (PRECARGA DE MODAL) ---
+
+            function handleEditClick(event) {
+                const resultId = parseInt(event.target.dataset.id);
+                const resultToEdit = allResults.find(r => r.result_id === resultId);
+
+                if (!resultToEdit) {
+                    mostrarAlerta("Resultado no encontrado.", 'warning');
+                    return;
+                }
+
+                // Llenar el formulario con los datos
+                MODAL_TITLE.textContent = 'Editar Resultado (ID: ' + resultId + ')';
+                RESULT_ID_INPUT.value = resultId;
+
+                // Asegúrate de que los SELECTs tengan las opciones cargadas antes de asignar
+                // (Asumiendo que has añadido loadEvents y loadUsers)
+                EVENT_SELECT.value = resultToEdit.event_id;
+                USER_SELECT.value = resultToEdit.user_id;
+
+                POSITION_INPUT.value = resultToEdit.position;
+                TIME_INPUT.value = resultToEdit.best_lap_time;
+                // Si tienes un campo de nombre de piloto, también lo llenarías
+
+                ADD_RESULT_MODAL.show();
+            }
+
+            // --- 4. MANEJO DE ELIMINACIÓN (DELETE) ---
+
+            async function handleDeleteClick(event) {
+                const resultId = event.target.dataset.id;
+                if (!confirm(`¿Estás seguro de que quieres eliminar el resultado ID ${resultId}? Esta acción no se puede deshacer.`)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}?action=deleteResult&result_id=${resultId}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        mostrarAlerta(data.message, 'success');
+                        loadResults();
+                    } else {
+                        mostrarAlerta('Error al eliminar: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    mostrarAlerta('Error de conexión al eliminar.', 'error');
+                    console.error('Error al eliminar:', error);
+                }
+            }
+
+            // --- INICIALIZACIÓN DEL MODAL ---
+            document.getElementById('add-result-btn').addEventListener('click', () => {
+                MODAL_TITLE.textContent = 'Añadir Nuevo Resultado';
+                RESULT_FORM.reset();
+                RESULT_ID_INPUT.value = ''; // Limpiar el ID oculto
+            });
+
+            // Llamada inicial para cargar los resultados al iniciar la sección
+            if (resultsSection.style.display !== 'none') {
+                loadResults();
+            }
+
+            // Lógica para el modal de logout (asumo que está en navbar.js)
         });
     </script>
     <script src="../../../js/navbar.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
