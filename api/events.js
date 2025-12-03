@@ -120,7 +120,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, isRegistered: result.rows.length > 0 });
             }
 
-            // 🆕 GET: Obtener solo el CONTEO de inscritos para un evento
+            // GET: Obtener solo el CONTEO de inscritos para un evento
             if (action === 'getRegistrationCount') {
                 const { event_id } = req.query;
 
@@ -148,7 +148,7 @@ export default async function handler(req, res) {
             }
 
 
-            // 🚀 GET: Obtener lista de inscritos para un evento
+            // GET: Obtener lista de inscritos para un evento
             if (action === 'getRegistrations') {
                 const { event_id } = req.query;
 
@@ -161,7 +161,7 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "El ID del evento debe ser un número válido." });
                 }
 
-                // 🟢 Se selecciona la información relevante de los usuarios inscritos
+                // 🟢 Se selecciona la información relevante de los usuarios inscritos (sin email)
                 const result = await client.query(
                     `SELECT id, user_id, usuario_inscrito, registered_at FROM event_registrations WHERE event_id = $1 ORDER BY registered_at ASC`,
                     [parsedEventId]
@@ -225,7 +225,7 @@ export default async function handler(req, res) {
                     }
                 }
 
-                // 3. Obtener el nombre del usuario y el título del evento
+                // 3. Obtener solo el nombre del usuario y el título del evento (sin email)
                 const dataQuery = `
                     SELECT
                         u.name AS user_name,
@@ -246,7 +246,7 @@ export default async function handler(req, res) {
                 const { user_name, event_title } = dataResult.rows[0];
 
 
-                // 4. Insertar inscripción CON los nombres
+                // 4. Insertar inscripción SOLO con el nombre
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId, user_name, event_title]
@@ -396,7 +396,7 @@ export default async function handler(req, res) {
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.code === '42601') {
-            errorMessage = 'Error de sintaxis SQL. Revise que la tabla "event_registrations" y sus columnas (user_id, event_id, registered_at) existan y estén escritas correctamente.';
+            errorMessage = 'Error de sintaxis SQL. Revise que las tablas y sus columnas existan y estén escritas correctamente.';
         } else if (error.code === '42P01') {
             errorMessage = `Error: La tabla requerida (${error.message.match(/"(.*?)"/) ? error.message.match(/"(.*?)"/)[1] : 'desconocida'}) no existe en la base de datos.`;
         }
