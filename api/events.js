@@ -43,12 +43,12 @@ function parseMultipart(req) {
                 return reject(err);
             }
 
-            // formidable devuelve arrays si se usa `multiples: false`, los convertimos a valores únicos
+            // formidable devuelve arrays, los convertimos a valores únicos
             const singleFields = Object.fromEntries(
                 Object.entries(fields).map(([key, value]) => [key, value[0]])
             );
 
-            // Asegurar que `files.imageFile` sea un array para consistencia si no hay archivo
+            // Nota: files.imageFile es un array o undefined. Lo usaremos como files.imageFile?.[0]
             resolve({ fields: singleFields, files });
         });
     });
@@ -99,7 +99,8 @@ export default async function handler(req, res) {
             // GET: Cargar todos los eventos
             if (!action) {
                 const result = await client.query(
-                    `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url, capacidad_max FROM events ORDER BY start ASC`
+                    // 🔑 Se incluye la capacidad_max en la consulta principal
+                    `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url, capacidad_max AS capacity FROM events ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
             }
@@ -120,7 +121,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, isRegistered: result.rows.length > 0 });
             }
 
-            // GET: Obtener solo el CONTEO de inscritos para un evento
+            // 🚀 GET: Obtener solo el CONTEO de inscritos para un evento
             if (action === 'getRegistrationCount') {
                 const { event_id } = req.query;
 
@@ -143,12 +144,12 @@ export default async function handler(req, res) {
 
                 return res.status(200).json({
                     success: true,
-                    registrationCount: count
+                    count: count // Renombramos a 'count' para que coincida con el frontend
                 });
             }
 
 
-            // GET: Obtener lista de inscritos para un evento
+            // 🚀 GET: Obtener lista de inscritos para un evento
             if (action === 'getRegistrations') {
                 const { event_id } = req.query;
 
@@ -161,7 +162,7 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "El ID del evento debe ser un número válido." });
                 }
 
-                // 🟢 Se selecciona la información relevante de los usuarios inscritos (sin email)
+                // 🟢 Se selecciona la información relevante para el administrador
                 const result = await client.query(
                     `SELECT id, user_id, usuario_inscrito, registered_at FROM event_registrations WHERE event_id = $1 ORDER BY registered_at ASC`,
                     [parsedEventId]
@@ -170,7 +171,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     data: result.rows,
-                    totalRegistrations: result.rows.length // Útil para el frontend
+                    totalRegistrations: result.rows.length
                 });
             }
         }
@@ -218,14 +219,16 @@ export default async function handler(req, res) {
 
                 if (capacityCheck.rows.length > 0) {
                     const { capacidad_max, num_inscritos } = capacityCheck.rows[0];
-                    const maxCapacity = parseInt(capacidad_max);
+                    // 🔑 Convertir a entero. Si es NULL o 0, el aforo es ilimitado
+                    const maxCapacity = parseInt(capacidad_max) || 0;
+                    const currentRegistrations = parseInt(num_inscritos) || 0;
 
-                    if (maxCapacity > 0 && num_inscritos >= maxCapacity) {
+                    if (maxCapacity > 0 && currentRegistrations >= maxCapacity) {
                         return res.status(403).json({ success: false, message: "Aforo completo. No se puede realizar la inscripción." });
                     }
                 }
 
-                // 3. Obtener solo el nombre del usuario y el título del evento (sin email)
+                // 3. Obtener solo el nombre del usuario y el título del evento
                 const dataQuery = `
                     SELECT
                         u.name AS user_name,
@@ -261,7 +264,8 @@ export default async function handler(req, res) {
             if (!action) {
                 const { fields, files } = await parseMultipart(req);
 
-                const { title, description, location, start, end, imageURL, capacidad_max } = fields;
+                // 🔑 Se incluye capacidad_max
+                const { title, description, location, start, end, imageURL, capacity } = fields;
                 const file = files.imageFile?.[0];
 
                 if (!title || !start || !end) {
@@ -271,7 +275,8 @@ export default async function handler(req, res) {
                     });
                 }
 
-                const parsedCapacidadMax = parseInt(capacidad_max) || 0;
+                // 🔑 Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
+                const parsedCapacidadMax = parseInt(capacity) || 0;
 
 
                 let finalImageUrl = imageURL || null;
@@ -299,7 +304,8 @@ export default async function handler(req, res) {
             // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
 
-            const { title, description, location, start, end, imageURL, capacidad_max } = fields;
+            // 🔑 Se incluye capacity
+            const { title, description, location, start, end, imageURL, capacity } = fields;
             const file = files.imageFile?.[0];
 
             if (!title || !start || !end) {
@@ -309,7 +315,8 @@ export default async function handler(req, res) {
                 });
             }
 
-            const parsedCapacidadMax = parseInt(capacidad_max) || 0;
+            // 🔑 Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
+            const parsedCapacidadMax = parseInt(capacity) || 0;
 
             let finalImageUrl = imageURL || null;
 
