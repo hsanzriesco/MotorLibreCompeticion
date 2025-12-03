@@ -4,6 +4,13 @@ import { Pool } from "pg";
 // Dominio permitido para acceder a esta API (TU FRONTEND)
 const ALLOWED_ORIGIN = 'https://motor-libre-competicion.vercel.app';
 
+// 1. VERIFICACIÓN DE ENTORNO
+if (!process.env.DATABASE_URL) {
+    console.error("FATAL ERROR: La variable de entorno DATABASE_URL no está definida.");
+    // No podemos inicializar el pool si la URL no existe.
+    // El handler fallará con un 500, pero sabremos por qué.
+}
+
 // Configuración de la conexión a la DB
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -12,46 +19,37 @@ const pool = new Pool({
 
 export default async function handler(req, res) {
     let client;
-
+    
     // ===============================================
-    // 🛑 SOLUCIÓN CORS MANUAL (Sin Paquetes) 🛑
+    // 🛑 LÓGICA DE CORS MANUAL (Solución al error anterior) 🛑
     // ===============================================
-
-    // 1. Establece el encabezado clave que exige tu navegador
     res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
-
-    // 2. Define los métodos HTTP permitidos
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // 3. Si la solicitud es un OPTIONS (preflight), terminamos la respuesta
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
     // ===============================================
 
-
     if (req.method !== 'GET') {
         res.setHeader('Allow', ['GET', 'OPTIONS']);
         return res.status(405).json({ success: false, message: `Método ${req.method} no permitido.` });
     }
-
+    
     try {
+        // Fallará aquí si DATABASE_URL no está configurada o si la DB no responde
         client = await pool.connect();
-
-        // 🚀 CONSULTA PARA OBTENER EL TOP 10 DE LA TABLA event_results
-        // La clasificación se basa en la POSICIÓN (menor es mejor)
-        // y se desempata por el TIEMPO DE VUELTA (menor es mejor).
+        
+        // 🚀 CONSULTA PARA OBTENER EL TOP 10 (Basada en tu esquema: event_results)
         const result = await client.query(
-            // Utilizamos DISTINCT ON (user) para obtener la mejor posición/tiempo de cada usuario, 
-            // aunque si la tabla solo guarda 1 resultado por evento, no sería necesario.
-            // Asumo que quieres la mejor posición global.
             `WITH RankedResults AS (
                 SELECT 
                     user_id,
                     "user" AS user_name,
                     position,
                     best_lap_time,
+                    -- RANKEAR POR USUARIO PARA OBTENER SOLO EL MEJOR RESULTADO
                     ROW_NUMBER() OVER (
                         PARTITION BY user_id 
                         ORDER BY position ASC, best_lap_time ASC
@@ -63,24 +61,38 @@ export default async function handler(req, res) {
                 user_name, 
                 position, 
                 best_lap_time,
+                -- RANKEAR GLOBALMENTE PARA EL TOP 10 FINAL
                 RANK() OVER (ORDER BY position ASC, best_lap_time ASC) AS rank
             FROM 
                 RankedResults
             WHERE
-                rn = 1 -- Obtiene el mejor resultado de cada usuario
+                rn = 1 
             ORDER BY 
                 position ASC, 
                 best_lap_time ASC 
             LIMIT 10`
         );
 
-        // Envía el Top 10 al frontend
         return res.status(200).json({ success: true, data: result.rows });
 
     } catch (error) {
+        // 2. Manejo de Errores Específicos para DB (si falla la consulta o la conexión)
         console.error("Error al cargar el Top 10:", error);
-        // Si hay un error, el frontend recibirá una respuesta 500
-        return res.status(500).json({ success: false, message: "Error interno del servidor al obtener el Top 10." });
+
+        let errorMessage = 'Error interno del servidor.';
+        
+        if (error.code === '42P01') {
+            errorMessage = `Error de DB: La tabla 'event_results' no existe.`;
+        } else if (error.code === '42703' || error.code === '42601') {
+             errorMessage = `Error de DB: Falla de sintaxis SQL o columna no encontrada. Revisa 'position', 'best_lap_time' y 'user'.`;
+        } else if (error.message.includes('ECONNREFUSED')) {
+            errorMessage = 'Error de conexión a la base de datos. Revisa la DATABASE_URL.';
+        } else if (!process.env.DATABASE_URL) {
+             errorMessage = 'Error de Configuración: Falta la variable DATABASE_URL.';
+        }
+
+        // Devolver un 500 con un mensaje más claro
+        return res.status(500).json({ success: false, message: errorMessage });
     } finally {
         if (client) {
             client.release();
