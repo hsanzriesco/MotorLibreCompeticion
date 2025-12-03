@@ -123,7 +123,8 @@
       <h2 class="text-danger mb-4 text-start"><i class="bi bi-bar-chart-fill me-2"></i> Top 10 - Clasificación General
       </h2>
 
-      <p class="text-secondary small fw-bold text-start text-uppercase">Resultados acumulados hasta la Etapa 5</p>
+      <p class="text-secondary small fw-bold text-start text-uppercase">Resultados cargados desde la base de datos Neon
+      </p>
 
       <div class="table-responsive">
         <table class="table table-dark table-striped table-hover table-competicion text-start">
@@ -135,66 +136,9 @@
               <th scope="col" class="text-end">Puntos Totales</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="top10-body">
             <tr>
-              <th scope="row" class="text-oro">1</th>
-              <td>Equipo Fénix</td>
-              <td class="text-center">GT-Pro</td>
-              <td class="text-end fw-bold text-oro">285</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-plata">2</th>
-              <td>Marta Cruz</td>
-              <td class="text-center">T2</td>
-              <td class="text-end fw-bold text-plata">250</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-bronce">3</th>
-              <td>Juan López</td>
-              <td class="text-center">GT-Pro</td>
-              <td class="text-end fw-bold text-bronce">235</td>
-            </tr>
-            <tr>
-              <th scope="row">4</th>
-              <td>Racing Legends Team</td>
-              <td class="text-center">GT-Pro</td>
-              <td class="text-end">210</td>
-            </tr>
-            <tr>
-              <th scope="row">5</th>
-              <td>Escudería K-2</td>
-              <td class="text-center">T2</td>
-              <td class="text-end">195</td>
-            </tr>
-            <tr>
-              <th scope="row">6</th>
-              <td>Pablo Rivas</td>
-              <td class="text-center">GT-Am</td>
-              <td class="text-end">180</td>
-            </tr>
-            <tr>
-              <th scope="row">7</th>
-              <td>Alpha Motor Club</td>
-              <td class="text-center">T2</td>
-              <td class="text-end">175</td>
-            </tr>
-            <tr>
-              <th scope="row">8</th>
-              <td>Daniela Gómez</td>
-              <td class="text-center">GT-Am</td>
-              <td class="text-end">160</td>
-            </tr>
-            <tr>
-              <th scope="row">9</th>
-              <td>GTSport SL</td>
-              <td class="text-center">GT-Pro</td>
-              <td class="text-end">155</td>
-            </tr>
-            <tr>
-              <th scope="row">10</th>
-              <td>Carlos Sáinz Jr.</td>
-              <td class="text-center">GT-Am</td>
-              <td class="text-end">140</td>
+              <td colspan="4" class="text-center text-secondary">Cargando resultados...</td>
             </tr>
           </tbody>
         </table>
@@ -230,6 +174,7 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // --- Lógica de la sesión (Mantenida) ---
       const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
       const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
@@ -300,6 +245,66 @@
           }, 1500);
         });
       }
+
+      // --- FUNCIÓN PARA CARGAR EL TOP 10 DE LA BASE DE DATOS (API) ---
+
+      // ⚠️ IMPORTANTE: Reemplaza esta URL con el endpoint de tu servidor real.
+      const API_ENDPOINT = 'https://tudominio.com/api/top10-clasificacion';
+
+      async function cargarTop10() {
+        const top10Body = document.getElementById('top10-body');
+        if (!top10Body) return;
+
+        try {
+          // 1. Obtener datos del servidor
+          const response = await fetch(API_ENDPOINT);
+
+          if (!response.ok) {
+            throw new Error(`Error en la API: ${response.statusText}`);
+          }
+
+          // Se espera que la API devuelva un array de objetos (ej: { puesto: 1, nombre: "Equipo A", categoria: "GT-Pro", puntos: 285 })
+          const resultados = await response.json();
+
+          // 2. Limpiar el estado de "Cargando..."
+          top10Body.innerHTML = '';
+
+          // 3. Renderizar las filas
+          resultados.forEach((item, index) => {
+            const puesto = item.puesto || (index + 1);
+
+            let colorClass = '';
+            if (puesto === 1) colorClass = 'text-oro';
+            else if (puesto === 2) colorClass = 'text-plata';
+            else if (puesto === 3) colorClass = 'text-bronce';
+
+            const row = top10Body.insertRow();
+            row.innerHTML = `
+                            <th scope="row" class="${colorClass}">${puesto}</th>
+                            <td>${item.nombre}</td>
+                            <td class="text-center">${item.categoria}</td>
+                            <td class="text-end fw-bold ${colorClass}">${item.puntos}</td>
+                        `;
+          });
+
+          // Si no hay resultados
+          if (resultados.length === 0) {
+            top10Body.innerHTML = '<tr><td colspan="4" class="text-center text-secondary">No hay resultados disponibles.</td></tr>';
+          }
+
+        } catch (error) {
+          console.error("Error al cargar el Top 10:", error);
+          top10Body.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-danger">
+                                Error al conectar con el servidor. Por favor, comprueba la consola.
+                            </td>
+                        </tr>`;
+        }
+      }
+
+      // Llamar a la función al cargar la página
+      cargarTop10();
     });
   </script>
 

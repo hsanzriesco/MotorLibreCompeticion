@@ -36,6 +36,19 @@
             max-width: 1200px;
         }
 
+        /* Estilos para la tabla de gestión */
+        .table-results {
+            --bs-table-bg: #212529;
+            --bs-table-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-results thead th {
+            color: #e50914;
+            border-bottom-color: #e50914;
+        }
+
         /* Estilos para el modal de confirmación */
         .modal-content {
             background-color: #111;
@@ -77,6 +90,10 @@
                 Gestión de Eventos
             </a>
 
+            <a href="#results-management" id="link-resultados" class="d-block text-danger fw-bold mb-2">
+                Mejores Resultados
+            </a>
+
             <a href="./lugares/adminLugares.html" class="d-block text-light mb-2">
                 Gestión de Lugares
             </a>
@@ -99,11 +116,129 @@
     </div>
 
     <main>
-        <section class="admin-section text-center">
+        <section id="default-panel" class="admin-section text-center">
             <h2 class="mb-4">Panel de Control de Administrador</h2>
             <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
         </section>
+
+        <section id="results-management" class="admin-section" style="display:none;">
+            <h2 class="text-danger mb-4"><i class="bi bi-trophy-fill me-2"></i> Gestión de Resultados por Evento</h2>
+
+            <p class="text-secondary">Aquí puedes registrar, modificar o eliminar los resultados de los pilotos en cada
+                evento.</p>
+
+            <button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal" data-bs-target="#addResultModal">
+                <i class="bi bi-plus-circle-fill me-2"></i>Añadir Nuevo Resultado
+            </button>
+
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover table-results">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Evento</th>
+                            <th>Piloto/Usuario</th>
+                            <th>Posición</th>
+                            <th>Puntos</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-list">
+                        <tr>
+                            <td>1</td>
+                            <td>Rally de Verano</td>
+                            <td>Equipo Fénix (ID: 101)</td>
+                            <td>1</td>
+                            <td>25</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-info me-2"><i class="bi bi-pencil"></i>
+                                    Editar</button>
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i>
+                                    Eliminar</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Rally de Verano</td>
+                            <td>Marta Cruz (ID: 105)</td>
+                            <td>2</td>
+                            <td>18</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-info me-2"><i class="bi bi-pencil"></i>
+                                    Editar</button>
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i>
+                                    Eliminar</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav>
+                <ul class="pagination pagination-sm justify-content-center">
+                    <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                </ul>
+            </nav>
+
+        </section>
     </main>
+
+    <div class="modal fade" id="addResultModal" tabindex="-1" aria-labelledby="addResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="addResultModalLabel">Añadir/Editar Resultado</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="result-form">
+                        <div class="mb-3">
+                            <label for="event-select" class="form-label">Evento</label>
+                            <select class="form-select bg-dark text-light border-secondary" id="event-select" required>
+                                <option value="">Selecciona un Evento</option>
+                                <option value="1">Rally de Verano</option>
+                                <option value="2">Desafío de Montaña</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="user-select" class="form-label">Piloto / Usuario</label>
+                            <select class="form-select bg-dark text-light border-secondary" id="user-select" required>
+                                <option value="">Selecciona un Piloto</option>
+                                <option value="101">Equipo Fénix</option>
+                                <option value="105">Marta Cruz</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="position-input" class="form-label">Posición Final</label>
+                                <input type="number" class="form-control bg-dark text-light border-secondary"
+                                    id="position-input" min="1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="points-input" class="form-label">Puntos Obtenidos</label>
+                                <input type="number" class="form-control bg-dark text-light border-secondary"
+                                    id="points-input" min="0" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="time-input" class="form-label">Mejor Tiempo (Ej: 00:01:30)</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" id="time-input"
+                                placeholder="Formato HH:MM:SS">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="result-form" class="btn btn-danger" id="btnSaveResult">Guardar
+                        Resultado</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
         aria-hidden="true">
@@ -126,6 +261,65 @@
     </div>
 
     <script src="../../../js/alertas.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Lógica para mostrar la sección correcta al hacer clic en el menú
+            const linkResultados = document.getElementById('link-resultados');
+            const resultsSection = document.getElementById('results-management');
+            const defaultSection = document.getElementById('default-panel');
+            const offcanvasElement = document.getElementById('offcanvasMenu');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement) || new bootstrap.Offcanvas(offcanvasElement);
+
+
+            function showSection(sectionToShow, linkElement) {
+                // Ocultar todas las secciones excepto la barra de navegación
+                document.querySelectorAll('main section').forEach(section => {
+                    section.style.display = 'none';
+                });
+
+                // Mostrar la sección solicitada
+                if (sectionToShow) {
+                    sectionToShow.style.display = 'block';
+                }
+
+                // Cerrar el menú Offcanvas
+                offcanvas.hide();
+            }
+
+            // Manejar clic en el enlace de Resultados
+            if (linkResultados && resultsSection) {
+                linkResultados.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showSection(resultsSection);
+                });
+            }
+
+            // Manejar clic en el enlace de Inicio (vuelve al panel por defecto)
+            const menuInicio = document.getElementById('menu-inicio');
+            if (menuInicio && defaultSection) {
+                menuInicio.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showSection(defaultSection);
+                });
+            }
+
+            // Lógica de Navbar/Login/Logout (Asumo que está en navbar.js o global)
+            // Aquí iría el código de tu archivo navbar.js si no lo tienes cargado globalmente.
+            // Para el modal de logout, el código en navbar.js debe gestionar el botón #logout-btn.
+
+            // Mostrar la sección de resultados por defecto si la URL lo indica (opcional)
+            if (window.location.hash === '#results-management') {
+                showSection(resultsSection);
+            } else {
+                showSection(defaultSection);
+            }
+
+            // --- Faltaría aquí el JS para: ---
+            // 1. Cargar las listas de Eventos (events) y Pilotos (users) en el modal.
+            // 2. Lógica para Guardar, Editar y Eliminar resultados (Comunicación con tu API).
+            // 3. Cargar la lista de resultados en la tabla.
+        });
+    </script>
     <script src="../../../js/navbar.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
