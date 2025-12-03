@@ -104,7 +104,7 @@
 
             <hr class="border-secondary" />
 
-            <a id="menu-inicio" href="#" class="d-block text-light mb-2">
+            <a href="#" id="menu-inicio" class="d-block text-light mb-2">
                 Inicio
             </a>
 
@@ -202,7 +202,7 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="time-input" class="form-label">Mejor Tiempo (Ej: 00:01:30)</label>
+                            <label for="time-input" class="form-label">Mejor Tiempo (Ej: 00:01:30.456)</label>
                             <input type="text" class="form-control bg-dark text-light border-secondary" id="time-input"
                                 placeholder="Formato HH:MM:SS.ms" required>
                         </div>
@@ -258,10 +258,9 @@
             const POSITION_INPUT = document.getElementById('position-input');
             const TIME_INPUT = document.getElementById('time-input');
 
-            // Almacén local de datos (para precargar edición)
             let allResults = [];
 
-            // --- LÓGICA DE NAVEGACIÓN (Originalmente presente) ---
+            // --- LÓGICA DE NAVEGACIÓN ---
             const linkResultados = document.getElementById('link-resultados');
             const resultsSection = document.getElementById('results-management');
             const defaultSection = document.getElementById('default-panel');
@@ -269,18 +268,22 @@
             const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement) || new bootstrap.Offcanvas(offcanvasElement);
 
             function showSection(sectionToShow) {
+                // Ocultar todas las secciones excepto la barra de navegación
                 document.querySelectorAll('main section').forEach(section => {
                     section.style.display = 'none';
                 });
+
                 if (sectionToShow) {
                     sectionToShow.style.display = 'block';
                     if (sectionToShow.id === 'results-management') {
-                        loadResults(); // Cargar resultados cuando se muestra la sección
+                        // Cargar resultados solo cuando se muestra la sección
+                        loadResults();
                     }
                 }
                 offcanvas.hide();
             }
 
+            // Manejar clic en el enlace de Resultados
             if (linkResultados && resultsSection) {
                 linkResultados.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -288,6 +291,7 @@
                 });
             }
 
+            // Manejar clic en el enlace de Inicio
             const menuInicio = document.getElementById('menu-inicio');
             if (menuInicio && defaultSection) {
                 menuInicio.addEventListener('click', function (e) {
@@ -296,17 +300,22 @@
                 });
             }
 
-            if (window.location.hash === '#results-management') {
-                showSection(resultsSection);
-            } else {
+            // =========================================================
+            // LÓGICA CLAVE: Muestra la sección de Resultados por defecto al cargar
+            // =========================================================
+            if (window.location.hash === '#default-panel') {
                 showSection(defaultSection);
+            } else {
+                // Si no hay hash, o si es la primera carga, mostramos Gestión de Resultados.
+                showSection(resultsSection);
             }
+            // =========================================================
+
 
             // --- 1. CARGAR DATOS DE BASES DE DATOS (READ) ---
 
-            // **NOTA: Necesitarías dos funciones adicionales: loadEvents() y loadUsers()
-            // para poblar los SELECT del modal. Asumiré que EVENTOS y USUARIOS tienen APIs GET.**
-            // Ejemplo de API GET: /api/events?action=getAllEvents y /api/users?action=getAllUsers
+            // NOTA: Recuerda que necesitas implementar loadEvents() y loadUsers()
+            // para poblar los selectores del modal de forma dinámica.
 
             async function loadResults() {
                 RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-secondary">Cargando resultados...</td></tr>';
@@ -315,7 +324,7 @@
                     const data = await response.json();
 
                     if (data.success && data.data) {
-                        allResults = data.data; // Almacenar para edición
+                        allResults = data.data;
                         RESULTS_LIST.innerHTML = '';
 
                         if (allResults.length === 0) {
@@ -325,12 +334,13 @@
 
                         data.data.forEach(result => {
                             const row = RESULTS_LIST.insertRow();
-                            row.dataset.resultId = result.result_id; // Para referencia rápida
+                            row.dataset.resultId = result.result_id;
                             row.innerHTML = `
                                 <td>${result.result_id}</td>
                                 <td>${result.event_id}</td>
                                 <td>${result.user_id}</td>
-                                <td>${result.user}</td> <td>${result.position}</td>
+                                <td>${result.user}</td> 
+                                <td>${result.position}</td>
                                 <td>${result.best_lap_time}</td>
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-info me-2 edit-btn" data-id="${result.result_id}"><i class="bi bi-pencil"></i> Editar</button>
@@ -354,28 +364,24 @@
 
             // --- 2. MANEJO DE FORMULARIO (CREATE / UPDATE) ---
 
-            // Listener para el botón de guardar
             BTN_SAVE_RESULT.addEventListener('click', function (e) {
                 e.preventDefault();
                 if (RESULT_FORM.checkValidity()) {
                     handleSaveResult();
                 } else {
-                    RESULT_FORM.reportValidity(); // Mostrar errores de validación nativos
+                    RESULT_FORM.reportValidity();
                 }
             });
 
             async function handleSaveResult() {
                 const resultId = RESULT_ID_INPUT.value;
 
-                // Recoger datos del formulario
                 const resultData = {
                     event_id: EVENT_SELECT.value,
                     user_id: USER_SELECT.value,
                     position: POSITION_INPUT.value,
                     best_lap_time: TIME_INPUT.value,
-                    // Nota: Aquí estamos asumiendo que el nombre del piloto lo tomas del texto del select
-                    // Esto es un riesgo. Lo ideal es que la API use user_id para obtener el nombre.
-                    // Para evitar el error "column 'user' does not exist" de antes, usamos el nombre 'user' de la columna original.
+                    // Usamos el nombre del piloto del select para la columna 'user'
                     user: USER_SELECT.options[USER_SELECT.selectedIndex].text,
                 };
 
@@ -383,7 +389,6 @@
                 let method = 'POST';
 
                 if (resultId) {
-                    // Edición (UPDATE)
                     url = `${API_URL}?action=editResult`;
                     method = 'PUT';
                     resultData.result_id = resultId;
@@ -399,8 +404,8 @@
 
                     if (data.success) {
                         mostrarAlerta(data.message, 'success');
-                        ADD_RESULT_MODAL.hide(); // Cerrar modal
-                        loadResults(); // Recargar la tabla
+                        ADD_RESULT_MODAL.hide();
+                        loadResults();
                     } else {
                         mostrarAlerta('Error: ' + data.message, 'error');
                     }
@@ -421,18 +426,15 @@
                     return;
                 }
 
-                // Llenar el formulario con los datos
                 MODAL_TITLE.textContent = 'Editar Resultado (ID: ' + resultId + ')';
                 RESULT_ID_INPUT.value = resultId;
 
-                // Asegúrate de que los SELECTs tengan las opciones cargadas antes de asignar
-                // (Asumiendo que has añadido loadEvents y loadUsers)
+                // Llenar el formulario con los datos
+                // Nota: Asume que las opciones de select ya están cargadas
                 EVENT_SELECT.value = resultToEdit.event_id;
                 USER_SELECT.value = resultToEdit.user_id;
-
                 POSITION_INPUT.value = resultToEdit.position;
                 TIME_INPUT.value = resultToEdit.best_lap_time;
-                // Si tienes un campo de nombre de piloto, también lo llenarías
 
                 ADD_RESULT_MODAL.show();
             }
@@ -468,14 +470,9 @@
                 MODAL_TITLE.textContent = 'Añadir Nuevo Resultado';
                 RESULT_FORM.reset();
                 RESULT_ID_INPUT.value = ''; // Limpiar el ID oculto
+                // Aquí deberías llamar a loadEvents() y loadUsers() si no lo haces al inicio
             });
 
-            // Llamada inicial para cargar los resultados al iniciar la sección
-            if (resultsSection.style.display !== 'none') {
-                loadResults();
-            }
-
-            // Lógica para el modal de logout (asumo que está en navbar.js)
         });
     </script>
     <script src="../../../js/navbar.js"></script>
