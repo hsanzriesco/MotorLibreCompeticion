@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modalEnd = document.getElementById("modalEnd");
     // <-- ELEMENTOS DEL MODAL
     const registerBtn = document.getElementById("btn-register-event");
-    const cancelBtn = document.getElementById("btn-cancel-event"); // 🟢 NUEVO
+    const cancelBtn = document.getElementById("btn-cancel-event");
     const statusSpan = document.getElementById("registration-status");
     // ---------------------------------
     const DATE_OPTIONS = {
@@ -114,7 +114,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // 🟢 NUEVA FUNCIÓN: Manejar la cancelación
     async function handleCancelRegistration(eventId, userId) {
         if (!userId) {
             mostrarAlerta("Error: Debes iniciar sesión para cancelar.", 'error');
@@ -125,7 +124,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         statusSpan.textContent = "Cancelando inscripción...";
 
         try {
-            // Usamos DELETE para eliminar el registro en la DB
             const res = await fetch(`/api/events?action=cancel&user_id=${userId}&event_id=${eventId}`, {
                 method: 'DELETE',
             });
@@ -134,7 +132,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (res.ok && data.success) {
                 mostrarAlerta(data.message, 'exito');
-                // Actualizar la UI: NO registrado
                 updateRegistrationUI(false);
             } else {
                 mostrarAlerta(data.message || 'Error desconocido al cancelar.', 'error');
@@ -148,20 +145,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             statusSpan.textContent = "";
         }
     }
-    // ----------------------------------------------------------------------
 
-
-    // 🟢 MODIFICACIÓN: Ajustar updateRegistrationUI para el botón de cancelar
     function updateRegistrationUI(isRegistered) {
         if (isRegistered) {
             registerBtn.style.display = 'none';
-            cancelBtn.style.display = 'inline-block'; // 🟢 Mostrar cancelar
+            cancelBtn.style.display = 'inline-block';
             cancelBtn.disabled = false;
             statusSpan.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i> Estás **inscrito**';
         } else {
             registerBtn.style.display = 'inline-block';
             registerBtn.disabled = false;
-            cancelBtn.style.display = 'none'; // 🟢 Ocultar cancelar
+            cancelBtn.style.display = 'none';
             statusSpan.textContent = "";
         }
     }
@@ -181,7 +175,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 🟢 NUEVO EVENT LISTENER para el botón de Cancelar
     cancelBtn.addEventListener('click', (e) => {
         const eventId = e.currentTarget.getAttribute('data-event-id');
         const userId = (usuario && usuario.id) ? usuario.id : null;
@@ -233,7 +226,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             registerBtn.setAttribute('data-event-id', eventId);
-            cancelBtn.setAttribute('data-event-id', eventId); // 🟢 Asignar eventId al botón de cancelar
+            cancelBtn.setAttribute('data-event-id', eventId);
 
             const userId = (usuario && usuario.id) ? usuario.id : null;
 

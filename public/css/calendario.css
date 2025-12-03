@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap');
+
 #calendar {
     max-width: 900px;
     margin: 50px auto;
@@ -46,28 +48,31 @@
 }
 
 /* =========================================== */
-/* NUEVO ESTILO: Botón de Cancelar Inscripción (Estilo Rojo/Negro) */
+/* NUEVO ESTILO: Botón de Cancelar Inscripción (Estilo Login) */
 /* =========================================== */
 
 .btn-custom-cancel {
-    /* Fondo rojo fuerte, similar a INICIAR SESIÓN */
-    background-color: #dc3545;
+    /* Fondo rojo fuerte del botón de Login */
+    background-color: #e50914;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-size: 1.1rem;
-    font-weight: bold;
+    padding: 14px;
+    /* Mayor padding para parecerse al botón de Login */
+    margin-top: 5px;
+    /* Pequeño ajuste visual */
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
     text-transform: uppercase;
-    /* Fuente impactante */
-    font-family: 'Oswald', sans-serif;
-    transition: background-color 0.2s, box-shadow 0.2s;
+    /* Fuente que le da el estilo futurista/de carrera */
+    font-family: 'Orbitron', sans-serif;
+    transition: all 0.3s ease;
 }
 
 /* Efecto al pasar el ratón (Hover) */
 .btn-custom-cancel:hover {
-    background-color: #c82333;
-    box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
+    background-color: #ff1a1a;
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
     color: white;
 }
 
