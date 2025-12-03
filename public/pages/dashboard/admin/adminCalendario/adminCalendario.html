@@ -327,15 +327,14 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Esta función asume que ya tienes definido un objeto `showAlert` globalmente
-        // y que la función `getEventRegistrations` está disponible en el scope global 
-        // o se define aquí. Para el ejemplo, la definimos aquí:
-
+        // 🚀 VARIBLES Y FUNCIÓN PRINCIPAL DE INSCRITOS
         const registrationsModal = new bootstrap.Modal(document.getElementById('registrationsModal'));
         const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
         const registrationsTableBody = document.getElementById('registrationsTableBody');
         const registrationsEmptyMessage = document.getElementById('registrationsEmptyMessage');
         const btnViewRegistrations = document.getElementById('btnViewRegistrations');
+        // El conteo se actualiza en admin.js, pero se lee aquí al hacer click
+        const currentRegisteredCount = document.getElementById('current-registered-count');
 
         // Función de utilidad para formatear fechas
         function formatRegistrationDate(isoString) {
@@ -346,6 +345,50 @@
                 return date.toLocaleDateString('es-ES') + ' ' + date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
             } catch (e) {
                 return isoString;
+            }
+        }
+
+        // Función para cargar y mostrar los datos de inscritos
+        async function loadEventRegistrations(eventId) {
+            registrationsTableBody.innerHTML = ''; // Limpiar la tabla anterior
+            registrationsEmptyMessage.style.display = 'none';
+
+            try {
+                // Llama a la nueva endpoint que creamos en events.js
+                const response = await fetch(`/api/events?action=getRegistrations&event_id=${eventId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    // Nota: El conteo ya debería estar actualizado en 'current-registered-count' por admin.js
+                    // Pero lo actualizamos si los datos son frescos (aunque no es estrictamente necesario si admin.js lo hace)
+                    // currentRegisteredCount.textContent = result.data.length; 
+
+                    if (result.data.length > 0) {
+                        let htmlContent = '';
+                        result.data.forEach((reg, index) => {
+                            // Asumiendo que `usuario_inscrito` contiene el nombre completo.
+                            htmlContent += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${reg.user_id}</td>
+                                    <td>${reg.usuario_inscrito || 'N/A'}</td> 
+                                    <td>${formatRegistrationDate(reg.registered_at)}</td>
+                                </tr>
+                            `;
+                        });
+                        registrationsTableBody.innerHTML = htmlContent;
+                    } else {
+                        registrationsEmptyMessage.style.display = 'block';
+                    }
+                } else {
+                    showAlert('Error', result.message || 'Fallo al cargar la lista de inscritos.', 'error');
+                    registrationsEmptyMessage.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error("Fallo al obtener los inscritos:", error);
+                showAlert('Error de Red', 'No se pudo conectar con el servidor para obtener los inscritos.', 'error');
+                registrationsEmptyMessage.style.display = 'block';
             }
         }
 
@@ -366,41 +409,8 @@
             registrationsModal.show();
         });
 
-        // 2. Función para cargar y mostrar los datos de inscritos
-        async function loadEventRegistrations(eventId) {
-            registrationsTableBody.innerHTML = ''; // Limpiar la tabla anterior
-            registrationsEmptyMessage.style.display = 'none';
 
-            try {
-                // Llama a la nueva endpoint que creamos en events.js
-                const response = await fetch(`/api/events?action=getRegistrations&event_id=${eventId}`);
-                const result = await response.json();
-
-                if (result.success && result.data.length > 0) {
-                    let htmlContent = '';
-                    result.data.forEach((reg, index) => {
-                        htmlContent += `
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td>${reg.user_id}</td>
-                                <td>${reg.usuario_inscrito}</td>
-                                <td>${formatRegistrationDate(reg.registered_at)}</td>
-                            </tr>
-                        `;
-                    });
-                    registrationsTableBody.innerHTML = htmlContent;
-                } else {
-                    registrationsEmptyMessage.style.display = 'block';
-                }
-
-            } catch (error) {
-                console.error("Fallo al obtener los inscritos:", error);
-                showAlert('Error de Red', 'No se pudo conectar con el servidor para obtener los inscritos.', 'error');
-                registrationsEmptyMessage.style.display = 'block';
-            }
-        }
-
-        // 3. Manejar el cierre del Modal de Inscritos para volver al Modal de Evento
+        // 2. Manejar el cierre del Modal de Inscritos para volver al Modal de Evento
         document.getElementById('registrationsModal').addEventListener('hidden.bs.modal', () => {
             // Reabrir el modal de evento si estaba abierto
             const eventId = document.getElementById('eventId').value;
@@ -408,29 +418,6 @@
                 eventModal.show();
             }
         });
-
-        // 4. Integrar la visibilidad del botón en la función que abre el modal de evento (debería estar en ../admin.js)
-        // **Nota:** En tu archivo `../admin.js`, donde manejas la apertura del `eventModal` (probablemente en la función `handleEventClick` o similar), DEBES incluir la siguiente lógica:
-        /*
-            // ... dentro de la función que abre el modal ...
-            const eventIdField = document.getElementById('eventId');
-            const registrationsBtnContainer = document.getElementById('registrations-button-container');
-            const currentRegisteredCount = document.getElementById('current-registered-count');
-
-            if (info.event) {
-                // EDITANDO EVENTO
-                registrationsBtnContainer.style.display = 'block';
-                // Asume que la capacidad_max y num_inscritos (total de inscritos) viene en info.event.extendedProps
-                // Debes asegurarte de que tu función de carga de eventos también cargue el número actual de inscritos.
-                const totalInscritos = info.event.extendedProps.totalInscritos || 0; 
-                currentRegisteredCount.textContent = totalInscritos; 
-            } else {
-                // CREANDO NUEVO EVENTO
-                registrationsBtnContainer.style.display = 'none';
-            }
-            // ... (resto de tu lógica para llenar el formulario)
-        */
-
     </script>
 </body>
 
