@@ -113,10 +113,10 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // 🔑 NUEVO (YA ESTABA): GET: Obtener TODOS los resultados de carrera para el panel de administración
+            // 🔑 MODIFICADO: GET: Obtener TODOS los resultados de carrera para el panel de administración
             if (action === 'getAllResults') {
                 const result = await client.query(
-                    `SELECT er.result_id, er.event_id, er.user_id, er.position, er.best_lap_time, u.name AS user 
+                    `SELECT er.result_id, er.event_id, er.user_id, er.position, er.best_lap_time, er.points, u.name AS user 
                      FROM event_results er
                      JOIN users u ON er.user_id = u.id 
                      ORDER BY er.event_id ASC, er.position ASC`
@@ -210,20 +210,23 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "POST") {
 
-            // 🔑 NUEVO (YA ESTABA): POST: Añadir un resultado de carrera
+            // 🔑 MODIFICADO: POST: Añadir un resultado de carrera
             if (action === 'addResult') {
                 const jsonBody = await readJsonBody(req);
-                const { event_id, user_id, position, best_lap_time, user } = jsonBody;
+                // 🔑 Incluir 'points'
+                const { event_id, user_id, position, best_lap_time, user, points } = jsonBody;
 
-                if (!event_id || !user_id || !position || !best_lap_time || !user) {
-                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios para añadir el resultado." });
+                // 🔑 Validar 'points'
+                if (!event_id || !user_id || !position || !best_lap_time || !user || points === undefined) {
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios para añadir el resultado (incluyendo puntos)." });
                 }
 
                 const result = await client.query(
-                    `INSERT INTO event_results (event_id, user_id, position, best_lap_time, "user") 
-                     VALUES ($1, $2, $3, $4, $5) 
+                    // 🔑 Añadir la columna points y el valor $6
+                    `INSERT INTO event_results (event_id, user_id, position, best_lap_time, "user", points) 
+                     VALUES ($1, $2, $3, $4, $5, $6) 
                      RETURNING result_id`,
-                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user]
+                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user, parseInt(points)]
                 );
 
                 return res.status(201).json({ success: true, message: "Resultado añadido correctamente.", resultId: result.rows[0].result_id });
@@ -352,21 +355,24 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "PUT") {
 
-            // 🔑 NUEVO (YA ESTABA): PUT: Editar un resultado de carrera
+            // 🔑 MODIFICADO: PUT: Editar un resultado de carrera
             if (action === 'editResult') {
                 const jsonBody = await readJsonBody(req);
-                const { result_id, event_id, user_id, position, best_lap_time, user } = jsonBody;
+                // 🔑 Incluir 'points'
+                const { result_id, event_id, user_id, position, best_lap_time, user, points } = jsonBody;
 
-                if (!result_id || !event_id || !user_id || !position || !best_lap_time || !user) {
-                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios para editar el resultado." });
+                // 🔑 Validar 'points'
+                if (!result_id || !event_id || !user_id || !position || !best_lap_time || !user || points === undefined) {
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios para editar el resultado (incluyendo puntos)." });
                 }
 
                 const result = await client.query(
+                    // 🔑 Añadir la columna points al UPDATE y el valor $6
                     `UPDATE event_results 
-                     SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, "user" = $5 
-                     WHERE result_id = $6 
+                     SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, "user" = $5, points = $6
+                     WHERE result_id = $7 
                      RETURNING result_id`,
-                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user, parseInt(result_id)]
+                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user, parseInt(points), parseInt(result_id)]
                 );
 
                 if (result.rows.length === 0) {
