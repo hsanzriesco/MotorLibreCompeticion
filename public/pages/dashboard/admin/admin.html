@@ -142,13 +142,12 @@
                             <th>Nombre Piloto</th>
                             <th>Posición</th>
                             <th>Mejor Vuelta</th>
-                            <th>Puntos</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="results-list">
                         <tr>
-                            <td colspan="8" class="text-center text-secondary">Cargando resultados...</td>
+                            <td colspan="7" class="text-center text-secondary">Cargando resultados...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -199,7 +198,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="points-input" class="form-label">Puntos Obtenidos</label>
                                 <input type="number" class="form-control bg-dark text-light border-secondary"
-                                    id="points-input" min="0">
+                                    id="points-input" min="0" disabled>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -258,7 +257,6 @@
             const EVENT_SELECT = document.getElementById('event-select');
             const USER_SELECT = document.getElementById('user-select');
             const POSITION_INPUT = document.getElementById('position-input');
-            const POINTS_INPUT = document.getElementById('points-input'); // 🔑 NUEVO: Selector de Puntos
             const TIME_INPUT = document.getElementById('time-input');
 
             let allResults = [];
@@ -311,7 +309,7 @@
             } else {
                 // Si no hay hash, o si es la primera carga, mostramos Gestión de Resultados.
                 showSection(resultsSection);
-                // 🔑 Cargar los selectores al iniciar la página
+                // 🔑 NUEVO: Cargar los selectores al iniciar la página
                 loadEvents();
                 loadUsers();
             }
@@ -321,7 +319,7 @@
             // --- 1. CARGAR DATOS DE BASES DE DATOS (READ) ---
 
             async function loadResults() {
-                RESULTS_LIST.innerHTML = '<tr><td colspan="8" class="text-center text-secondary">Cargando resultados...</td></tr>';
+                RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-secondary">Cargando resultados...</td></tr>';
                 try {
                     const response = await fetch(`${API_URL}?action=getAllResults`);
                     const data = await response.json();
@@ -331,7 +329,7 @@
                         RESULTS_LIST.innerHTML = '';
 
                         if (allResults.length === 0) {
-                            RESULTS_LIST.innerHTML = '<tr><td colspan="8" class="text-center text-warning">No hay resultados registrados.</td></tr>';
+                            RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-warning">No hay resultados registrados.</td></tr>';
                             return;
                         }
 
@@ -345,7 +343,7 @@
                                 <td>${result.user}</td>
                                 <td>${result.position}</td>
                                 <td>${result.best_lap_time}</td>
-                                <td>${result.points || '0'}</td> <td class="text-center">
+                                <td class="text-center">
                                     <button class="btn btn-sm btn-outline-info me-2 edit-btn" data-id="${result.result_id}"><i class="bi bi-pencil"></i> Editar</button>
                                     <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${result.result_id}"><i class="bi bi-trash"></i> Eliminar</button>
                                 </td>
@@ -356,11 +354,11 @@
                         document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDeleteClick));
 
                     } else {
-                        RESULTS_LIST.innerHTML = `<tr><td colspan="8" class="text-center text-danger">${data.message || 'Error al cargar los resultados.'}</td></tr>`;
+                        RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${data.message || 'Error al cargar los resultados.'}</td></tr>`;
                     }
                 } catch (error) {
                     console.error('Error al cargar los resultados:', error);
-                    RESULTS_LIST.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Error de red o servidor.</td></tr>`;
+                    RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error de red o servidor.</td></tr>`;
                 }
             }
 
@@ -388,7 +386,8 @@
             }
 
             async function loadUsers() {
-                // Usamos API_URL ('/api/events') asumiendo que el manejador getAllUsersList está allí.
+                // Usamos API_URL ('/api/events') asumiendo que el manejador getAllUsersList está allí, 
+                // o ajusta a '/api/user' si tienes un endpoint de usuario separado.
                 try {
                     const response = await fetch(`${API_URL}?action=getAllUsersList`);
                     const data = await response.json();
@@ -430,8 +429,8 @@
                     user_id: USER_SELECT.value,
                     position: POSITION_INPUT.value,
                     best_lap_time: TIME_INPUT.value,
+                    // Capturamos el nombre del piloto del texto de la opción seleccionada
                     user: USER_SELECT.options[USER_SELECT.selectedIndex].text,
-                    points: POINTS_INPUT.value, // 🔑 ENVIAR: Incluir el valor de los puntos
                 };
 
                 let url = `${API_URL}?action=addResult`;
@@ -475,7 +474,7 @@
                     return;
                 }
 
-                // Asegurarse de que los selectores están cargados antes de intentar asignar el valor
+                // 🔑 Asegurarse de que los selectores están cargados antes de intentar asignar el valor
                 loadEvents().then(() => {
                     EVENT_SELECT.value = resultToEdit.event_id;
                 });
@@ -488,7 +487,6 @@
 
                 // Llenar el formulario con los datos
                 POSITION_INPUT.value = resultToEdit.position;
-                POINTS_INPUT.value = resultToEdit.points || 0; // 🔑 CARGAR: Asignar el valor de los puntos
                 TIME_INPUT.value = resultToEdit.best_lap_time;
 
                 ADD_RESULT_MODAL.show();
@@ -525,7 +523,7 @@
                 MODAL_TITLE.textContent = 'Añadir Nuevo Resultado';
                 RESULT_FORM.reset();
                 RESULT_ID_INPUT.value = ''; // Limpiar el ID oculto
-                // Recargar los selectores cada vez que se abre el modal para asegurar frescura de datos
+                // 🔑 Recargar los selectores cada vez que se abre el modal para asegurar frescura de datos
                 loadEvents();
                 loadUsers();
             });
