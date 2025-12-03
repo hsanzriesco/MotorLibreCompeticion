@@ -2,34 +2,23 @@
 <html lang="es">
 
 <head>
-       
     <meta charset="UTF-8" />
-       
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Gestión de Eventos - Motor Libre Competición</title>
+    <title>Gestión de Eventos - Motor Libre Competición</title>
 
-       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-       
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
-       
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
-       
     <link rel="stylesheet" href="../../../../css/navbar.css" />
-       
     <link rel="stylesheet" href="../../../../css/style.css" />
-       
     <link rel="icon" href="../../../../img/imagen-tfg.png" type="image/png" />
 
-       
     <link rel="stylesheet" href="../../../../css/alertas.css" />
-       
     <link rel="stylesheet" href="../../../../css/calendario.css" />
 
-        <style>
+    <style>
         body {
             background-color: #111;
             color: #fff;
@@ -41,6 +30,13 @@
             color: white;
             border: 1px solid #e50914;
             box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
+        }
+
+        /* Estilo específico para el modal de inscritos */
+        #registrationsModal .modal-content {
+            border: 1px solid #ffc107;
+            /* Borde amarillo para distinguirlo */
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
         }
 
         .btn-danger {
@@ -105,206 +101,337 @@
         .btn-close-white {
             filter: invert(1) grayscale(100%) brightness(200%);
         }
+
+        /* Estilos para la tabla de inscritos */
+        #registrationsTable th {
+            background-color: #333;
+            color: #ffc107;
+        }
     </style>
 </head>
 
 <body>
-        <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
-                <a id="logo-link" href="../admin.html" class="navbar-brand d-flex align-items-center">
-                        <img src="../../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
-                    </a>
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+        <a id="logo-link" href="../admin.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
+        </a>
 
-                <div class="d-flex align-items-center">
-                        <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"  
-                              data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                                <i class="bi bi-list"></i>
-                            </button>
-                    </div>
-            </nav>
+        <div class="d-flex align-items-center">
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </nav>
 
-        <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-                <div class="offcanvas-header border-bottom border-secondary">
-                        <h5 class="offcanvas-title">Menú Administrador</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-                    </div>
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú Administrador</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
 
-                <div class="offcanvas-body">
-                        <a href="./adminCalendario.html" class="d-block text-light mb-2">
-                                Gestión de Eventos
-                            </a>
+        <div class="offcanvas-body">
+            <a href="./adminCalendario.html" class="d-block text-light mb-2">
+                Gestión de Eventos
+            </a>
 
-                        <a href="../lugares/adminLugares.html" class="d-block text-light mb-2">
-                                Gestión de Lugares
-                            </a>
+            <a href="../lugares/adminLugares.html" class="d-block text-light mb-2">
+                Gestión de Lugares
+            </a>
 
-                        <a href="../user/users.html" class="d-block text-light mb-2">
-                                Gestionar Usuarios
-                            </a>
+            <a href="../user/users.html" class="d-block text-light mb-2">
+                Gestionar Usuarios
+            </a>
 
-                       
             <hr class="border-secondary" />
 
-                        <a id="menu-inicio" href="../admin.html" class="d-block text-light mb-2">
-                                Volver al Inicio
-                            </a>
+            <a id="menu-inicio" href="../admin.html" class="d-block text-light mb-2">
+                Volver al Inicio
+            </a>
 
-                        <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"                
+            <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
                 data-bs-target="#logoutConfirmModal">
-                                Cerrar sesión
-                            </a>
+                Cerrar sesión
+            </a>
 
-                   
         </div>
-            </div>
+    </div>
 
-        <main>
-                <h2 class="text-center mt-4">Gestión de Eventos</h2>
-                <div id="calendar"></div>
-            </main>
+    <main>
+        <h2 class="text-center mt-4">Gestión de Eventos</h2>
+        <div id="calendar"></div>
+    </main>
 
-        <div id="customConfirmContainer"></div>
+    <div id="customConfirmContainer"></div>
 
-        <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg">
-                        <div class="modal-content">
-                                <div class="modal-header border-danger">
-                                        <h5 class="modal-title fw-bold text-light">
-                                                Gestión de Evento
-                                            </h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                        data-bs-dismiss="modal"></button>
-                                    </div>
+    <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title fw-bold text-light">
+                        Gestión de Evento
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
 
-                                <div class="modal-body">
-                                        <form id="eventForm" enctype="multipart/form-data">
-                                                <input type="hidden" id="eventId" />
-                                                <div class="mb-3">
-                                                        <label for="title" class="form-label">Título *</label>
-                                                        <input type="text" id="title" class="form-control"
-                                placeholder="Ej: Carrera en Montmeló"                                 required />
-                                                    </div>
-                                                <div class="mb-3">
-                                                        <label for="description" class="form-label">Descripción</label>
-                                                        <textarea id="description" class="form-control" rows="3"        
-                                                        placeholder="Detalles del evento..."></textarea>
-                                                    </div>
-                                                <div class="mb-3">
-                                                        <label for="location" class="form-label">Ubicación</label>
-                                                        <input type="text" id="location" class="form-control"          
-                                                      placeholder="Ej: Circuito Ricardo Tormo" />
-                                                    </div>
+                <div class="modal-body">
+                    <form id="eventForm" enctype="multipart/form-data">
+                        <input type="hidden" id="eventId" />
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Título *</label>
+                            <input type="text" id="title" class="form-control" placeholder="Ej: Carrera en Montmeló"
+                                required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea id="description" class="form-control" rows="3"
+                                placeholder="Detalles del evento..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Ubicación</label>
+                            <input type="text" id="location" class="form-control"
+                                placeholder="Ej: Circuito Ricardo Tormo" />
+                        </div>
 
-                                                <div class="mb-3">
-                                                        <label for="capacity" class="form-label">Capacidad Máxima
+                        <div class="mb-3">
+                            <label for="capacity" class="form-label">Capacidad Máxima
                                 (personas)</label>
-                                                        <input type="number" id="capacity" class="form-control" min="0"
-                                                               
-                                placeholder="Capacidad máxima de asistentes (opcional)" />
-                                                    </div>
+                            <input type="number" id="capacity" class="form-control" min="0"
+                                placeholder="Capacidad máxima de asistentes (0 o vacío para ilimitada)" />
+                        </div>
 
-                        <div class="form-group mt-4 p-3 rounded-3 border border-secondary bg-dark bg-opacity-75"
-                            id="registrationsSection" style="display:none;">
-                            <h5 class="fw-bold mb-3 text-warning">Inscritos al Evento (<span
-                                    id="registrations-count">0/0</span>)</h5>
-                            <div id="registrations-list"
-                                style="max-height: 250px; overflow-y: auto; padding-right: 10px;">
-                                <p class="text-muted text-center small" id="no-registrations-message">Aún no hay
-                                    inscripciones.</p>
+                        <div id="registrations-button-container" class="mb-3" style="display:none;">
+                            <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal"
+                                data-bs-target="#registrationsModal" id="btnViewRegistrations">
+                                <i class="bi bi-people-fill me-2"></i> Ver Usuarios Inscritos (<span
+                                    id="current-registered-count">0</span>)
+                            </button>
+                        </div>
+                        <div class="mb-3 p-3 rounded-3 border border-danger bg-dark bg-opacity-50">
+                            <label for="start-date" class="form-label fw-semibold">Fecha
+                                *</label>
+                            <input type="date" id="start-date" class="form-control mb-3" readonly />
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="start-time" class="form-label">Hora
+                                        de inicio *</label>
+                                    <input type="time" id="start-time" class="form-control" required />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="end-time" class="form-label">Hora de
+                                        fin *</label>
+                                    <input type="time" id="end-time" class="form-control" required />
+                                </div>
                             </div>
                         </div>
-                                                <div
-                            class="mb-3 p-3 rounded-3 border border-danger bg-dark bg-opacity-50">
-                                                        <label for="start-date" class="form-label fw-semibold">Fecha
-                                *</label>
-                                                        <input type="date" id="start-date" class="form-control mb-3"
-                                readonly />
-                                                        <div class="row">
-                                                                <div class="col-md-6 mb-3">
-                                                                        <label for="start-time" class="form-label">Hora
-                                        de inicio *</label>
-                                                                        <input type="time" id="start-time"
-                                        class="form-control" required />
-                                                                    </div>
-                                                                <div class="col-md-6 mb-3">
-                                                                        <label for="end-time" class="form-label">Hora de
-                                        fin *</label>
-                                                                        <input type="time" id="end-time"
-                                        class="form-control" required />
-                                                                    </div>
-                                                            </div>
-                                                    </div>
 
-                                                <div class="mb-3">
-                                                        <label for="imageFile" class="form-label">Imagen (Subir
+                        <div class="mb-3">
+                            <label for="imageFile" class="form-label">Imagen (Subir
                                 Archivo)</label>
-                                                        <input type="file" id="imageFile" name="imageFile"
-                                class="form-control" accept="image/*" />
+                            <input type="file" id="imageFile" name="imageFile" class="form-control" accept="image/*" />
 
-                                                        <input type="hidden" id="imageURL" name="imageURL" />
+                            <input type="hidden" id="imageURL" name="imageURL" />
 
-                                                        <div id="currentImageContainer"
-                                style="display: none; margin-top: 15px;">
-                                                                <p class="mb-1 text-secondary small">Imagen actual:</p>
-                                                                <img id="currentImagePreview" src=""
-                                    alt="Previsualización" class="img-fluid rounded"                                    
+                            <div id="currentImageContainer" style="display: none; margin-top: 15px;">
+                                <p class="mb-1 text-secondary small">Imagen actual:</p>
+                                <img id="currentImagePreview" src="" alt="Previsualización" class="img-fluid rounded"
                                     style="max-height: 200px;" />
-                                                                <button type="button"
-                                    class="btn btn-sm btn-outline-warning mt-2" id="clearImageBtn">
-                                                                        Quitar imagen
-                                                                    </button>
-                                                            </div>
-                                                    </div>
-                                           
+                                <button type="button" class="btn btn-sm btn-outline-warning mt-2" id="clearImageBtn">
+                                    Quitar imagen
+                                </button>
+                            </div>
+                        </div>
+
                     </form>
-                                    </div>
+                </div>
 
-                                <div class="modal-footer border-danger">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                Cerrar
-                                            </button>
-                                        <button id="deleteEventBtn" type="button" class="btn btn-outline-danger me-auto"
-                                                style="display:none;">
-                                                Eliminar
-                                            </button>
-                                        <button id="saveEventBtn" type="button" class="btn btn-danger">
-                                                Guardar
-                                            </button>
-                                    </div>
-                            </div>
-                    </div>
-            </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cerrar
+                    </button>
+                    <button id="deleteEventBtn" type="button" class="btn btn-outline-danger me-auto"
+                        style="display:none;">
+                        Eliminar
+                    </button>
+                    <button id="saveEventBtn" type="button" class="btn btn-danger">
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"        
-        aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-sm">
-                        <div class="modal-content">
-                                <div class="modal-header border-danger">
-                                        <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión
+    <div class="modal fade" id="registrationsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-warning">
+                    <h5 class="modal-title fw-bold text-warning">
+                        📋 Lista de Usuarios Inscritos
                     </h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                    </div>
-                                <div class="modal-body">
-                                        <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
-                                    </div>
-                                <div class="modal-footer border-danger">
-                                        <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar
-                        Sesión</button>
-                                    </div>
-                            </div>
-                    </div>
-            </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
 
-       
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ID Usuario</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Fecha de Inscripción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registrationsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="registrationsEmptyMessage" class="text-center text-muted mt-3" style="display:none;">
+                        Este evento aún no tiene usuarios inscritos.
+                    </p>
+                </div>
+
+                <div class="modal-footer border-warning">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar
+                        Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script src="../../../../js/alertas.js"></script>
-       
     <script src="../admin.js"></script>
-       
     <script src="../../../../js/navbar.js"></script>
-       
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Esta función asume que ya tienes definido un objeto `showAlert` globalmente
+        // y que la función `getEventRegistrations` está disponible en el scope global 
+        // o se define aquí. Para el ejemplo, la definimos aquí:
+
+        const registrationsModal = new bootstrap.Modal(document.getElementById('registrationsModal'));
+        const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+        const registrationsTableBody = document.getElementById('registrationsTableBody');
+        const registrationsEmptyMessage = document.getElementById('registrationsEmptyMessage');
+        const btnViewRegistrations = document.getElementById('btnViewRegistrations');
+
+        // Función de utilidad para formatear fechas
+        function formatRegistrationDate(isoString) {
+            if (!isoString) return 'N/A';
+            try {
+                const date = new Date(isoString);
+                // Ejemplo de formato: 01/01/2025 10:30
+                return date.toLocaleDateString('es-ES') + ' ' + date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                return isoString;
+            }
+        }
+
+        // 1. Manejador del click en el botón "Ver Usuarios Inscritos"
+        btnViewRegistrations.addEventListener('click', async () => {
+            const eventId = document.getElementById('eventId').value;
+            if (!eventId) {
+                showAlert('Error', 'No se ha encontrado el ID del evento.', 'error');
+                return;
+            }
+
+            // Ocultar el modal de edición/creación de evento temporalmente
+            eventModal.hide();
+
+            await loadEventRegistrations(eventId);
+
+            // Mostrar el modal de inscripciones
+            registrationsModal.show();
+        });
+
+        // 2. Función para cargar y mostrar los datos de inscritos
+        async function loadEventRegistrations(eventId) {
+            registrationsTableBody.innerHTML = ''; // Limpiar la tabla anterior
+            registrationsEmptyMessage.style.display = 'none';
+
+            try {
+                // Llama a la nueva endpoint que creamos en events.js
+                const response = await fetch(`/api/events?action=getRegistrations&event_id=${eventId}`);
+                const result = await response.json();
+
+                if (result.success && result.data.length > 0) {
+                    let htmlContent = '';
+                    result.data.forEach((reg, index) => {
+                        htmlContent += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${reg.user_id}</td>
+                                <td>${reg.usuario_inscrito}</td>
+                                <td>${formatRegistrationDate(reg.registered_at)}</td>
+                            </tr>
+                        `;
+                    });
+                    registrationsTableBody.innerHTML = htmlContent;
+                } else {
+                    registrationsEmptyMessage.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error("Fallo al obtener los inscritos:", error);
+                showAlert('Error de Red', 'No se pudo conectar con el servidor para obtener los inscritos.', 'error');
+                registrationsEmptyMessage.style.display = 'block';
+            }
+        }
+
+        // 3. Manejar el cierre del Modal de Inscritos para volver al Modal de Evento
+        document.getElementById('registrationsModal').addEventListener('hidden.bs.modal', () => {
+            // Reabrir el modal de evento si estaba abierto
+            const eventId = document.getElementById('eventId').value;
+            if (eventId) {
+                eventModal.show();
+            }
+        });
+
+        // 4. Integrar la visibilidad del botón en la función que abre el modal de evento (debería estar en ../admin.js)
+        // **Nota:** En tu archivo `../admin.js`, donde manejas la apertura del `eventModal` (probablemente en la función `handleEventClick` o similar), DEBES incluir la siguiente lógica:
+        /*
+            // ... dentro de la función que abre el modal ...
+            const eventIdField = document.getElementById('eventId');
+            const registrationsBtnContainer = document.getElementById('registrations-button-container');
+            const currentRegisteredCount = document.getElementById('current-registered-count');
+
+            if (info.event) {
+                // EDITANDO EVENTO
+                registrationsBtnContainer.style.display = 'block';
+                // Asume que la capacidad_max y num_inscritos (total de inscritos) viene en info.event.extendedProps
+                // Debes asegurarte de que tu función de carga de eventos también cargue el número actual de inscritos.
+                const totalInscritos = info.event.extendedProps.totalInscritos || 0; 
+                currentRegisteredCount.textContent = totalInscritos; 
+            } else {
+                // CREANDO NUEVO EVENTO
+                registrationsBtnContainer.style.display = 'none';
+            }
+            // ... (resto de tu lógica para llenar el formulario)
+        */
+
+    </script>
 </body>
 
 </html>
