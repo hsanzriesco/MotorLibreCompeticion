@@ -20,42 +20,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // 🔑 Elementos del Modal de Evento
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
-    let calendar; // Declarar aquí para que sea accesible globalmente
-
+    if (calendarEl && eventModalEl) {
+    }
     const eventModal = new bootstrap.Modal(eventModalEl);
     const form = document.getElementById("eventForm");
 
     const titleInput = document.getElementById("title");
     const descriptionInput = document.getElementById("description");
     const locationInput = document.getElementById("location");
-    const capacityInput = document.getElementById("capacity");
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
     const endTimeInput = document.getElementById("end-time");
     const eventIdInput = document.getElementById("eventId");
-
-    // 🔑 Elementos del Botón de Inscritos (Según tu HTML)
-    const registrationsBtnContainer = document.getElementById("registrations-button-container");
-    const btnViewRegistrations = document.getElementById("btnViewRegistrations");
-    const currentRegisteredCount = document.getElementById("current-registered-count");
-
-    // NOTA: Las variables registrationsSection, registrationsCount y registrationsList
-    // ya no se usan en el modal principal, pero las dejamos por si tu HTML las usaba
-    // para algo más. En este script, ahora referencian elementos inactivos si usas el modal secundario.
-    // const registrationsSection = document.getElementById("registrationsSection");
-    // const registrationsCount = document.getElementById("registrations-count");
-    // const registrationsList = document.getElementById("registrations-list");
-
-    // 🔑 Elementos del Modal de Inscritos (Asumiendo que existen en tu HTML)
-    const registrationsModalEl = document.getElementById('registrationsModal');
-    const registrationsModal = registrationsModalEl ? new bootstrap.Modal(registrationsModalEl) : null;
-    // Debes tener estos IDs en tu HTML dentro de #registrationsModal
-    const registrationsTableBody = document.getElementById('registrationsTableBody');
-    const registrationsModalTitle = document.getElementById('registrationsModalLabel');
-
 
     const imageFileInput = document.getElementById("imageFile");
     const imageURLInput = document.getElementById("imageURL");
@@ -67,9 +45,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const deleteEventBtn = document.getElementById("deleteEventBtn");
 
     let selectedEvent = null;
-    let eventInitialState = null; // 🔑 Para guardar el estado inicial
+    let eventInitialState = null; // 🔑 NUEVO: Para guardar el estado inicial
 
-    // 🔑 Elementos del Modal de Coche
     const carGarageForm = document.getElementById("carGarageForm");
     const carModalEl = document.getElementById("carGarageModal");
 
@@ -86,169 +63,97 @@ document.addEventListener("DOMContentLoaded", async () => {
     const clearCarPhotoBtn = document.getElementById("clearCarPhotoBtn");
 
     // --- FUNCIONES DE ESTADO ---
+
+    // 🔑 NUEVO: Captura el estado actual del formulario de evento
     function captureEventState() {
         const date = startDateInput.value;
         const startTime = startTimeInput.value;
         const endTime = endTimeInput.value;
-        const capacity = parseInt(capacityInput.value) || 0;
 
         return {
             id: eventIdInput.value,
             title: titleInput.value.trim(),
             description: descriptionInput.value.trim(),
             location: locationInput.value.trim(),
-            capacity: capacity,
             start: date && startTime ? `${date}T${startTime}` : null,
             end: date && endTime ? `${date}T${endTime}` : null,
             imageURL: imageURLInput.value,
+            // Nota: fileInput no se compara aquí, se maneja por separado si hay un archivo.
         };
     }
 
+    // 🔑 NUEVO: Compara el estado actual con el estado inicial
     function hasEventChanged() {
-        if (!eventInitialState) return true;
+        if (!eventInitialState) return true; // Si es un nuevo evento, siempre hay cambios.
 
         const currentState = captureEventState();
 
+        // 1. Comprobar campos de texto/fechas/URL (Excluyendo el archivo)
         const fieldsChanged =
             currentState.title !== eventInitialState.title ||
             currentState.description !== eventInitialState.description ||
             currentState.location !== eventInitialState.location ||
-            currentState.capacity !== eventInitialState.capacity ||
             currentState.start !== eventInitialState.start ||
             currentState.end !== eventInitialState.end ||
             currentState.imageURL !== eventInitialState.imageURL;
 
+        // 2. Comprobar si se ha seleccionado un nuevo archivo (imageFile)
         const fileChanged = imageFileInput.files.length > 0;
 
         return fieldsChanged || fileChanged;
     }
 
-    // 🚀 FUNCIÓN DE UTILIDAD para formatear fecha de registro
-    function formatRegistrationDate(isoString) {
-        if (!isoString) return 'N/A';
+    // --- FIN FUNCIONES DE ESTADO ---
+
+
+    async function fetchEvents() {
         try {
-            const date = new Date(isoString);
-            return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
-                ' ' +
-                date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            const res = await fetch("/api/events");
+            const json = await res.json();
+            if (!json.success || !Array.isArray(json.data)) throw new Error(json.message || "Error desconocido al obtener eventos.");
+            return json.data.map((e) => ({
+                id: e.id,
+                title: e.title,
+                start: e.start,
+                end: e.end,
+                extendedProps: {
+                    description: e.description,
+                    location: e.location,
+                    image_url: e.image_url
+                }
+            }));
         } catch (e) {
-            return isoString;
+            console.error("Error al obtener eventos:", e);
+            // 🚨 ALERTA: Error al cargar eventos
+            mostrarAlerta("Error al cargar los eventos: " + e.message, "error");
+            return [];
         }
     }
-
-
-    // 🚀 FUNCIÓN MODIFICADA: Ahora solo CARGA Y DEVUELVE los datos, además de actualizar el CONTEO del botón.
-    /**
-     * Carga los inscritos, actualiza el conteo en el botón principal y devuelve los datos.
-     * @param {string} eventId
-     * @returns {Promise<{success: boolean, registrations: Array, capacityInfo: Object}>}
-     */
-    async function loadEventRegistrationsData(eventId) {
-        if (!eventId || !currentRegisteredCount || !btnViewRegistrations) {
-            return { success: false, registrations: [], capacityInfo: {} };
-        }
-
-        // Mantenemos el spinner de carga en el contador del botón
-        currentRegisteredCount.textContent = '...';
-
-        try {
-            const response = await fetch(`/api/events?action=getRegistrations&event_id=${eventId}`);
-            const data = await response.json();
-
-            if (data.success) {
-                const registrations = data.registrations || [];
-                const capacityInfo = data.capacityInfo || { num_inscritos: 0, capacidad_max: 0 };
-                const { num_inscritos, capacidad_max } = capacityInfo;
-
-                // 1. Actualizar el contador del botón (texto)
-                const maxCapacityDisplay = capacidad_max === 0 ? '∞' : capacidad_max;
-                currentRegisteredCount.textContent = num_inscritos;
-                btnViewRegistrations.innerHTML = `<i class="bi bi-people-fill me-2"></i> Ver Usuarios Inscritos (${num_inscritos}/${maxCapacityDisplay})`;
-
-                return { success: true, registrations, capacityInfo };
-            } else {
-                console.error("Error al obtener inscripciones:", data.message);
-                currentRegisteredCount.textContent = '0';
-                btnViewRegistrations.innerHTML = `<i class="bi bi-people-fill me-2"></i> Error al cargar inscritos (0/∞)`;
-                return { success: false, registrations: [], capacityInfo: {} };
-            }
-
-        } catch (error) {
-            console.error("Fetch error:", error);
-            currentRegisteredCount.textContent = 'Error';
-            btnViewRegistrations.innerHTML = `<i class="bi bi-people-fill me-2"></i> Error al cargar inscritos`;
-            return { success: false, registrations: [], capacityInfo: {} };
-        }
-    }
-
-    // 🚀 NUEVA FUNCIÓN: RENDERIZA LA TABLA EN EL MODAL SECUNDARIO
-    /**
-     * Renderiza los datos de inscritos en la tabla del modal secundario.
-     * @param {Array} registrations - Lista de objetos de inscripción
-     */
-    function renderRegistrationsTable(registrations) {
-        if (!registrationsTableBody) return;
-
-        // Asumiendo que tu tabla tiene thead con 5 columnas (Nº, Usuario, Email, Coche, Fecha)
-        if (registrations.length === 0) {
-            registrationsTableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center text-muted">Aún no hay inscripciones para este evento.</td>
-                </tr>
-            `;
-            return;
-        }
-
-        let htmlContent = '';
-        registrations.forEach((reg, index) => {
-            // Adaptar las propiedades según tu API (usamos nombres probables)
-            const username = reg.usuario_inscrito || reg.username || 'Desconocido';
-            const email = reg.email || 'N/A';
-            const carDetails = reg.car_name ? `${reg.car_name} (${reg.car_model})` : 'Sin coche';
-
-            htmlContent += `
-                <tr>
-                    <td scope="row">${index + 1}</td>
-                    <td><strong class="text-white">${username}</strong> <small class="text-muted">(ID: ${reg.user_id})</small></td>
-                    <td>${email}</td>
-                    <td>${carDetails}</td>
-                    <td>${formatRegistrationDate(reg.registered_at)}</td>
-                </tr>
-            `;
-        });
-        registrationsTableBody.innerHTML = htmlContent;
-    }
-
-
-    // --- LÓGICA DE CARGA DE EVENTOS (sin cambios) ---
-    async function fetchEvents() { /* ... */ }
-
-    // --- INICIALIZACIÓN DE CALENDARIO ---
 
     if (calendarEl) {
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            // ... (otras configuraciones) ...
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: "dayGridMonth",
+            selectable: true,
+            editable: false,
+            height: "auto",
+            locale: "es",
 
             select: (info) => {
                 selectedEvent = null;
                 form.reset();
                 startDateInput.value = info.startStr.split("T")[0];
                 eventIdInput.value = "";
-                capacityInput.value = 0;
-
-                // 🔑 MODIFICADO: Ocultar el contenedor del botón de inscritos al crear
-                if (registrationsBtnContainer) registrationsBtnContainer.style.display = 'none';
-
                 deleteEventBtn.style.display = "none";
+
                 imageFileInput.value = "";
                 imageURLInput.value = "";
                 currentImageContainer.style.display = "none";
 
-                eventInitialState = captureEventState();
+                eventInitialState = captureEventState(); // 🔑 NUEVO: Capturar estado inicial (vacío)
                 eventModal.show();
             },
 
-            eventClick: async (info) => {
+            eventClick: (info) => {
                 const event = info.event;
                 selectedEvent = event;
                 const extendedProps = event.extendedProps;
@@ -258,7 +163,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 titleInput.value = event.title;
                 descriptionInput.value = extendedProps.description || "";
                 locationInput.value = extendedProps.location || "";
-                capacityInput.value = extendedProps.capacity || 0;
 
                 imageURLInput.value = currentURL;
                 imageFileInput.value = "";
@@ -270,92 +174,249 @@ document.addEventListener("DOMContentLoaded", async () => {
                     currentImagePreview.src = '';
                     currentImageContainer.style.display = 'none';
                 }
-                // ... (manejo de fechas) ...
 
-                deleteEventBtn.style.display = "inline-block";
-                eventInitialState = captureEventState();
-
-                // 🔑 MODIFICADO: Mostrar el botón y actualizar solo el conteo
-                if (registrationsBtnContainer) {
-                    registrationsBtnContainer.style.display = 'block';
-                    // Llamamos para cargar el conteo y actualizar el texto del botón
-                    await loadEventRegistrationsData(event.id);
+                if (event.start) {
+                    const startDate = new Date(event.start);
+                    startDateInput.value = startDate.toISOString().split("T")[0];
+                    startTimeInput.value = startDate.toTimeString().slice(0, 5);
                 }
 
+                if (event.end) {
+                    const endDate = new Date(event.end);
+                    endTimeInput.value = endDate.toTimeString().slice(0, 5);
+                }
+
+                deleteEventBtn.style.display = "inline-block";
+                eventInitialState = captureEventState(); // 🔑 NUEVO: Capturar estado inicial (cargado)
                 eventModal.show();
             },
 
-            // ... (función events) ...
+            events: async (info, successCallback) => {
+                const events = await fetchEvents();
+                successCallback(events);
+            }
         });
 
         calendar.render();
-    }
+        imageFileInput.addEventListener('change', function () {
+            const file = this.files[0];
 
-    // --- EVENT LISTENERS GENERALES (IMAGEN, GUARDAR, ELIMINAR, etc.) ---
-    // ... (Mantener la lógica de imagen, guardar y eliminar) ...
+            if (file) {
+                const fileUrl = URL.createObjectURL(file);
+                currentImagePreview.src = fileUrl;
+                currentImageContainer.style.display = 'block';
+            } else {
+                if (imageURLInput.value) {
+                    currentImagePreview.src = imageURLInput.value;
+                    currentImageContainer.style.display = 'block';
+                } else {
+                    currentImageContainer.style.display = 'none';
+                }
+            }
+        });
+
+        clearImageBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            imageURLInput.value = "";
+            imageFileInput.value = "";
+            currentImageContainer.style.display = 'none';
+        });
 
 
-    // 🚀 LÓGICA DEL BOTÓN 'VER USUARIOS INSCRITOS' (NUEVO)
-    if (btnViewRegistrations && registrationsModal) {
-        btnViewRegistrations.addEventListener('click', async (e) => {
-            // e.preventDefault() ya no es necesario si el botón usa data-bs-toggle="modal", 
-            // pero lo dejamos por si quieres forzar la lógica completa aquí.
-            const eventId = eventIdInput.value;
-            const eventTitle = titleInput.value.trim();
+        saveEventBtn.addEventListener("click", async () => {
+            const id = eventIdInput.value;
+            const date = startDateInput.value;
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
 
-            if (!eventId) {
-                mostrarAlerta('Error', 'No hay evento seleccionado para ver los inscritos.', 'error');
+            // 1. 🔑 NUEVO: COMPROBACIÓN DE CAMBIOS
+            if (id && !hasEventChanged()) {
+                // 🟡 ALERTA: No hay cambios
+                mostrarAlerta("No hay cambios para guardar.", "info");
+                eventModal.hide(); // Opcional: cierra el modal si no hay acción a tomar
                 return;
             }
 
-            // 1. Ocultar el modal principal (es una buena práctica si se abre otro modal)
-            eventModal.hide();
 
-            // 2. Cargar los datos de inscritos
-            const result = await loadEventRegistrationsData(eventId);
-
-            // 3. Renderizar la tabla y actualizar el título del modal secundario
-            if (registrationsModalTitle) {
-                registrationsModalTitle.textContent = `Inscritos para: ${eventTitle}`;
+            if (!titleInput.value.trim() || !date || !startTime || !endTime) {
+                // 🚨 ALERTA: Campos incompletos
+                mostrarAlerta("Completa todos los campos obligatorios", "advertencia");
+                return;
             }
 
-            if (result.success) {
-                renderRegistrationsTable(result.registrations);
+            // 2. 🔑 NUEVO: CONFIRMACIÓN ANTES DE GUARDAR
+            let confirmado = true;
+            if (id) { // Solo si estamos editando un evento existente
+                confirmado = await mostrarConfirmacion("¿Deseas guardar los cambios realizados en el evento?");
+            }
+
+            if (!confirmado) {
+                return;
+            }
+
+            // --- Lógica de guardado (solo si hay cambios o es evento nuevo) ---
+
+            const start = `${date}T${startTime}`;
+            const end = `${date}T${endTime}`;
+
+            const formData = new FormData();
+            formData.append('title', titleInput.value.trim());
+            formData.append('description', descriptionInput.value.trim());
+            formData.append('location', locationInput.value.trim());
+            formData.append('start', start);
+            formData.append('end', end);
+
+            const file = imageFileInput.files[0];
+            const currentURL = imageURLInput.value;
+
+            if (file) {
+                formData.append('imageFile', file);
             } else {
-                // Si falla, al menos intentamos renderizar la tabla vacía con el mensaje de error
-                renderRegistrationsTable([]);
-                if (registrationsTableBody) {
-                    registrationsTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar la lista: ${result.message || 'Error de conexión.'}</td></tr>`;
+                formData.append('imageURL', currentURL);
+            }
+
+            try {
+                const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
+                    method: id ? "PUT" : "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message || "Fallo en la respuesta del servidor.");
+
+                // 🟢 ALERTA: Éxito
+                mostrarAlerta(id ? "Evento actualizado correctamente" : "Evento creado correctamente", "exito");
+                eventModal.hide();
+                calendar.refetchEvents();
+            } catch (e) {
+                console.error("Error al guardar:", e);
+                // 🔴 ALERTA: Error al guardar
+                mostrarAlerta("Error al guardar evento: " + e.message, "error");
+            }
+        });
+
+        deleteEventBtn.addEventListener("click", async () => {
+            if (!selectedEvent || !selectedEvent.id) {
+                // 🚨 ALERTA: No hay evento seleccionado
+                mostrarAlerta("No hay evento seleccionado", "info");
+                return;
+            }
+
+            // ❓ CONFIRMACIÓN: Eliminar evento
+            const confirmado = await mostrarConfirmacion("¿Estás seguro de que quieres eliminar este evento?");
+
+            if (confirmado) {
+                try {
+                    const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+                    const data = await res.json();
+                    if (!data.success) throw new Error();
+
+                    // 🟢 ALERTA: Éxito
+                    mostrarAlerta("Evento eliminado correctamente", "exito");
+                    eventModal.hide();
+                    calendar.refetchEvents();
+                } catch {
+                    // 🔴 ALERTA: Error al eliminar
+                    mostrarAlerta("Error al eliminar evento", "error");
                 }
             }
-
-            // 4. Mostrar el modal de inscripciones (Bootstrap lo maneja automáticamente con data-bs-target, pero lo forzamos por si acaso)
-            registrationsModal.show();
         });
     }
 
-    // 🔑 NUEVO: Manejar el cierre del Modal de Inscritos para volver al Modal de Evento
-    if (registrationsModalEl && eventModalEl) {
-        registrationsModalEl.addEventListener('hidden.bs.modal', () => {
-            const eventId = eventIdInput.value;
-            // Solo si el modal de evento tiene un ID cargado, lo reabrimos.
-            if (eventId) {
-                eventModal.show();
+    // --- Lógica de Coche ---
+
+    if (carGarageForm && usuario) {
+
+        if (carPhotoFileInput) {
+            carPhotoFileInput.addEventListener('change', function () {
+                const file = this.files[0];
+
+                if (file) {
+                    const fileUrl = URL.createObjectURL(file);
+                    carPhotoPreview.src = fileUrl;
+                    carPhotoContainer.style.display = 'block';
+                } else {
+                    if (carPhotoUrlInput.value) {
+                        carPhotoPreview.src = carPhotoUrlInput.value;
+                        carPhotoContainer.style.display = 'block';
+                    } else {
+                        carPhotoContainer.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        if (clearCarPhotoBtn) {
+            clearCarPhotoBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                carPhotoUrlInput.value = "";
+                carPhotoFileInput.value = "";
+                carPhotoContainer.style.display = 'none';
+            });
+        }
+
+        carGarageForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const id = carIdInput.value;
+            const userId = usuario.id;
+
+            if (!carNameInput.value.trim() || !userId) {
+                // 🚨 ALERTA: Campos obligatorios
+                mostrarAlerta("El nombre del coche y el usuario son obligatorios.", "advertencia");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('car_name', carNameInput.value.trim());
+            formData.append('model', carModelInput.value.trim());
+            formData.append('year', carYearInput.value.trim());
+            formData.append('description', carDescriptionInput.value.trim());
+
+            if (id) {
+                formData.append('id', id);
+            }
+
+            const file = carPhotoFileInput.files[0];
+            const currentURL = carPhotoUrlInput.value;
+
+            if (file) {
+                formData.append('imageFile', file);
+            } else {
+                formData.append('photoURL', currentURL);
+            }
+
+            try {
+                const url = id ? `/api/carGarage?id=${id}` : "/api/carGarage";
+
+                const res = await fetch(url, {
+                    method: id ? "PUT" : "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.msg || "Fallo en la respuesta del servidor.");
+
+                // 🟢 ALERTA: Éxito
+                mostrarAlerta(id ? "Coche actualizado correctamente" : "Coche añadido correctamente", "exito");
+
+            } catch (e) {
+                console.error("Error al guardar el coche:", e);
+                // 🔴 ALERTA: Error al guardar
+                mostrarAlerta("Error al guardar el coche: " + e.message, "error");
             }
         });
     }
 
-    // --- Lógica de Coche y Cerrar Sesión (sin cambios significativos) ---
+    // --- Lógica de Cerrar Sesión ---
 
-    // Lógica de Coche
-    // ... (Mantener la lógica del coche tal como está en tu original) ...
-
-    // Lógica de Cerrar Sesión
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", async (e) => {
             e.preventDefault();
 
+            // ❓ CONFIRMACIÓN: Cerrar sesión
             const confirmado = await mostrarConfirmacion("¿Deseas cerrar sesión?");
 
             if (confirmado) {
@@ -363,16 +424,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 setTimeout(() => {
                     window.location.href = "/pages/auth/login/login.html";
                 }, 800);
-            }
-        });
-    }
-
-    // Evento para reabrir el modal de evento al cerrar el de coche (si aplica)
-    if (carModalEl && eventModal) {
-        carModalEl.addEventListener('hidden.bs.modal', () => {
-            // Solo muestra el modal de evento si un evento estaba seleccionado
-            if (eventIdInput.value) {
-                eventModal.show();
             }
         });
     }
