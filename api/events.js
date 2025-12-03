@@ -96,6 +96,19 @@ export default async function handler(req, res) {
         // MANEJADOR GET
         // ===============================================
         if (req.method === "GET") {
+            
+            // 🔑 NUEVO: GET: Obtener TODOS los resultados de carrera para el panel de administración
+            if (action === 'getAllResults') {
+                const result = await client.query(
+                    `SELECT er.result_id, er.event_id, er.user_id, er.position, er.best_lap_time, u.name AS user 
+                     FROM event_results er
+                     JOIN users u ON er.user_id = u.id 
+                     ORDER BY er.event_id ASC, er.position ASC`
+                );
+                return res.status(200).json({ success: true, data: result.rows });
+            }
+            // ----------------------------------------------------
+
             // GET: Cargar todos los eventos
             if (!action) {
                 const result = await client.query(
@@ -180,6 +193,27 @@ export default async function handler(req, res) {
         // MANEJADOR POST
         // ===============================================
         if (req.method === "POST") {
+            
+            // 🔑 NUEVO: POST: Añadir un resultado de carrera
+            if (action === 'addResult') {
+                const jsonBody = await readJsonBody(req);
+                const { event_id, user_id, position, best_lap_time, user } = jsonBody;
+
+                if (!event_id || !user_id || !position || !best_lap_time || !user) {
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios para añadir el resultado." });
+                }
+
+                const result = await client.query(
+                    `INSERT INTO event_results (event_id, user_id, position, best_lap_time, "user") 
+                     VALUES ($1, $2, $3, $4, $5) 
+                     RETURNING result_id`,
+                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user]
+                );
+
+                return res.status(201).json({ success: true, message: "Resultado añadido correctamente.", resultId: result.rows[0].result_id });
+            }
+            // ----------------------------------------------------
+            
             // POST: Registrar inscripción 
             if (action === 'register') {
                 const jsonBody = await readJsonBody(req);
@@ -301,6 +335,32 @@ export default async function handler(req, res) {
         // MANEJADOR PUT 
         // ===============================================
         if (req.method === "PUT") {
+            
+            // 🔑 NUEVO: PUT: Editar un resultado de carrera
+            if (action === 'editResult') {
+                const jsonBody = await readJsonBody(req);
+                const { result_id, event_id, user_id, position, best_lap_time, user } = jsonBody;
+
+                if (!result_id || !event_id || !user_id || !position || !best_lap_time || !user) {
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios para editar el resultado." });
+                }
+
+                const result = await client.query(
+                    `UPDATE event_results 
+                     SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, "user" = $5 
+                     WHERE result_id = $6 
+                     RETURNING result_id`,
+                    [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, user, parseInt(result_id)]
+                );
+
+                if (result.rows.length === 0) {
+                    return res.status(404).json({ success: false, message: "Resultado no encontrado para editar." });
+                }
+
+                return res.status(200).json({ success: true, message: "Resultado actualizado correctamente." });
+            }
+            // ----------------------------------------------------
+            
             // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
 
@@ -345,6 +405,28 @@ export default async function handler(req, res) {
         // MANEJADOR DELETE 
         // ===============================================
         if (req.method === "DELETE") {
+            
+            // 🔑 NUEVO: DELETE: Eliminar un resultado de carrera
+            if (action === 'deleteResult') {
+                const { result_id } = req.query;
+
+                if (!result_id) {
+                    return res.status(400).json({ success: false, message: "Falta el ID del resultado para eliminar." });
+                }
+
+                const result = await client.query(
+                    `DELETE FROM event_results WHERE result_id = $1 RETURNING result_id`,
+                    [parseInt(result_id)]
+                );
+
+                if (result.rows.length === 0) {
+                    return res.status(404).json({ success: false, message: "Resultado no encontrado para eliminar." });
+                }
+
+                return res.status(200).json({ success: true, message: "Resultado eliminado correctamente." });
+            }
+            // ----------------------------------------------------
+
             // Cancelar inscripción
             if (action === 'cancel') {
                 const { user_id, event_id } = req.query;
