@@ -1,0 +1,63 @@
+/* /assets/css/footer.css */
+
+#main-footer {
+    /* Fondo oscuro genérico, puede ser ajustado a tu paleta */
+    background-color: #171717 !important; 
+    color: #f8f9fa; /* Texto claro */
+    font-size: 0.95rem;
+}
+
+#main-footer a {
+    color: #ccc; /* Color de enlace más suave */
+    text-decoration: none;
+    transition: color 0.3s ease-in-out;
+    padding: 3px 0; /* Espacio para hacer clic */
+    display: block; /* Para que el padding funcione bien */
+}
+
+#main-footer a:hover {
+    color: #e50914; /* Color de acento de tu marca (rojo de Netflix/Motor) */
+}
+
+/* Estilo para los títulos de las secciones */
+#main-footer h5, 
+#main-footer h6 {
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Línea divisoria bajo los títulos de sección */
+#main-footer hr {
+    background-color: #e50914; /* Color de acento */
+    height: 2px;
+    border: none;
+    opacity: 0.7;
+    margin-bottom: 12px;
+}
+
+/* Estilo para los iconos sociales */
+.social-icons a i {
+    transition: color 0.3s ease-in-out;
+}
+
+.social-icons a:hover i {
+    color: #e50914; /* Resalta al pasar el ratón */
+}
+
+/* Estilo para la fila de Copyright en escritorio */
+.copyright-desktop p {
+    color: #aaa;
+    font-size: 0.85rem;
+}
+
+/* Ajustes de responsive: Quitar margin-bottom en listas en móvil */
+@media (max-width: 767.98px) {
+    #main-footer .col-6 {
+        padding-left: 10px; /* Reducir padding entre columnas pequeñas */
+        padding-right: 10px;
+    }
+    #main-footer .list-unstyled li {
+        margin-bottom: 2px;
+    }
+}
