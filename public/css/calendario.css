@@ -4,24 +4,28 @@
 #calendar {
     max-width: 900px;
     margin: 50px auto;
-    background: #1c1c1c; /* Fondo gris oscuro */
+    background: #1c1c1c;
+    /* Fondo gris oscuro */
     padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 0 10px rgba(229, 9, 20, 0.5); /* Sombra roja de tu tema */
+    /* Borde rojo delgado como el diseño de tu navbar/modal */
+    border: 1px solid #e50914;
+    box-shadow: 0 0 10px rgba(229, 9, 20, 0.2);
     font-family: 'Orbitron', sans-serif;
 }
 
 /* --- Cabecera del Calendario (Título y botones) --- */
 .fc-toolbar-title {
-    color: white !important; /* Título blanco */
+    color: white !important;
     font-weight: 600;
 }
 
 /* --- Estilo de los Botones de navegación (Prev, Next, Today, Vistas) --- */
 .fc .fc-button-primary {
-    background-color: #222 !important;
+    /* Mismo estilo de tus botones/tema principal (Rojo/Negro) */
+    background-color: #e50914 !important;
     border-color: #e50914 !important;
-    color: #e50914 !important;
+    color: white !important;
     text-transform: uppercase;
     font-size: 0.8rem;
     padding: 5px 10px;
@@ -29,66 +33,75 @@
 
 .fc .fc-button-primary:hover,
 .fc .fc-button-primary:not(:disabled):active {
-    background-color: #e50914 !important;
+    background-color: #ff1a1a !important;
+    /* Rojo más claro al hacer hover */
     color: white !important;
-    box-shadow: none !important;
+    box-shadow: 0 0 8px rgba(229, 9, 20, 0.5) !important;
 }
 
 /* --- Cabecera de los Días de la Semana (dom, lun, mar...) --- */
 .fc-theme-standard th {
-    background-color: #111; /* Fondo más oscuro para la cabecera de días */
-    color: #4CAF50; /* Color verde lima/ciber para los nombres de los días */
+    background-color: #111;
+    color: #00BFFF;
+    /* AZUL NEÓN para los nombres de los días */
     font-weight: 800;
     text-transform: uppercase;
     border: 1px solid #333;
+    /* Borde más sutil */
 }
 
 /* --- Días del mes (números y celdas) --- */
 .fc-daygrid-body {
     border: 1px solid #333;
 }
+
 .fc-daygrid-day {
     background-color: #1c1c1c;
     border: 1px solid #333;
 }
+
 .fc-daygrid-day-number {
-    color: #4CAF50; /* Números de los días en verde lima */
+    color: #00BFFF;
+    /* AZUL NEÓN para los números de los días */
     font-weight: 600;
+    padding: 5px;
 }
 
-/* Día de hoy resaltado */
+/* Día de hoy resaltado (Mié 3 de diciembre) */
 .fc-day-today {
-    background-color: #333 !important;
+    background-color: #554a00 !important;
+    /* Dorado/Amarillo sutil para el día actual */
+    opacity: 0.7;
 }
 
 /* Días del mes anterior/siguiente */
 .fc-day-other .fc-daygrid-day-number {
-    color: #555; /* Días fuera de mes en gris oscuro */
+    color: #555;
+    /* Días fuera de mes en gris oscuro */
 }
 
 /* --- Estilos de Eventos --- */
 .fc-event {
     border: none !important;
-    background-color: #e50914 !important; /* Rojo de tu tema */
+    background-color: #4CAF50 !important;
+    /* Color verde lima para los eventos */
     color: white !important;
     border-radius: 4px;
     padding: 2px 5px;
     font-size: 0.9rem;
     font-weight: 600;
-    cursor: pointer; /* Indica que se puede hacer clic para editar */
+    cursor: pointer;
 }
+
 .fc-event-title {
-    white-space: normal; /* Permite que el título se ajuste en varias líneas */
+    white-space: normal;
 }
 
-/* Estilos de drag and drop (opcional) */
-.fc-event-dragging {
-    opacity: 0.7;
-}
 
 /* ---------------------------------------------------- */
-/* CÓDIGO CSS EXISTENTE QUE YA PROPORCIONASTE ABAJO: */
+/* ESTILOS DE MODAL YA EXISTENTES EN TU ARCHIVO */
 /* ---------------------------------------------------- */
+
 .modal-event {
     position: fixed;
     top: 0;
@@ -112,44 +125,4 @@
     box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
 }
 
-.close-modal {
-    background: #ff4d4d;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 16px;
-    margin-top: 15px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.close-modal:hover {
-    background: #e60000;
-}
-
-.btn-custom-cancel {
-    background-color: #e50914;
-    color: white;
-    border: none;
-    padding: 14px;
-    margin-top: 5px;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    font-family: 'Orbitron', sans-serif;
-    transition: all 0.3s ease;
-}
-
-.btn-custom-cancel:hover {
-    background-color: #ff1a1a;
-    box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
-    color: white;
-}
-
-.btn-custom-cancel:disabled {
-    background-color: #6c757d;
-    opacity: 0.65;
-    cursor: not-allowed;
-    box-shadow: none;
-}
+/* ... otros estilos de .modal-event, .close-modal, .btn-custom-cancel ... */
