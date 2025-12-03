@@ -27,10 +27,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
 
-    // 🚀 NUEVO: Modal y elementos para la lista de inscritos
+    // 🚀 NUEVO: Modal y elementos para la lista de inscritos (mantengo las variables, aunque la lógica de apertura está en HTML)
     const registrationsModalEl = document.getElementById("registrationsModal");
-    const registrationsListBody = document.getElementById("registrationsListBody");
-    const registrationsEventTitle = document.getElementById("registrationsEventTitle");
+
+    // NOTA: Los elementos 'registrationsListBody' y 'registrationsEventTitle' ya no se necesitan aquí,
+    // ya que la carga de datos se movió al script en línea de adminCalendario.html, manejado por el evento show.bs.modal
 
     if (!calendarEl || !eventModalEl) {
         console.error("No se encontraron los elementos 'calendar' o 'eventModal'");
@@ -43,7 +44,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Solo inicializamos modales y variables de calendario si estamos en la página del calendario
     let calendar;
     let eventModal;
-    let registrationsModal; // 🚀 NUEVO
+    let registrationsModal;
 
     // Si estamos en la página de calendario, inicializamos las variables
     if (calendarEl && eventModalEl) {
@@ -58,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const titleInput = document.getElementById("title");
     const descriptionInput = document.getElementById("description");
     const locationInput = document.getElementById("location");
-    const capacityInput = document.getElementById("capacity"); // 🔑 NUEVO: Capacidad Máxima
+    const capacityInput = document.getElementById("capacity"); // 🔑 Capacidad Máxima
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
     const endTimeInput = document.getElementById("end-time");
@@ -72,14 +73,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const saveEventBtn = document.getElementById("saveEventBtn");
     const deleteEventBtn = document.getElementById("deleteEventBtn");
-    const viewRegistrationsBtn = document.getElementById("viewRegistrationsBtn"); // 🚀 NUEVO
+
+    // 🚀 El botón de ver inscritos se queda sin uso aquí, su funcionalidad de apertura es en HTML.
+    // Lo importante es el contenedor y el contador.
+    const registrationsBtnContainer = document.getElementById('registrations-button-container');
+    const currentRegisteredCount = document.getElementById('current-registered-count');
 
     let selectedEvent = null;
     let eventInitialState = null;
-
-    // 🚀 NUEVAS VARIABLES PARA INSCRITOS Y EL BOTÓN
-    const registrationsBtnContainer = document.getElementById('registrations-button-container');
-    const currentRegisteredCount = document.getElementById('current-registered-count');
 
     // --- FUNCIONES DE ESTADO (SE MODIFICAN CON CAPACITY) ---
     function captureEventState() {
@@ -118,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return fieldsChanged || fileChanged;
     }
 
-    // 🚀 NUEVA FUNCIÓN: Obtener inscritos y actualizar el contador
+    // 🚀 FUNCIÓN CLAVE: Obtener inscritos y actualizar el contador (Se llama en eventClick)
     async function loadEventRegistrationCount(eventId) {
         if (!eventId) {
             registrationsBtnContainer.style.display = 'none';
@@ -127,13 +128,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
+            // Llama a la nueva endpoint para el conteo
             const response = await fetch(`/api/events?action=getRegistrationCount&event_id=${eventId}`);
             const result = await response.json();
 
             if (result.success) {
                 const count = result.count || 0;
                 currentRegisteredCount.textContent = count;
-                registrationsBtnContainer.style.display = 'block';
+                registrationsBtnContainer.style.display = 'block'; // Mostrar el botón si hay un ID de evento
                 return count;
             } else {
                 console.error("Fallo al obtener el conteo de inscritos:", result.message);
@@ -150,46 +152,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // 🚀 NUEVA FUNCIÓN: Mostrar la lista de inscritos
-    async function viewEventRegistrations(eventId, eventTitle) {
-        if (!registrationsModal || !registrationsListBody) return;
-
-        registrationsEventTitle.textContent = `Lista de Inscritos - ${eventTitle}`;
-        registrationsListBody.innerHTML = '<tr><td colspan="3" class="text-center">Cargando inscritos...</td></tr>';
-
-        eventModal.hide(); // Ocultamos el modal de evento antes de mostrar el de lista
-        registrationsModal.show();
-
-        try {
-            const response = await fetch(`/api/events?action=getRegistrations&event_id=${eventId}`);
-            const result = await response.json();
-
-            if (result.success && result.data && result.data.length > 0) {
-                registrationsListBody.innerHTML = ''; // Limpiar
-                result.data.forEach((registration, index) => {
-                    const row = `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${registration.usuario_inscrito}</td>
-                            <td>${new Date(registration.registered_at).toLocaleString('es-ES', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</td>
-                        </tr>
-                    `;
-                    registrationsListBody.innerHTML += row;
-                });
-            } else {
-                registrationsListBody.innerHTML = '<tr><td colspan="3" class="text-center">No hay inscritos para este evento aún.</td></tr>';
-            }
-        } catch (error) {
-            console.error("Error al obtener la lista de inscritos:", error);
-            registrationsListBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error al cargar la lista de inscritos.</td></tr>';
-        }
-    }
+    // 🔴 ELIMINADA: La función viewEventRegistrations ha sido eliminada. La carga de datos
+    // y transición de modales se gestiona en adminCalendario.html con show.bs.modal.
 
 
     // --- FUNCIONES DEL CALENDARIO (SE MODIFICAN PARA EL CONTEO) ---
@@ -276,6 +240,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (event.end) {
                     const endDate = new Date(event.end);
                     endTimeInput.value = endDate.toTimeString().slice(0, 5);
+                    // Si la hora de fin es medianoche, y FullCalendar usa 'allDay: true' implícitamente, 
+                    // la fecha se puede adelantar un día. Aquí solo nos importa la hora.
                 }
 
                 deleteEventBtn.style.display = "inline-block";
@@ -321,17 +287,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentImageContainer.style.display = 'none';
         });
 
-        // 🚀 NUEVO MANEJADOR: Botón Ver Inscritos
-        if (viewRegistrationsBtn) {
-            viewRegistrationsBtn.addEventListener('click', () => {
-                if (selectedEvent && selectedEvent.id) {
-                    viewEventRegistrations(selectedEvent.id, selectedEvent.title);
-                } else if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta("Error: Evento no seleccionado.", "error");
-                }
-            });
-        }
-
+        // 🔴 ELIMINADO: Ya no se necesita un manejador de click para viewRegistrationsBtn,
+        // la funcionalidad es manejada por data-bs-toggle en adminCalendario.html.
 
         saveEventBtn.addEventListener("click", async () => {
             const id = eventIdInput.value;
@@ -353,7 +310,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const parsedCapacity = parseInt(capacity);
 
             // Permitimos 0 (aforo ilimitado), cadena vacía, o números positivos.
-            // NaN ocurre si el campo contiene texto.
             if (capacity.length > 0 && (isNaN(parsedCapacity) || parsedCapacity < 0)) {
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("No se puede colocar ese número en la capacidad máxima. Debe ser un número entero positivo o déjalo vacío/cero para aforo ilimitado.", "error");

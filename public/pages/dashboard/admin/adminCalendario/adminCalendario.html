@@ -236,9 +236,11 @@
                         </div>
 
                         <div id="registrations-button-container" class="mb-3" style="display:none;">
-                            <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal"
-                                data-bs-target="#registrationsModal" id="btnViewRegistrations">
-                                <i class="bi bi-people-fill me-2"></i> Ver Usuarios Inscritos (<span
+                            <button type="button" class="btn btn-warning w-100" 
+                                data-bs-toggle="modal"
+                                data-bs-target="#registrationsModal" 
+                                id="btnViewRegistrations"
+                                data-bs-dismiss="modal"> <i class="bi bi-people-fill me-2"></i> Ver Usuarios Inscritos (<span
                                     id="current-registered-count">0</span>)
                             </button>
                         </div>
@@ -300,11 +302,11 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-danger">
-                    <h5 class="modal-title fw-bold">
+                    <h5 class="modal-title fw-bold" id="registrationsEventTitle">
                         Lista de Usuarios Inscritos
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-toggle="modal"
+                        data-bs-target="#eventModal" aria-label="Close"></button>
                 </div>
 
                 <div class="modal-body">
@@ -326,7 +328,8 @@
                 </div>
 
                 <div class="modal-footer border-danger">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
+                        data-bs-target="#eventModal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -389,6 +392,9 @@
         async function loadEventRegistrations(eventId) {
             registrationsTableBody.innerHTML = ''; // Limpiar la tabla anterior
             registrationsEmptyMessage.style.display = 'none';
+            // Indicador de carga
+            registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center">Cargando inscritos...</td></tr>';
+
 
             try {
                 // Llama a la nueva endpoint que creamos en events.js
@@ -403,73 +409,67 @@
                             const username = reg.usuario_inscrito;
 
                             htmlContent += `
-                                <tr>
-                                    <td>${username}</td>
-                                    <td>${formatRegistrationDate(reg.registered_at)}</td>
-                                </tr>
-                            `;
+								<tr>
+									<td>${username}</td>
+									<td>${formatRegistrationDate(reg.registered_at)}</td>
+								</tr>
+							`;
                         });
                         registrationsTableBody.innerHTML = htmlContent;
                     } else {
+                        registrationsTableBody.innerHTML = ''; // Limpiar la tabla
                         registrationsEmptyMessage.style.display = 'block';
                     }
                 } else {
                     showAlert('Error', result.message || 'Fallo al cargar la lista de inscritos.', 'error');
-                    registrationsEmptyMessage.style.display = 'block';
+                    registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Error al cargar la lista.</td></tr>';
+                    registrationsEmptyMessage.style.display = 'none';
                 }
 
             } catch (error) {
                 console.error("Fallo al obtener los inscritos:", error);
                 showAlert('Error de Red', 'No se pudo conectar con el servidor para obtener los inscritos.', 'error');
-                registrationsEmptyMessage.style.display = 'block';
+                registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Error de conexión.</td></tr>';
+                registrationsEmptyMessage.style.display = 'none';
             }
         }
 
-        // 1. Manejador del click en el botón "Ver Usuarios Inscritos"
-        btnViewRegistrations.addEventListener('click', async () => {
+        // 🟢 NUEVO: Llamar a loadEventRegistrations cuando el modal de inscritos se abre
+        // Esto se dispara cuando se pulsa el botón en eventModal, gracias a data-bs-target.
+        document.getElementById('registrationsModal').addEventListener('show.bs.modal', async () => {
             const eventId = document.getElementById('eventId').value;
-            if (!eventId) {
-                showAlert('Error', 'No se ha encontrado el ID del evento.', 'error');
-                return;
-            }
+            const eventTitle = document.getElementById('title').value;
+            const registrationsEventTitle = document.getElementById("registrationsEventTitle");
 
-            // Ocultar el modal de edición/creación de evento temporalmente
-            eventModal.hide();
-
-            await loadEventRegistrations(eventId);
-
-            // Mostrar el modal de inscripciones
-            registrationsModal.show();
-        });
-
-
-        // 2. Manejar el cierre del Modal de Inscritos para volver al Modal de Evento
-        document.getElementById('registrationsModal').addEventListener('hidden.bs.modal', () => {
-            // Reabrir el modal de evento si estaba abierto
-            const eventId = document.getElementById('eventId').value;
             if (eventId) {
-                eventModal.show();
+                // Ajustar el título dinámicamente
+                registrationsEventTitle.textContent = `Lista de Usuarios Inscritos - ${eventTitle}`;
+
+                await loadEventRegistrations(eventId);
+            } else {
+                registrationsEventTitle.textContent = `Lista de Usuarios Inscritos`;
+                registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center">No se pudo cargar el evento.</td></tr>';
             }
         });
 
-        // 🔴 3. VALIDACIÓN DE CAPACIDAD ANTES DE GUARDAR
+        // 🔴 3. VALIDACIÓN DE CAPACIDAD ANTES DE GUARDAR (DEBE PERMANECER)
         saveEventBtn.addEventListener('click', (event) => {
-            // Obtenemos el valor y lo convertimos a número. Si está vacío, resultará en NaN o 0.
-            const capacityValue = parseInt(capacityInput.value, 10);
+            // Se usa parseInt(value) o parseInt(value, 10) para manejar el caso de cadena vacía como NaN.
+            const capacityValue = capacityInput.value.trim();
+            const parsedCapacity = parseInt(capacityValue);
 
-            // Validamos si es un número negativo.
-            if (!isNaN(capacityValue) && capacityValue < 0) {
-                // Prevenir el guardado si es un número negativo
+            // Permitimos cadena vacía, cero o números positivos.
+            if (capacityValue.length > 0 && (isNaN(parsedCapacity) || parsedCapacity < 0)) {
+                // Prevenir el guardado si es un número negativo o texto inválido
                 event.preventDefault();
                 event.stopPropagation();
 
                 // Mostrar la alerta de error
-                showAlert('Error de Capacidad', 'La capacidad máxima es incorrecta. No puede ser un número negativo.', 'error');
+                showAlert('Error de Capacidad', 'La capacidad máxima debe ser un número entero positivo, cero (para ilimitado) o dejarse vacío.', 'error');
 
                 return false; // Detiene el flujo de ejecución.
             }
-            // NOTA: La validación de que NO sea texto (solo números) se maneja en admin.js antes de enviar al servidor, 
-            // pero esta validación de negativo es la más crítica para el campo 'number'.
+            // NOTA: La lógica principal de guardado se ejecuta en admin.js si esta validación pasa.
         });
     </script>
 </body>
