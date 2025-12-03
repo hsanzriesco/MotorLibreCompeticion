@@ -64,6 +64,8 @@
 </head>
 
 <body>
+    <div id="alertas-container"></div>
+
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
         <a id="logo-link" href="./admin.html" class="navbar-brand d-flex align-items-center">
@@ -451,13 +453,16 @@
                     const data = await response.json();
 
                     if (data.success) {
+                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta(data.message, 'success');
                         ADD_RESULT_MODAL.hide();
                         loadResults();
                     } else {
+                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta('Error: ' + data.message, 'error');
                     }
                 } catch (error) {
+                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
                     mostrarAlerta('Error de conexión al guardar el resultado.', 'error');
                     console.error('Error al guardar:', error);
                 }
@@ -470,6 +475,7 @@
                 const resultToEdit = allResults.find(r => r.result_id === resultId);
 
                 if (!resultToEdit) {
+                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
                     mostrarAlerta("Resultado no encontrado.", 'warning');
                     return;
                 }
@@ -507,12 +513,15 @@
                     const data = await response.json();
 
                     if (data.success) {
+                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta(data.message, 'success');
                         loadResults();
                     } else {
+                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta('Error al eliminar: ' + data.message, 'error');
                     }
                 } catch (error) {
+                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
                     mostrarAlerta('Error de conexión al eliminar.', 'error');
                     console.error('Error al eliminar:', error);
                 }
