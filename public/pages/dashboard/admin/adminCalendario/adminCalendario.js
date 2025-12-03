@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // INICIALIZACIÓN DE VARIABLES Y ELEMENTOS
     // ----------------------------------------------------
     const calendarEl = document.getElementById("calendar");
+    // Asumimos que Bootstrap y las funciones mostrarAlerta están disponibles globalmente.
     const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
     const logoutConfirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'));
     const logoutBtn = document.getElementById('logout-btn');
@@ -97,15 +98,24 @@ document.addEventListener("DOMContentLoaded", () => {
         // Función para cargar eventos (fetch)
         events: async (fetchInfo, successCallback, failureCallback) => {
             try {
-                // ❗ RUTA CORREGIDA: Apunta a /api/events, que es la ruta manejada por events.js
+                // RUTA CORREGIDA: Apunta a /api/events, que es la ruta manejada por events.js
                 const res = await fetch("/api/events");
                 const data = await res.json();
 
                 if (data.success && Array.isArray(data.data)) {
                     // Mapear eventos si es necesario (ejemplo: añadir color)
                     const formattedEvents = data.data.map(e => ({
-                        ...e,
-                        // Asumir que todos los eventos de admin son rojos por defecto
+                        id: e.id,
+                        title: e.title,
+                        start: e.event_start, // Usar el campo correcto de tu DB
+                        end: e.event_end,     // Usar el campo correcto de tu DB
+                        // Propiedades extendidas para el modal de edición
+                        extendedProps: {
+                            description: e.description,
+                            location: e.location,
+                            image_url: e.image_url
+                        },
+                        // Color para admin, puedes usar uno diferente para distinguirlos visualmente
                         color: '#e50914'
                     }));
                     successCallback(formattedEvents);
@@ -123,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Al hacer clic en una fecha vacía (Crear nuevo evento)
         dateClick: (info) => {
             resetForm();
-            // Llenar la fecha, e iniciar horas con un valor por defecto (ej. 12:00)
+            // Llenar la fecha, e iniciar horas con un valor por defecto (ej. 12:00 a 14:00)
             startDateInput.value = info.dateStr;
             startTimeInput.value = '12:00';
             endTimeInput.value = '14:00';
@@ -137,6 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const e = info.event;
             const extendedProps = e.extendedProps;
 
+            resetForm(); // Limpiar antes de rellenar
+
             // 1. Rellenar ID y mostrar botón eliminar
             eventIdInput.value = e.id;
             deleteEventBtn.style.display = 'inline-block';
@@ -148,12 +160,20 @@ document.addEventListener("DOMContentLoaded", () => {
             locationInput.value = extendedProps.location || '';
 
             // 3. Rellenar fechas y horas
-            const start = new Date(e.start);
-            const end = new Date(e.end);
+            // FullCalendar ya maneja las fechas como objetos Date
+            const start = e.start;
+            const end = e.end;
 
-            startDateInput.value = start.toISOString().split('T')[0];
-            startTimeInput.value = start.toTimeString().substring(0, 5);
-            endTimeInput.value = end.toTimeString().substring(0, 5);
+            // Formatear la fecha a YYYY-MM-DD
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            // Formatear la hora a HH:mm
+            const formatTime = (date) => date.toTimeString().substring(0, 5);
+
+            startDateInput.value = formatDate(start);
+            startTimeInput.value = formatTime(start);
+            // El campo end puede ser null en eventos de todo el día o no estar bien definido, 
+            // usamos la fecha de inicio si end es null o no es un objeto Date válido.
+            endTimeInput.value = end ? formatTime(end) : '14:00';
 
             // 4. Rellenar/mostrar imagen
             const imageUrl = extendedProps.image_url;
@@ -168,36 +188,42 @@ document.addEventListener("DOMContentLoaded", () => {
             eventModal.show();
         },
 
-        // Al arrastrar un evento (Actualizar fecha/hora - Solo para fines de demostración)
-        eventDrop: (info) => {
-            // Aquí deberías llamar a tu API (PUT) para actualizar el evento.
-            const newStart = info.event.start.toISOString().substring(0, 16);
-            const newEnd = info.event.end.toISOString().substring(0, 16);
+        // Al arrastrar/soltar un evento (Actualizar fecha/hora)
+        eventDrop: async (info) => {
+            const e = info.event;
+            const id = e.id;
 
-            // Simulación de envío al servidor (descomentar y añadir fetch real)
-            /*
-            fetch(`/api/events?id=${info.event.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    start: newStart, 
-                    end: newEnd, 
-                    // Sólo enviar los campos que cambian
-                })
-            }).then(response => {
-                if (!response.ok) {
-                    mostrarAlerta('Error al guardar el movimiento.', 'error');
-                    info.revert(); // Vuelve el evento a su posición original
+            // Revertir visualmente antes de la llamada API en caso de error
+            info.revert();
+
+            // Recalcular las nuevas fechas/horas UTC
+            const newStart = e.start.toISOString().substring(0, 16);
+            const newEnd = e.end ? e.end.toISOString().substring(0, 16) : null;
+
+            // Datos mínimos para la actualización
+            const updateData = {
+                start: newStart,
+                end: newEnd,
+                // Opcional: puedes enviar el resto de datos si quieres
+            };
+
+            try {
+                const res = await fetch(`/api/events?id=${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (res.ok) {
+                    mostrarAlerta(`Evento '${e.title}' movido con éxito.`, 'exito', 2000);
+                    calendar.refetchEvents(); // Recargar para asegurar la consistencia
                 } else {
-                    mostrarAlerta(`Evento '${info.event.title}' movido con éxito.`, 'exito', 2000);
+                    const data = await res.json();
+                    mostrarAlerta(data.message || 'Error al guardar el movimiento.', 'error');
                 }
-            }).catch(() => {
+            } catch (error) {
+                console.error('Error de red al mover el evento:', error);
                 mostrarAlerta('Error de red al mover el evento.', 'error');
-                info.revert();
-            });
-            */
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(`Evento '${info.event.title}' movido a ${info.event.startStr}`, 'aviso', 2000);
             }
         }
     });
@@ -210,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------------------------------
     clearImageBtn.addEventListener('click', () => {
         imageFile.value = ''; // Limpiar el input de archivo
-        imageURL.value = ''; // Limpiar el campo oculto de URL
+        imageURL.value = ''; // Limpiar el campo oculto de URL (Esto indica al backend que debe borrar la imagen si existía)
         currentImageContainer.style.display = 'none'; // Ocultar la previsualización
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta('La imagen se eliminará al guardar.', 'aviso', 1500);
@@ -218,12 +244,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ----------------------------------------------------
-    // LÓGICA DEL MODAL: GUARDAR (CREAR/EDITAR)
+    // LÓGICA DEL MODAL: GUARDAR (CREAR/EDITAR) - POST/PUT
     // ----------------------------------------------------
     saveEventBtn.addEventListener('click', async () => {
         const id = eventIdInput.value;
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/events?id=${id}` : '/api/events';
+
+        if (!titleInput.value || !startDateInput.value || !startTimeInput.value || !endTimeInput.value) {
+            return mostrarAlerta("Por favor, rellena el título y las fechas/horas obligatorias.", 'error');
+        }
 
         // Recolectar datos del formulario
         const formData = new FormData();
@@ -240,27 +270,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Imagen (Subida o URL existente/vacia)
         if (imageFile.files.length > 0) {
+            // Se subió un archivo nuevo
             formData.append('imageFile', imageFile.files[0]);
-            formData.append('imageURL', ''); // Borrar URL si se sube archivo
+            // Importante: no enviar 'imageURL' en el FormData si hay un archivo, o enviar vacío si tu backend lo requiere
+            formData.append('imageURL', '');
         } else {
-            // Si no hay archivo, usar la URL existente (puede ser vacía si se usó clearImageBtn)
+            // Si no hay archivo nuevo, enviar la URL existente/vacía (para mantener o borrar)
             formData.append('imageURL', imageURL.value);
-        }
-
-        if (!titleInput.value || !startDateInput.value || !startTimeInput.value || !endTimeInput.value) {
-            return mostrarAlerta("Por favor, rellena el título y las fechas/horas obligatorias.", 'error');
         }
 
         try {
             saveEventBtn.disabled = true;
             const res = await fetch(url, {
                 method: method,
-                body: formData // FormData se envía sin header 'Content-Type'
+                body: formData // FormData se envía automáticamente como multipart/form-data
             });
 
             const data = await res.json();
 
-            if (data.success) {
+            if (res.ok && data.success) { // Usamos res.ok para verificar el estado HTTP 2xx
                 mostrarAlerta(`Evento ${id ? 'actualizado' : 'creado'} con éxito.`, 'exito');
                 eventModal.hide();
                 calendar.refetchEvents(); // Recargar el calendario
@@ -277,10 +305,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ----------------------------------------------------
-    // LÓGICA DEL MODAL: ELIMINAR
+    // LÓGICA DEL MODAL: ELIMINAR - DELETE
     // ----------------------------------------------------
 
-    deleteEventBtn.addEventListener('click', () => {
+    deleteEventBtn.addEventListener('click', async () => {
         const id = eventIdInput.value;
         if (!id) return;
 
@@ -288,24 +316,20 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Simulación de eliminación (descomentar y añadir fetch real)
-        /*
-        fetch(`/api/events?id=${id}`, { method: 'DELETE' })
-            .then(response => {
-                if (response.ok) {
-                    mostrarAlerta('Evento eliminado correctamente.', 'exito');
-                    eventModal.hide();
-                    calendar.refetchEvents();
-                } else {
-                    mostrarAlerta('Error al eliminar el evento.', 'error');
-                }
-            })
-            .catch(() => mostrarAlerta('Error de red al eliminar.', 'error'));
-        */
+        try {
+            const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
+            const data = await res.json();
 
-        // Lógica simulada de confirmación/eliminación
-        mostrarAlerta('Evento eliminado correctamente (simulado).', 'exito');
-        eventModal.hide();
-        calendar.refetchEvents();
+            if (res.ok && data.success) {
+                mostrarAlerta('Evento eliminado correctamente.', 'exito');
+                eventModal.hide();
+                calendar.refetchEvents();
+            } else {
+                mostrarAlerta(data.message || 'Error al eliminar el evento.', 'error');
+            }
+        } catch (error) {
+            console.error('Error de red al eliminar:', error);
+            mostrarAlerta('Error de red al eliminar.', 'error');
+        }
     });
 });
