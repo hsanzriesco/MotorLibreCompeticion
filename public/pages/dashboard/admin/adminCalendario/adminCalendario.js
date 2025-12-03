@@ -1,18 +1,15 @@
-document.addEventListener('DOMContentLoaded', function () {
-    // ======================================================
-    // ⚙️ CONFIGURACIÓN DE RUTAS Y ELEMENTOS
-    // ======================================================
-
-    // Nota: Reemplaza esta URL por la URL real de tu API.
-    const API_URL = 'http://localhost:3000/api/events';
-    const LOGIN_URL = '../../auth/login/login.html'; // URL de redirección tras logout
-
-    // Referencias a los Modales
+document.addEventListener("DOMContentLoaded", () => {
+    // ----------------------------------------------------
+    // INICIALIZACIÓN DE VARIABLES Y ELEMENTOS
+    // ----------------------------------------------------
+    const calendarEl = document.getElementById("calendar");
+    // Asumimos que Bootstrap y las funciones mostrarAlerta están disponibles globalmente.
     const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
-    const logoutModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'));
+    const logoutConfirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'));
+    const logoutBtn = document.getElementById('logout-btn');
+    const btnConfirmLogout = document.getElementById('btnConfirmLogout');
 
-    // Referencias a los Botones y Elementos del Modal de Evento
-    const eventForm = document.getElementById('eventForm');
+    // Elementos del formulario/modal de evento
     const eventIdInput = document.getElementById('eventId');
     const titleInput = document.getElementById('title');
     const descriptionInput = document.getElementById('description');
@@ -20,352 +17,319 @@ document.addEventListener('DOMContentLoaded', function () {
     const startDateInput = document.getElementById('start-date');
     const startTimeInput = document.getElementById('start-time');
     const endTimeInput = document.getElementById('end-time');
-    const imageFileInput = document.getElementById('imageFile');
-    const imageURLInput = document.getElementById('imageURL');
+    const deleteEventBtn = document.getElementById('deleteEventBtn');
+    const saveEventBtn = document.getElementById('saveEventBtn');
+    const imageFile = document.getElementById('imageFile');
+    const imageURL = document.getElementById('imageURL');
     const currentImageContainer = document.getElementById('currentImageContainer');
     const currentImagePreview = document.getElementById('currentImagePreview');
     const clearImageBtn = document.getElementById('clearImageBtn');
-    const saveEventBtn = document.getElementById('saveEventBtn');
-    const deleteEventBtn = document.getElementById('deleteEventBtn');
 
-    // Referencias de Cierre de Sesión
-    const logoutBtn = document.getElementById('logout-btn');
-    const btnConfirmLogout = document.getElementById('btnConfirmLogout');
-
-    // Inicialización del Calendario
-    const calendarEl = document.getElementById('calendar');
-    let calendar;
-
-
-    // ======================================================
-    // 🌐 FUNCIÓN FETCH GENÉRICA CON MANEJO DE TOKEN
-    // ======================================================
-
-    /**
-     * Realiza una solicitud fetch a la API con manejo de tokens.
-     * @param {string} url - URL de la API.
-     * @param {string} method - Método HTTP (GET, POST, PUT, DELETE).
-     * @param {Object} [body=null] - Cuerpo de la solicitud.
-     * @param {boolean} [isFormData=false] - Indica si el cuerpo es FormData.
-     * @returns {Promise<Object>} Respuesta JSON de la API.
-     */
-    async function apiFetch(url, method, body = null, isFormData = false) {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('No se encontró el token de autenticación.');
-            // Redirigir al login si no hay token
-            window.location.href = LOGIN_URL;
-            throw new Error('No autorizado');
-        }
-
-        const headers = {};
-        if (!isFormData) {
-            headers['Content-Type'] = 'application/json';
-        }
-        headers['Authorization'] = `Bearer ${token}`;
-
-        const config = {
-            method: method,
-            headers: headers,
-        };
-
-        if (body) {
-            config.body = isFormData ? body : JSON.stringify(body);
-        }
-
-        try {
-            const response = await fetch(url, config);
-
-            if (response.status === 401 || response.status === 403) {
-                // Token expirado o no válido
-                localStorage.removeItem('token');
-                mostrarAlerta('Sesión expirada. Por favor, vuelve a iniciar sesión.', 'error');
-                setTimeout(() => { window.location.href = LOGIN_URL; }, 1500);
-                return;
-            }
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error en la solicitud: ${response.status}`);
-            }
-
-            // Manejar 204 No Content
-            if (response.status === 204) {
-                return {};
-            }
-
-            return await response.json();
-
-        } catch (error) {
-            console.error('Error en la comunicación con la API:', error);
-            mostrarAlerta(error.message || 'Error de red.', 'error');
-            throw error;
-        }
+    // Comprobación de usuario administrador (Necesario para seguridad)
+    const stored = sessionStorage.getItem('usuario');
+    let usuario = null;
+    try {
+        usuario = stored ? JSON.parse(stored) : null;
+    } catch (e) {
+        console.error("Error al parsear usuario:", e);
     }
 
+    if (!usuario || usuario.role !== 'admin') {
+        // Redirigir si no es administrador (medida de seguridad básica)
+        window.location.href = '../../../index.html';
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta("Acceso denegado. Se requiere ser Administrador.", 'error');
+        }
+        return;
+    }
 
-    // ======================================================
-    // 📅 LÓGICA DEL CALENDARIO
-    // ======================================================
+    // Función para limpiar el formulario del modal
+    function resetForm() {
+        document.getElementById('eventForm').reset();
+        eventIdInput.value = '';
+        currentImageContainer.style.display = 'none';
+        deleteEventBtn.style.display = 'none';
+        // Asegurar que el título del modal sea 'Crear' por defecto
+        document.querySelector('#eventModal .modal-title').textContent = 'Crear Nuevo Evento';
+    }
 
-    function initializeCalendar() {
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'es',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            editable: true, // Permite arrastrar y redimensionar
-            selectable: true, // Permite seleccionar fechas para crear
-            dayMaxEvents: true,
+    // Al cerrar el modal, limpiamos el formulario
+    document.getElementById('eventModal').addEventListener('hidden.bs.modal', resetForm);
 
-            // Cargar eventos desde la API
-            events: async function (fetchInfo, successCallback, failureCallback) {
-                try {
-                    const data = await apiFetch(API_URL, 'GET');
-                    const events = data.events.map(event => ({
-                        id: event._id,
-                        title: event.title,
-                        start: event.start_date, // FullCalendar manejará la conversión a fecha/hora si incluye hora
-                        end: event.end_date,
+    // ----------------------------------------------------
+    // LÓGICA DE CIERRE DE SESIÓN (Usando el modal de Bootstrap)
+    // ----------------------------------------------------
+
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        logoutConfirmModal.show();
+    });
+
+    btnConfirmLogout.addEventListener('click', () => {
+        sessionStorage.removeItem("usuario");
+        logoutConfirmModal.hide();
+
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta("Cierre de sesión exitoso.", 'exito', 1200);
+        }
+
+        setTimeout(() => {
+            window.location.href = "../../../index.html";
+        }, 1200);
+    });
+
+    // ----------------------------------------------------
+    // INICIALIZACIÓN DEL CALENDARIO FULLCALENDAR
+    // ----------------------------------------------------
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        locale: "es",
+        editable: true, // Permitir arrastrar y redimensionar eventos
+        selectable: true, // Permitir seleccionar fechas
+
+        // 🟢 CONFIGURACIÓN VISUAL COMO EL CALENDARIO PÚBLICO
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+
+        // Función para cargar eventos (fetch)
+        events: async (fetchInfo, successCallback, failureCallback) => {
+            try {
+                // RUTA CORREGIDA: Apunta a /api/events, que es la ruta manejada por events.js
+                const res = await fetch("/api/events");
+                const data = await res.json();
+
+                if (data.success && Array.isArray(data.data)) {
+                    // Mapear eventos si es necesario (ejemplo: añadir color)
+                    const formattedEvents = data.data.map(e => ({
+                        id: e.id,
+                        title: e.title,
+                        start: e.event_start, // Usar el campo correcto de tu DB
+                        end: e.event_end,     // Usar el campo correcto de tu DB
+                        // Propiedades extendidas para el modal de edición
                         extendedProps: {
-                            description: event.description,
-                            location: event.location,
-                            image_url: event.image_url
-                        }
+                            description: e.description,
+                            location: e.location,
+                            image_url: e.image_url
+                        },
+                        // Color para admin, puedes usar uno diferente para distinguirlos visualmente
+                        color: '#e50914'
                     }));
-                    successCallback(events);
-                } catch (error) {
-                    failureCallback(error);
-                }
-            },
-
-            // Click en un día para CREAR evento
-            select: function (info) {
-                resetForm('Crear Nuevo Evento');
-                // Rellenar la fecha del inicio automáticamente (el día seleccionado)
-                startDateInput.value = info.startStr.split('T')[0];
-                // El campo end-date no lo usamos, solo las horas
-
-                // Mostrar el modal
-                eventModal.show();
-                calendar.unselect(); // Deseleccionar el rango en el calendario
-            },
-
-            // Click en un evento para EDITAR/VER
-            eventClick: function (info) {
-                const event = info.event;
-                resetForm('Editar Evento');
-
-                // Rellenar Formulario
-                eventIdInput.value = event.id;
-                titleInput.value = event.title;
-                descriptionInput.value = event.extendedProps.description || '';
-                locationInput.value = event.extendedProps.location || '';
-                imageURLInput.value = event.extendedProps.image_url || '';
-
-                // Extraer fecha y hora
-                const startDateTime = event.start;
-                const endDateTime = event.end;
-
-                if (startDateTime) {
-                    const startLocal = new Date(startDateTime).toLocaleString('sv').replace(' ', 'T').slice(0, 16); // Formato YYYY-MM-DDTHH:mm
-                    startDateInput.value = startLocal.split('T')[0];
-                    startTimeInput.value = startLocal.split('T')[1];
-                }
-
-                if (endDateTime) {
-                    const endLocal = new Date(endDateTime).toLocaleString('sv').replace(' ', 'T').slice(0, 16);
-                    endTimeInput.value = endLocal.split('T')[1];
+                    successCallback(formattedEvents);
                 } else {
-                    // Si no hay hora de fin, podemos intentar calcular una hora por defecto o dejar vacío
-                    endTimeInput.value = '';
+                    successCallback([]);
                 }
-
-                // Mostrar/Ocultar botón de eliminar y datos de imagen
-                deleteEventBtn.style.display = 'block';
-                displayCurrentImage(imageURLInput.value);
-
-                // Mostrar el modal
-                eventModal.show();
-            },
-
-            // Drag and Drop (Mover Evento)
-            eventDrop: function (info) {
-                handleEventUpdateDate(info.event);
-            },
-
-            // Resize (Cambiar duración del Evento)
-            eventResize: function (info) {
-                handleEventUpdateDate(info.event);
+            } catch (err) {
+                failureCallback(err);
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Error al cargar eventos: Verifique la API /api/events.", 'error');
+                }
             }
-        });
+        },
 
-        calendar.render();
-    }
+        // Al hacer clic en una fecha vacía (Crear nuevo evento)
+        dateClick: (info) => {
+            resetForm();
+            // Llenar la fecha, e iniciar horas con un valor por defecto (ej. 12:00 a 14:00)
+            startDateInput.value = info.dateStr;
+            startTimeInput.value = '12:00';
+            endTimeInput.value = '14:00';
 
+            document.querySelector('#eventModal .modal-title').textContent = 'Crear Nuevo Evento';
+            eventModal.show();
+        },
 
-    // ======================================================
-    // 💾 LÓGICA DE GESTIÓN DE EVENTOS (CRUD)
-    // ======================================================
+        // Al hacer clic en un evento existente (Editar evento)
+        eventClick: (info) => {
+            const e = info.event;
+            const extendedProps = e.extendedProps;
 
-    // Maneja la actualización de fecha/hora por drag/drop o resize
-    async function handleEventUpdateDate(event) {
-        // FullCalendar ya maneja el cambio visual. Ahora actualizamos la BD.
-        const start = event.start.toISOString();
-        const end = event.end ? event.end.toISOString() : null;
+            resetForm(); // Limpiar antes de rellenar
 
-        const eventData = {
-            start_date: start,
-            end_date: end
-            // Aquí solo actualizamos fechas, el resto de datos se mantienen.
-        };
+            // 1. Rellenar ID y mostrar botón eliminar
+            eventIdInput.value = e.id;
+            deleteEventBtn.style.display = 'inline-block';
+            document.querySelector('#eventModal .modal-title').textContent = 'Editar Evento';
 
-        try {
-            await apiFetch(`${API_URL}/${event.id}/date`, 'PUT', eventData);
-            mostrarAlerta('Evento actualizado correctamente.', 'success');
-        } catch (error) {
-            mostrarAlerta('Error al actualizar el evento.', 'error');
-            event.revert(); // Revertir el cambio visual si falla la API
+            // 2. Rellenar campos de texto y descripción
+            titleInput.value = e.title;
+            descriptionInput.value = extendedProps.description || '';
+            locationInput.value = extendedProps.location || '';
+
+            // 3. Rellenar fechas y horas
+            // FullCalendar ya maneja las fechas como objetos Date
+            const start = e.start;
+            const end = e.end;
+
+            // Formatear la fecha a YYYY-MM-DD
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            // Formatear la hora a HH:mm
+            const formatTime = (date) => date.toTimeString().substring(0, 5);
+
+            startDateInput.value = formatDate(start);
+            startTimeInput.value = formatTime(start);
+            // El campo end puede ser null en eventos de todo el día o no estar bien definido, 
+            // usamos la fecha de inicio si end es null o no es un objeto Date válido.
+            endTimeInput.value = end ? formatTime(end) : '14:00';
+
+            // 4. Rellenar/mostrar imagen
+            const imageUrl = extendedProps.image_url;
+            imageURL.value = imageUrl || '';
+            if (imageUrl) {
+                currentImagePreview.src = imageUrl;
+                currentImageContainer.style.display = 'block';
+            } else {
+                currentImageContainer.style.display = 'none';
+            }
+
+            eventModal.show();
+        },
+
+        // Al arrastrar/soltar un evento (Actualizar fecha/hora)
+        eventDrop: async (info) => {
+            const e = info.event;
+            const id = e.id;
+
+            // Revertir visualmente antes de la llamada API en caso de error
+            info.revert();
+
+            // Recalcular las nuevas fechas/horas UTC
+            const newStart = e.start.toISOString().substring(0, 16);
+            const newEnd = e.end ? e.end.toISOString().substring(0, 16) : null;
+
+            // Datos mínimos para la actualización
+            const updateData = {
+                start: newStart,
+                end: newEnd,
+                // Opcional: puedes enviar el resto de datos si quieres
+            };
+
+            try {
+                const res = await fetch(`/api/events?id=${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (res.ok) {
+                    mostrarAlerta(`Evento '${e.title}' movido con éxito.`, 'exito', 2000);
+                    calendar.refetchEvents(); // Recargar para asegurar la consistencia
+                } else {
+                    const data = await res.json();
+                    mostrarAlerta(data.message || 'Error al guardar el movimiento.', 'error');
+                }
+            } catch (error) {
+                console.error('Error de red al mover el evento:', error);
+                mostrarAlerta('Error de red al mover el evento.', 'error');
+            }
         }
-    }
+    });
+
+    calendar.render();
 
 
-    async function saveEvent(event) {
-        event.preventDefault();
+    // ----------------------------------------------------
+    // LÓGICA DEL MODAL: QUITAR IMAGEN
+    // ----------------------------------------------------
+    clearImageBtn.addEventListener('click', () => {
+        imageFile.value = ''; // Limpiar el input de archivo
+        imageURL.value = ''; // Limpiar el campo oculto de URL (Esto indica al backend que debe borrar la imagen si existía)
+        currentImageContainer.style.display = 'none'; // Ocultar la previsualización
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('La imagen se eliminará al guardar.', 'aviso', 1500);
+        }
+    });
+
+    // ----------------------------------------------------
+    // LÓGICA DEL MODAL: GUARDAR (CREAR/EDITAR) - POST/PUT
+    // ----------------------------------------------------
+    saveEventBtn.addEventListener('click', async () => {
+        const id = eventIdInput.value;
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/events?id=${id}` : '/api/events';
 
         if (!titleInput.value || !startDateInput.value || !startTimeInput.value || !endTimeInput.value) {
-            mostrarAlerta('Por favor, rellena los campos obligatorios (*).', 'error');
-            return;
+            return mostrarAlerta("Por favor, rellena el título y las fechas/horas obligatorias.", 'error');
         }
 
-        const id = eventIdInput.value;
-        const isNew = !id;
-        const url = isNew ? API_URL : `${API_URL}/${id}`;
-        const method = isNew ? 'POST' : 'PUT';
+        // Recolectar datos del formulario
+        const formData = new FormData();
+        formData.append('title', titleInput.value);
+        formData.append('description', descriptionInput.value);
+        formData.append('location', locationInput.value);
 
         // Combinar fecha y hora
         const startDateTime = `${startDateInput.value}T${startTimeInput.value}:00`;
         const endDateTime = `${startDateInput.value}T${endTimeInput.value}:00`;
 
-        // Crear FormData para manejar la imagen
-        const formData = new FormData();
-        formData.append('title', titleInput.value);
-        formData.append('description', descriptionInput.value);
-        formData.append('location', locationInput.value);
-        formData.append('start_date', startDateTime);
-        formData.append('end_date', endDateTime);
-        formData.append('image_url', imageURLInput.value); // URL de imagen existente (o vacía/null)
+        formData.append('start', startDateTime);
+        formData.append('end', endDateTime);
 
-        if (imageFileInput.files.length > 0) {
-            formData.append('imageFile', imageFileInput.files[0]); // Nuevo archivo de imagen
+        // Imagen (Subida o URL existente/vacia)
+        if (imageFile.files.length > 0) {
+            // Se subió un archivo nuevo
+            formData.append('imageFile', imageFile.files[0]);
+            // Importante: no enviar 'imageURL' en el FormData si hay un archivo, o enviar vacío si tu backend lo requiere
+            formData.append('imageURL', '');
+        } else {
+            // Si no hay archivo nuevo, enviar la URL existente/vacía (para mantener o borrar)
+            formData.append('imageURL', imageURL.value);
         }
 
         try {
-            const data = await apiFetch(url, method, formData, true); // Es FormData
+            saveEventBtn.disabled = true;
+            const res = await fetch(url, {
+                method: method,
+                body: formData // FormData se envía automáticamente como multipart/form-data
+            });
 
-            mostrarAlerta(`Evento ${isNew ? 'creado' : 'actualizado'} correctamente.`, 'success');
-            eventModal.hide();
-            calendar.refetchEvents(); // Recargar el calendario
+            const data = await res.json();
+
+            if (res.ok && data.success) { // Usamos res.ok para verificar el estado HTTP 2xx
+                mostrarAlerta(`Evento ${id ? 'actualizado' : 'creado'} con éxito.`, 'exito');
+                eventModal.hide();
+                calendar.refetchEvents(); // Recargar el calendario
+            } else {
+                mostrarAlerta(data.message || `Error al ${id ? 'actualizar' : 'crear'} el evento.`, 'error');
+            }
 
         } catch (error) {
-            // La función apiFetch ya muestra la alerta
+            console.error('Error al guardar evento:', error);
+            mostrarAlerta('Error de red al conectar con el servidor.', 'error');
+        } finally {
+            saveEventBtn.disabled = false;
         }
-    }
+    });
 
+    // ----------------------------------------------------
+    // LÓGICA DEL MODAL: ELIMINAR - DELETE
+    // ----------------------------------------------------
 
-    async function deleteEvent() {
+    deleteEventBtn.addEventListener('click', async () => {
         const id = eventIdInput.value;
         if (!id) return;
 
-        if (!confirm('¿Estás seguro de que quieres eliminar este evento? Esta acción es irreversible.')) {
+        if (!confirm('¿Estás seguro de que quieres eliminar este evento?')) {
             return;
         }
 
         try {
-            // Nota: Asume que tu API maneja la eliminación de la imagen asociada.
-            await apiFetch(`${API_URL}/${id}`, 'DELETE');
+            const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
+            const data = await res.json();
 
-            mostrarAlerta('Evento eliminado correctamente.', 'success');
-            eventModal.hide();
-            calendar.refetchEvents();
-
+            if (res.ok && data.success) {
+                mostrarAlerta('Evento eliminado correctamente.', 'exito');
+                eventModal.hide();
+                calendar.refetchEvents();
+            } else {
+                mostrarAlerta(data.message || 'Error al eliminar el evento.', 'error');
+            }
         } catch (error) {
-            // La función apiFetch ya muestra la alerta
-        }
-    }
-
-
-    // ======================================================
-    // 🖼️ LÓGICA DE IMAGEN Y FORMULARIO
-    // ======================================================
-
-    function resetForm(title) {
-        eventForm.reset();
-        document.querySelector('#eventModalLabel').textContent = title;
-        eventIdInput.value = '';
-        imageURLInput.value = '';
-        currentImageContainer.style.display = 'none';
-        deleteEventBtn.style.display = 'none';
-
-        // Resetear el input de archivo por seguridad
-        imageFileInput.value = '';
-    }
-
-    function displayCurrentImage(url) {
-        if (url) {
-            currentImagePreview.src = url;
-            currentImageContainer.style.display = 'block';
-        } else {
-            currentImageContainer.style.display = 'none';
-        }
-    }
-
-    clearImageBtn.addEventListener('click', () => {
-        // Esto elimina la referencia a la URL existente y oculta la previsualización
-        imageURLInput.value = '';
-        currentImageContainer.style.display = 'none';
-        // Esto resetea cualquier archivo que haya sido seleccionado por el usuario en esta sesión
-        imageFileInput.value = '';
-    });
-
-    imageFileInput.addEventListener('change', () => {
-        // Si se selecciona un nuevo archivo, anula la URL existente
-        if (imageFileInput.files.length > 0) {
-            imageURLInput.value = '';
-            currentImageContainer.style.display = 'none';
+            console.error('Error de red al eliminar:', error);
+            mostrarAlerta('Error de red al eliminar.', 'error');
         }
     });
-
-    // ======================================================
-    // 🚪 LÓGICA DE CIERRE DE SESIÓN
-    // ======================================================
-
-    logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        logoutModal.show();
-    });
-
-    btnConfirmLogout.addEventListener('click', () => {
-        // Simular la acción de logout (limpiar el token y redirigir)
-        localStorage.removeItem('token');
-        logoutModal.hide();
-        mostrarAlerta('Cierre de sesión exitoso.', 'success');
-        setTimeout(() => {
-            window.location.href = LOGIN_URL;
-        }, 500);
-    });
-
-    // ======================================================
-    // 🚀 INICIALIZACIÓN
-    // ======================================================
-
-    // Asignar manejadores de eventos principales
-    saveEventBtn.addEventListener('click', saveEvent);
-    deleteEventBtn.addEventListener('click', deleteEvent);
-
-    // Inicializar el calendario
-    initializeCalendar();
 });
