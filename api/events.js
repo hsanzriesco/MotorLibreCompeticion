@@ -96,8 +96,24 @@ export default async function handler(req, res) {
         // MANEJADOR GET
         // ===============================================
         if (req.method === "GET") {
-            
-            // 🔑 NUEVO: GET: Obtener TODOS los resultados de carrera para el panel de administración
+
+            // 🔑 NUEVO: GET: Obtener lista simple de todos los EVENTOS (ID y Título)
+            if (action === 'getAllEventsList') {
+                const result = await client.query(
+                    `SELECT id, title FROM events ORDER BY event_start DESC`
+                );
+                return res.status(200).json({ success: true, data: result.rows });
+            }
+
+            // 🔑 NUEVO: GET: Obtener lista simple de todos los USUARIOS (ID y Nombre)
+            if (action === 'getAllUsersList') {
+                const result = await client.query(
+                    `SELECT id, name FROM users ORDER BY name ASC`
+                );
+                return res.status(200).json({ success: true, data: result.rows });
+            }
+
+            // 🔑 NUEVO (YA ESTABA): GET: Obtener TODOS los resultados de carrera para el panel de administración
             if (action === 'getAllResults') {
                 const result = await client.query(
                     `SELECT er.result_id, er.event_id, er.user_id, er.position, er.best_lap_time, u.name AS user 
@@ -193,8 +209,8 @@ export default async function handler(req, res) {
         // MANEJADOR POST
         // ===============================================
         if (req.method === "POST") {
-            
-            // 🔑 NUEVO: POST: Añadir un resultado de carrera
+
+            // 🔑 NUEVO (YA ESTABA): POST: Añadir un resultado de carrera
             if (action === 'addResult') {
                 const jsonBody = await readJsonBody(req);
                 const { event_id, user_id, position, best_lap_time, user } = jsonBody;
@@ -213,7 +229,7 @@ export default async function handler(req, res) {
                 return res.status(201).json({ success: true, message: "Resultado añadido correctamente.", resultId: result.rows[0].result_id });
             }
             // ----------------------------------------------------
-            
+
             // POST: Registrar inscripción 
             if (action === 'register') {
                 const jsonBody = await readJsonBody(req);
@@ -335,8 +351,8 @@ export default async function handler(req, res) {
         // MANEJADOR PUT 
         // ===============================================
         if (req.method === "PUT") {
-            
-            // 🔑 NUEVO: PUT: Editar un resultado de carrera
+
+            // 🔑 NUEVO (YA ESTABA): PUT: Editar un resultado de carrera
             if (action === 'editResult') {
                 const jsonBody = await readJsonBody(req);
                 const { result_id, event_id, user_id, position, best_lap_time, user } = jsonBody;
@@ -360,7 +376,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, message: "Resultado actualizado correctamente." });
             }
             // ----------------------------------------------------
-            
+
             // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
 
@@ -405,8 +421,8 @@ export default async function handler(req, res) {
         // MANEJADOR DELETE 
         // ===============================================
         if (req.method === "DELETE") {
-            
-            // 🔑 NUEVO: DELETE: Eliminar un resultado de carrera
+
+            // 🔑 NUEVO (YA ESTABA): DELETE: Eliminar un resultado de carrera
             if (action === 'deleteResult') {
                 const { result_id } = req.query;
 
