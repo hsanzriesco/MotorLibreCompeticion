@@ -116,6 +116,7 @@ export default async function handler(req, res) {
             // 🔑 MODIFICADO: GET: Obtener TODOS los resultados de carrera para el panel de administración
             if (action === 'getAllResults') {
                 const result = await client.query(
+                    // 🟢 Se incluye la columna er.points
                     `SELECT er.result_id, er.event_id, er.user_id, er.position, er.best_lap_time, er.points, u.name AS user 
                      FROM event_results er
                      JOIN users u ON er.user_id = u.id 
@@ -216,13 +217,13 @@ export default async function handler(req, res) {
                 // 🔑 Incluir 'points'
                 const { event_id, user_id, position, best_lap_time, user, points } = jsonBody;
 
-                // 🔑 Validar 'points'
+                // 🔑 Validar 'points' (ya que el campo no es disabled en admin.html, debe existir)
                 if (!event_id || !user_id || !position || !best_lap_time || !user || points === undefined) {
                     return res.status(400).json({ success: false, message: "Faltan campos obligatorios para añadir el resultado (incluyendo puntos)." });
                 }
 
                 const result = await client.query(
-                    // 🔑 Añadir la columna points y el valor $6
+                    // 🟢 Añadir la columna points y el valor $6
                     `INSERT INTO event_results (event_id, user_id, position, best_lap_time, "user", points) 
                      VALUES ($1, $2, $3, $4, $5, $6) 
                      RETURNING result_id`,
@@ -367,7 +368,7 @@ export default async function handler(req, res) {
                 }
 
                 const result = await client.query(
-                    // 🔑 Añadir la columna points al UPDATE y el valor $6
+                    // 🟢 Añadir la columna points al UPDATE y el valor $6
                     `UPDATE event_results 
                      SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, "user" = $5, points = $6
                      WHERE result_id = $7 
@@ -428,7 +429,7 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "DELETE") {
 
-            // 🔑 NUEVO (YA ESTABA): DELETE: Eliminar un resultado de carrera
+            // 🔑 DELETE: Eliminar un resultado de carrera
             if (action === 'deleteResult') {
                 const { result_id } = req.query;
 
@@ -494,7 +495,11 @@ export default async function handler(req, res) {
 
         let errorMessage = 'Error interno del servidor.';
 
-        if (error.message.includes('Error al parsear el cuerpo JSON')) {
+        // 🚨 Manejo de errores de PostgreSQL más específicos
+        if (error.code === '42703' && error.message.includes('points')) {
+            // Este es el error más probable: columna 'points' no existe.
+            errorMessage = 'Error de Base de Datos: La columna "points" no existe en la tabla "event_results".';
+        } else if (error.message.includes('Error al parsear el cuerpo JSON')) {
             errorMessage = 'Error de formato de datos (JSON) en la solicitud.';
         } else if (error.message.includes('Cloudinary Upload Failed')) {
             errorMessage = `Error al subir la imagen: ${error.message}`;
