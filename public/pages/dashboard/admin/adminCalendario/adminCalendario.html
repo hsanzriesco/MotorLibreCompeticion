@@ -32,6 +32,7 @@
             box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
         }
 
+        /* ... (el resto de tus estilos personalizados) ... */
         .btn-danger {
             background-color: #e50914;
             border: none;
@@ -89,12 +90,17 @@
             justify-content: center;
             gap: 10px;
         }
+
+        /* Estilos para el botón de cerrar en el offcanvas para que sea visible */
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
     </style>
 </head>
 
 <body>
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
-        <a href="../admin.html" class="navbar-brand d-flex align-items-center">
+        <a id="logo-link" href="../admin.html" class="navbar-brand d-flex align-items-center">
             <img src="../../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
         </a>
 
@@ -111,16 +117,32 @@
             <h5 class="offcanvas-title">Menú Administrador</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
+
         <div class="offcanvas-body">
+
             <a href="./adminCalendario.html" class="d-block text-danger fw-bold mb-2">
-                <i class="bi bi-calendar-event"></i> Gestión de Eventos
+                Gestión de Eventos
             </a>
-            <a href="../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
+
+            <a href="../lugares/adminLugares.html" class="d-block text-light mb-2">
+                Gestión de Lugares
+            </a>
+
+            <a href="../user/users.html" class="d-block text-light mb-2">
+                Gestionar Usuarios
+            </a>
+
             <hr class="border-secondary" />
-            <a href="../admin.html" class="d-block text-light mb-2">Volver al Inicio</a>
-            <a href="#" id="logout-btn" class="d-block text-danger">
-                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+
+            <a id="menu-inicio" href="../admin.html" class="d-block text-light mb-2">
+                Volver al Inicio
             </a>
+
+            <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
+                data-bs-target="#logoutConfirmModal">
+                Cerrar sesión
+            </a>
+
         </div>
     </div>
 
@@ -203,6 +225,26 @@
                     <button id="saveEventBtn" type="button" class="btn btn-danger">
                         <i class="bi bi-save"></i> Guardar
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
