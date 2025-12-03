@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
         events: async (fetchInfo, successCallback, failureCallback) => {
             try {
                 // ❗ AQUI DEBE IR LA RUTA A TU API O SERVIDOR QUE DEVUELVE LOS EVENTOS
-                const res = await fetch("/api/admin/events"); 
+                const res = await fetch("/api/events"); 
                 const data = await res.json();
 
                 if (data.success && Array.isArray(data.data)) {
