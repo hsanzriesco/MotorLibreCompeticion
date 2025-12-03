@@ -149,8 +149,7 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 🟢 Opcional: Aquí podrías añadir lógica para verificar si quedan cupos (capacidad_max > num_inscritos)
-                /*
+                // 🟢 NUEVO/MODIFICADO: Verificar si quedan cupos (capacidad_max > num_inscritos)
                 const capacityCheck = await client.query(`
                     SELECT 
                         e.capacidad_max, 
@@ -163,11 +162,12 @@ export default async function handler(req, res) {
 
                 if (capacityCheck.rows.length > 0) {
                     const { capacidad_max, num_inscritos } = capacityCheck.rows[0];
-                    if (capacidad_max > 0 && num_inscritos >= capacidad_max) {
-                         return res.status(403).json({ success: false, message: "Aforo completo. No se puede realizar la inscripción." });
+                    const maxCapacity = parseInt(capacidad_max); // Asegurar que sea número
+
+                    if (maxCapacity > 0 && num_inscritos >= maxCapacity) {
+                        return res.status(403).json({ success: false, message: "Aforo completo. No se puede realizar la inscripción." });
                     }
                 }
-                */
 
                 // 2. Obtener el nombre del usuario y el título del evento
                 const dataQuery = `
@@ -310,8 +310,16 @@ export default async function handler(req, res) {
 
             // DELETE: Eliminar evento (Lógica existente)
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
-            await client.query("DELETE FROM events WHERE id = $1", [id]);
-            return res.status(200).json({ success: true, message: "Evento eliminado correctamente." });
+
+            // 🟢 NUEVO: Eliminar inscripciones relacionadas antes de eliminar el evento
+            await client.query("DELETE FROM event_registrations WHERE event_id = $1", [id]);
+
+            // Eliminar el evento
+            const deleteResult = await client.query("DELETE FROM events WHERE id = $1 RETURNING id", [id]);
+
+            if (deleteResult.rows.length === 0) return res.status(404).json({ success: false, message: "Evento no encontrado para eliminar." });
+
+            return res.status(200).json({ success: true, message: "Evento y sus inscripciones relacionadas eliminados correctamente." });
         }
 
         // ===============================================
@@ -340,7 +348,7 @@ export default async function handler(req, res) {
         } else if (error.code === '42601') {
             errorMessage = 'Error de sintaxis SQL. Revise que la tabla "event_registrations" y sus columnas (user_id, event_id, registered_at) existan y estén escritas correctamente.';
         } else if (error.code === '42P01') {
-            errorMessage = `Error: La tabla requerida (${error.message.match(/"(.*?)"/) ? error.message.match(/"(.*?)"/)[1] : 'desconocida'}) no existe en la base de datos de Neon.`;
+            errorMessage = `Error: La tabla requerida (${error.message.match(/"(.*?)"/) ? error.message.match(/"(.*?)"/)[1] : 'desconocida'}) no existe en la base de datos.`;
         }
 
 

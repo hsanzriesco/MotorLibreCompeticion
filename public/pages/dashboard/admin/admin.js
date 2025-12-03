@@ -30,12 +30,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const titleInput = document.getElementById("title");
     const descriptionInput = document.getElementById("description");
     const locationInput = document.getElementById("location");
-    // 💡 NUEVO: Variable para el input de capacidad
+    // 💡 Modificado: Variable para el input de capacidad
     const capacityInput = document.getElementById("capacity");
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
     const endTimeInput = document.getElementById("end-time");
     const eventIdInput = document.getElementById("eventId");
+
+    // 🚀 NUEVO: Variables para la sección de inscritos
+    const registrationsSection = document.getElementById("registrationsSection");
+    const registrationsCount = document.getElementById("registrations-count");
+    const registrationsList = document.getElementById("registrations-list");
+    const noRegistrationsMessage = document.getElementById("no-registrations-message");
 
     const imageFileInput = document.getElementById("imageFile");
     const imageURLInput = document.getElementById("imageURL");
@@ -111,6 +117,80 @@ document.addEventListener("DOMContentLoaded", async () => {
         return fieldsChanged || fileChanged;
     }
 
+    // 🚀 NUEVA FUNCIÓN: CARGA Y MUESTRA INSCRITOS
+    /**
+     * Carga y renderiza la lista de inscritos para un evento dado.
+     * @param {string} eventId
+     */
+    async function loadEventRegistrations(eventId) {
+        if (!eventId) {
+            registrationsSection.style.display = 'none';
+            return;
+        }
+
+        registrationsSection.style.display = 'block';
+        registrationsList.innerHTML = ''; // Limpiar lista previa
+        registrationsCount.textContent = 'Cargando...';
+
+        try {
+            const response = await fetch(`/api/events?action=getRegistrations&event_id=${eventId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const registrations = data.registrations;
+                const { num_inscritos, capacidad_max } = data.capacityInfo;
+
+                // 1. Actualizar el contador de inscritos
+                const maxCapacityDisplay = capacidad_max === 0 ? '∞' : capacidad_max;
+                registrationsCount.textContent = `${num_inscritos}/${maxCapacityDisplay}`;
+
+                if (registrations.length === 0) {
+                    // Mostrar mensaje de no inscritos
+                    const p = document.createElement('p');
+                    p.classList.add('text-muted', 'text-center', 'small');
+                    p.textContent = 'Aún no hay inscripciones.';
+                    registrationsList.appendChild(p);
+                } else {
+                    // 2. Crear y renderizar la lista
+                    const ul = document.createElement('ul');
+                    ul.classList.add('list-group', 'list-group-flush');
+
+                    registrations.forEach(reg => {
+                        const li = document.createElement('li');
+                        // Usar estilos de bootstrap para listas oscuras
+                        li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center', 'bg-dark', 'text-light', 'border-secondary');
+
+                        // Formatear la fecha de registro
+                        const registeredAt = new Date(reg.registered_at).toLocaleDateString('es-ES', {
+                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        });
+
+                        li.innerHTML = `
+                            <div>
+                                <i class="bi bi-person-circle text-danger me-2"></i>
+                                <strong class="text-white">${reg.usuario_inscrito}</strong> 
+                                <small class="text-muted">(ID: ${reg.user_id})</small>
+                            </div>
+                            <span class="badge bg-secondary">${registeredAt}</span>
+                        `;
+                        ul.appendChild(li);
+                    });
+
+                    registrationsList.appendChild(ul);
+                }
+            } else {
+                console.error("Error al obtener inscripciones:", data.message);
+                registrationsCount.textContent = 'Error';
+            }
+
+        } catch (error) {
+            console.error("Fetch error:", error);
+            registrationsCount.textContent = 'Error de conexión';
+        }
+    }
+    // 🚀 FIN NUEVA FUNCIÓN
+
+
     // --- FIN FUNCIONES DE ESTADO ---
 
 
@@ -155,6 +235,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 eventIdInput.value = "";
                 // 💡 Nuevo: Resetear capacidad a 0 al crear un evento
                 capacityInput.value = 0;
+                // 🚀 NUEVO: Ocultar sección de inscritos al crear
+                registrationsSection.style.display = 'none';
                 deleteEventBtn.style.display = "none";
 
                 imageFileInput.value = "";
@@ -202,6 +284,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 deleteEventBtn.style.display = "inline-block";
                 eventInitialState = captureEventState(); // 🔑 NUEVO: Capturar estado inicial (cargado)
+
+                // 🚀 NUEVO: Cargar la lista de inscritos
+                loadEventRegistrations(event.id);
+
                 eventModal.show();
             },
 
