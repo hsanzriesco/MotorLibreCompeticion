@@ -277,7 +277,6 @@
                         <table class="table table-dark table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th>#</th>
                                     <th>Nombre de Usuario</th>
                                     <th>Fecha de Inscripción</th>
                                 </tr>
@@ -361,13 +360,11 @@
                     if (result.data.length > 0) {
                         let htmlContent = '';
                         result.data.forEach((reg, index) => {
-                            // ❌ MODIFICADO: Eliminados el manejo de email y garaje
                             // La DB solo nos devuelve 'id', 'user_id', 'usuario_inscrito', 'registered_at'
                             const username = reg.usuario_inscrito;
 
                             htmlContent += `
                                 <tr>
-                                    <td>${index + 1}</td>
                                     <td>${username}</td> 
                                     <td>${formatRegistrationDate(reg.registered_at)}</td>
                                 </tr>
