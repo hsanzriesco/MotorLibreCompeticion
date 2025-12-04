@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputNombre = document.getElementById("nombre_evento");
     const inputDescripcion = document.getElementById("descripcion");
     const inputImagen = document.getElementById("imagen_club");
-    const inputFecha = document.getElementById("fecha_creacion");
 
     async function cargarClubes() {
         try {
@@ -77,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
             inputId.value = c.id;
             inputNombre.value = c.nombre_evento;
             inputDescripcion.value = c.descripcion;
-            inputFecha.value = c.fecha_creacion;
             inputImagen.value = "";
 
             mostrarAlerta("Club cargado para edición", "info");
@@ -97,7 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("nombre_evento", inputNombre.value);
         formData.append("descripcion", inputDescripcion.value);
-        formData.append("fecha_creacion", inputFecha.value);
 
         if (inputImagen.files.length > 0) {
             formData.append("imagen_club", inputImagen.files[0]);
