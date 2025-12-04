@@ -1,52 +1,48 @@
+// adminClubes.js
+
 document.addEventListener("DOMContentLoaded", () => {
 
-    const listaClubes = document.getElementById("lista-clubes");
-    const formClub = document.getElementById("form-club");
+    const tabla = document.getElementById("tabla-clubes");
+    const form = document.getElementById("club-form");
 
-    const inputNombre = document.getElementById("nombre_evento");
-    const inputDescripcion = document.getElementById("descripcion");
-    const inputImagen = document.getElementById("imagen_club");
+    const idInput = document.getElementById("club-id");
+    const nombreInput = document.getElementById("nombre_evento");
+    const descripcionInput = document.getElementById("descripcion");
+    const imagenInput = document.getElementById("imagen_club");
+    const fechaInput = document.getElementById("fecha_creacion");
 
-    // =====================================================================================
-    // CARGAR CLUBES EXISTENTES
-    // =====================================================================================
+    // ==========================================================
+    // CARGAR CLUBES
+    // ==========================================================
     async function cargarClubes() {
         try {
             const res = await fetch("/api/clubs");
 
             if (!res.ok) {
-                mostrarAlerta("Error al cargar los clubes", "error");
+                mostrarAlerta("Error al cargar clubes", "error");
                 return;
             }
 
-            const data = await res.json();
+            const clubes = await res.json();
 
-            if (!Array.isArray(data.data)) {
-                console.error("Respuesta no válida:", data);
-                mostrarAlerta("Error en la respuesta del servidor", "error");
-                return;
-            }
-
-            renderClubes(data.data);
+            renderTabla(clubes);
 
         } catch (err) {
-            console.error("Error cargando clubes:", err);
-            mostrarAlerta("Error al cargar los clubes", "error");
+            console.error("Error:", err);
+            mostrarAlerta("No se pudo conectar con el servidor", "error");
         }
     }
 
-    // =====================================================================================
-    // RENDERIZAR CLUBES EN TABLA
-    // =====================================================================================
-    function renderClubes(clubes) {
-        listaClubes.innerHTML = "";
+    // ==========================================================
+    // RENDERIZAR TABLA
+    // ==========================================================
+    function renderTabla(clubes) {
+        tabla.innerHTML = "";
 
         if (clubes.length === 0) {
-            listaClubes.innerHTML = `
+            tabla.innerHTML = `
                 <tr>
-                    <td colspan="5" class="text-center text-danger">
-                        No hay clubes registrados.
-                    </td>
+                    <td colspan="6" class="text-danger">No hay clubes registrados.</td>
                 </tr>
             `;
             return;
@@ -58,10 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
             tr.innerHTML = `
                 <td>${club.id}</td>
                 <td>${club.nombre_evento}</td>
-                <td>${club.descripcion || "Sin descripción"}</td>
+                <td>${club.descripcion || "—"}</td>
+                <td>${club.fecha_creacion}</td>
                 <td>
-                    <img src="${club.imagen_club || "/img/placeholder.jpg"}"
-                         style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px;">
+                    <img src="${club.imagen_club || '../../../img/placeholder.jpg'}" 
+                         alt="imagen" 
+                         style="width:60px; height:60px; object-fit:cover; border-radius:5px;">
                 </td>
                 <td>
                     <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}">
@@ -73,116 +71,120 @@ document.addEventListener("DOMContentLoaded", () => {
                 </td>
             `;
 
-            listaClubes.appendChild(tr);
+            tabla.appendChild(tr);
         });
+
+        document.querySelectorAll(".editar-btn").forEach(btn =>
+            btn.addEventListener("click", cargarDatosParaEditar)
+        );
 
         document.querySelectorAll(".eliminar-btn").forEach(btn =>
             btn.addEventListener("click", eliminarClub)
         );
-
-        document.querySelectorAll(".editar-btn").forEach(btn =>
-            btn.addEventListener("click", cargarDatosEditar)
-        );
     }
 
-    // =====================================================================================
-    // CREAR / EDITAR CLUB
-    // =====================================================================================
-    formClub.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const id = formClub.dataset.editingId;
-
-        const payload = {
-            nombre_evento: inputNombre.value.trim(),
-            descripcion: inputDescripcion.value.trim(),
-            imagen_club: inputImagen.value.trim()
-        };
-
-        if (!payload.nombre_evento) {
-            mostrarAlerta("El nombre es obligatorio", "error");
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/clubs${id ? `?id=${id}` : ""}`, {
-                method: id ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                mostrarAlerta(data.message || "Error al guardar el club", "error");
-                return;
-            }
-
-            mostrarAlerta(
-                id ? "Club actualizado correctamente" : "Club creado exitosamente",
-                "exito"
-            );
-
-            formClub.reset();
-            delete formClub.dataset.editingId;
-
-            cargarClubes();
-
-        } catch (err) {
-            console.error("Error guardando club:", err);
-            mostrarAlerta("Error del servidor", "error");
-        }
-    });
-
-    // =====================================================================================
-    // CARGAR INFO AL FORMULARIO PARA EDITAR
-    // =====================================================================================
-    function cargarDatosEditar(e) {
+    // ==========================================================
+    // CARGAR DATOS EN EL FORMULARIO PARA EDITAR
+    // ==========================================================
+    function cargarDatosParaEditar(e) {
         const id = e.target.dataset.id;
 
         fetch(`/api/clubs?id=${id}`)
             .then(res => res.json())
-            .then(data => {
+            .then(club => {
+                idInput.value = club.id;
+                nombreInput.value = club.nombre_evento;
+                descripcionInput.value = club.descripcion;
+                imagenInput.value = club.imagen_club;
 
-                const club = data.data[0];
-                if (!club) return;
-
-                inputNombre.value = club.nombre_evento;
-                inputDescripcion.value = club.descripcion || "";
-                inputImagen.value = club.imagen_club || "";
-
-                formClub.dataset.editingId = id;
+                // Asegurar formato fecha YYYY-MM-DD
+                fechaInput.value = club.fecha_creacion.split("T")[0];
 
                 mostrarAlerta("Editando club...", "info");
-            });
+            })
+            .catch(() => mostrarAlerta("Error al cargar datos", "error"));
     }
 
-    // =====================================================================================
-    // ELIMINAR CLUB
-    // =====================================================================================
-    async function eliminarClub(e) {
-        const id = e.target.dataset.id;
+    // ==========================================================
+    // GUARDAR CLUB (CREAR O EDITAR)
+    // ==========================================================
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-        if (!confirm("¿Seguro que deseas eliminar este club?")) return;
+        const id = idInput.value;
+        const data = {
+            nombre_evento: nombreInput.value,
+            descripcion: descripcionInput.value,
+            imagen_club: imagenInput.value,
+            fecha_creacion: fechaInput.value
+        };
 
         try {
-            const res = await fetch(`/api/clubs?id=${id}`, { method: "DELETE" });
+            let res;
 
-            const data = await res.json();
+            if (id) {
+                // EDITAR
+                res = await fetch(`/api/clubs?id=${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // CREAR
+                res = await fetch("/api/clubs", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+            }
 
             if (!res.ok) {
-                mostrarAlerta(data.message || "Error al eliminar", "error");
+                mostrarAlerta("Error al guardar", "error");
                 return;
             }
 
-            mostrarAlerta("Club eliminado", "exito");
+            mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
+
+            form.reset();
+            idInput.value = "";
+
             cargarClubes();
 
         } catch (err) {
-            console.error("Error eliminando club:", err);
-            mostrarAlerta("Error al eliminar club", "error");
+            mostrarAlerta("Error del servidor", "error");
+        }
+    });
+
+    // ==========================================================
+    // ELIMINAR CLUB
+    // ==========================================================
+    async function eliminarClub(e) {
+        const id = e.target.dataset.id;
+
+        if (!confirm("¿Seguro que quieres eliminar este club?")) return;
+
+        try {
+            const res = await fetch(`/api/clubs?id=${id}`, {
+                method: "DELETE"
+            });
+
+            if (!res.ok) {
+                mostrarAlerta("Error al eliminar", "error");
+                return;
+            }
+
+            mostrarAlerta("Club eliminado correctamente", "exito");
+
+            cargarClubes();
+
+        } catch (err) {
+            mostrarAlerta("No se pudo eliminar", "error");
         }
     }
 
+    // ==========================================================
+    // CARGA INICIAL
+    // ==========================================================
     cargarClubes();
+
 });
