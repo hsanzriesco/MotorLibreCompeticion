@@ -65,7 +65,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         container.appendChild(row);
 
-        // listeners
         document.querySelectorAll(".join-btn").forEach(btn => btn.addEventListener("click", joinClub));
         document.querySelectorAll(".leave-btn").forEach(btn => btn.addEventListener("click", leaveClub));
     }
@@ -87,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 mostrarAlerta(data.message || "Error al unirse", "error");
                 return;
             }
-            // Actualizar usuario localmente para reflejar club
+
             usuario.club_id = Number(club_id);
             sessionStorage.setItem("usuario", JSON.stringify(usuario));
             localStorage.setItem("usuario", JSON.stringify(usuario));
@@ -107,33 +106,39 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Confirmación básica
-        const ok = confirm("¿Estás seguro que quieres salir de este club?");
-        if (!ok) return;
+        // ABRIR MODAL
+        const modal = new bootstrap.Modal(document.getElementById("modalSalirClub"));
+        modal.show();
 
-        try {
-            const res = await fetch("/api/clubs?action=leave", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: usuario.id })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                mostrarAlerta(data.message || "Error al salir del club", "error");
-                return;
+        const confirmarBtn = document.getElementById("confirmarSalirClub");
+
+        // Limpia eventos previos
+        confirmarBtn.onclick = async () => {
+            modal.hide();
+
+            try {
+                const res = await fetch("/api/clubs?action=leave", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_id: usuario.id })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    mostrarAlerta(data.message || "Error al salir del club", "error");
+                    return;
+                }
+
+                usuario.club_id = null;
+                sessionStorage.setItem("usuario", JSON.stringify(usuario));
+                localStorage.setItem("usuario", JSON.stringify(usuario));
+
+                mostrarAlerta("Te has salido del club", "exito");
+                cargarClubes();
+            } catch (err) {
+                console.error("Error leaveClub:", err);
+                mostrarAlerta("Error en el servidor", "error");
             }
-
-            // Actualizar usuario localmente: quitar club_id
-            usuario.club_id = null;
-            sessionStorage.setItem("usuario", JSON.stringify(usuario));
-            localStorage.setItem("usuario", JSON.stringify(usuario));
-
-            mostrarAlerta("Te has salido del club", "exito");
-            cargarClubes();
-        } catch (err) {
-            console.error("Error leaveClub:", err);
-            mostrarAlerta("Error en el servidor", "error");
-        }
+        };
     }
 
     cargarClubes();
