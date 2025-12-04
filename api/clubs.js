@@ -1,82 +1,142 @@
-import express from "express";
-import { sql } from "@vercel/postgres";
+import { Pool } from "pg";
+import { v2 as cloudinary } from "cloudinary";
+import formidable from "formidable";
 
-const router = express.Router();
+export const config = { api: { bodyParser: false } };
 
-// -------------------------------------------------------------
-//                 OBTENER TODOS LOS CLUBS
-// -------------------------------------------------------------
-router.get("/", async (req, res) => {
+// =====================================
+// PARSEADOR MULTIPART
+// =====================================
+function parseMultipart(req) {
+    return new Promise((resolve, reject) => {
+        const form = formidable({ multiples: false });
+
+        form.parse(req, (err, fields, files) => {
+            if (err) return reject(err);
+
+            const cleanFields = Object.fromEntries(
+                Object.entries(fields).map(([k, v]) => [k, v[0]])
+            );
+
+            resolve({ fields: cleanFields, files });
+        });
+    });
+}
+
+// =====================================
+// HANDLER
+// =====================================
+export default async function handler(req, res) {
+    const { id } = req.query;
+
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+
+    const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+    });
+
+    const client = await pool.connect();
+
     try {
-        const result = await sql`SELECT * FROM clubs ORDER BY id ASC`; // <-- corregido
-        res.json({ success: true, data: result.rows });
-    } catch (error) {
-        console.error("Error GET /api/clubs:", error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+        // ============================================================
+        // GET LISTA DE CLUBS
+        // ============================================================
+        if (req.method === "GET") {
+            if (id) {
+                const result = await client.query(
+                    `SELECT * FROM clubs WHERE id = $1`,
+                    [id]
+                );
+                return res.json({ success: true, data: result.rows[0] });
+            }
 
-// -------------------------------------------------------------
-//                 CREAR UN NUEVO CLUB
-// -------------------------------------------------------------
-router.post("/", async (req, res) => {
-    try {
-        const { nombre_evento, descripcion, fecha_creacion, imagen_club } = req.body;
-
-        if (!nombre_evento || !fecha_creacion) {
-            return res.status(400).json({ success: false, error: "Campos obligatorios faltantes" });
+            const result = await client.query(`SELECT * FROM clubs ORDER BY id ASC`);
+            return res.json({ success: true, data: result.rows });
         }
 
-        await sql`
-            INSERT INTO clubs (nombre_evento, descripcion, fecha_creacion, imagen_club)
-            VALUES (${nombre_evento}, ${descripcion}, ${fecha_creacion}, ${imagen_club})
-        `;
+        // ============================================================
+        // POST / PUT (crear / editar)
+        // ============================================================
+        if (req.method === "POST" || req.method === "PUT") {
+            const { fields, files } = await parseMultipart(req);
 
-        res.json({ success: true, message: "Club creado correctamente" });
-    } catch (error) {
-        console.error("Error POST /api/clubs:", error);
-        res.status(500).json({ success: false, error: error.message });
+            let imageUrl = null;
+
+            // Si el usuario sube una imagen, la subimos a Cloudinary
+            if (files.imagen_club?.[0]) {
+                const upload = await cloudinary.uploader.upload(
+                    files.imagen_club[0].filepath,
+                    {
+                        folder: "motor_libre_competicion_clubs",
+                        resource_type: "auto",
+                    }
+                );
+
+                imageUrl = upload.secure_url;
+            }
+
+            // ================= POST ================
+            if (req.method === "POST") {
+                const result = await client.query(
+                    `INSERT INTO clubs (nombre_evento, descripcion, fecha_creacion, imagen_club)
+                     VALUES ($1, $2, $3, $4)
+                     RETURNING *`,
+                    [
+                        fields.nombre_evento,
+                        fields.descripcion,
+                        fields.fecha_creacion,
+                        imageUrl
+                    ]
+                );
+
+                return res.status(201).json({
+                    success: true,
+                    data: result.rows[0]
+                });
+            }
+
+            // ================= PUT ================
+            if (req.method === "PUT") {
+                const result = await client.query(
+                    `UPDATE clubs
+                     SET nombre_evento=$1,
+                         descripcion=$2,
+                         fecha_creacion=$3,
+                         imagen_club = COALESCE($4, imagen_club)
+                     WHERE id=$5
+                     RETURNING *`,
+                    [
+                        fields.nombre_evento,
+                        fields.descripcion,
+                        fields.fecha_creacion,
+                        imageUrl,
+                        id
+                    ]
+                );
+
+                return res.json({ success: true, data: result.rows[0] });
+            }
+        }
+
+        // ============================================================
+        // DELETE
+        // ============================================================
+        if (req.method === "DELETE") {
+            await client.query(`DELETE FROM clubs WHERE id = $1`, [id]);
+            return res.json({ success: true });
+        }
+
+        return res.status(405).json({ success: false, message: "Método no permitido" });
+
+    } catch (err) {
+        console.error("ERROR /api/clubs:", err);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        client.release();
     }
-});
-
-// -------------------------------------------------------------
-//                 ACTUALIZAR UN CLUB
-// -------------------------------------------------------------
-router.put("/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { nombre_evento, descripcion, fecha_creacion, imagen_club } = req.body;
-
-        await sql`
-            UPDATE clubs
-            SET nombre_evento = ${nombre_evento},
-                descripcion = ${descripcion},
-                fecha_creacion = ${fecha_creacion},
-                imagen_club = ${imagen_club}
-            WHERE id = ${id}
-        `;
-
-        res.json({ success: true, message: "Club actualizado correctamente" });
-    } catch (error) {
-        console.error("Error PUT /api/clubs:", error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// -------------------------------------------------------------
-//                 ELIMINAR UN CLUB
-// -------------------------------------------------------------
-router.delete("/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        await sql`DELETE FROM clubs WHERE id = ${id}`;
-
-        res.json({ success: true, message: "Club eliminado correctamente" });
-    } catch (error) {
-        console.error("Error DELETE /api/clubs:", error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-export default router;
+}
