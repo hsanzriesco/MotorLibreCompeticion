@@ -48,12 +48,23 @@ export default async function handler(req, res) {
                     "SELECT * FROM clubs WHERE id = $1",
                     [id]
                 );
-                return res.json({ success: true, data: result.rows[0] });
+
+                // ⚠️ Contar los miembros del club
+                const members = await client.query(
+                    "SELECT COUNT(*) FROM users WHERE club_id = $1",
+                    [id]
+                );
+
+                return res.json({
+                    success: true,
+                    data: {
+                        ...result.rows[0],
+                        miembros: members.rows[0].count
+                    }
+                });
             }
 
-            const result = await client.query(
-                "SELECT * FROM clubs ORDER BY id ASC"
-            );
+            const result = await client.query("SELECT * FROM clubs ORDER BY id ASC");
             return res.json({ success: true, data: result.rows });
         }
 
@@ -77,9 +88,6 @@ export default async function handler(req, res) {
                 imageUrl = upload.secure_url;
             }
 
-            // ------------------------
-            // CREATE
-            // ------------------------
             if (req.method === "POST") {
                 const result = await client.query(
                     `INSERT INTO clubs (nombre_evento, descripcion, imagen_club)
@@ -92,15 +100,9 @@ export default async function handler(req, res) {
                     ]
                 );
 
-                return res.status(201).json({
-                    success: true,
-                    data: result.rows[0]
-                });
+                return res.status(201).json({ success: true, data: result.rows[0] });
             }
 
-            // ------------------------
-            // UPDATE
-            // ------------------------
             if (req.method === "PUT") {
                 const result = await client.query(
                     `UPDATE clubs
