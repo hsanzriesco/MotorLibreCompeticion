@@ -2,26 +2,18 @@
 <html lang="es">
 
 <head>
-       
     <meta charset="UTF-8" />
-       
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Panel de Administrador - Motor Libre Competición</title>
+    <title>Panel de Administrador - Motor Libre Competición</title>
 
-       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-       
     <link rel="stylesheet" href="../../../css/navbar.css" />
-       
     <link rel="stylesheet" href="../../../css/style.css" />
-       
     <link rel="icon" href="../../../img/imagen-tfg.png" type="image/png" />
-       
     <link rel="stylesheet" href="../../../css/alertas.css" />
 
-        <style>
+    <style>
         body {
             background-color: #111;
             color: #fff;
@@ -44,19 +36,6 @@
             max-width: 1200px;
         }
 
-        /* Estilos para la tabla de gestión */
-        .table-results {
-            --bs-table-bg: #212529;
-            --bs-table-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .table-results thead th {
-            color: #e50914;
-            border-bottom-color: #e50914;
-        }
-
         /* Estilos para el modal de confirmación */
         .modal-content {
             background-color: #111;
@@ -72,523 +51,140 @@
 </head>
 
 <body>
-        <div id="alertas-container"></div>
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
-        <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+        <a id="logo-link" href="./admin.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
+        </a>
 
-                <a id="logo-link" href="./admin.html" class="navbar-brand d-flex align-items-center">
-                        <img src="../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
-                    </a>
+        <div class="d-flex align-items-center">
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </nav>
 
-                <div class="d-flex align-items-center">
-                        <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"  
-                              data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                                <i class="bi bi-list"></i>
-                            </button>
-                    </div>
-            </nav>
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú Administrador</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
 
-        <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-                <div class="offcanvas-header border-bottom border-secondary">
-                        <h5 class="offcanvas-title">Menú Administrador</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-                    </div>
+        <div class="offcanvas-body">
 
-                <div class="offcanvas-body">
+            <a href="./adminCalendario/adminCalendario.html" class="d-block text-light mb-2">
+                Gestión de Eventos
+            </a>
 
-                        <a href="./adminCalendario/adminCalendario.html" class="d-block text-light mb-2">
-                                Gestión de Eventos
-                            </a>
+            <a href="./lugares/adminLugares.html" class="d-block text-light mb-2">
+                Gestión de Lugares
+            </a>
 
-                        <a href="#results-management" id="link-resultados" class="d-block text-danger fw-bold mb-2">
-                                Mejores Resultados
-                            </a>
+            <a href="./user/users.html" class="d-block text-light mb-2">
+                Gestionar Usuarios
+            </a>
 
-                        <a href="./lugares/adminLugares.html" class="d-block text-light mb-2">
-                                Gestión de Lugares
-                            </a>
-
-                        <a href="./user/users.html" class="d-block text-light mb-2">
-                                Gestionar Usuarios
-                            </a>
-
-                       
             <hr class="border-secondary" />
 
-                        <a href="#" id="menu-inicio" class="d-block text-light mb-2">
-                                Inicio
-                            </a>
+            <a id="menu-inicio" href="#" class="d-block text-light mb-2">
+                Inicio
+            </a>
 
-                        <a href="#" id="logout-btn" class="d-block text-danger">
-                                Cerrar sesión
-                            </a>
+            <a href="#" id="logout-btn" class="d-block text-danger">
+                Cerrar sesión
+            </a>
 
-                   
         </div>
-            </div>
+    </div>
 
-        <main>
-                <section id="default-panel" class="admin-section text-center">
-                        <h2 class="mb-4">Panel de Control de Administrador</h2>
-                        <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
-                    </section>
+    <main>
+        <section class="admin-section text-center">
+            <h2 class="mb-4">Panel de Control de Administrador</h2>
+            <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
+        </section>
 
-                <section id="results-management" class="admin-section" style="display:none;">
-                        <h2 class="text-danger mb-4"><i class="bi bi-trophy-fill me-2"></i> Gestión de Resultados por
-                Evento</h2>
+        <section class="admin-section">
+            <h3 class="mb-3 text-start"><i class="bi bi-list-columns-reverse me-2"></i>Gestión de Elementos Recientes
+            </h3>
 
-                        <p class="text-secondary">Aquí puedes registrar, modificar o eliminar los resultados de los
-                pilotos en cada
-                                evento.</p>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col"># ID</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Nombre del Elemento</th>
+                            <th scope="col">Fecha de Creación</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">1</th>
+                            <td>Evento</td>
+                            <td>Rally de Asturias</td>
+                            <td>2025-10-20</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info me-1"><i class="bi bi-eye"></i></button>
+                                <button class="btn btn-sm btn-outline-warning me-1"><i
+                                        class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">2</th>
+                            <td>Lugar</td>
+                            <td>Circuito de Jerez</td>
+                            <td>2025-09-15</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info me-1"><i class="bi bi-eye"></i></button>
+                                <button class="btn btn-sm btn-outline-warning me-1"><i
+                                        class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">3</th>
+                            <td>Usuario</td>
+                            <td>Juan Pérez</td>
+                            <td>2025-11-01</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info me-1"><i class="bi bi-eye"></i></button>
+                                <button class="btn btn-sm btn-outline-warning me-1"><i
+                                        class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-                        <button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal"
-                data-bs-target="#addResultModal"                 id="add-result-btn">
-                                <i class="bi bi-plus-circle-fill me-2"></i>Añadir Nuevo Resultado
-                            </button>
-
-                        <div class="table-responsive">
-                                <table class="table table-dark table-striped table-hover table-results">
-                                        <thead>
-                                                <tr>
-                                                        <th>ID</th>
-                                                        <th>Evento (ID)</th>
-                                                        <th>Piloto (ID)</th>
-                                                        <th>Nombre Piloto</th>
-                                                        <th>Posición</th>
-                                                        <th>Mejor Vuelta</th>
-                                                        <th class="text-center">Acciones</th>
-                                                    </tr>
-                                            </thead>
-                                        <tbody id="results-list">
-                                                <tr>
-                                                        <td colspan="7" class="text-center text-secondary">Cargando
-                                resultados...</td>
-                                                    </tr>
-                                            </tbody>
-                                    </table>
-                            </div>
-
-                        <nav>
-                                <ul class="pagination pagination-sm justify-content-center">
-                                        <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
-                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                        <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
-                                    </ul>
-                            </nav>
-
-                    </section>
-            </main>
-
-        <div class="modal fade" id="addResultModal" tabindex="-1" aria-labelledby="addResultModalLabel"
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
         aria-hidden="true">
-                <div class="modal-dialog">
-                        <div class="modal-content">
-                                <div class="modal-header border-danger">
-                                        <h5 class="modal-title" id="addResultModalLabel">Añadir/Editar Resultado</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                    </div>
-                                <div class="modal-body">
-                                        <form id="result-form">
-                                                <input type="hidden" id="result-id-input">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                                                <div class="mb-3">
-                                                        <label for="event-select" class="form-label">Evento</label>
-                                                        <select class="form-select bg-dark text-light border-secondary"
-                                id="event-select" required>
-                                                                <option value="">Cargando eventos...</option>
-                                                            </select>
-                                                    </div>
-                                                <div class="mb-3">
-                                                        <label for="user-select" class="form-label">Piloto /
-                                Usuario</label>
-                                                        <select class="form-select bg-dark text-light border-secondary"
-                                id="user-select" required>
-                                                                <option value="">Cargando pilotos...</option>
-                                                            </select>
-                                                    </div>
-                                                <div class="row">
-                                                        <div class="col-md-6 mb-3">
-                                                                <label for="position-input" class="form-label">Posición
-                                    Final</label>
-                                                                <input type="number"
-                                    class="form-control bg-dark text-light border-secondary"                            
-                                            id="position-input" min="1" required>
-                                                            </div>
-                                                        <div class="col-md-6 mb-3">
-                                                                <label for="points-input" class="form-label">Puntos
-                                    Obtenidos</label>
-                                                                <input type="number"
-                                    class="form-control bg-dark text-light border-secondary"                            
-                                            id="points-input" min="0" disabled>
-                                                            </div>
-                                                    </div>
-                                                <div class="mb-3">
-                                                        <label for="time-input" class="form-label">Mejor Tiempo (Ej:
-                                00:01:30.456)</label>
-                                                        <input type="text"
-                                class="form-control bg-dark text-light border-secondary" id="time-input"                
-                                                placeholder="Formato HH:MM:SS.ms"
-                                pattern="^([0-9]{2}:){0,2}[0-9]{2}\.[0-9]{3}$"                                
-                                title="Formato requerido: HH:MM:SS.ms o MM:SS.ms o SS.ms" required>
-                                                    </div>
-                                            </form>
-                                    </div>
-                                <div class="modal-footer border-danger">
-                                        <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" form="result-form" class="btn btn-danger"
-                        id="btnSaveResult">Guardar
-                                                Resultado</button>
-                                    </div>
-                            </div>
-                    </div>
-            </div>
-
-        <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"        
-        aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-sm">
-                        <div class="modal-content">
-                                <div class="modal-header border-danger">
-                                        <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión
-                    </h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                    </div>
-                                <div class="modal-body">
-                                        <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
-                                    </div>
-                                <div class="modal-footer border-danger">
-                                        <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar
-                        Sesión</button>
-                                    </div>
-                            </div>
-                    </div>
-            </div>
-
-       
     <script src="../../../js/alertas.js"></script>
-       
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-       
-    <script id="admin-results-script">
-        document.addEventListener("DOMContentLoaded", function () {
-
-            // --- VARIABLES GLOBALES Y SELECTORES ---
-            const API_URL = '/api/events';
-            const RESULTS_LIST = document.getElementById('results-list');
-            const RESULT_FORM = document.getElementById('result-form');
-            const BTN_SAVE_RESULT = document.getElementById('btnSaveResult');
-            const ADD_RESULT_MODAL = new bootstrap.Modal(document.getElementById('addResultModal'));
-            const MODAL_TITLE = document.getElementById('addResultModalLabel');
-
-            // --- SELECTORES DE FORMULARIO ---
-            const RESULT_ID_INPUT = document.getElementById('result-id-input');
-            const EVENT_SELECT = document.getElementById('event-select');
-            const USER_SELECT = document.getElementById('user-select');
-            const POSITION_INPUT = document.getElementById('position-input');
-            const TIME_INPUT = document.getElementById('time-input');
-
-            let allResults = [];
-
-            // --- LÓGICA DE NAVEGACIÓN ---
-            const linkResultados = document.getElementById('link-resultados');
-            const resultsSection = document.getElementById('results-management');
-            const defaultSection = document.getElementById('default-panel');
-            const offcanvasElement = document.getElementById('offcanvasMenu');
-            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement) || new bootstrap.Offcanvas(offcanvasElement);
-
-            function showSection(sectionToShow) {
-                // Ocultar todas las secciones excepto la barra de navegación
-                document.querySelectorAll('main section').forEach(section => {
-                    section.style.display = 'none';
-                });
-
-                if (sectionToShow) {
-                    sectionToShow.style.display = 'block';
-                    if (sectionToShow.id === 'results-management') {
-                        // Cargar resultados solo cuando se muestra la sección
-                        loadResults();
-                    }
-                }
-                offcanvas.hide();
-            }
-
-            // Manejar clic en el enlace de Resultados
-            if (linkResultados && resultsSection) {
-                linkResultados.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    showSection(resultsSection);
-                });
-            }
-
-            // Manejar clic en el enlace de Inicio
-            const menuInicio = document.getElementById('menu-inicio');
-            if (menuInicio && defaultSection) {
-                menuInicio.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    showSection(defaultSection);
-                });
-            }
-
-            // =========================================================
-            // 🔑 LÓGICA CLAVE: Muestra la sección de Resultados por defecto al cargar
-            // =========================================================
-            if (window.location.hash === '#default-panel') {
-                showSection(defaultSection);
-            } else {
-                // Si no hay hash, o si es la primera carga, mostramos Gestión de Resultados.
-                showSection(resultsSection);
-                // 🔑 NUEVO: Cargar los selectores al iniciar la página
-                loadEvents();
-                loadUsers();
-            }
-            // =========================================================
-
-
-            // --- 1. CARGAR DATOS DE BASES DE DATOS (READ) ---
-
-            async function loadResults() {
-                RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-secondary">Cargando resultados...</td></tr>';
-                try {
-                    const response = await fetch(`${API_URL}?action=getAllResults`);
-                    const data = await response.json();
-
-                    if (data.success && data.data) {
-                        allResults = data.data;
-                        RESULTS_LIST.innerHTML = '';
-
-                        if (allResults.length === 0) {
-                            RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-warning">No hay resultados registrados.</td></tr>';
-                            return;
-                        }
-
-                        data.data.forEach(result => {
-                            const row = RESULTS_LIST.insertRow();
-                            row.dataset.resultId = result.result_id;
-
-                            // ******************************************************
-                            // 🔑 MODIFICACIÓN: Uso de String() para forzar la conversión.
-                            // Esto puede ayudar si 'best_lap_time' es un objeto que contiene el tiempo.
-                            // La solución ideal es que el Backend (PHP/API) lo envíe como string.
-                            const bestLapTimeDisplay = typeof result.best_lap_time === 'object' && result.best_lap_time !== null
-                                ? JSON.stringify(result.best_lap_time) // Si es un objeto, lo stringificamos, aunque esto podría mostrar la estructura JSON.
-                                : String(result.best_lap_time); // Si no es un objeto o es null, lo forzamos a String.
-                            // ******************************************************
-
-                            row.innerHTML = `
-                                <td>${result.result_id}</td>
-                                <td>${result.event_id}</td>
-                                <td>${result.user_id}</td>
-                                <td>${result.user}</td>
-                                <td>${result.position}</td>
-                                <td>${bestLapTimeDisplay}</td>                                 <td class="text-center">
-                                                                        <button class="btn btn-sm btn-outline-info me-2 edit-btn" data-id="${result.result_id}"><i class="bi bi-pencil" data-id="${result.result_id}"></i> Editar</button>
-                                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${result.result_id}"><i class="bi bi-trash" data-id="${result.result_id}"></i> Eliminar</button>
-                                </td>
-                            `;
-                        });
-
-                        document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEditClick));
-                        document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDeleteClick));
-
-                    } else {
-                        RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${data.message || 'Error al cargar los resultados.'}</td></tr>`;
-                    }
-                } catch (error) {
-                    console.error('Error al cargar los resultados:', error);
-                    RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error de red o servidor.</td></tr>`;
-                }
-            }
-
-            // --- 2. CARGAR SELECTORES (EVENTOS Y USUARIOS) ---
-
-            async function loadEvents() {
-                try {
-                    const response = await fetch(`${API_URL}?action=getAllEventsList`);
-                    const data = await response.json();
-
-                    EVENT_SELECT.innerHTML = '<option value="">Selecciona un Evento</option>';
-
-                    if (data.success && data.data) {
-                        data.data.forEach(event => {
-                            const option = document.createElement('option');
-                            option.value = event.id;
-                            option.textContent = event.title;
-                            EVENT_SELECT.appendChild(option);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error al cargar eventos:', error);
-                    mostrarAlerta('Error al cargar la lista de eventos.', 'error');
-                }
-            }
-
-            async function loadUsers() {
-                // Usamos API_URL ('/api/events') asumiendo que el manejador getAllUsersList está allí, 
-                // o ajusta a '/api/user' si tienes un endpoint de usuario separado.
-                try {
-                    const response = await fetch(`${API_URL}?action=getAllUsersList`);
-                    const data = await response.json();
-
-                    USER_SELECT.innerHTML = '<option value="">Selecciona un Piloto</option>';
-
-                    if (data.success && data.data) {
-                        data.data.forEach(user => {
-                            const option = document.createElement('option');
-                            option.value = user.id;
-                            option.textContent = user.name;
-                            USER_SELECT.appendChild(option);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error al cargar usuarios:', error);
-                    mostrarAlerta('Error al cargar la lista de pilotos.', 'error');
-                }
-            }
-            // -----------------------------------------------------------------
-
-
-            // --- 3. MANEJO DE FORMULARIO (CREATE / UPDATE) ---
-
-            BTN_SAVE_RESULT.addEventListener('click', function (e) {
-                e.preventDefault();
-                if (RESULT_FORM.checkValidity()) {
-                    handleSaveResult();
-                } else {
-                    RESULT_FORM.reportValidity();
-                }
-            });
-
-            async function handleSaveResult() {
-                const resultId = RESULT_ID_INPUT.value;
-
-                const resultData = {
-                    event_id: EVENT_SELECT.value,
-                    user_id: USER_SELECT.value,
-                    position: POSITION_INPUT.value,
-                    best_lap_time: TIME_INPUT.value,
-                    // Capturamos el nombre del piloto del texto de la opción seleccionada
-                    user: USER_SELECT.options[USER_SELECT.selectedIndex].text,
-                };
-
-                let url = `${API_URL}?action=addResult`;
-                let method = 'POST';
-
-                if (resultId) {
-                    url = `${API_URL}?action=editResult`;
-                    method = 'PUT';
-                    resultData.result_id = resultId;
-                }
-
-                try {
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(resultData)
-                    });
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
-                        mostrarAlerta(data.message, 'success');
-                        ADD_RESULT_MODAL.hide();
-                        loadResults();
-                    } else {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
-                        mostrarAlerta('Error: ' + data.message, 'error');
-                    }
-                } catch (error) {
-                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
-                    mostrarAlerta('Error de conexión al guardar el resultado.', 'error');
-                    console.error('Error al guardar:', error);
-                }
-            }
-
-            // --- 4. MANEJO DE EDICIÓN (PRECARGA DE MODAL) ---
-
-            function handleEditClick(event) {
-                // Asegurar que obtenemos el 'data-id' del botón, incluso si se hace click en el ícono 'i'
-                const resultId = parseInt(event.target.closest('.edit-btn').dataset.id);
-                const resultToEdit = allResults.find(r => r.result_id === resultId);
-
-                if (!resultToEdit) {
-                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
-                    mostrarAlerta("Resultado no encontrado.", 'warning');
-                    return;
-                }
-
-                // 🔑 Asegurarse de que los selectores están cargados antes de intentar asignar el valor
-                loadEvents().then(() => {
-                    EVENT_SELECT.value = resultToEdit.event_id;
-                });
-                loadUsers().then(() => {
-                    USER_SELECT.value = resultToEdit.user_id;
-                });
-
-                MODAL_TITLE.textContent = 'Editar Resultado (ID: ' + resultId + ')';
-                RESULT_ID_INPUT.value = resultId;
-
-                // Llenar el formulario con los datos
-                POSITION_INPUT.value = resultToEdit.position;
-
-                // 🔑 MODIFICACIÓN: Mostrar el dato forzado a string en el campo de tiempo
-                TIME_INPUT.value = typeof resultToEdit.best_lap_time === 'object' && resultToEdit.best_lap_time !== null
-                    ? '' // Lo dejamos vacío si es un objeto para que el usuario lo corrija.
-                    : String(resultToEdit.best_lap_time); // Si es un string válido, lo mostramos.
-
-                ADD_RESULT_MODAL.show();
-            }
-
-            // --- 5. MANEJO DE ELIMINACIÓN (DELETE) ---
-
-            async function handleDeleteClick(event) {
-                // Asegurar que obtenemos el 'data-id' del botón, incluso si se hace click en el ícono 'i'
-                const resultId = event.target.closest('.delete-btn').dataset.id;
-
-                if (!confirm(`¿Estás seguro de que quieres eliminar el resultado ID ${resultId}? Esta acción no se puede deshacer.`)) {
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`${API_URL}?action=deleteResult&result_id=${resultId}`, {
-                        method: 'DELETE'
-                    });
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
-                        mostrarAlerta(data.message, 'success');
-                        loadResults();
-                    } else {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
-                        mostrarAlerta('Error al eliminar: ' + data.message, 'error');
-                    }
-                } catch (error) {
-                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
-                    mostrarAlerta('Error de conexión al eliminar.', 'error');
-                    console.error('Error al eliminar:', error);
-                }
-            }
-
-            // --- INICIALIZACIÓN DEL MODAL ---
-            document.getElementById('add-result-btn').addEventListener('click', () => {
-                MODAL_TITLE.textContent = 'Añadir Nuevo Resultado';
-                RESULT_FORM.reset();
-                RESULT_ID_INPUT.value = ''; // Limpiar el ID oculto
-                // 🔑 Recargar los selectores cada vez que se abre el modal para asegurar frescura de datos
-                loadEvents();
-                loadUsers();
-            });
-
-        });
-    </script>
-       
     <script src="../../../js/navbar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
