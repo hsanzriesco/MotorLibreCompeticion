@@ -2,18 +2,26 @@
 <html lang="es">
 
 <head>
+       
     <meta charset="UTF-8" />
+       
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel de Administrador - Motor Libre Competición</title>
+        <title>Panel de Administrador - Motor Libre Competición</title>
 
+       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+       
     <link rel="stylesheet" href="../../../css/navbar.css" />
+       
     <link rel="stylesheet" href="../../../css/style.css" />
+       
     <link rel="icon" href="../../../img/imagen-tfg.png" type="image/png" />
+       
     <link rel="stylesheet" href="../../../css/alertas.css" />
 
-    <style>
+        <style>
         body {
             background-color: #111;
             color: #fff;
@@ -64,185 +72,210 @@
 </head>
 
 <body>
-    <div id="alertas-container"></div>
+            <div id="alertas-container"></div>
 
-    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+        <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
-        <a id="logo-link" href="./admin.html" class="navbar-brand d-flex align-items-center">
-            <img src="../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
-        </a>
+                <a id="logo-link" href="./admin.html" class="navbar-brand d-flex align-items-center">
+                        <img src="../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
+                    </a>
 
-        <div class="d-flex align-items-center">
-            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                <i class="bi bi-list"></i>
-            </button>
-        </div>
-    </nav>
+                <div class="d-flex align-items-center">
+                        <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"  
+                              data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                                <i class="bi bi-list"></i>
+                            </button>
+                    </div>
+            </nav>
 
-    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-        <div class="offcanvas-header border-bottom border-secondary">
-            <h5 class="offcanvas-title">Menú Administrador</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
+        <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+                <div class="offcanvas-header border-bottom border-secondary">
+                        <h5 class="offcanvas-title">Menú Administrador</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+                    </div>
 
-        <div class="offcanvas-body">
+                <div class="offcanvas-body">
 
-            <a href="./adminCalendario/adminCalendario.html" class="d-block text-light mb-2">
-                Gestión de Eventos
-            </a>
+                        <a href="./adminCalendario/adminCalendario.html" class="d-block text-light mb-2">
+                                Gestión de Eventos
+                            </a>
 
-            <a href="#results-management" id="link-resultados" class="d-block text-danger fw-bold mb-2">
-                Mejores Resultados
-            </a>
+                        <a href="#results-management" id="link-resultados" class="d-block text-danger fw-bold mb-2">
+                                Mejores Resultados
+                            </a>
 
-            <a href="./lugares/adminLugares.html" class="d-block text-light mb-2">
-                Gestión de Lugares
-            </a>
+                        <a href="./lugares/adminLugares.html" class="d-block text-light mb-2">
+                                Gestión de Lugares
+                            </a>
 
-            <a href="./user/users.html" class="d-block text-light mb-2">
-                Gestionar Usuarios
-            </a>
+                        <a href="./user/users.html" class="d-block text-light mb-2">
+                                Gestionar Usuarios
+                            </a>
 
+                       
             <hr class="border-secondary" />
 
-            <a href="#" id="menu-inicio" class="d-block text-light mb-2">
-                Inicio
-            </a>
+                        <a href="#" id="menu-inicio" class="d-block text-light mb-2">
+                                Inicio
+                            </a>
 
-            <a href="#" id="logout-btn" class="d-block text-danger">
-                Cerrar sesión
-            </a>
+                        <a href="#" id="logout-btn" class="d-block text-danger">
+                                Cerrar sesión
+                            </a>
 
+                   
         </div>
-    </div>
+            </div>
 
-    <main>
-        <section id="default-panel" class="admin-section text-center">
-            <h2 class="mb-4">Panel de Control de Administrador</h2>
-            <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
-        </section>
+        <main>
+                <section id="default-panel" class="admin-section text-center">
+                        <h2 class="mb-4">Panel de Control de Administrador</h2>
+                        <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
+                    </section>
 
-        <section id="results-management" class="admin-section" style="display:none;">
-            <h2 class="text-danger mb-4"><i class="bi bi-trophy-fill me-2"></i> Gestión de Resultados por Evento</h2>
+                <section id="results-management" class="admin-section" style="display:none;">
+                        <h2 class="text-danger mb-4"><i class="bi bi-trophy-fill me-2"></i> Gestión de Resultados por
+                Evento</h2>
 
-            <p class="text-secondary">Aquí puedes registrar, modificar o eliminar los resultados de los pilotos en cada
-                evento.</p>
+                        <p class="text-secondary">Aquí puedes registrar, modificar o eliminar los resultados de los
+                pilotos en cada
+                                evento.</p>
 
-            <button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal" data-bs-target="#addResultModal"
-                id="add-result-btn">
-                <i class="bi bi-plus-circle-fill me-2"></i>Añadir Nuevo Resultado
-            </button>
+                        <button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal"
+                data-bs-target="#addResultModal"                 id="add-result-btn">
+                                <i class="bi bi-plus-circle-fill me-2"></i>Añadir Nuevo Resultado
+                            </button>
 
-            <div class="table-responsive">
-                <table class="table table-dark table-striped table-hover table-results">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Evento (ID)</th>
-                            <th>Piloto (ID)</th>
-                            <th>Nombre Piloto</th>
-                            <th>Posición</th>
-                            <th>Mejor Vuelta</th>
-                            <th class="text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="results-list">
-                        <tr>
-                            <td colspan="7" class="text-center text-secondary">Cargando resultados...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                        <div class="table-responsive">
+                                <table class="table table-dark table-striped table-hover table-results">
+                                        <thead>
+                                                <tr>
+                                                        <th>ID</th>
+                                                        <th>Evento (ID)</th>
+                                                        <th>Piloto (ID)</th>
+                                                        <th>Nombre Piloto</th>
+                                                        <th>Posición</th>
+                                                        <th>Mejor Vuelta</th>
+                                                        <th class="text-center">Acciones</th>
+                                                    </tr>
+                                            </thead>
+                                        <tbody id="results-list">
+                                                <tr>
+                                                        <td colspan="7" class="text-center text-secondary">Cargando
+                                resultados...</td>
+                                                    </tr>
+                                            </tbody>
+                                    </table>
+                            </div>
 
-            <nav>
-                <ul class="pagination pagination-sm justify-content-center">
-                    <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
-                </ul>
-            </nav>
+                        <nav>
+                                <ul class="pagination pagination-sm justify-content-center">
+                                        <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                                    </ul>
+                            </nav>
 
-        </section>
-    </main>
+                    </section>
+            </main>
 
-    <div class="modal fade" id="addResultModal" tabindex="-1" aria-labelledby="addResultModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header border-danger">
-                    <h5 class="modal-title" id="addResultModalLabel">Añadir/Editar Resultado</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="result-form">
-                        <input type="hidden" id="result-id-input">
-
-                        <div class="mb-3">
-                            <label for="event-select" class="form-label">Evento</label>
-                            <select class="form-select bg-dark text-light border-secondary" id="event-select" required>
-                                <option value="">Cargando eventos...</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="user-select" class="form-label">Piloto / Usuario</label>
-                            <select class="form-select bg-dark text-light border-secondary" id="user-select" required>
-                                <option value="">Cargando pilotos...</option>
-                            </select>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="position-input" class="form-label">Posición Final</label>
-                                <input type="number" class="form-control bg-dark text-light border-secondary"
-                                    id="position-input" min="1" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="points-input" class="form-label">Puntos Obtenidos</label>
-                                <input type="number" class="form-control bg-dark text-light border-secondary"
-                                    id="points-input" min="0" disabled>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="time-input" class="form-label">Mejor Tiempo (Ej: 00:01:30.456)</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary" id="time-input"
-                                placeholder="Formato HH:MM:SS.ms" pattern="^([0-9]{2}:){0,2}[0-9]{2}\.[0-9]{3}$"
-                                title="Formato requerido: HH:MM:SS.ms o MM:SS.ms o SS.ms" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer border-danger">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="result-form" class="btn btn-danger" id="btnSaveResult">Guardar
-                        Resultado</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        <div class="modal fade" id="addResultModal" tabindex="-1" aria-labelledby="addResultModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header border-danger">
-                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
-                </div>
-                <div class="modal-footer border-danger">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
-                </div>
-            </div>
-        </div>
-    </div>
+                <div class="modal-dialog">
+                        <div class="modal-content">
+                                <div class="modal-header border-danger">
+                                        <h5 class="modal-title" id="addResultModalLabel">Añadir/Editar Resultado</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                    </div>
+                                <div class="modal-body">
+                                        <form id="result-form">
+                                                <input type="hidden" id="result-id-input">
 
-    <script src="../../../js/alertas.js"></script>
+                                                <div class="mb-3">
+                                                        <label for="event-select" class="form-label">Evento</label>
+                                                        <select class="form-select bg-dark text-light border-secondary"
+                                id="event-select" required>
+                                                                <option value="">Cargando eventos...</option>
+                                                            </select>
+                                                    </div>
+                                                <div class="mb-3">
+                                                        <label for="user-select" class="form-label">Piloto /
+                                Usuario</label>
+                                                        <select class="form-select bg-dark text-light border-secondary"
+                                id="user-select" required>
+                                                                <option value="">Cargando pilotos...</option>
+                                                            </select>
+                                                    </div>
+                                                <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                                <label for="position-input" class="form-label">Posición
+                                    Final</label>
+                                                                <input type="number"
+                                    class="form-control bg-dark text-light border-secondary"                            
+                                            id="position-input" min="1" required>
+                                                            </div>
+                                                        <div class="col-md-6 mb-3">
+                                                                <label for="points-input" class="form-label">Puntos
+                                    Obtenidos</label>
+                                                                <input type="number"
+                                    class="form-control bg-dark text-light border-secondary"                            
+                                            id="points-input" min="0" disabled>
+                                                            </div>
+                                                    </div>
+                                                <div class="mb-3">
+                                                        <label for="time-input" class="form-label">Mejor Tiempo (Ej:
+                                00:01:30.456)</label>
+                                                        <input type="text"
+                                class="form-control bg-dark text-light border-secondary" id="time-input"                
+                                                placeholder="Formato HH:MM:SS.ms"
+                                pattern="^([0-9]{2}:){0,2}[0-9]{2}\.[0-9]{3}$"                                
+                                title="Formato requerido: HH:MM:SS.ms o MM:SS.ms o SS.ms" required>
+                                                    </div>
+                                            </form>
+                                    </div>
+                                <div class="modal-footer border-danger">
+                                        <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" form="result-form" class="btn btn-danger"
+                        id="btnSaveResult">Guardar
+                                                Resultado</button>
+                                    </div>
+                            </div>
+                        </div>
+                </div>
+
+        <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"        
+        aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-content">
+                                <div class="modal-header border-danger">
+                                        <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión
+                    </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                    </div>
+                                <div class="modal-body">
+                                        <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
+                                    </div>
+                                <div class="modal-footer border-danger">
+                                        <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar
+                        Sesión</button>
+                                    </div>
+                            </div>
+                    </div>
+            </div>
+
+                       
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+               
+    <script src="../../../js/alertas.js"></script>
+       
+           
     <script id="admin-results-script">
         document.addEventListener("DOMContentLoaded", function () {
 
@@ -304,16 +337,18 @@
             }
 
             // =========================================================
-            // 🔑 LÓGICA CLAVE: Muestra la sección de Resultados por defecto al cargar
+            // LÓGICA CLAVE: Muestra la sección de Resultados por defecto al cargar
             // =========================================================
             if (window.location.hash === '#default-panel') {
                 showSection(defaultSection);
             } else {
                 // Si no hay hash, o si es la primera carga, mostramos Gestión de Resultados.
                 showSection(resultsSection);
-                // 🔑 NUEVO: Cargar los selectores al iniciar la página
+                // Cargar los selectores al iniciar la página
                 loadEvents();
                 loadUsers();
+                // PRUEBA DE ALERTA: Ejecuta esto para confirmar que la alerta funciona
+                // mostrarAlerta('Alerta de prueba: el orden de scripts funciona.', 'info'); 
             }
             // =========================================================
 
@@ -339,17 +374,17 @@
                             const row = RESULTS_LIST.insertRow();
                             row.dataset.resultId = result.result_id;
                             row.innerHTML = `
-                                <td>${result.result_id}</td>
-                                <td>${result.event_id}</td>
-                                <td>${result.user_id}</td>
-                                <td>${result.user}</td>
-                                <td>${result.position}</td>
-                                <td>${result.best_lap_time}</td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-info me-2 edit-btn" data-id="${result.result_id}"><i class="bi bi-pencil"></i> Editar</button>
-                                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${result.result_id}"><i class="bi bi-trash"></i> Eliminar</button>
-                                </td>
-                            `;
+                                <td>${result.result_id}</td>
+                                <td>${result.event_id}</td>
+                                <td>${result.user_id}</td>
+                                <td>${result.user}</td>
+                                <td>${result.position}</td>
+                                <td>${result.best_lap_time}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-info me-2 edit-btn" data-id="${result.result_id}"><i class="bi bi-pencil"></i> Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${result.result_id}"><i class="bi bi-trash"></i> Eliminar</button>
+                                </td>
+                            `;
                         });
 
                         document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEditClick));
@@ -360,7 +395,8 @@
                     }
                 } catch (error) {
                     console.error('Error al cargar los resultados:', error);
-                    RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error de red o servidor.</td></tr>`;
+                    // 🔑 LLAMADA A ALERTA
+                    mostrarAlerta('Error al cargar los resultados. Revisa la conexión con el servidor.', 'error');
                 }
             }
 
@@ -383,6 +419,7 @@
                     }
                 } catch (error) {
                     console.error('Error al cargar eventos:', error);
+                    // 🔑 LLAMADA A ALERTA
                     mostrarAlerta('Error al cargar la lista de eventos.', 'error');
                 }
             }
@@ -406,6 +443,7 @@
                     }
                 } catch (error) {
                     console.error('Error al cargar usuarios:', error);
+                    // 🔑 LLAMADA A ALERTA
                     mostrarAlerta('Error al cargar la lista de pilotos.', 'error');
                 }
             }
@@ -502,6 +540,8 @@
 
             async function handleDeleteClick(event) {
                 const resultId = event.target.dataset.id;
+                // 🔑 Reemplaza el 'confirm' nativo con tu 'mostrarConfirmacion' si quieres el estilo customizado.
+                // Ejemplo: if (!(await mostrarConfirmacion(`¿Estás seguro de que quieres eliminar el resultado ID ${resultId}?`))) { return; }
                 if (!confirm(`¿Estás seguro de que quieres eliminar el resultado ID ${resultId}? Esta acción no se puede deshacer.`)) {
                     return;
                 }
@@ -532,13 +572,14 @@
                 MODAL_TITLE.textContent = 'Añadir Nuevo Resultado';
                 RESULT_FORM.reset();
                 RESULT_ID_INPUT.value = ''; // Limpiar el ID oculto
-                // 🔑 Recargar los selectores cada vez que se abre el modal para asegurar frescura de datos
+                // Recargar los selectores cada vez que se abre el modal para asegurar frescura de datos
                 loadEvents();
                 loadUsers();
             });
 
         });
     </script>
+           
     <script src="../../../js/navbar.js"></script>
 </body>
 
