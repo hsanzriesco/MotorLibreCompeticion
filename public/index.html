@@ -20,10 +20,8 @@
 
     main {
       padding-top: 100px;
-      /* Espacio para el navbar */
     }
 
-    /* Estilos para el modal de confirmación */
     .modal-content {
       background-color: #111;
       color: white;
@@ -73,6 +71,11 @@
         Calendario
       </a>
 
+      <!-- 🔥 NUEVA OPCIÓN CLUBES -->
+      <a href="./pages/clubes/clubes.html" class="d-block text-light mb-2">
+        Clubes
+      </a>
+
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
         Mi perfil
       </a>
@@ -113,7 +116,7 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // --- 7.1. Referencias de la UI y Sesión ---
+
       const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
       const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
@@ -126,37 +129,28 @@
       const loginIcon = document.getElementById("login-icon");
       const logoutBtn = document.getElementById("logout-btn");
 
-      // --- 7.2. Lógica de Estado de Usuario ---
       if (usuario) {
-        // USUARIO LOGUEADO
         bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
         userName.textContent = usuario.name;
 
-        // Muestra el nombre y oculta el ícono de login
         userName.style.display = "inline";
         loginIcon.style.display = "none";
         logoutBtn.style.display = "block";
 
-        // Redirección especial para administradores
         if (usuario.role === "admin") {
           document.getElementById("logo-link").href = "./pages/dashboard/admin/admin.html";
         }
 
       } else {
-        // NO HAY USUARIO LOGUEADO
         userName.style.display = "none";
-        loginIcon.style.display = "inline"; // Muestra el icono de Login
-        logoutBtn.style.display = "none"; // Oculta el botón de logout
+        loginIcon.style.display = "inline";
+        logoutBtn.style.display = "none";
       }
 
-      // --- 7.3. Lógica de Cierre de Sesión ---
-
-      // 🔑 1. Mostrar el modal al hacer clic en el botón del menú
       if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
           e.preventDefault();
 
-          // Validación rápida
           if (!usuario) {
             mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
             const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
@@ -164,31 +158,23 @@
             return;
           }
 
-          if (logoutConfirmModal) {
-            logoutConfirmModal.show();
-          }
+          if (logoutConfirmModal) logoutConfirmModal.show();
 
-          // Ocultar el offcanvas al abrir el modal (mejor UX)
           const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
           if (offcanvasMenu) offcanvasMenu.hide();
         });
       }
 
-      // 🔑 2. Cerrar sesión al confirmar en el modal
       if (btnConfirmLogout) {
         btnConfirmLogout.addEventListener("click", () => {
 
-          if (logoutConfirmModal) {
-            logoutConfirmModal.hide(); // Ocultar el modal
-          }
+          if (logoutConfirmModal) logoutConfirmModal.hide();
 
-          // Limpiar la sesión (usando ambos)
           sessionStorage.removeItem("usuario");
           localStorage.removeItem("usuario");
 
           mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
-          // Redirigir
           setTimeout(() => {
             window.location.href = "./pages/auth/login/login.html";
           }, 1500);
@@ -196,7 +182,6 @@
       }
     });
   </script>
-
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
