@@ -250,6 +250,8 @@
             const USER_SELECT = document.getElementById('user-select');
             const POSITION_INPUT = document.getElementById('position-input');
             const TIME_INPUT = document.getElementById('time-input');
+            // Referencia al campo de puntos
+            const POINTS_INPUT = document.getElementById('points-input');
 
             let allResults = [];
 
@@ -311,7 +313,7 @@
             // --- 1. CARGAR DATOS DE BASES DE DATOS (READ) ---
 
             async function loadResults() {
-                // CAMBIO: Colspan de 6 porque quitamos una columna
+                // ✅ CORRECCIÓN 2: Colspan de 6 porque quitamos la columna ID
                 RESULTS_LIST.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">Cargando resultados...</td></tr>';
                 try {
                     const response = await fetch(`${API_URL}?action=getAllResults`);
@@ -322,7 +324,7 @@
                         RESULTS_LIST.innerHTML = '';
 
                         if (allResults.length === 0) {
-                            // CAMBIO: Colspan de 6
+                            // ✅ CORRECCIÓN 2: Colspan de 6
                             RESULTS_LIST.innerHTML = '<tr><td colspan="6" class="text-center text-warning">No hay resultados registrados.</td></tr>';
                             return;
                         }
@@ -331,13 +333,22 @@
                             const row = RESULTS_LIST.insertRow();
                             // El dataset es clave para la edición y eliminación, aunque no se muestre el ID
                             row.dataset.resultId = result.result_id;
+
+                            // ✅ CORRECCIÓN 3: Lógica para mostrar el tiempo de vuelta correctamente
+                            let bestLapTimeDisplay = result.best_lap_time;
+                            if (typeof bestLapTimeDisplay === 'object' && bestLapTimeDisplay !== null) {
+                                // Esto maneja el caso de [object Object] si el backend no se ha corregido del todo
+                                bestLapTimeDisplay = bestLapTimeDisplay.time || bestLapTimeDisplay.value || JSON.stringify(bestLapTimeDisplay);
+                            } else if (bestLapTimeDisplay === null) {
+                                bestLapTimeDisplay = '-';
+                            }
+
                             row.innerHTML = `
                                 <td>${result.event_id}</td>
                                 <td>${result.user_id}</td>
                                 <td>${result.user}</td>
                                 <td>${result.position}</td>
-                                <td>${result.best_lap_time}</td>
-                                <td class="text-center">
+                                <td>${bestLapTimeDisplay}</td> <td class="text-center">
                                     <button class="btn btn-sm btn-outline-info me-2 edit-btn" data-id="${result.result_id}"><i class="bi bi-pencil"></i> Editar</button>
                                     <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${result.result_id}"><i class="bi bi-trash"></i> Eliminar</button>
                                 </td>
@@ -348,18 +359,17 @@
                         document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDeleteClick));
 
                     } else {
-                        // CAMBIO: Colspan de 6
+                        // ✅ CORRECCIÓN 2: Colspan de 6
                         RESULTS_LIST.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.message || 'Error al cargar los resultados.'}</td></tr>`;
                     }
                 } catch (error) {
                     console.error('Error al cargar los resultados:', error);
-                    // CAMBIO: Colspan de 6
+                    // ✅ CORRECCIÓN 2: Colspan de 6
                     RESULTS_LIST.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error de red o servidor.</td></tr>`;
                 }
             }
 
             // --- 2. CARGAR SELECTORES (EVENTOS Y USUARIOS) ---
-            // (Esta sección no necesita cambios)
 
             async function loadEvents() {
                 try {
@@ -406,7 +416,6 @@
 
 
             // --- 3. MANEJO DE FORMULARIO (CREATE / UPDATE) ---
-            // (Esta sección no necesita cambios estructurales)
 
             BTN_SAVE_RESULT.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -424,7 +433,8 @@
                     event_id: EVENT_SELECT.value,
                     user_id: USER_SELECT.value,
                     position: POSITION_INPUT.value,
-                    points: document.getElementById('points-input').value,
+                    // ✅ CORRECCIÓN 1: Capturamos el valor del campo habilitado
+                    points: POINTS_INPUT.value,
                     best_lap_time: TIME_INPUT.value,
                     user: USER_SELECT.options[USER_SELECT.selectedIndex].text,
                 };
@@ -477,13 +487,22 @@
                     USER_SELECT.value = resultToEdit.user_id;
                 });
 
-                // El ID se sigue usando aquí para fines informativos y de desarrollo, aunque no esté en la tabla
                 MODAL_TITLE.textContent = 'Editar Resultado (ID: ' + resultId + ')';
                 RESULT_ID_INPUT.value = resultId;
 
+                // Llenar el formulario con los datos
                 POSITION_INPUT.value = resultToEdit.position;
-                document.getElementById('points-input').value = resultToEdit.points || '';
-                TIME_INPUT.value = resultToEdit.best_lap_time;
+                // ✅ CORRECCIÓN 1: Llenamos el input de puntos
+                POINTS_INPUT.value = resultToEdit.points || '';
+
+                // ✅ CORRECCIÓN 3: Pre-llenamos el campo de tiempo
+                let timeValue = resultToEdit.best_lap_time;
+                if (typeof timeValue === 'object' && timeValue !== null) {
+                    // Si viene como objeto (sin corrección en el backend), intenta extraer el valor
+                    timeValue = timeValue.time || timeValue.value || '';
+                }
+                TIME_INPUT.value = timeValue || '';
+
 
                 ADD_RESULT_MODAL.show();
             }

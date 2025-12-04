@@ -114,14 +114,15 @@ export default async function handler(req, res) {
             }
 
             // 🔑 MODIFICADO: GET: Obtener TODOS los resultados de carrera para el panel de administración
-            // ESTA CONSULTA YA ESTABA CORRECTA (Usa JOIN para obtener el nombre)
             if (action === 'getAllResults') {
                 const result = await client.query(
-                    // 🟢 Se incluye la columna er.points y se obtiene el nombre del usuario mediante JOIN
-                    `SELECT er.result_id, er.event_id, er.user_id, er.position, er.best_lap_time, er.points, u.name AS user 
-                     FROM event_results er
-                     JOIN users u ON er.user_id = u.id 
-                     ORDER BY er.event_id ASC, er.position ASC`
+                    // 🟢 CORRECCIÓN: Usamos CAST(er.best_lap_time AS TEXT) para forzar el valor a una cadena simple.
+                    `SELECT er.result_id, er.event_id, er.user_id, er.position, 
+                     CAST(er.best_lap_time AS TEXT) AS best_lap_time, 
+                     er.points, u.name AS user 
+                     FROM event_results er
+                     JOIN users u ON er.user_id = u.id 
+                     ORDER BY er.event_id ASC, er.position ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
             }
@@ -232,8 +233,8 @@ export default async function handler(req, res) {
                 const result = await client.query(
                     // 🟢 Quitamos la columna "user"
                     `INSERT INTO event_results (event_id, user_id, position, best_lap_time, points) 
-                     VALUES ($1, $2, $3, $4, $5) 
-                     RETURNING result_id`,
+                     VALUES ($1, $2, $3, $4, $5) 
+                     RETURNING result_id`,
                     // 🟢 Quitamos el parámetro 'user'
                     [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, parseInt(points)]
                 );
@@ -270,14 +271,14 @@ export default async function handler(req, res) {
 
                 // 2. Verificar si quedan cupos (capacidad_max > num_inscritos)
                 const capacityCheck = await client.query(`
-                    SELECT 
-                        e.capacidad_max, 
-                        COUNT(r.id) AS num_inscritos 
-                    FROM events e 
-                    LEFT JOIN event_registrations r ON e.id = r.event_id 
-                    WHERE e.id = $1 
-                    GROUP BY e.id
-                `, [parsedEventId]);
+                    SELECT 
+                        e.capacidad_max, 
+                        COUNT(r.id) AS num_inscritos 
+                    FROM events e 
+                    LEFT JOIN event_registrations r ON e.id = r.event_id 
+                    WHERE e.id = $1 
+                    GROUP BY e.id
+                `, [parsedEventId]);
 
                 if (capacityCheck.rows.length > 0) {
                     const { capacidad_max, num_inscritos } = capacityCheck.rows[0];
@@ -292,15 +293,15 @@ export default async function handler(req, res) {
 
                 // 3. Obtener solo el nombre del usuario y el título del evento
                 const dataQuery = `
-                    SELECT
-                        u.name AS user_name,
-                        e.title AS event_title
-                    FROM
-                        users u,
-                        events e
-                    WHERE
-                        u.id = $1 AND e.id = $2;
-                `;
+                    SELECT
+                        u.name AS user_name,
+                        e.title AS event_title
+                    FROM
+                        users u,
+                        events e
+                    WHERE
+                        u.id = $1 AND e.id = $2;
+                `;
 
                 const dataResult = await client.query(dataQuery, [parsedUserId, parsedEventId]);
 
@@ -384,9 +385,9 @@ export default async function handler(req, res) {
                 const result = await client.query(
                     // 🟢 Quitamos la columna "user" del SET
                     `UPDATE event_results 
-                     SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, points = $5
-                     WHERE result_id = $6 
-                     RETURNING result_id`,
+                     SET event_id = $1, user_id = $2, position = $3, best_lap_time = $4, points = $5
+                     WHERE result_id = $6 
+                     RETURNING result_id`,
                     // 🟢 Ajustamos los parámetros a 6 (quitamos 'user' y result_id es $6)
                     [parseInt(event_id), parseInt(user_id), parseInt(position), best_lap_time, parseInt(points), parseInt(result_id)]
                 );
