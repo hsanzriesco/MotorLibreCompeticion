@@ -12,10 +12,18 @@ document.addEventListener("DOMContentLoaded", () => {
     async function cargarClubes() {
         try {
             const res = await fetch("/api/clubs");
+
+            if (!res.ok) {
+                console.error("Error HTTP:", res.status);
+                mostrarAlerta("Error al cargar los clubes", "error");
+                return;
+            }
+
             const clubes = await res.json();
 
             if (!Array.isArray(clubes)) {
-                mostrarAlerta("Error al cargar los clubes", "error");
+                console.error("Respuesta no válida:", clubes);
+                mostrarAlerta("Error al interpretar los datos recibidos", "error");
                 return;
             }
 
@@ -42,12 +50,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         clubes.forEach(club => {
             const card = document.createElement("div");
-            card.className = "col-md-4";
+            card.className = "col-md-4 mb-4";
 
             card.innerHTML = `
-                <div class="club-card h-100">
-                    <h3 class="text-danger">${club.nombre}</h3>
-                    <p>${club.descripcion}</p>
+                <div class="club-card h-100 p-3">
+                    
+                    <img src="${club.imagen_club || './img/placeholder.jpg'}" 
+                         alt="${club.nombre_evento}" 
+                         class="img-fluid rounded mb-3 club-img">
+
+                    <h3 class="text-danger text-center">${club.nombre_evento}</h3>
+
+                    <p class="text-center">${club.descripcion || "Sin descripción"}</p>
 
                     <button class="btn btn-netflix w-100 mt-3 join-btn" data-id="${club.id}">
                         Unirme al club
@@ -58,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
             container.appendChild(card);
         });
 
-        // Cuando los clubs están cargados, asignamos los listeners
+        // Asignar eventos a los botones
         document.querySelectorAll(".join-btn").forEach(btn => {
             btn.addEventListener("click", unirseClub);
         });
@@ -85,8 +99,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
             });
 
+            const msg = await res.text();
+
             if (!res.ok) {
-                const msg = await res.text();
                 mostrarAlerta(msg, "error");
                 return;
             }
