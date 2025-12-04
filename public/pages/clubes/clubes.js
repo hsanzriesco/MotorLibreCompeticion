@@ -1,118 +1,138 @@
+// public/js/clubes.js
 document.addEventListener("DOMContentLoaded", () => {
-
     const container = document.getElementById("clubes-container");
+    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+    const usuario = storedUser ? JSON.parse(storedUser) : null;
 
-    const usuario = JSON.parse(
-        sessionStorage.getItem("usuario") || localStorage.getItem("usuario")
-    );
+    function escapeHtml(s = "") {
+        return String(s)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+    }
 
-    // -----------------------------------------------------------------------------------
-    // CARGAR CLUBES DESDE LA BASE DE DATOS
-    // -----------------------------------------------------------------------------------
     async function cargarClubes() {
         try {
             const res = await fetch("/api/clubs");
-
-            if (!res.ok) {
-                console.error("Error HTTP:", res.status);
-                mostrarAlerta("Error al cargar los clubes", "error");
-                return;
-            }
-
+            if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
-
-            // 🔥 EXTRAEMOS EL ARRAY REAL
-            const clubes = data.data;
-
-            if (!Array.isArray(clubes)) {
-                console.error("Respuesta no válida:", data);
-                mostrarAlerta("Error al interpretar los datos recibidos", "error");
+            if (!data.success) {
+                mostrarAlerta(data.message || "Error cargando clubes", "error");
                 return;
             }
-
-            renderClubes(clubes);
-
+            renderClubes(data.data);
         } catch (err) {
             console.error("Error cargando clubes:", err);
             mostrarAlerta("No se pudo conectar con el servidor", "error");
         }
     }
 
-    // -----------------------------------------------------------------------------------
-    // RENDERIZAR CLUBES
-    // -----------------------------------------------------------------------------------
     function renderClubes(clubes) {
         container.innerHTML = "";
-
-        if (clubes.length === 0) {
-            container.innerHTML = `
-                <h4 class="text-danger mt-4">Aún no hay clubes creados.</h4>
-            `;
+        if (!Array.isArray(clubes) || clubes.length === 0) {
+            container.innerHTML = `<h4 class="text-danger mt-4">Aún no hay clubes creados.</h4>`;
             return;
         }
 
+        const userClubId = usuario?.club_id ? Number(usuario.club_id) : null;
+
+        const row = document.createElement("div");
+        row.className = "row gy-3";
         clubes.forEach(club => {
-            const card = document.createElement("div");
-            card.className = "col-md-4 mb-4";
+            const col = document.createElement("div");
+            col.className = "col-md-4";
 
-            card.innerHTML = `
-                <div class="club-card h-100 p-3">
-                    
-                    <img src="${club.imagen_club || './img/placeholder.jpg'}" 
-                         alt="${club.nombre_evento}" 
-                         class="img-fluid rounded mb-3 club-img">
+            const isMember = userClubId && Number(club.id) === userClubId;
 
-                    <h3 class="text-danger text-center">${club.nombre_evento}</h3>
-
-                    <p class="text-center">${club.descripcion || "Sin descripción"}</p>
-
-                    <button class="btn btn-netflix w-100 mt-3 join-btn" data-id="${club.id}">
-                        Unirme al club
-                    </button>
-                </div>
-            `;
-
-            container.appendChild(card);
+            col.innerHTML = `
+        <div class="club-card h-100 p-3" style="background:#141414;border:1px solid rgba(229,9,20,0.2);border-radius:8px">
+          ${club.imagen_club ? `<img src="${escapeHtml(club.imagen_club)}" alt="${escapeHtml(club.nombre_evento)}" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">` : `<img src="/img/placeholder.jpg" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">`}
+          <h4 class="text-danger">${escapeHtml(club.nombre_evento)}</h4>
+          <p>${escapeHtml(club.descripcion || "")}</p>
+          <div>
+            ${usuario ? (isMember
+                    ? `<button class="btn btn-outline-light w-100 leave-btn" data-id="${club.id}">Salir del club</button>`
+                    : `<button class="btn btn-netflix w-100 join-btn" data-id="${club.id}">Unirme al club</button>`
+                ) : `<a href="/pages/auth/login/login.html" class="btn btn-netflix w-100">Inicia sesión para unirte</a>`
+                }
+          </div>
+        </div>
+      `;
+            row.appendChild(col);
         });
 
-        document.querySelectorAll(".join-btn").forEach(btn => {
-            btn.addEventListener("click", unirseClub);
-        });
+        container.appendChild(row);
+
+        // listeners
+        document.querySelectorAll(".join-btn").forEach(btn => btn.addEventListener("click", joinClub));
+        document.querySelectorAll(".leave-btn").forEach(btn => btn.addEventListener("click", leaveClub));
     }
 
-    // -----------------------------------------------------------------------------------
-    // UNIRSE A UN CLUB
-    // -----------------------------------------------------------------------------------
-    async function unirseClub(e) {
-        const club_id = e.target.dataset.id;
-
+    async function joinClub(e) {
+        const club_id = e.currentTarget.dataset.id;
         if (!usuario) {
             mostrarAlerta("Debes iniciar sesión para unirte a un club", "error");
             return;
         }
-
         try {
             const res = await fetch("/api/clubs?action=join", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    club_id,
-                    user_id: usuario.id
-                })
+                body: JSON.stringify({ user_id: usuario.id, club_id: Number(club_id) })
             });
-
             const data = await res.json();
-
             if (!res.ok) {
-                mostrarAlerta(data.message || "Error al unirse al club", "error");
+                mostrarAlerta(data.message || "Error al unirse", "error");
+                return;
+            }
+            // Actualizar usuario localmente para reflejar club
+            usuario.club_id = Number(club_id);
+            sessionStorage.setItem("usuario", JSON.stringify(usuario));
+            localStorage.setItem("usuario", JSON.stringify(usuario));
+
+            mostrarAlerta("Te has unido al club", "exito");
+            cargarClubes();
+        } catch (err) {
+            console.error("Error joinClub:", err);
+            mostrarAlerta("Error en el servidor", "error");
+        }
+    }
+
+    async function leaveClub(e) {
+        const club_id = e.currentTarget.dataset.id;
+        if (!usuario) {
+            mostrarAlerta("Debes iniciar sesión", "error");
+            return;
+        }
+
+        // Confirmación básica
+        const ok = confirm("¿Estás seguro que quieres salir de este club?");
+        if (!ok) return;
+
+        try {
+            const res = await fetch("/api/clubs?action=leave", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: usuario.id })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                mostrarAlerta(data.message || "Error al salir del club", "error");
                 return;
             }
 
-            mostrarAlerta("Te has unido correctamente al club", "exito");
+            // Actualizar usuario localmente: quitar club_id
+            usuario.club_id = null;
+            sessionStorage.setItem("usuario", JSON.stringify(usuario));
+            localStorage.setItem("usuario", JSON.stringify(usuario));
 
+            mostrarAlerta("Te has salido del club", "exito");
+            cargarClubes();
         } catch (err) {
-            console.error("Error uniendo al club:", err);
-            mostrarAlerta("Error al unirse al club", "error");
+            console.error("Error leaveClub:", err);
+            mostrarAlerta("Error en el servidor", "error");
         }
     }
 
