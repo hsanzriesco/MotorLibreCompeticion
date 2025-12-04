@@ -37,37 +37,20 @@
             max-width: 1200px;
         }
 
-        /* ------------------------------
-           INPUTS SIN HOVER NI FOCUS
-        ------------------------------ */
-        .input-dark,
-        input,
-        textarea,
-        select {
-            background: #222 !important;
-            border: 1px solid #e50914 !important;
-            color: #fff !important;
+        .input-dark {
+            background: #222;
+            border: 1px solid #e50914;
+            color: #fff;
         }
 
-        /* Quitar hover */
+        /* SIN HOVER BLANCO */
         .input-dark:hover,
-        input:hover,
-        textarea:hover,
-        select:hover {
-            background: #222 !important;
-            border-color: #e50914 !important;
-            color: #fff !important;
-        }
-
-        /* Quitar efecto blanco al hacer clic */
         .input-dark:focus,
-        input:focus,
-        textarea:focus,
-        select:focus {
+        textarea.input-dark:hover,
+        textarea.input-dark:focus {
             background: #222 !important;
             border-color: #e50914 !important;
             color: #fff !important;
-            outline: none !important;
             box-shadow: none !important;
         }
 
@@ -111,7 +94,6 @@
         </div>
 
         <div class="offcanvas-body">
-
             <a href="./adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de Eventos</a>
             <a href="./lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de Lugares</a>
             <a href="./user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
@@ -119,7 +101,6 @@
             <hr class="border-secondary" />
 
             <a href="#" id="logout-btn" class="d-block text-danger">Cerrar sesión</a>
-
         </div>
     </div>
 
@@ -133,14 +114,14 @@
             <h3 class="text-center mb-3">Formulario de Club</h3>
 
             <form id="club-form" class="mb-4" enctype="multipart/form-data">
-
                 <input type="hidden" id="club-id">
 
                 <div class="row g-3">
 
                     <div class="col-md-6">
-                        <label class="form-label">Nombre del Evento *</label>
-                        <input type="text" class="form-control input-dark" id="nombre_evento" required />
+                        <label class="form-label">Nombre del Club *</label>
+                        <input type="text" class="form-control input-dark" id="nombre_evento"
+                            placeholder="Introduce el nombre del club" required />
                     </div>
 
                     <div class="col-md-6">
