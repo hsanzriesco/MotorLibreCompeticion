@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clubes</title>
+
+    <!-- Tu CSS global -->
+    <link rel="stylesheet" href="/css/main.css">
+
+    <style>
+        /* Puedes mover esto a tu CSS si quieres */
+        .club-container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .club-card {
+            padding: 18px;
+            background: #f2f2f2;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 6px solid #2196F3;
+        }
+
+        .club-card h3 {
+            margin-top: 0;
+        }
+
+        .club-card button {
+            padding: 8px 14px;
+            border: none;
+            background: #2196F3;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .club-card button:hover {
+            background: #0b76d1;
+        }
+
+        #crearClubForm {
+            background: #e9e9e9;
+            padding: 18px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="club-container">
+
+        <h1>Clubes</h1>
+
+        <!-- FORMULARIO PARA CREAR UN CLUB -->
+        <div id="crearClubForm">
+            <h2>Crear un nuevo club</h2>
+            <input id="clubNombre" type="text" placeholder="Nombre del club" required><br><br>
+            <textarea id="clubDescripcion" placeholder="Descripción" rows="3"></textarea><br><br>
+            <input id="clubImagen" type="text" placeholder="URL de imagen (opcional)"><br><br>
+
+            <button onclick="crearClub()">Crear Club</button>
+        </div>
+
+        <h2>Lista de Clubes</h2>
+        <div id="clubesLista"></div>
+
+    </div>
+
+    <script src="/js/clubes.js"></script>
+
+</body>
+</html>
