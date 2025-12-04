@@ -19,10 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const clubes = await res.json();
+            const data = await res.json();
+
+            // 🔥 EXTRAEMOS EL ARRAY REAL
+            const clubes = data.data;
 
             if (!Array.isArray(clubes)) {
-                console.error("Respuesta no válida:", clubes);
+                console.error("Respuesta no válida:", data);
                 mostrarAlerta("Error al interpretar los datos recibidos", "error");
                 return;
             }
@@ -72,14 +75,13 @@ document.addEventListener("DOMContentLoaded", () => {
             container.appendChild(card);
         });
 
-        // Asignar eventos a los botones
         document.querySelectorAll(".join-btn").forEach(btn => {
             btn.addEventListener("click", unirseClub);
         });
     }
 
     // -----------------------------------------------------------------------------------
-    // UNIRSE A UN CLUB (POST a /api/clubs/join)
+    // UNIRSE A UN CLUB
     // -----------------------------------------------------------------------------------
     async function unirseClub(e) {
         const club_id = e.target.dataset.id;
@@ -90,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const res = await fetch("/api/clubs/join", {
+            const res = await fetch("/api/clubs?action=join", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -99,10 +101,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
             });
 
-            const msg = await res.text();
+            const data = await res.json();
 
             if (!res.ok) {
-                mostrarAlerta(msg, "error");
+                mostrarAlerta(data.message || "Error al unirse al club", "error");
                 return;
             }
 
