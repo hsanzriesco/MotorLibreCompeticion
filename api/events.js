@@ -113,8 +113,6 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // --- SE HAN ELIMINADO LAS ACCIONES DE OBTENER RESULTADOS (getAllResults) ---
-
             // GET: Cargar todos los eventos
             if (!action) {
                 const result = await client.query(
@@ -199,8 +197,6 @@ export default async function handler(req, res) {
         // MANEJADOR POST
         // ===============================================
         if (req.method === "POST") {
-
-            // --- SE HA ELIMINADO LA ACCIÓN DE AÑADIR RESULTADOS (addResult) ---
 
             // POST: Registrar inscripción 
             if (action === 'register') {
@@ -322,8 +318,6 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "PUT") {
 
-            // --- SE HA ELIMINADO LA ACCIÓN DE EDITAR RESULTADOS (editResult) ---
-
             // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
 
@@ -368,8 +362,6 @@ export default async function handler(req, res) {
         // MANEJADOR DELETE 
         // ===============================================
         if (req.method === "DELETE") {
-
-            // --- SE HA ELIMINADO LA ACCIÓN DE ELIMINAR RESULTADOS (deleteResult) ---
 
             // Cancelar inscripción
             if (action === 'cancel') {
