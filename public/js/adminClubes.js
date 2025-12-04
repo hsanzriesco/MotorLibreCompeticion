@@ -16,26 +16,16 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const res = await fetch("/api/clubs");
 
-            if (!res.ok) {
-                mostrarAlerta("Error al cargar los clubes", "error");
+            const data = await res.json();
+            if (!data.success) {
+                mostrarAlerta("Error cargando clubes", "error");
                 return;
             }
 
-            const respuesta = await res.json();
-
-            // Esperamos { success: true, data: [...] }
-            const clubes = respuesta.data;
-
-            if (!Array.isArray(clubes)) {
-                console.error("Respuesta inesperada:", respuesta);
-                mostrarAlerta("Error al interpretar los clubes", "error");
-                return;
-            }
-
-            renderTabla(clubes);
+            renderTabla(data.data);
 
         } catch (error) {
-            console.error("Error cargando clubes:", error);
+            console.error(error);
             mostrarAlerta("Error al conectar con el servidor", "error");
         }
     }
@@ -48,9 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (clubes.length === 0) {
             tabla.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-danger">No hay clubes registrados</td>
-                </tr>
+                <tr><td colspan="6" class="text-danger text-center">No hay clubes registrados</td></tr>
             `;
             return;
         }
@@ -65,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${club.fecha_creacion}</td>
                 <td><img src="${club.imagen_club || ""}" width="60" class="rounded"></td>
                 <td>
-                    <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}">Editar</button>
+                    <button class="btn btn-warning btn-sm editar-btn" data-id="${club.id}">Editar</button>
                     <button class="btn btn-danger btn-sm eliminar-btn" data-id="${club.id}">Eliminar</button>
                 </td>
             `;
@@ -73,38 +61,37 @@ document.addEventListener("DOMContentLoaded", () => {
             tabla.appendChild(fila);
         });
 
-        // Eventos dinámicos
-        document.querySelectorAll(".editar-btn").forEach(btn => {
-            btn.addEventListener("click", cargarClubEnFormulario);
-        });
+        document.querySelectorAll(".editar-btn").forEach(b =>
+            b.addEventListener("click", cargarClubEnFormulario)
+        );
 
-        document.querySelectorAll(".eliminar-btn").forEach(btn => {
-            btn.addEventListener("click", eliminarClub);
-        });
+        document.querySelectorAll(".eliminar-btn").forEach(b =>
+            b.addEventListener("click", eliminarClub)
+        );
     }
 
     // ========================================================
-    //       CARGAR UN CLUB EN EL FORMULARIO PARA EDITAR
+    //           CARGAR CLUB EN FORMULARIO (EDITAR)
     // ========================================================
     async function cargarClubEnFormulario(e) {
         const id = e.target.dataset.id;
 
         try {
             const res = await fetch(`/api/clubs?id=${id}`);
-            const respuesta = await res.json();
+            const r = await res.json();
 
-            if (!respuesta.success) {
-                mostrarAlerta("Error al obtener datos del club", "error");
+            if (!r.success) {
+                mostrarAlerta("No se pudo cargar el club", "error");
                 return;
             }
 
-            const club = respuesta.data;
+            const c = r.data;
 
-            inputId.value = club.id;
-            inputNombre.value = club.nombre_evento;
-            inputDescripcion.value = club.descripcion;
-            inputImagen.value = club.imagen_club;
-            inputFecha.value = club.fecha_creacion;
+            inputId.value = c.id;
+            inputNombre.value = c.nombre_evento;
+            inputDescripcion.value = c.descripcion;
+            inputFecha.value = c.fecha_creacion;
+            inputImagen.value = "";
 
             mostrarAlerta("Club cargado para edición", "info");
 
@@ -115,31 +102,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ========================================================
-    //                 GUARDAR (CREAR / EDITAR)
+    //                   GUARDAR (POST / PUT)
     // ========================================================
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const datosClub = {
-            nombre_evento: inputNombre.value,
-            descripcion: inputDescripcion.value,
-            imagen_club: inputImagen.value,
-            fecha_creacion: inputFecha.value
-        };
-
         const id = inputId.value;
         const metodo = id ? "PUT" : "POST";
+        const url = "/api/clubs" + (id ? `?id=${id}` : "");
+
+        const formData = new FormData();
+        formData.append("nombre_evento", inputNombre.value);
+        formData.append("descripcion", inputDescripcion.value);
+        formData.append("fecha_creacion", inputFecha.value);
+
+        if (inputImagen.files[0]) {
+            formData.append("imagen_club", inputImagen.files[0]);
+        }
 
         try {
-            const res = await fetch("/api/clubs" + (id ? `?id=${id}` : ""), {
+            const res = await fetch(url, {
                 method: metodo,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(datosClub)
+                body: formData
             });
 
-            const respuesta = await res.json();
+            const r = await res.json();
 
-            if (!respuesta.success) {
+            if (!r.success) {
                 mostrarAlerta("Error guardando club", "error");
                 return;
             }
@@ -158,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ========================================================
-    //                    ELIMINAR CLUB
+    //                      ELIMINAR
     // ========================================================
     async function eliminarClub(e) {
         const id = e.target.dataset.id;
@@ -170,9 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "DELETE"
             });
 
-            const respuesta = await res.json();
+            const r = await res.json();
 
-            if (!respuesta.success) {
+            if (!r.success) {
                 mostrarAlerta("Error eliminando club", "error");
                 return;
             }
@@ -188,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ========================================================
-    //               CARGAR INICIAL
+    //     CARGA INICIAL
     // ========================================================
     cargarClubes();
 });
