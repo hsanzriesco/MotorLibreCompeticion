@@ -40,6 +40,7 @@ export default async function handler(req, res) {
 
         // ============================================================
         // 👉 JOIN: Unirse a un club
+        // POST /api/clubs?action=join
         // ============================================================
         if (req.method === "POST" && action === "join") {
             const { user_id, club_id } = req.body;
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 1️⃣ Verificar si este usuario ya está en un club
+            // 1️⃣ Verificar si ya pertenece a un club
             const check = await client.query(
                 "SELECT club_id FROM users WHERE id = $1",
                 [user_id]
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 2️⃣ Verificar que el club exista
+            // 2️⃣ Verificar que el club existe
             const exists = await client.query(
                 "SELECT id FROM clubs WHERE id = $1",
                 [club_id]
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 3️⃣ Asignar el club al usuario
+            // 3️⃣ Asignarlo al usuario
             await client.query(
                 "UPDATE users SET club_id = $1 WHERE id = $2",
                 [club_id, user_id]
@@ -90,10 +91,48 @@ export default async function handler(req, res) {
         }
 
         // ============================================================
-        // GET
+        // 👉 LEAVE: Salir del club
+        // POST /api/clubs?action=leave
+        // ============================================================
+        if (req.method === "POST" && action === "leave") {
+            const { user_id } = req.body;
+
+            if (!user_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Falta user_id."
+                });
+            }
+
+            const user = await client.query(
+                "SELECT club_id FROM users WHERE id = $1",
+                [user_id]
+            );
+
+            if (!user.rows[0].club_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Este usuario no está en ningún club."
+                });
+            }
+
+            await client.query(
+                "UPDATE users SET club_id = NULL WHERE id = $1",
+                [user_id]
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Has salido del club correctamente."
+            });
+        }
+
+        // ============================================================
+        // GET: Obtener club o lista de clubs
         // ============================================================
         if (req.method === "GET") {
 
+            // Obtener un club por ID
             if (id) {
                 const result = await client.query(
                     "SELECT * FROM clubs WHERE id = $1",
@@ -114,16 +153,17 @@ export default async function handler(req, res) {
                 });
             }
 
+            // Obtener todos los clubs
             const result = await client.query("SELECT * FROM clubs ORDER BY id ASC");
             return res.json({ success: true, data: result.rows });
         }
 
         // ============================================================
-        // POST / PUT (Crear o editar club)
+        // POST / PUT: Crear o editar club
+        // (Ignorar si es JOIN o LEAVE)
         // ============================================================
         if (req.method === "POST" || req.method === "PUT") {
-            // Ignorar si es JOIN
-            if (action === "join") return;
+            if (action === "join" || action === "leave") return;
 
             const { fields, files } = await parseMultipart(req);
 
@@ -141,6 +181,7 @@ export default async function handler(req, res) {
                 imageUrl = upload.secure_url;
             }
 
+            // Crear club
             if (req.method === "POST") {
                 const result = await client.query(
                     `INSERT INTO clubs (nombre_evento, descripcion, imagen_club)
@@ -156,6 +197,7 @@ export default async function handler(req, res) {
                 return res.status(201).json({ success: true, data: result.rows[0] });
             }
 
+            // Editar club
             if (req.method === "PUT") {
                 const result = await client.query(
                     `UPDATE clubs
@@ -177,14 +219,14 @@ export default async function handler(req, res) {
         }
 
         // ============================================================
-        // DELETE
+        // DELETE: Eliminar club
         // ============================================================
         if (req.method === "DELETE") {
             await client.query("DELETE FROM clubs WHERE id=$1", [id]);
             return res.json({ success: true });
         }
 
-        return res.status(405).json({ success: false, message: "Método no permitido" });
+        return res.status(405).json({ success: false, message: "Método no permitido." });
 
     } catch (err) {
         console.error("ERROR /api/clubs:", err);
