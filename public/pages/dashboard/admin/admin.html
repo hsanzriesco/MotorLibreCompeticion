@@ -138,7 +138,6 @@
                 <table class="table table-dark table-striped table-hover table-results">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Evento (ID)</th>
                             <th>Piloto (ID)</th>
                             <th>Nombre Piloto</th>
@@ -149,7 +148,7 @@
                     </thead>
                     <tbody id="results-list">
                         <tr>
-                            <td colspan="7" class="text-center text-secondary">Cargando resultados...</td>
+                            <td colspan="6" class="text-center text-secondary">Cargando resultados...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -312,7 +311,8 @@
             // --- 1. CARGAR DATOS DE BASES DE DATOS (READ) ---
 
             async function loadResults() {
-                RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-secondary">Cargando resultados...</td></tr>';
+                // CAMBIO: Colspan de 6 porque quitamos una columna
+                RESULTS_LIST.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">Cargando resultados...</td></tr>';
                 try {
                     const response = await fetch(`${API_URL}?action=getAllResults`);
                     const data = await response.json();
@@ -322,15 +322,16 @@
                         RESULTS_LIST.innerHTML = '';
 
                         if (allResults.length === 0) {
-                            RESULTS_LIST.innerHTML = '<tr><td colspan="7" class="text-center text-warning">No hay resultados registrados.</td></tr>';
+                            // CAMBIO: Colspan de 6
+                            RESULTS_LIST.innerHTML = '<tr><td colspan="6" class="text-center text-warning">No hay resultados registrados.</td></tr>';
                             return;
                         }
 
                         data.data.forEach(result => {
                             const row = RESULTS_LIST.insertRow();
+                            // El dataset es clave para la edición y eliminación, aunque no se muestre el ID
                             row.dataset.resultId = result.result_id;
                             row.innerHTML = `
-                                <td>${result.result_id}</td>
                                 <td>${result.event_id}</td>
                                 <td>${result.user_id}</td>
                                 <td>${result.user}</td>
@@ -347,15 +348,18 @@
                         document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDeleteClick));
 
                     } else {
-                        RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${data.message || 'Error al cargar los resultados.'}</td></tr>`;
+                        // CAMBIO: Colspan de 6
+                        RESULTS_LIST.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.message || 'Error al cargar los resultados.'}</td></tr>`;
                     }
                 } catch (error) {
                     console.error('Error al cargar los resultados:', error);
-                    RESULTS_LIST.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error de red o servidor.</td></tr>`;
+                    // CAMBIO: Colspan de 6
+                    RESULTS_LIST.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error de red o servidor.</td></tr>`;
                 }
             }
 
             // --- 2. CARGAR SELECTORES (EVENTOS Y USUARIOS) ---
+            // (Esta sección no necesita cambios)
 
             async function loadEvents() {
                 try {
@@ -379,8 +383,6 @@
             }
 
             async function loadUsers() {
-                // Usamos API_URL ('/api/events') asumiendo que el manejador getAllUsersList está allí, 
-                // o ajusta a '/api/user' si tienes un endpoint de usuario separado.
                 try {
                     const response = await fetch(`${API_URL}?action=getAllUsersList`);
                     const data = await response.json();
@@ -404,6 +406,7 @@
 
 
             // --- 3. MANEJO DE FORMULARIO (CREATE / UPDATE) ---
+            // (Esta sección no necesita cambios estructurales)
 
             BTN_SAVE_RESULT.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -421,10 +424,8 @@
                     event_id: EVENT_SELECT.value,
                     user_id: USER_SELECT.value,
                     position: POSITION_INPUT.value,
-                    // CAMBIO: Ahora obtenemos el valor del input de puntos
                     points: document.getElementById('points-input').value,
                     best_lap_time: TIME_INPUT.value,
-                    // Capturamos el nombre del piloto del texto de la opción seleccionada
                     user: USER_SELECT.options[USER_SELECT.selectedIndex].text,
                 };
 
@@ -446,16 +447,13 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta(data.message, 'success');
                         ADD_RESULT_MODAL.hide();
                         loadResults();
                     } else {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta('Error: ' + data.message, 'error');
                     }
                 } catch (error) {
-                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
                     mostrarAlerta('Error de conexión al guardar el resultado.', 'error');
                     console.error('Error al guardar:', error);
                 }
@@ -468,12 +466,10 @@
                 const resultToEdit = allResults.find(r => r.result_id === resultId);
 
                 if (!resultToEdit) {
-                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
                     mostrarAlerta("Resultado no encontrado.", 'warning');
                     return;
                 }
 
-                // 🔑 Asegurarse de que los selectores están cargados antes de intentar asignar el valor
                 loadEvents().then(() => {
                     EVENT_SELECT.value = resultToEdit.event_id;
                 });
@@ -481,12 +477,11 @@
                     USER_SELECT.value = resultToEdit.user_id;
                 });
 
+                // El ID se sigue usando aquí para fines informativos y de desarrollo, aunque no esté en la tabla
                 MODAL_TITLE.textContent = 'Editar Resultado (ID: ' + resultId + ')';
                 RESULT_ID_INPUT.value = resultId;
 
-                // Llenar el formulario con los datos
                 POSITION_INPUT.value = resultToEdit.position;
-                // CAMBIO: Llenamos el input de puntos
                 document.getElementById('points-input').value = resultToEdit.points || '';
                 TIME_INPUT.value = resultToEdit.best_lap_time;
 
@@ -508,15 +503,12 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta(data.message, 'success');
                         loadResults();
                     } else {
-                        // 🔑 USO DE LA FUNCIÓN DE ALERTA
                         mostrarAlerta('Error al eliminar: ' + data.message, 'error');
                     }
                 } catch (error) {
-                    // 🔑 USO DE LA FUNCIÓN DE ALERTA
                     mostrarAlerta('Error de conexión al eliminar.', 'error');
                     console.error('Error al eliminar:', error);
                 }
@@ -527,7 +519,6 @@
                 MODAL_TITLE.textContent = 'Añadir Nuevo Resultado';
                 RESULT_FORM.reset();
                 RESULT_ID_INPUT.value = ''; // Limpiar el ID oculto
-                // 🔑 Recargar los selectores cada vez que se abre el modal para asegurar frescura de datos
                 loadEvents();
                 loadUsers();
             });
