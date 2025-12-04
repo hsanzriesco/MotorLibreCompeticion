@@ -2,22 +2,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const container = document.getElementById("clubes-container");
 
-    // Ejemplo de clubes (puedes reemplazar por API o DB)
-    const clubes = [
-        { id: 1, nombre: "Street Racers", descripcion: "Club de conducción urbana y tandas nocturnas." },
-        { id: 2, nombre: "Track Masters", descripcion: "Expertos en circuito: tandas, técnica y telemetría." },
-        { id: 3, nombre: "Drift Nation", descripcion: "Club dedicado al drift: entrenamiento, eventos y shows." }
-    ];
+    const usuario = JSON.parse(
+        sessionStorage.getItem("usuario") || localStorage.getItem("usuario")
+    );
 
-    // Recuperar clubes donde el usuario ya está
-    const misClubes = JSON.parse(localStorage.getItem("misClubes")) || [];
+    // -----------------------------------------------------------------------------------
+    // CARGAR CLUBES DESDE LA BASE DE DATOS
+    // -----------------------------------------------------------------------------------
+    async function cargarClubes() {
+        try {
+            const res = await fetch("/api/clubs");
+            const clubes = await res.json();
 
-    function renderClubes() {
+            if (!Array.isArray(clubes)) {
+                mostrarAlerta("Error al cargar los clubes", "error");
+                return;
+            }
+
+            renderClubes(clubes);
+
+        } catch (err) {
+            console.error("Error cargando clubes:", err);
+            mostrarAlerta("No se pudo conectar con el servidor", "error");
+        }
+    }
+
+    // -----------------------------------------------------------------------------------
+    // RENDERIZAR CLUBES
+    // -----------------------------------------------------------------------------------
+    function renderClubes(clubes) {
         container.innerHTML = "";
 
-        clubes.forEach(club => {
-            const unido = misClubes.includes(club.id);
+        if (clubes.length === 0) {
+            container.innerHTML = `
+                <h4 class="text-danger mt-4">Aún no hay clubes creados.</h4>
+            `;
+            return;
+        }
 
+        clubes.forEach(club => {
             const card = document.createElement("div");
             card.className = "col-md-4";
 
@@ -25,8 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="club-card h-100">
                     <h3 class="text-danger">${club.nombre}</h3>
                     <p>${club.descripcion}</p>
+
                     <button class="btn btn-netflix w-100 mt-3 join-btn" data-id="${club.id}">
-                        ${unido ? "Ya eres miembro" : "Unirme"}
+                        Unirme al club
                     </button>
                 </div>
             `;
@@ -34,25 +58,46 @@ document.addEventListener("DOMContentLoaded", () => {
             container.appendChild(card);
         });
 
-        // Listeners para botones
+        // Cuando los clubs están cargados, asignamos los listeners
         document.querySelectorAll(".join-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                const id = parseInt(e.target.dataset.id);
-
-                if (misClubes.includes(id)) {
-                    mostrarAlerta("Ya eres miembro de este club", "error");
-                    return;
-                }
-
-                misClubes.push(id);
-                localStorage.setItem("misClubes", JSON.stringify(misClubes));
-
-                mostrarAlerta("Te has unido al club correctamente", "exito");
-                renderClubes();
-            });
+            btn.addEventListener("click", unirseClub);
         });
     }
 
-    renderClubes();
+    // -----------------------------------------------------------------------------------
+    // UNIRSE A UN CLUB (POST a /api/clubs/join)
+    // -----------------------------------------------------------------------------------
+    async function unirseClub(e) {
+        const club_id = e.target.dataset.id;
 
+        if (!usuario) {
+            mostrarAlerta("Debes iniciar sesión para unirte a un club", "error");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/clubs/join", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    club_id,
+                    user_id: usuario.id
+                })
+            });
+
+            if (!res.ok) {
+                const msg = await res.text();
+                mostrarAlerta(msg, "error");
+                return;
+            }
+
+            mostrarAlerta("Te has unido correctamente al club", "exito");
+
+        } catch (err) {
+            console.error("Error uniendo al club:", err);
+            mostrarAlerta("Error al unirse al club", "error");
+        }
+    }
+
+    cargarClubes();
 });
