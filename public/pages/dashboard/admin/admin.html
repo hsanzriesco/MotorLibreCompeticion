@@ -15,22 +15,75 @@
     <link rel="icon" href="../../../img/imagen-tfg.png" type="image/png" />
 
     <style>
-        body { background-color: #111; color: #fff; }
-        main { margin-top: 80px; padding: 20px; min-height: 100vh; }
+        body {
+            background-color: #111;
+            color: #fff;
+        }
+
+        main {
+            margin-top: 80px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
         .admin-section {
-            background: rgba(20,20,20,0.9);
-            border: 1px solid rgba(229,9,20,0.5);
-            box-shadow: 0 0 20px rgba(229,9,20,0.25);
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(229, 9, 20, 0.5);
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.25);
             border-radius: 15px;
             padding: 1.5rem;
             margin: 1rem auto;
-            width: 95%; max-width: 1200px;
+            width: 95%;
+            max-width: 1200px;
         }
-        .input-dark { background: #222; border: 1px solid #e50914; color: #fff; }
-        .input-dark:focus { box-shadow: 0 0 10px #e50914; border-color: #e50914; color: #fff; }
-        table { color: white !important; }
-        .table-dark th, .table-dark td { border-color: rgba(229,9,20,0.4); }
-        .btn-danger { background-color: #e50914 !important; border: none; }
+
+        /* ------------------------------
+           INPUTS SIN HOVER NI FOCUS
+        ------------------------------ */
+        .input-dark,
+        input,
+        textarea,
+        select {
+            background: #222 !important;
+            border: 1px solid #e50914 !important;
+            color: #fff !important;
+        }
+
+        /* Quitar hover */
+        .input-dark:hover,
+        input:hover,
+        textarea:hover,
+        select:hover {
+            background: #222 !important;
+            border-color: #e50914 !important;
+            color: #fff !important;
+        }
+
+        /* Quitar efecto blanco al hacer clic */
+        .input-dark:focus,
+        input:focus,
+        textarea:focus,
+        select:focus {
+            background: #222 !important;
+            border-color: #e50914 !important;
+            color: #fff !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        table {
+            color: white !important;
+        }
+
+        .table-dark th,
+        .table-dark td {
+            border-color: rgba(229, 9, 20, 0.4);
+        }
+
+        .btn-danger {
+            background-color: #e50914 !important;
+            border: none;
+        }
     </style>
 </head>
 
@@ -43,8 +96,8 @@
         </a>
 
         <div class="d-flex align-items-center">
-            <button class="btn btn-dark border border-secondary" type="button"
-                data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu">
                 <i class="bi bi-list"></i>
             </button>
         </div>
@@ -126,7 +179,9 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-clubes">
-                        <tr><td colspan="6" class="text-danger">Cargando clubes...</td></tr>
+                        <tr>
+                            <td colspan="6" class="text-danger">Cargando clubes...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
