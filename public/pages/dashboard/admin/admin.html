@@ -36,14 +36,29 @@
             max-width: 1200px;
         }
 
-        .modal-content {
-            background-color: #111;
-            color: white;
+        .input-dark {
+            background: #222;
             border: 1px solid #e50914;
+            color: #fff;
         }
 
-        .btn-close-white {
-            filter: invert(1) grayscale(100%) brightness(200%);
+        .input-dark:focus {
+            box-shadow: 0 0 10px #e50914;
+            border-color: #e50914;
+            color: #fff;
+        }
+
+        table {
+            color: white !important;
+        }
+
+        .table-dark th, .table-dark td {
+            border-color: rgba(229, 9, 20, 0.4);
+        }
+
+        .btn-danger {
+            background-color: #e50914 !important;
+            border: none;
         }
     </style>
 </head>
@@ -87,71 +102,91 @@
 
             <hr class="border-secondary" />
 
-            <a id="menu-inicio" href="./admin.html" class="d-block text-light mb-2">
+            <a id="menu-inicio" href="#" class="d-block text-light mb-2">
                 Inicio
             </a>
 
             <a href="#" id="logout-btn" class="d-block text-danger">
                 Cerrar sesión
             </a>
+
         </div>
     </div>
 
-    <!-- CONTENIDO PRINCIPAL -->
     <main>
 
-        <!-- PANEL DE CONTROL -->
+        <!-- SECCIÓN PRINCIPAL -->
         <section class="admin-section text-center">
             <h2 class="mb-4">Panel de Control de Administrador</h2>
             <p>Selecciona una opción en el menú lateral para gestionar la aplicación.</p>
         </section>
 
-        <!-- =====================================================
-             GESTIÓN DE CLUBES
-        ====================================================== -->
-        <section class="admin-section mt-4">
+        <!-- ------------------------------------------------------------------------- -->
+        <!--                       GESTIÓN DE CLUBES (NUEVO)                           -->
+        <!-- ------------------------------------------------------------------------- -->
 
-            <h3 class="text-center mb-4">Gestión de Clubes</h3>
+        <section class="admin-section">
 
-            <!-- FORMULARIO PARA CREAR / EDITAR CLUB -->
+            <h2 class="text-center mb-4">Gestión de Clubes</h2>
+
+            <!-- FORMULARIO -->
+            <h3 class="text-center mb-3">Formulario de Club</h3>
+
             <form id="club-form" class="mb-4">
+
                 <input type="hidden" id="club-id">
 
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Nombre del Evento</label>
-                        <input type="text" class="form-control" id="nombre_evento" required>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del Evento *</label>
+                        <input type="text" class="form-control input-dark" id="nombre_evento" required>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Imagen (URL)</label>
-                        <input type="text" class="form-control" id="imagen_club">
+                        <input type="text" class="form-control input-dark" id="imagen_club">
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label">Fecha Creación</label>
-                        <input type="date" class="form-control" id="fecha_creacion" required>
-                    </div>
-
-                    <div class="col-12">
+                    <div class="col-md-12">
                         <label class="form-label">Descripción</label>
-                        <textarea class="form-control" id="descripcion" rows="2"></textarea>
+                        <textarea class="form-control input-dark" id="descripcion" rows="2"></textarea>
                     </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha de Creación *</label>
+                        <input type="date" class="form-control input-dark" id="fecha_creacion" required>
+                    </div>
+
                 </div>
 
-                <button class="btn btn-danger mt-3 w-100" type="submit">
-                    Guardar Club
-                </button>
+                <button class="btn btn-danger mt-3 w-100">Guardar Club</button>
             </form>
 
-            <hr class="border-danger my-4">
+            <!-- TABLA -->
+            <h3 class="text-center mb-3">Clubes Registrados</h3>
 
-            <!-- LISTA DE CLUBES -->
-            <h4 class="text-center mb-3">Listado de Clubes</h4>
-            <div id="club-list" class="table-responsive"></div>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped text-center">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Fecha</th>
+                            <th>Imagen</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-clubes">
+                        <tr>
+                            <td colspan="6" class="text-danger">Cargando clubes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
         </section>
-
     </main>
 
     <!-- MODAL LOGOUT -->
@@ -175,145 +210,10 @@
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script src="../../../js/alertas.js"></script>
     <script src="../../../js/navbar.js"></script>
+    <script src="../../../js/adminClubes.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- =====================================================
-         SCRIPT CRUD DE CLUBES
-    ====================================================== -->
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-
-            const form = document.getElementById("club-form");
-            const listContainer = document.getElementById("club-list");
-
-            cargarClubes();
-
-            // ============================
-            // CARGAR CLUBES
-            // ============================
-            async function cargarClubes() {
-                const res = await fetch("/api/clubs");
-                const data = await res.json();
-                const clubes = data.data;
-                renderTabla(clubes);
-            }
-
-            // ============================
-            // TABLA DE CLUBES
-            // ============================
-            function renderTabla(clubes) {
-
-                if (!clubes || clubes.length === 0) {
-                    listContainer.innerHTML = "<p class='text-center text-warning'>No hay clubes creados.</p>";
-                    return;
-                }
-
-                let html = `
-                    <table class="table table-dark table-striped">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Descripción</th>
-                                <th>Imagen</th>
-                                <th>Fecha</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                clubes.forEach(club => {
-                    html += `
-                        <tr>
-                            <td>${club.id}</td>
-                            <td>${club.nombre_evento}</td>
-                            <td>${club.descripcion}</td>
-                            <td><img src="${club.imagen_club}" width="80"></td>
-                            <td>${club.fecha_creacion}</td>
-                            <td>
-                                <button class="btn btn-warning btn-sm me-2" onclick="editarClub(${club.id})">Editar</button>
-                                <button class="btn btn-danger btn-sm" onclick="eliminarClub(${club.id})">Eliminar</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                html += "</tbody></table>";
-                listContainer.innerHTML = html;
-            }
-
-            // ============================
-            // CREAR / EDITAR CLUB
-            // ============================
-            form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-
-                const id = document.getElementById("club-id").value;
-
-                const body = {
-                    nombre_evento: document.getElementById("nombre_evento").value,
-                    descripcion: document.getElementById("descripcion").value,
-                    imagen_club: document.getElementById("imagen_club").value,
-                    fecha_creacion: document.getElementById("fecha_creacion").value
-                };
-
-                const method = id ? "PUT" : "POST";
-                const url = "/api/clubs" + (id ? `?id=${id}` : "");
-
-                const res = await fetch(url, {
-                    method,
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) return mostrarAlerta(data.message, "error");
-
-                mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
-
-                form.reset();
-                document.getElementById("club-id").value = "";
-                cargarClubes();
-            });
-
-            // ============================
-            // EDITAR CLUB
-            // ============================
-            window.editarClub = async (id) => {
-                const res = await fetch(`/api/clubs?id=${id}`);
-                const data = await res.json();
-                const club = data.data[0];
-
-                document.getElementById("club-id").value = club.id;
-                document.getElementById("nombre_evento").value = club.nombre_evento;
-                document.getElementById("descripcion").value = club.descripcion;
-                document.getElementById("imagen_club").value = club.imagen_club;
-                document.getElementById("fecha_creacion").value = club.fecha_creacion;
-            };
-
-            // ============================
-            // ELIMINAR CLUB
-            // ============================
-            window.eliminarClub = async (id) => {
-                if (!confirm("¿Eliminar este club?")) return;
-
-                const res = await fetch(`/api/clubs?id=${id}`, { method: "DELETE" });
-                const data = await res.json();
-
-                if (!res.ok) return mostrarAlerta(data.message, "error");
-
-                mostrarAlerta("Club eliminado", "exito");
-                cargarClubes();
-            };
-
-        });
-    </script>
-
 </body>
-
 </html>
