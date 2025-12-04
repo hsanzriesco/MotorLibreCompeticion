@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clubes</title>
+    <title>Clubes - Motor Libre Competición</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,7 +15,7 @@
     <!-- Orbitron Font -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Tu estilo general -->
+    <!-- Global styles -->
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="../../css/alertas.css">
 
@@ -26,11 +26,15 @@
             font-family: 'Orbitron', sans-serif;
         }
 
+        main {
+            padding-top: 100px;
+        }
+
         .titulo {
             border-bottom: 2px solid #e50914;
             padding-bottom: 10px;
             display: inline-block;
-            margin-top: 100px;
+            margin-top: 40px;
             font-size: 2rem;
         }
 
@@ -40,6 +44,7 @@
             border-radius: 10px;
             padding: 20px;
             transition: 0.2s;
+            color: white;
         }
 
         .club-card:hover {
@@ -52,35 +57,126 @@
             border: none;
             color: white;
             transition: 0.2s;
+            font-family: 'Orbitron', sans-serif;
         }
 
         .btn-netflix:hover {
             background-color: #b20710;
             color: white;
         }
-    </style>
 
+        .offcanvas {
+            font-family: 'Orbitron', sans-serif;
+        }
+    </style>
 </head>
 
 <body>
 
-    <main class="container mt-5 text-center">
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+
+        <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+        </a>
+
+        <div class="d-flex align-items-center">
+            <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
+                <i class="bi bi-person-circle fs-4"></i>
+            </a>
+
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem; display:none"></span>
+
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MENU HAMBURGUESA -->
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body">
+
+            <a href="../calendario/calendario.html" class="d-block text-light mb-2">
+                Calendario
+            </a>
+
+            <a href="./clubes.html" class="d-block text-light mb-2">
+                Clubes
+            </a>
+
+            <a href="../perfil/perfil.html" class="d-block text-light mb-2">
+                Mi perfil
+            </a>
+
+            <hr class="border-secondary">
+
+            <a href="#" id="logout-btn" class="d-block text-danger">
+                Cerrar sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- CONTENIDO -->
+    <main class="container text-center">
 
         <h1 class="titulo">Clubes</h1>
 
         <p class="mt-3">Únete a clubes, conoce otros pilotos y participa en actividades exclusivas.</p>
 
-        <!-- CONTENEDOR DE CLUBES -->
-        <div id="clubes-container" class="row mt-4 g-4">
-            <!-- Clubes cargados por JS -->
-        </div>
+        <div id="clubes-container" class="row mt-4 g-4"></div>
 
     </main>
 
     <script src="../../js/alertas.js"></script>
     <script src="clubes.js"></script>
 
+    <!-- Script de login/logout (copiado del index) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+            const usuario = storedUser ? JSON.parse(storedUser) : null;
+
+            const userName = document.getElementById("user-name");
+            const loginIcon = document.getElementById("login-icon");
+            const logoutBtn = document.getElementById("logout-btn");
+
+            if (usuario) {
+                userName.textContent = usuario.name;
+                userName.style.display = "inline";
+                loginIcon.style.display = "none";
+
+                if (usuario.role === "admin") {
+                    document.getElementById("logo-link").href = "../dashboard/admin/admin.html";
+                }
+
+            } else {
+                userName.style.display = "none";
+                loginIcon.style.display = "inline";
+                logoutBtn.style.display = "none";
+            }
+
+            logoutBtn.addEventListener("click", () => {
+                sessionStorage.removeItem("usuario");
+                localStorage.removeItem("usuario");
+
+                mostrarAlerta("Has cerrado sesión correctamente.", "exito", 1500);
+
+                setTimeout(() => {
+                    window.location.href = "../auth/login/login.html";
+                }, 1500);
+            });
+        });
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 
 </html>

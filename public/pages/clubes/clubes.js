@@ -1,93 +1,58 @@
-// Cargar lista de clubes al entrar en la página
-document.addEventListener("DOMContentLoaded", cargarClubes);
+document.addEventListener("DOMContentLoaded", () => {
 
+    const container = document.getElementById("clubes-container");
 
-// ======================================================
-//               OBTENER CLUBES
-// ======================================================
-async function cargarClubes() {
-    try {
-        const res = await fetch("/api/clubs");
-        const clubes = await res.json();
+    // Ejemplo de clubes (puedes reemplazar por API o DB)
+    const clubes = [
+        { id: 1, nombre: "Street Racers", descripcion: "Club de conducción urbana y tandas nocturnas." },
+        { id: 2, nombre: "Track Masters", descripcion: "Expertos en circuito: tandas, técnica y telemetría." },
+        { id: 3, nombre: "Drift Nation", descripcion: "Club dedicado al drift: entrenamiento, eventos y shows." }
+    ];
 
-        const cont = document.getElementById("clubesLista");
+    // Recuperar clubes donde el usuario ya está
+    const misClubes = JSON.parse(localStorage.getItem("misClubes")) || [];
 
-        if (clubes.length === 0) {
-            cont.innerHTML = "<p>No hay clubes creados todavía.</p>";
-            return;
-        }
+    function renderClubes() {
+        container.innerHTML = "";
 
-        cont.innerHTML = clubes.map(c => `
-            <div class="club-card">
-                <h3>${c.nombre}</h3>
-                <p>${c.descripcion || "Sin descripción"}</p>
+        clubes.forEach(club => {
+            const unido = misClubes.includes(club.id);
 
-                ${c.imagen ? `<img src="${c.imagen}" width="180" style="border-radius:5px;">` : ""}
+            const card = document.createElement("div");
+            card.className = "col-md-4";
 
-                <br><br>
-                <button onclick="unirme(${c.id})">Unirme</button>
-            </div>
-        `).join("");
+            card.innerHTML = `
+                <div class="club-card h-100">
+                    <h3 class="text-danger">${club.nombre}</h3>
+                    <p>${club.descripcion}</p>
+                    <button class="btn btn-netflix w-100 mt-3 join-btn" data-id="${club.id}">
+                        ${unido ? "Ya eres miembro" : "Unirme"}
+                    </button>
+                </div>
+            `;
 
-    } catch (error) {
-        console.error("Error cargando clubes:", error);
-    }
-}
-
-
-// ======================================================
-//               CREAR CLUB
-// ======================================================
-async function crearClub() {
-    const nombre = document.getElementById("clubNombre").value.trim();
-    const descripcion = document.getElementById("clubDescripcion").value.trim();
-    const imagen = document.getElementById("clubImagen").value.trim();
-
-    if (!nombre) return alert("El nombre del club es obligatorio");
-
-    try {
-        const res = await fetch("/api/clubs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nombre, descripcion, imagen })
+            container.appendChild(card);
         });
 
-        const data = await res.json();
+        // Listeners para botones
+        document.querySelectorAll(".join-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const id = parseInt(e.target.dataset.id);
 
-        alert("Club creado con éxito");
-        cargarClubes();
-    } catch (error) {
-        console.error("Error al crear club:", error);
-        alert("Error al crear el club");
-    }
-}
+                if (misClubes.includes(id)) {
+                    mostrarAlerta("Ya eres miembro de este club", "error");
+                    return;
+                }
 
+                misClubes.push(id);
+                localStorage.setItem("misClubes", JSON.stringify(misClubes));
 
-// ======================================================
-//               UNIRSE A UN CLUB
-// ======================================================
-async function unirme(clubID) {
-
-    // Aquí supongo que tienes guardado el ID del usuario logueado
-    const userID = localStorage.getItem("userID");
-
-    if (!userID) {
-        alert("Debes iniciar sesión");
-        return;
-    }
-
-    try {
-        const res = await fetch("/api/clubs/join", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ club_id: clubID, user_id: userID })
+                mostrarAlerta("Te has unido al club correctamente", "exito");
+                renderClubes();
+            });
         });
-
-        const text = await res.text();
-        alert(text);
-
-    } catch (error) {
-        console.error("Error al unirse al club:", error);
-        alert("Error al unirse al club");
     }
-}
+
+    renderClubes();
+
+});
