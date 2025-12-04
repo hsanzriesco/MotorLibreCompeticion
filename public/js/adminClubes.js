@@ -9,37 +9,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputImagen = document.getElementById("imagen_club");
     const inputFecha = document.getElementById("fecha_creacion");
 
-    // ========================================================
-    //               CARGAR LISTA DE CLUBES
-    // ========================================================
     async function cargarClubes() {
         try {
             const res = await fetch("/api/clubs");
-
             const data = await res.json();
+
             if (!data.success) {
                 mostrarAlerta("Error cargando clubes", "error");
                 return;
             }
 
             renderTabla(data.data);
-
         } catch (error) {
-            console.error(error);
             mostrarAlerta("Error al conectar con el servidor", "error");
         }
     }
 
-    // ========================================================
-    //                   RENDERIZAR TABLA
-    // ========================================================
     function renderTabla(clubes) {
         tabla.innerHTML = "";
 
         if (clubes.length === 0) {
-            tabla.innerHTML = `
-                <tr><td colspan="6" class="text-danger text-center">No hay clubes registrados</td></tr>
-            `;
+            tabla.innerHTML = `<tr><td colspan="6" class="text-danger text-center">No hay clubes registrados</td></tr>`;
             return;
         }
 
@@ -61,18 +51,15 @@ document.addEventListener("DOMContentLoaded", () => {
             tabla.appendChild(fila);
         });
 
-        document.querySelectorAll(".editar-btn").forEach(b =>
-            b.addEventListener("click", cargarClubEnFormulario)
+        document.querySelectorAll(".editar-btn").forEach(btn =>
+            btn.addEventListener("click", cargarClubEnFormulario)
         );
 
-        document.querySelectorAll(".eliminar-btn").forEach(b =>
-            b.addEventListener("click", eliminarClub)
+        document.querySelectorAll(".eliminar-btn").forEach(btn =>
+            btn.addEventListener("click", eliminarClub)
         );
     }
 
-    // ========================================================
-    //           CARGAR CLUB EN FORMULARIO (EDITAR)
-    // ========================================================
     async function cargarClubEnFormulario(e) {
         const id = e.target.dataset.id;
 
@@ -96,14 +83,10 @@ document.addEventListener("DOMContentLoaded", () => {
             mostrarAlerta("Club cargado para edición", "info");
 
         } catch (error) {
-            console.error(error);
             mostrarAlerta("Error cargando club", "error");
         }
     }
 
-    // ========================================================
-    //                   GUARDAR (POST / PUT)
-    // ========================================================
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -116,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("descripcion", inputDescripcion.value);
         formData.append("fecha_creacion", inputFecha.value);
 
-        if (inputImagen.files[0]) {
+        if (inputImagen.files.length > 0) {
             formData.append("imagen_club", inputImagen.files[0]);
         }
 
@@ -141,14 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
             cargarClubes();
 
         } catch (error) {
-            console.error(error);
             mostrarAlerta("Error en el servidor", "error");
         }
     });
 
-    // ========================================================
-    //                      ELIMINAR
-    // ========================================================
     async function eliminarClub(e) {
         const id = e.target.dataset.id;
 
@@ -167,17 +146,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             mostrarAlerta("Club eliminado", "exito");
-
             cargarClubes();
 
         } catch (error) {
-            console.error(error);
             mostrarAlerta("Error eliminando club", "error");
         }
     }
 
-    // ========================================================
-    //     CARGA INICIAL
-    // ========================================================
     cargarClubes();
 });

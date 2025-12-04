@@ -4,9 +4,6 @@ import formidable from "formidable";
 
 export const config = { api: { bodyParser: false } };
 
-// =====================================
-// PARSEADOR MULTIPART
-// =====================================
 function parseMultipart(req) {
     return new Promise((resolve, reject) => {
         const form = formidable({ multiples: false });
@@ -14,18 +11,15 @@ function parseMultipart(req) {
         form.parse(req, (err, fields, files) => {
             if (err) return reject(err);
 
-            const cleanFields = Object.fromEntries(
+            const clean = Object.fromEntries(
                 Object.entries(fields).map(([k, v]) => [k, v[0]])
             );
 
-            resolve({ fields: cleanFields, files });
+            resolve({ fields: clean, files });
         });
     });
 }
 
-// =====================================
-// HANDLER
-// =====================================
 export default async function handler(req, res) {
     const { id } = req.query;
 
@@ -37,55 +31,48 @@ export default async function handler(req, res) {
 
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
+        ssl: { rejectUnauthorized: false }
     });
 
     const client = await pool.connect();
 
     try {
-        // ============================================================
-        // GET LISTA DE CLUBS
-        // ============================================================
+
         if (req.method === "GET") {
+
             if (id) {
                 const result = await client.query(
-                    `SELECT * FROM clubs WHERE id = $1`,
+                    "SELECT * FROM clubs WHERE id = $1",
                     [id]
                 );
                 return res.json({ success: true, data: result.rows[0] });
             }
 
-            const result = await client.query(`SELECT * FROM clubs ORDER BY id ASC`);
+            const result = await client.query("SELECT * FROM clubs ORDER BY id ASC");
             return res.json({ success: true, data: result.rows });
         }
 
-        // ============================================================
-        // POST / PUT (crear / editar)
-        // ============================================================
         if (req.method === "POST" || req.method === "PUT") {
             const { fields, files } = await parseMultipart(req);
 
             let imageUrl = null;
 
-            // Si el usuario sube una imagen, la subimos a Cloudinary
             if (files.imagen_club?.[0]) {
                 const upload = await cloudinary.uploader.upload(
                     files.imagen_club[0].filepath,
                     {
                         folder: "motor_libre_competicion_clubs",
-                        resource_type: "auto",
+                        resource_type: "auto"
                     }
                 );
 
                 imageUrl = upload.secure_url;
             }
 
-            // ================= POST ================
             if (req.method === "POST") {
                 const result = await client.query(
                     `INSERT INTO clubs (nombre_evento, descripcion, fecha_creacion, imagen_club)
-                     VALUES ($1, $2, $3, $4)
-                     RETURNING *`,
+                     VALUES ($1, $2, $3, $4) RETURNING *`,
                     [
                         fields.nombre_evento,
                         fields.descripcion,
@@ -100,7 +87,6 @@ export default async function handler(req, res) {
                 });
             }
 
-            // ================= PUT ================
             if (req.method === "PUT") {
                 const result = await client.query(
                     `UPDATE clubs
@@ -123,11 +109,8 @@ export default async function handler(req, res) {
             }
         }
 
-        // ============================================================
-        // DELETE
-        // ============================================================
         if (req.method === "DELETE") {
-            await client.query(`DELETE FROM clubs WHERE id = $1`, [id]);
+            await client.query("DELETE FROM clubs WHERE id=$1", [id]);
             return res.json({ success: true });
         }
 
