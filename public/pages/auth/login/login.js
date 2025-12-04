@@ -5,24 +5,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const sendResetEmailBtn = document.getElementById("sendResetEmailBtn");
     const resetEmailInput = document.getElementById("resetEmail");
 
-    // Elementos para el toggle de contraseña
     const passwordInput = document.getElementById("password");
     const togglePassword = document.getElementById("togglePassword");
 
     const mostrarAlerta = window.mostrarAlerta;
 
-    // --- Toggle de contraseña ---
+    // Mostrar / ocultar contraseña
     if (passwordInput && togglePassword) {
         togglePassword.addEventListener("click", () => {
             const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
             passwordInput.setAttribute("type", type);
-
             togglePassword.classList.toggle("bi-eye");
             togglePassword.classList.toggle("bi-eye-slash");
         });
     }
 
-    // --- Login ---
+    // Login
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -62,13 +60,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const user = result.user;
 
-                // ⭐⭐ GUARDAR club_id TAMBIÉN ⭐⭐
+                // ⭐⭐⭐ SOLUCIÓN: guardar también club_id ⭐⭐⭐
                 sessionStorage.setItem("usuario", JSON.stringify({
                     id: user.id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    club_id: user.club_id ?? null,   // << AÑADIDO
+                    club_id: user.club_id || null,
+                    password: password
+                }));
+
+                localStorage.setItem("usuario", JSON.stringify({
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    club_id: user.club_id || null,
                     password: password
                 }));
 
@@ -89,12 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Olvidé mi contraseña ---
+    // Olvidé mi contraseña
     if (forgotPasswordLink && emailRequestForm && sendResetEmailBtn) {
 
         forgotPasswordLink.addEventListener("click", (e) => {
             e.preventDefault();
-            emailRequestForm.style.display = emailRequestForm.style.display === "none" ? "block" : "none";
+            emailRequestForm.style.display =
+                emailRequestForm.style.display === "none" ? "block" : "none";
         });
 
         sendResetEmailBtn.addEventListener("click", async () => {
@@ -106,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                mostrarAlerta("Por favor, introduce un formato de email válido.", "aviso");
+                mostrarAlerta("Formato de email inválido.", "aviso");
                 return;
             }
 
@@ -128,16 +136,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 if (res.ok) {
-                    mostrarAlerta("Se ha enviado un enlace de restablecimiento. Revisa tu bandeja de entrada y spam.", "exito");
+                    mostrarAlerta("Se ha enviado un enlace de restablecimiento.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
-                } else if (res.status === 404) {
-                    mostrarAlerta(result.message || "El correo ingresado no existe.", "error");
                 } else {
-                    mostrarAlerta(result.message || `Error del servidor (${res.status}).`, "error");
+                    mostrarAlerta(result.message, "error");
                 }
+
             } catch (err) {
-                console.error("Error al solicitar restablecimiento:", err);
+                console.error("Error:", err);
                 mostrarAlerta("Error de conexión con el servidor.", "error");
             } finally {
                 sendResetEmailBtn.disabled = false;
