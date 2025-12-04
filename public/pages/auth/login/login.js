@@ -7,22 +7,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Elementos para el toggle de contraseña
     const passwordInput = document.getElementById("password");
-    const togglePassword = document.getElementById("togglePassword"); // ID del icono en el HTML
+    const togglePassword = document.getElementById("togglePassword");
 
     const mostrarAlerta = window.mostrarAlerta;
 
-    // --- Lógica del Toggle de Contraseña ---
+    // --- Toggle de contraseña ---
     if (passwordInput && togglePassword) {
-        togglePassword.addEventListener('click', () => {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            // Alternar las clases de los iconos de Bootstrap
-            togglePassword.classList.toggle('bi-eye');
-            togglePassword.classList.toggle('bi-eye-slash');
+        togglePassword.addEventListener("click", () => {
+            const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+            passwordInput.setAttribute("type", type);
+
+            togglePassword.classList.toggle("bi-eye");
+            togglePassword.classList.toggle("bi-eye-slash");
         });
     }
 
-    // --- Lógica del Formulario de Login ---
+    // --- Login ---
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -62,11 +62,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const user = result.user;
 
+                // ⭐⭐ GUARDAR club_id TAMBIÉN ⭐⭐
                 sessionStorage.setItem("usuario", JSON.stringify({
                     id: user.id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
+                    club_id: user.club_id ?? null,   // << AÑADIDO
                     password: password
                 }));
 
@@ -87,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Lógica de Olvidé mi Contraseña (forgotPassword) ---
+    // --- Olvidé mi contraseña ---
     if (forgotPasswordLink && emailRequestForm && sendResetEmailBtn) {
 
         forgotPasswordLink.addEventListener("click", (e) => {
@@ -118,35 +120,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email }),
                 });
 
-                // Intentamos leer el cuerpo de la respuesta, incluso si es un error.
                 let result;
                 try {
                     result = await res.json();
-                } catch (e) {
+                } catch {
                     result = { message: "Respuesta del servidor no válida." };
                 }
 
-                // ⭐⭐ Lógica modificada para verificar el estado de la respuesta del servidor ⭐⭐
-
-                // 1. Correo EXISTE (servidor devuelve 200 OK) -> Alerta de ÉXITO
                 if (res.ok) {
                     mostrarAlerta("Se ha enviado un enlace de restablecimiento. Revisa tu bandeja de entrada y spam.", "exito");
                     emailRequestForm.style.display = "none";
                     resetEmailInput.value = "";
-                }
-                // 2. Correo NO EXISTE (servidor devuelve 404 Not Found) -> Alerta de ERROR
-                else if (res.status === 404) {
-                    const errorMessage = result.message || "El correo electrónico ingresado no se encuentra registrado.";
-                    mostrarAlerta(errorMessage, "error");
-                }
-                // 3. Otros Errores (400, 500, etc.) -> Alerta de ERROR
-                else {
-                    const errorMessage = result.message || `Error interno del servidor (${res.status}).`;
-                    mostrarAlerta(errorMessage, "error");
+                } else if (res.status === 404) {
+                    mostrarAlerta(result.message || "El correo ingresado no existe.", "error");
+                } else {
+                    mostrarAlerta(result.message || `Error del servidor (${res.status}).`, "error");
                 }
             } catch (err) {
-                console.error("Error de conexión al solicitar restablecimiento:", err);
-                mostrarAlerta("Error de conexión con el servidor. Verifica tu red.", "error");
+                console.error("Error al solicitar restablecimiento:", err);
+                mostrarAlerta("Error de conexión con el servidor.", "error");
             } finally {
                 sendResetEmailBtn.disabled = false;
                 sendResetEmailBtn.textContent = "Enviar Enlace";
