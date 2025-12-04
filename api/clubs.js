@@ -21,7 +21,7 @@ function parseMultipart(req) {
 }
 
 export default async function handler(req, res) {
-    const { id } = req.query;
+    const { id, action } = req.query;
 
     cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -39,6 +39,57 @@ export default async function handler(req, res) {
     try {
 
         // ============================================================
+        // 👉 JOIN: Unirse a un club
+        // ============================================================
+        if (req.method === "POST" && action === "join") {
+            const { user_id, club_id } = req.body;
+
+            if (!user_id || !club_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Faltan datos: user_id y club_id son obligatorios."
+                });
+            }
+
+            // 1️⃣ Verificar si este usuario ya está en un club
+            const check = await client.query(
+                "SELECT club_id FROM users WHERE id = $1",
+                [user_id]
+            );
+
+            if (check.rows[0].club_id) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Este usuario ya pertenece a un club."
+                });
+            }
+
+            // 2️⃣ Verificar que el club exista
+            const exists = await client.query(
+                "SELECT id FROM clubs WHERE id = $1",
+                [club_id]
+            );
+
+            if (exists.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "El club no existe."
+                });
+            }
+
+            // 3️⃣ Asignar el club al usuario
+            await client.query(
+                "UPDATE users SET club_id = $1 WHERE id = $2",
+                [club_id, user_id]
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Usuario unido al club correctamente."
+            });
+        }
+
+        // ============================================================
         // GET
         // ============================================================
         if (req.method === "GET") {
@@ -49,7 +100,6 @@ export default async function handler(req, res) {
                     [id]
                 );
 
-                // ⚠️ Contar los miembros del club
                 const members = await client.query(
                     "SELECT COUNT(*) FROM users WHERE club_id = $1",
                     [id]
@@ -69,9 +119,12 @@ export default async function handler(req, res) {
         }
 
         // ============================================================
-        // POST / PUT
+        // POST / PUT (Crear o editar club)
         // ============================================================
         if (req.method === "POST" || req.method === "PUT") {
+            // Ignorar si es JOIN
+            if (action === "join") return;
+
             const { fields, files } = await parseMultipart(req);
 
             let imageUrl = null;

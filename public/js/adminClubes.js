@@ -10,11 +10,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputImagen = document.getElementById("imagen_club");
     const inputFecha = document.getElementById("fecha_creacion");
 
-    // Modal de confirmación y botón confirmar
+    // Modal de confirmación
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
     const deleteConfirmModal = deleteConfirmModalEl ? new bootstrap.Modal(deleteConfirmModalEl) : null;
     const btnConfirmDelete = document.getElementById("btnConfirmDelete");
-    let clubToDeleteId = null; // id pendiente de eliminar
+    let clubToDeleteId = null;
 
     // -----------------------------------------
     // UTIL: fecha hoy en formato YYYY-MM-DD
@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return `${yyyy}-${mm}-${dd}`;
     }
 
-    // Inicializar fecha por defecto para nuevo club
+    // Inicializar fecha visual para administrador
     function setFechaDefault() {
         if (inputFecha) inputFecha.value = hoyISODate();
     }
@@ -68,7 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
         clubes.forEach(club => {
             const fila = document.createElement("tr");
 
-            // Aseguramos formato de fecha (si viene null)
             const fecha = club.fecha_creacion ? club.fecha_creacion.toString().split('T')[0] : '';
 
             fila.innerHTML = `
@@ -88,7 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
             tabla.appendChild(fila);
         });
 
-        // Delegamos listeners
         document.querySelectorAll(".editar-btn").forEach(btn =>
             btn.addEventListener("click", cargarClubEnFormulario)
         );
@@ -99,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------
-    // ESCAPAR HTML simple (seguridad XSS básica)
+    // ESCAPAR HTML
     // -----------------------------------------
     function escapeHtml(str = "") {
         return String(str)
@@ -111,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------
-    // CARGAR CLUB EN FORMULARIO PARA EDITAR
+    // CARGAR CLUB EN FORMULARIO (EDITAR)
     // -----------------------------------------
     async function cargarClubEnFormulario(e) {
         const id = e.currentTarget.dataset.id;
@@ -131,13 +129,10 @@ document.addEventListener("DOMContentLoaded", () => {
             inputId.value = c.id;
             inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
-            // fecha puede venir con hora; normalizamos
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
-            // dejamos inputImagen limpio (no podemos rellenar file input)
             if (inputImagen) inputImagen.value = "";
 
             mostrarAlerta("Club cargado para edición", "info");
-            // focus en nombre para UX
             inputNombre.focus();
 
         } catch (error) {
@@ -147,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------
-    // GUARDAR (POST / PUT)
+    // GUARDAR CLUB (POST / PUT)
     // -----------------------------------------
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -159,24 +154,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("nombre_evento", inputNombre.value.trim());
         formData.append("descripcion", inputDescripcion.value.trim());
-        // fecha siempre enviada (auto o editada)
-        formData.append("fecha_creacion", inputFecha.value || hoyISODate());
 
-        if (inputImagen && inputImagen.files && inputImagen.files.length > 0) {
+        // ❌ YA NO ENVIAMOS FECHA AL BACKEND
+        // el servidor genera fecha_creacion automáticamente
+
+        if (inputImagen && inputImagen.files.length > 0) {
             formData.append("imagen_club", inputImagen.files[0]);
         }
 
         try {
-            const res = await fetch(url, {
-                method: metodo,
-                body: formData
-            });
-
+            const res = await fetch(url, { method: metodo, body: formData });
             const r = await res.json();
 
             if (!r.success) {
-                const msg = r.message || r.error || "Error guardando club";
-                mostrarAlerta(msg, "error");
+                mostrarAlerta(r.message || r.error || "Error guardando club", "error");
                 return;
             }
 
@@ -195,30 +186,29 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // -----------------------------------------
-    // PREGUNTAR ELIMINAR -> Abre modal con estilo
+    // ELIMINAR CLUB
     // -----------------------------------------
     function preguntarEliminarClub(e) {
         const id = e.currentTarget.dataset.id;
         if (!id) return;
 
         clubToDeleteId = id;
-        // puedes personalizar el mensaje con nombre si quieres (consumiendo la fila)
+
         const row = e.currentTarget.closest("tr");
         const clubName = row ? row.children[1].textContent : "este club";
         const deleteMessageEl = document.getElementById("deleteConfirmMessage");
-        if (deleteMessageEl) deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}"? Esta acción es irreversible.`;
+
+        if (deleteMessageEl)
+            deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}"? Esta acción es irreversible.`;
 
         if (deleteConfirmModal) deleteConfirmModal.show();
     }
 
-    // -----------------------------------------
-    // CONFIRMAR ELIMINACIÓN -> petición DELETE
-    // -----------------------------------------
     if (btnConfirmDelete) {
         btnConfirmDelete.addEventListener("click", async () => {
             if (!clubToDeleteId) {
-                mostrarAlerta("ID de club inválido", "error");
-                if (deleteConfirmModal) deleteConfirmModal.hide();
+                mostrarAlerta("ID inválido", "error");
+                deleteConfirmModal.hide();
                 return;
             }
 
@@ -230,26 +220,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 const r = await res.json();
 
                 if (!r.success) {
-                    mostrarAlerta(r.message || "Error eliminando club", "error");
-                    if (deleteConfirmModal) deleteConfirmModal.hide();
+                    mostrarAlerta(r.message || "Error eliminando", "error");
+                    deleteConfirmModal.hide();
                     return;
                 }
 
                 mostrarAlerta("Club eliminado", "exito");
                 clubToDeleteId = null;
-                if (deleteConfirmModal) deleteConfirmModal.hide();
+                deleteConfirmModal.hide();
                 cargarClubes();
 
             } catch (error) {
                 console.error("Error eliminarClub:", error);
                 mostrarAlerta("Error eliminando club", "error");
-                if (deleteConfirmModal) deleteConfirmModal.hide();
+                deleteConfirmModal.hide();
             }
         });
     }
 
     // -----------------------------------------
-    // Inicializaciones
+    // Inicializar
     // -----------------------------------------
     setFechaDefault();
     cargarClubes();
