@@ -38,6 +38,9 @@ export default async function handler(req, res) {
 
     try {
 
+        // ============================================================
+        // GET
+        // ============================================================
         if (req.method === "GET") {
 
             if (id) {
@@ -48,10 +51,15 @@ export default async function handler(req, res) {
                 return res.json({ success: true, data: result.rows[0] });
             }
 
-            const result = await client.query("SELECT * FROM clubs ORDER BY id ASC");
+            const result = await client.query(
+                "SELECT * FROM clubs ORDER BY id ASC"
+            );
             return res.json({ success: true, data: result.rows });
         }
 
+        // ============================================================
+        // POST / PUT
+        // ============================================================
         if (req.method === "POST" || req.method === "PUT") {
             const { fields, files } = await parseMultipart(req);
 
@@ -69,14 +77,17 @@ export default async function handler(req, res) {
                 imageUrl = upload.secure_url;
             }
 
+            // ------------------------
+            // CREATE
+            // ------------------------
             if (req.method === "POST") {
                 const result = await client.query(
-                    `INSERT INTO clubs (nombre_evento, descripcion, fecha_creacion, imagen_club)
-                     VALUES ($1, $2, $3, $4) RETURNING *`,
+                    `INSERT INTO clubs (nombre_evento, descripcion, imagen_club)
+                     VALUES ($1, $2, $3)
+                     RETURNING *`,
                     [
                         fields.nombre_evento,
                         fields.descripcion,
-                        fields.fecha_creacion,
                         imageUrl
                     ]
                 );
@@ -87,19 +98,20 @@ export default async function handler(req, res) {
                 });
             }
 
+            // ------------------------
+            // UPDATE
+            // ------------------------
             if (req.method === "PUT") {
                 const result = await client.query(
                     `UPDATE clubs
                      SET nombre_evento=$1,
                          descripcion=$2,
-                         fecha_creacion=$3,
-                         imagen_club = COALESCE($4, imagen_club)
-                     WHERE id=$5
+                         imagen_club = COALESCE($3, imagen_club)
+                     WHERE id=$4
                      RETURNING *`,
                     [
                         fields.nombre_evento,
                         fields.descripcion,
-                        fields.fecha_creacion,
                         imageUrl,
                         id
                     ]
@@ -109,6 +121,9 @@ export default async function handler(req, res) {
             }
         }
 
+        // ============================================================
+        // DELETE
+        // ============================================================
         if (req.method === "DELETE") {
             await client.query("DELETE FROM clubs WHERE id=$1", [id]);
             return res.json({ success: true });
