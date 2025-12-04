@@ -155,7 +155,7 @@
                 </table>
             </div>
 
-            </section>
+        </section>
     </main>
 
     <div class="modal fade" id="addResultModal" tabindex="-1" aria-labelledby="addResultModalLabel" aria-hidden="true">
@@ -191,7 +191,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="points-input" class="form-label">Puntos Obtenidos</label>
                                 <input type="number" class="form-control bg-dark text-light border-secondary"
-                                    id="points-input" min="0" disabled>
+                                    id="points-input" min="0">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -421,6 +421,8 @@
                     event_id: EVENT_SELECT.value,
                     user_id: USER_SELECT.value,
                     position: POSITION_INPUT.value,
+                    // CAMBIO: Ahora obtenemos el valor del input de puntos
+                    points: document.getElementById('points-input').value,
                     best_lap_time: TIME_INPUT.value,
                     // Capturamos el nombre del piloto del texto de la opción seleccionada
                     user: USER_SELECT.options[USER_SELECT.selectedIndex].text,
@@ -484,6 +486,8 @@
 
                 // Llenar el formulario con los datos
                 POSITION_INPUT.value = resultToEdit.position;
+                // CAMBIO: Llenamos el input de puntos
+                document.getElementById('points-input').value = resultToEdit.points || '';
                 TIME_INPUT.value = resultToEdit.best_lap_time;
 
                 ADD_RESULT_MODAL.show();
