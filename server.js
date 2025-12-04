@@ -3,6 +3,7 @@
 import express from 'express';
 // ... otros imports ...
 import path from 'path';
+import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
