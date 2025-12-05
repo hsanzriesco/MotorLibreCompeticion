@@ -1,6 +1,5 @@
 // api/users.js
 // Archivo unificado para todas las acciones de usuario (CRUD y Login)
-// Combina: createUser, loginUser, userAction, userList
 
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
@@ -11,19 +10,22 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false },
 });
 
-// Se requiere configurar `bodyParser: false` en Next.js para usar `getBody` en userActionHandler
+// Se requiere configurar `bodyParser: false` para usar `getBody` en userActionHandler y userListCrudHandler
 export const config = {
     api: { bodyParser: false },
 };
 
-// 🛠️ HELPER: Función para leer el cuerpo JSON cuando bodyParser está en false (Tomado de userAction.js)
+// 🛠️ HELPER: Función para leer el cuerpo JSON cuando bodyParser está en false
 const getBody = async (req) => {
     try {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
-        return JSON.parse(Buffer.concat(chunks).toString());
+        // Retorna null si el cuerpo está vacío o es inválido después de concatenar
+        const buffer = Buffer.concat(chunks);
+        if (buffer.length === 0) return null;
+        return JSON.parse(buffer.toString());
     } catch (e) {
-        // En caso de error de parseo o cuerpo vacío, retorna null
+        // En caso de error de parseo, retorna null
         return null;
     }
 };
@@ -37,10 +39,13 @@ async function createUserHandler(req, res) {
     }
 
     try {
-        console.log("--- REGISTRO INICIADO ---");
-        // Nota: Si el bodyParser está activo (que lo está para esta ruta), req.body ya contiene los datos.
-        const { name, email, password } = req.body;
-        const roleToAssign = req.body.role || 'user'; // Por defecto 'user' si no se especifica
+        console.log("--- REGISTRO PÚBLICO INICIADO ---");
+        // Utilizamos getBody ya que bodyParser está desactivado
+        const body = await getBody(req);
+        if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
+
+        const { name, email, password } = body;
+        const roleToAssign = body.role || 'user'; // Por defecto 'user' si no se especifica
 
         if (!name || !email || !password) {
             console.error("Error 400: Campos requeridos faltantes.");
@@ -87,15 +92,18 @@ async function createUserHandler(req, res) {
 // ------------------------------------------------------------------------------------------------
 // 2. LOGIN DE USUARIO (Manejo de POST /api/users?action=login)
 // ------------------------------------------------------------------------------------------------
-export async function loginUserHandler(req, res) {
-    // El ruteador principal ya chequeó que el método sea POST, pero lo dejamos por seguridad.
+async function loginUserHandler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ success: false, message: "Método no permitido" });
     }
 
     try {
         console.log("--- LOGIN INICIADO ---");
-        const { username, password } = req.body;
+        // Utilizamos getBody ya que bodyParser está desactivado
+        const body = await getBody(req);
+        if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
+
+        const { username, password } = body;
 
         if (!username || !password) {
             return res.status(400).json({ success: false, message: "Faltan datos" });
@@ -149,7 +157,8 @@ async function userActionHandler(req, res) {
 
     try {
         if (method === "PUT") {
-            const body = await getBody(req); // Usamos getBody porque bodyParser está desactivado para esta ruta
+            // Usamos getBody porque bodyParser está desactivado para esta ruta
+            const body = await getBody(req);
             if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
             // 3.1. ACTUALIZACIÓN DE CONTRASEÑA
@@ -198,19 +207,46 @@ async function userActionHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 4. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role)
+// 4. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role) - CORREGIDO
 // ------------------------------------------------------------------------------------------------
 async function userListCrudHandler(req, res) {
-    const { method, query, body } = req;
+    const { method, query } = req;
+    let body;
 
     try {
-        // GET: LISTAR TODOS LOS USUARIOS
+        // Cargar el cuerpo manualmente si el método es POST o PUT, ya que bodyParser está desactivado
+        if (method === "POST" || method === "PUT") {
+            body = await getBody(req);
+            if (!body) {
+                // Si es un PUT, puede ser que solo se envió el ID sin cuerpo, pero en Admin CRUD siempre esperamos un cuerpo
+                // Si es un POST (creación), el cuerpo es obligatorio
+                if (method === "POST" || Object.keys(query).length === 0) {
+                    return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
+                }
+            }
+        }
+
+        // GET: LISTAR TODOS LOS USUARIOS O UNO POR ID
         if (method === "GET") {
+            if (query.id) {
+                // Obtener un solo usuario por ID (usado para cargar el modal de edición)
+                const result = await pool.query(
+                    "SELECT id, name, email, role, created_at, club_id FROM users WHERE id = $1",
+                    [query.id]
+                );
+                if (result.rows.length === 0) {
+                    return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+                }
+                return res.status(200).json({ success: true, data: result.rows });
+            }
+
+            // LISTAR TODOS
             const result = await pool.query(
                 "SELECT id, name, email, role, created_at, club_id FROM users ORDER BY id DESC"
             );
             return res.status(200).json({ success: true, data: result.rows });
         }
+
 
         // POST: CREAR NUEVO USUARIO (Admin, requiere 'role' en el body)
         if (method === "POST") {
@@ -220,6 +256,7 @@ async function userListCrudHandler(req, res) {
                 return res.status(400).json({ success: false, message: "Faltan campos requeridos." });
             }
 
+            // Validación de existencia
             const existingUser = await pool.query(
                 "SELECT id FROM users WHERE email = $1 OR name = $2",
                 [email, name]
@@ -243,7 +280,8 @@ async function userListCrudHandler(req, res) {
             return res.status(201).json({ success: true, user: result.rows[0] });
         }
 
-        // PUT: ACTUALIZAR USUARIO O UNIRLO A UN CLUB (Admin, requiere ID en query)
+
+        // PUT: ACTUALIZAR USUARIO (Admin, requiere ID en query)
         if (method === "PUT") {
             const { id } = query;
             const { name, email, password, role, club_id } = body;
@@ -252,7 +290,7 @@ async function userListCrudHandler(req, res) {
                 return res.status(400).json({ success: false, message: "ID requerido" });
             }
 
-            // Lógica de validación de club_id
+            // Lógica de validación de club_id (Mantenida)
             if (club_id !== undefined && club_id !== null) {
                 const userCheck = await pool.query(
                     "SELECT club_id FROM users WHERE id = $1",
@@ -333,7 +371,7 @@ async function userListCrudHandler(req, res) {
 // ------------------------------------------------------------------------------------------------
 export default async function usersCombinedHandler(req, res) {
     const { method, query } = req;
-    const action = query.action; // Parámetro principal para diferenciar acciones
+    const action = query.action;
 
     // 1. LOGIN (POST con ?action=login)
     if (method === "POST" && action === "login") {
@@ -345,16 +383,19 @@ export default async function usersCombinedHandler(req, res) {
         return userActionHandler(req, res);
     }
 
-    // 3. REGISTRO PÚBLICO (POST simple a /api/users sin parámetros de acción ni rol)
-    if (method === "POST" && !action && !req.body?.role) {
+    // 3. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT sin acción, y POST con role)
+    if (method === "GET" || method === "DELETE" || method === "PUT" || (method === "POST" && action !== "login")) {
+        // En Next.js, un POST sin action y con 'role' en el body sería manejado aquí si se usa getBody
+        return userListCrudHandler(req, res);
+    }
+
+    // 4. REGISTRO PÚBLICO (POST simple a /api/users sin parámetros de acción ni rol en el body)
+    // Nota: Aunque el ruteador intenta capturar el POST admin arriba, si no tiene 'role' explícito en el body, caerá aquí.
+    // Usamos esta lógica como fallback si no es ninguna de las acciones anteriores.
+    if (method === "POST") {
         return createUserHandler(req, res);
     }
 
-    // 4. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT sin acción, y POST con role)
-    // Cubre: Listar, Admin Update (con ID), Eliminar (con ID), y Admin Create (con role)
-    if (method === "GET" || method === "DELETE" || method === "PUT" || (method === "POST" && req.body?.role)) {
-        return userListCrudHandler(req, res);
-    }
 
     // Método o ruta no reconocida
     return res.status(405).json({ success: false, message: "Método o ruta de usuario no reconocida." });
