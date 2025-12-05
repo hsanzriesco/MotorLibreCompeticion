@@ -53,6 +53,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const userToDeleteName = document.getElementById("userToDeleteName");
     let currentUserIdToDelete = null;
 
+    // 🚀 NUEVAS VARIABLES DOM para la RAZÓN DE BANEO 🚀
+    const banReasonModalEl = document.getElementById("banReasonModal");
+    const banReasonModal = new bootstrap.Modal(banReasonModalEl);
+    const banUserIdInput = document.getElementById("banUserId");
+    const banUserNewStatusInput = document.getElementById("banUserNewStatus");
+    const banReasonInput = document.getElementById("banReason");
+    const btnConfirmBan = document.getElementById("btnConfirmBan");
+    const reasonInputContainer = document.getElementById("reasonInputContainer");
+
+
     // --- 2. FUNCIONES DE UTILIDAD Y VALIDACIÓN ---
 
     function validatePassword(password) {
@@ -82,9 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!data.success || !Array.isArray(data.data)) throw new Error(data.message || "Fallo al obtener la lista de usuarios.");
 
             usersTableBody.innerHTML = "";
-
-            // ⚠️ Importante: Modificar el thead en users.html para añadir la columna "Estado" ⚠️
-            // <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Creado en</th><th>Acciones</th></tr>
 
             data.data.forEach((user) => {
                 const tr = document.createElement("tr");
@@ -128,9 +135,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Nueva función para manejar el baneo/desbaneo
-    async function manejarBaneo(userId, estadoActualBaneo) {
-        const nuevoEstado = !estadoActualBaneo;
+    // 🚀 NUEVA FUNCIÓN: Envía la petición PUT con la razón del baneo 🚀
+    async function confirmarBaneo(userId, nuevoEstado, razon = null) {
+
+        const payload = { is_banned: nuevoEstado };
+
+        if (nuevoEstado) {
+            // Solo incluimos la razón si estamos baneando
+            if (!razon || razon.trim() === "") {
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("La razón del baneo es obligatoria.", "error");
+                }
+                return;
+            }
+            payload.ban_reason = razon.trim();
+        }
 
         try {
             const response = await fetch(`/api/users?id=${userId}`, {
@@ -138,8 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                // El payload solo necesita el ID (en la URL) y el nuevo estado
-                body: JSON.stringify({ is_banned: nuevoEstado }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json();
@@ -148,10 +166,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(data.message || `Error HTTP: ${response.status}`);
             }
 
+            banReasonModal.hide(); // Cerrar el modal de baneo
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta(`Usuario ${nuevoEstado ? 'baneado' : 'desbaneado'} con éxito.`, "exito");
             }
-            // Recargar la tabla para actualizar la interfaz
             cargarUsuarios();
 
         } catch (error) {
@@ -217,12 +235,35 @@ document.addEventListener("DOMContentLoaded", () => {
             await openUserEditModal(id);
         }
 
-        // 🚀 NUEVO: Listener para el botón de Baneo/Desbaneo
+        // 🚀 MODIFICADO: Listener para el botón de Baneo/Desbaneo (ABRE EL MODAL)
         if (btn.classList.contains("btn-ban")) {
             // El atributo data-is-banned es un string, lo convertimos a booleano
             const isBanned = btn.dataset.isBanned === 'true';
-            await manejarBaneo(id, isBanned);
-            return; // Detenemos la ejecución después de manejar el baneo
+            const userId = btn.dataset.id;
+            const nuevoEstado = !isBanned;
+
+            banUserIdInput.value = userId;
+            banUserNewStatusInput.value = nuevoEstado;
+            banReasonInput.value = ""; // Limpiar siempre el campo de razón
+
+            const actionText = nuevoEstado ? 'banear' : 'desbanear';
+
+            document.getElementById('banReasonModalTitle').textContent = `Confirmar ${nuevoEstado ? 'Baneo' : 'Desbaneo'}`;
+            document.getElementById('banReasonMessage').textContent = `¿Estás seguro de que deseas ${actionText} a este usuario?`;
+
+            // Mostrar u ocultar el campo de razón
+            if (nuevoEstado) {
+                reasonInputContainer.style.display = 'block';
+                document.getElementById('btnConfirmBan').classList.add('btn-danger');
+                document.getElementById('btnConfirmBan').classList.remove('btn-success');
+            } else {
+                reasonInputContainer.style.display = 'none';
+                document.getElementById('btnConfirmBan').classList.add('btn-success');
+                document.getElementById('btnConfirmBan').classList.remove('btn-danger');
+            }
+
+            banReasonModal.show();
+            return; // Detenemos la ejecución
         }
 
         if (btn.classList.contains("delete-user-btn")) {
@@ -259,6 +300,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 mostrarAlerta(`Error al eliminar usuario: ${err.message}`, "error");
             }
         }
+    });
+
+    // 🚀 NUEVO LISTENER: Confirmación del Modal de Baneo 🚀
+    btnConfirmBan.addEventListener("click", () => {
+        const userId = banUserIdInput.value;
+        // El valor del input es un string, lo convertimos a booleano
+        const nuevoEstado = banUserNewStatusInput.value === 'true';
+
+        let razon = null;
+        if (nuevoEstado) {
+            razon = banReasonInput.value.trim();
+            // Validación obligatoria solo si estamos baneando
+            if (razon === "") {
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Por favor, introduce una razón para el baneo.", "error");
+                }
+                return;
+            }
+        }
+
+        confirmarBaneo(userId, nuevoEstado, razon);
     });
 
 

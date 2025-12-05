@@ -111,7 +111,7 @@ async function loginUserHandler(req, res) {
         }
 
         const { rows } = await pool.query(
-            "SELECT id, name, email, role, password FROM users WHERE name = $1",
+            "SELECT id, name, email, role, password, is_banned FROM users WHERE name = $1",
             [username]
         );
 
@@ -123,28 +123,28 @@ async function loginUserHandler(req, res) {
         const user = rows[0];
         const hashedPassword = user.password;
 
+        // ⚠️ Mejorado: Verificar is_banned directamente desde la tabla users 
+        // antes de verificar la contraseña para detener bots rápidamente (opcional, pero buena práctica)
+        if (user.is_banned) {
+            const banInfo = await pool.query(
+                'SELECT ban_reason FROM usuarios_baneados WHERE user_id = $1',
+                [user.id]
+            );
+            const banReason = banInfo.rows.length > 0 ? banInfo.rows[0].ban_reason : 'Sin especificar.';
+
+            console.log(`Login bloqueado: Usuario baneado (${username}).`);
+            return res.status(403).json({
+                success: false,
+                message: `Tu cuenta ha sido suspendida. Razón: ${banReason}`
+            });
+        }
+
         const match = await bcrypt.compare(password, hashedPassword);
 
         if (!match) {
             console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
             return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
         }
-
-        // << CAMBIO: Lógica de VERIFICACIÓN DE BANEO
-        const isBanned = await pool.query(
-            'SELECT razon FROM usuarios_baneados WHERE user_id = $1',
-            [user.id]
-        );
-
-        if (isBanned.rows.length > 0) {
-            console.log(`Login bloqueado: Usuario baneado (${username}).`);
-            const banReason = isBanned.rows[0].razon;
-            return res.status(403).json({
-                success: false,
-                message: `Tu cuenta ha sido suspendida. Razón: ${banReason || 'Sin especificar.'}`
-            });
-        }
-        // << FIN CAMBIO
 
         console.log(`LOGIN EXITOSO para ${username}.`);
         return res.status(200).json({
@@ -304,12 +304,57 @@ async function userListCrudHandler(req, res) {
         // PUT: ACTUALIZAR USUARIO (Admin, requiere ID en query)
         if (method === "PUT") {
             const { id } = query;
-            // << CAMBIO: Extraer is_banned del body de la solicitud
-            const { name, email, password, role, club_id, is_banned } = body;
+            // 🌟 CAMBIO CLAVE: Extraer is_banned y ban_reason del body de la solicitud 🌟
+            const { name, email, password, role, club_id, is_banned, ban_reason } = body;
 
             if (!id) {
                 return res.status(400).json({ success: false, message: "ID requerido" });
             }
+
+            // 🚀 LÓGICA DE BANEO/DESBANEO CON RAZÓN 🚀
+            if (is_banned !== undefined) {
+                if (is_banned === true) {
+                    // VALIDACIÓN: La razón es obligatoria al banear
+                    if (!ban_reason || ban_reason.trim() === "") {
+                        return res.status(400).json({ success: false, message: 'La razón del baneo es obligatoria.' });
+                    }
+
+                    // 1. BANEAR: Insertar o actualizar la razón en la tabla 'usuarios_baneados'
+                    await pool.query(
+                        `INSERT INTO usuarios_baneados (user_id, ban_reason) 
+                         VALUES ($1, $2)
+                         ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
+                        [id, ban_reason.trim()]
+                    );
+
+                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
+                    await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
+                    console.log(`Usuario ${id} baneado. Razón: ${ban_reason.trim()}`);
+
+                    // Retornamos inmediatamente para completar la acción de baneo
+                    return res.status(200).json({ success: true, message: 'Usuario baneado con éxito.' });
+
+                } else if (is_banned === false) {
+                    // DESBANEAR
+
+                    // 1. Eliminar de la tabla 'usuarios_baneados'
+                    await pool.query(
+                        'DELETE FROM usuarios_baneados WHERE user_id = $1',
+                        [id]
+                    );
+
+                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
+                    await pool.query('UPDATE users SET is_banned = FALSE WHERE id = $1', [id]);
+                    console.log(`Usuario ${id} desbaneado.`);
+
+                    // Retornamos inmediatamente para completar la acción de desbaneo
+                    return res.status(200).json({ success: true, message: 'Usuario desbaneado con éxito.' });
+                }
+            }
+            // 🚀 FIN LÓGICA DE BANEO/DESBANEO 🚀
+
+
+            // --- Lógica de Actualización de Perfil (Solo se ejecuta si NO se hizo una acción de baneo) ---
 
             // Lógica de validación de club_id (Mantenida)
             if (club_id !== undefined && club_id !== null) {
@@ -332,32 +377,6 @@ async function userListCrudHandler(req, res) {
                 hashedPassword = await bcrypt.hash(password, salt);
             }
 
-            // << CAMBIO: NUEVA LÓGICA DE BANEO/DESBANEO
-            if (is_banned !== undefined) {
-                if (is_banned === true) {
-                    // 1. BANEAR: Insertar en la tabla 'usuarios_baneados'
-                    await pool.query(
-                        `INSERT INTO usuarios_baneados (user_id, razon) 
-                         VALUES ($1, $2)
-                         ON CONFLICT (user_id) DO NOTHING`,
-                        [id, 'Baneado por el administrador']
-                    );
-                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
-                    await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
-                    console.log(`Usuario ${id} baneado.`);
-
-                } else if (is_banned === false) {
-                    // 1. DESBANEAR: Eliminar de la tabla 'usuarios_baneados'
-                    await pool.query(
-                        'DELETE FROM usuarios_baneados WHERE user_id = $1',
-                        [id]
-                    );
-                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
-                    await pool.query('UPDATE users SET is_banned = FALSE WHERE id = $1', [id]);
-                    console.log(`Usuario ${id} desbaneado.`);
-                }
-            }
-            // << FIN CAMBIO DE BANEO/DESBANEO
 
             const updateQuery = `
                 UPDATE users
@@ -391,6 +410,9 @@ async function userListCrudHandler(req, res) {
         if (method === "DELETE") {
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
+
+            // ⚠️ Importante: Es buena práctica eliminar primero de las tablas secundarias (como usuarios_baneados)
+            await pool.query("DELETE FROM usuarios_baneados WHERE user_id = $1", [id]);
 
             const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
 
