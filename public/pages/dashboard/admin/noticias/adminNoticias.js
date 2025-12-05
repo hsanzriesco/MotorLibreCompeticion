@@ -1,91 +1,71 @@
-document.addEventListener("DOMContentLoaded", cargarNoticias);
+document.addEventListener("DOMContentLoaded", () => {
+    const tablaNoticias = document.getElementById("tabla-noticias");
+    const form = document.getElementById("noticia-form");
 
-async function cargarNoticias() {
-    const tabla = document.getElementById("tabla-noticias");
+    let editId = null;
 
-    try {
+    // Cargar noticias
+    async function cargarNoticias() {
         const res = await fetch("/api/noticias");
-        const noticias = await res.json();
+        const data = await res.json();
 
-        tabla.innerHTML = noticias
-            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-            .map(n => `
+        tablaNoticias.innerHTML = "";
+
+        data.forEach(noticia => {
+            tablaNoticias.innerHTML += `
                 <tr>
-                    <td>${n.titulo}</td>
-                    <td>${new Date(n.fecha).toLocaleDateString()}</td>
+                    <td>${noticia.id}</td>
+                    <td>${noticia.titulo}</td>
+                    <td>${noticia.contenido.substring(0, 50)}...</td>
+                    <td>${new Date(noticia.fecha).toLocaleDateString()}</td>
                     <td>
-                        <button class="btn btn-warning btn-sm me-2" onclick="editarNoticia(${n.id})">Editar</button>
-                        <button class="btn btn-danger btn-sm" onclick="eliminarNoticia(${n.id})">Eliminar</button>
+                        <button class="btn btn-warning btn-sm" onclick="editarNoticia(${noticia.id}, '${noticia.titulo}', \`${noticia.contenido}\`)">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarNoticia(${noticia.id})">Eliminar</button>
                     </td>
                 </tr>
-            `)
-            .join("");
-
-    } catch (error) {
-        mostrarAlerta("Error al cargar noticias", "error");
+            `;
+        });
     }
-}
 
-// ====================
-// GUARDAR (crear o editar)
-// ====================
-document.getElementById("form-noticia").addEventListener("submit", async e => {
-    e.preventDefault();
+    cargarNoticias();
 
-    const id = document.getElementById("noticia-id").value;
-    const titulo = document.getElementById("titulo").value;
-    const contenido = document.getElementById("contenido").value;
+    // Crear o actualizar noticia
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    const datos = { titulo, contenido };
+        const titulo = document.getElementById("titulo").value;
+        const contenido = document.getElementById("contenido").value;
 
-    const metodo = id ? "PUT" : "POST";
-    const url = id ? `/api/noticias/${id}` : "/api/noticias";
+        const url = editId ? `/api/noticias/${editId}` : "/api/noticias";
+        const method = editId ? "PUT" : "POST";
 
-    try {
         const res = await fetch(url, {
-            method: metodo,
+            method,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(datos)
+            body: JSON.stringify({ titulo, contenido })
         });
 
-        await res.json();
+        if (res.ok) {
+            alert("Noticia guardada");
+            form.reset();
+            editId = null;
+            cargarNoticias();
+        }
+    });
 
-        mostrarAlerta(id ? "Noticia actualizada" : "Noticia creada", "exito");
+    // Función global para editar
+    window.editarNoticia = (id, titulo, contenido) => {
+        editId = id;
+        document.getElementById("titulo").value = titulo;
+        document.getElementById("contenido").value = contenido;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
-        document.getElementById("form-noticia").reset();
-        document.getElementById("noticia-id").value = "";
-        cargarNoticias();
-
-    } catch (error) {
-        mostrarAlerta("Error al guardar noticia", "error");
-    }
+    // Función global para eliminar
+    window.eliminarNoticia = async (id) => {
+        if (confirm("¿Seguro que quieres eliminar la noticia?")) {
+            const res = await fetch(`/api/noticias/${id}`, { method: "DELETE" });
+            if (res.ok) cargarNoticias();
+        }
+    };
 });
-
-// ====================
-// EDITAR
-// ====================
-async function editarNoticia(id) {
-    const res = await fetch("/api/noticias");
-    const noticias = await res.json();
-
-    const n = noticias.find(x => x.id === id);
-
-    document.getElementById("noticia-id").value = n.id;
-    document.getElementById("titulo").value = n.titulo;
-    document.getElementById("contenido").value = n.contenido;
-}
-
-// ====================
-// ELIMINAR
-// ====================
-async function eliminarNoticia(id) {
-    if (!confirm("¿Seguro que deseas eliminar esta noticia?")) return;
-
-    try {
-        await fetch(`/api/noticias/${id}`, { method: "DELETE" });
-        mostrarAlerta("Noticia eliminada", "exito");
-        cargarNoticias();
-    } catch (error) {
-        mostrarAlerta("Error al eliminar noticia", "error");
-    }
-}

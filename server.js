@@ -6,6 +6,8 @@ import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import noticiasRoutes from "./api/noticias.js";
+
 
 // ...
 // Importaciones de APIs: Debemos dejar de importar resetPasswordHandler si no lo usamos
@@ -22,6 +24,8 @@ app.all('/api/usersList', usersListHandler);
 app.post('/api/loginUser', loginUserHandler);
 
 app.all('/api/carGarage', carGarageHandler);
+app.use("/api/noticias", noticiasRoutes);
+
 
 // **¡ELIMINAR ESTA LÍNEA!** Vercel debe manejar api/resetPassword.js directamente.
 // app.post('/api/resetPassword', resetPasswordHandler); // <-- ELIMINAR ESTA LÍNEA

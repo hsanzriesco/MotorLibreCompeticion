@@ -1,87 +1,65 @@
 const express = require("express");
 const router = express.Router();
-const fs = require("fs");
-const path = require("path");
+const pool = require("../server"); // usa tu conexión ya creada
 
-const noticiasPath = path.join(__dirname, "..", "data", "noticias.json");
-
-// Leer archivo JSON
-function getNoticias() {
-    if (!fs.existsSync(noticiasPath)) {
-        fs.writeFileSync(noticiasPath, JSON.stringify([]));
+// Obtener todas las noticias
+router.get("/", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM noticias ORDER BY fecha DESC");
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Error obteniendo noticias:", error);
+        res.status(500).json({ error: "Error interno" });
     }
-    return JSON.parse(fs.readFileSync(noticiasPath, "utf8"));
-}
-
-// Guardar archivo JSON
-function saveNoticias(noticias) {
-    fs.writeFileSync(noticiasPath, JSON.stringify(noticias, null, 2));
-}
-
-// =======================
-// OBTENER TODAS LAS NOTICIAS
-// =======================
-router.get("/", (req, res) => {
-    const noticias = getNoticias();
-    res.json(noticias);
 });
 
-// =======================
-// CREAR NOTICIA
-// =======================
-router.post("/", (req, res) => {
-    const noticias = getNoticias();
+// Crear noticia
+router.post("/", async (req, res) => {
     const { titulo, contenido } = req.body;
 
-    if (!titulo || !contenido) {
-        return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    if (!titulo || !contenido)
+        return res.status(400).json({ error: "Faltan datos" });
+
+    try {
+        const result = await pool.query(
+            "INSERT INTO noticias (titulo, contenido) VALUES ($1, $2) RETURNING *",
+            [titulo, contenido]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error("Error creando noticia:", error);
+        res.status(500).json({ error: "Error interno" });
     }
-
-    const nueva = {
-        id: Date.now(),
-        titulo,
-        contenido,
-        fecha: new Date().toISOString()
-    };
-
-    noticias.push(nueva);
-    saveNoticias(noticias);
-
-    res.json({ message: "Noticia creada", noticia: nueva });
 });
 
-// =======================
-// EDITAR NOTICIA
-// =======================
-router.put("/:id", (req, res) => {
-    const noticias = getNoticias();
-    const id = parseInt(req.params.id);
-
+// Actualizar noticia
+router.put("/:id", async (req, res) => {
+    const { id } = req.params;
     const { titulo, contenido } = req.body;
 
-    const noticia = noticias.find(n => n.id === id);
-    if (!noticia) return res.status(404).json({ error: "Noticia no encontrada" });
-
-    noticia.titulo = titulo;
-    noticia.contenido = contenido;
-    noticia.fecha = new Date().toISOString();
-
-    saveNoticias(noticias);
-
-    res.json({ message: "Noticia actualizada", noticia });
+    try {
+        const result = await pool.query(
+            "UPDATE noticias SET titulo = $1, contenido = $2 WHERE id = $3 RETURNING *",
+            [titulo, contenido, id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error("Error actualizando noticia:", error);
+        res.status(500).json({ error: "Error interno" });
+    }
 });
 
-// =======================
-// ELIMINAR NOTICIA
-// =======================
-router.delete("/:id", (req, res) => {
-    let noticias = getNoticias();
-    const id = parseInt(req.params.id);
+// Eliminar noticia
+router.delete("/:id", async (req, res) => {
+    const { id } = req.params;
 
-    noticias = noticias.filter(n => n.id !== id);
-    saveNoticias(noticias);
-
-    res.json({ message: "Noticia eliminada" });
+    try {
+        await pool.query("DELETE FROM noticias WHERE id = $1", [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error eliminando noticia:", error);
+        res.status(500).json({ error: "Error interno" });
+    }
 });
 
 module.exports = router;
