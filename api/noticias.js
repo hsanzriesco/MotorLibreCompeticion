@@ -1,65 +1,99 @@
-const express = require("express");
-const router = express.Router();
-const pool = require("../server"); // usa tu conexión ya creada
+// api/noticias.js
+import { Pool } from "pg";
 
-// Obtener todas las noticias
-router.get("/", async (req, res) => {
-    try {
-        const result = await pool.query("SELECT * FROM noticias ORDER BY fecha DESC");
-        res.json(result.rows);
-    } catch (error) {
-        console.error("Error obteniendo noticias:", error);
-        res.status(500).json({ error: "Error interno" });
-    }
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
 });
 
-// Crear noticia
-router.post("/", async (req, res) => {
-    const { titulo, contenido } = req.body;
-
-    if (!titulo || !contenido)
-        return res.status(400).json({ error: "Faltan datos" });
+export default async function handler(req, res) {
+    const method = req.method;
 
     try {
-        const result = await pool.query(
-            "INSERT INTO noticias (titulo, contenido) VALUES ($1, $2) RETURNING *",
-            [titulo, contenido]
-        );
-        res.json(result.rows[0]);
+        // GET - Obtener todas las noticias
+        if (method === "GET") {
+            const result = await pool.query(
+                "SELECT * FROM noticias ORDER BY fecha DESC"
+            );
+            return res.status(200).json(result.rows);
+        }
+
+        // POST - Crear noticia
+        if (method === "POST") {
+            const { titulo, contenido } = req.body;
+
+            if (!titulo || !contenido) {
+                return res
+                    .status(400)
+                    .json({ success: false, message: "Faltan campos requeridos" });
+            }
+
+            const result = await pool.query(
+                `INSERT INTO noticias (titulo, contenido)
+         VALUES ($1, $2)
+         RETURNING *`,
+                [titulo, contenido]
+            );
+
+            return res.status(201).json({
+                success: true,
+                noticia: result.rows[0],
+            });
+        }
+
+        // PUT - Actualizar noticia
+        if (method === "PUT") {
+            const { id, titulo, contenido } = req.body;
+
+            if (!id || !titulo || !contenido) {
+                return res
+                    .status(400)
+                    .json({ success: false, message: "Datos insuficientes" });
+            }
+
+            const result = await pool.query(
+                `UPDATE noticias
+         SET titulo = $1, contenido = $2
+         WHERE id = $3
+         RETURNING *`,
+                [titulo, contenido, id]
+            );
+
+            return res.status(200).json({
+                success: true,
+                noticia: result.rows[0],
+            });
+        }
+
+        // DELETE - Eliminar noticia
+        if (method === "DELETE") {
+            const { id } = req.body;
+
+            if (!id) {
+                return res
+                    .status(400)
+                    .json({ success: false, message: "ID requerido" });
+            }
+
+            await pool.query("DELETE FROM noticias WHERE id = $1", [id]);
+
+            return res.status(200).json({
+                success: true,
+                message: "Noticia eliminada",
+            });
+        }
+
+        // Si el método no está permitido
+        return res.status(405).json({
+            success: false,
+            message: "Método no permitido",
+        });
     } catch (error) {
-        console.error("Error creando noticia:", error);
-        res.status(500).json({ error: "Error interno" });
+        console.error("### ERROR EN /api/noticias ###");
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Error interno del servidor",
+        });
     }
-});
-
-// Actualizar noticia
-router.put("/:id", async (req, res) => {
-    const { id } = req.params;
-    const { titulo, contenido } = req.body;
-
-    try {
-        const result = await pool.query(
-            "UPDATE noticias SET titulo = $1, contenido = $2 WHERE id = $3 RETURNING *",
-            [titulo, contenido, id]
-        );
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error("Error actualizando noticia:", error);
-        res.status(500).json({ error: "Error interno" });
-    }
-});
-
-// Eliminar noticia
-router.delete("/:id", async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        await pool.query("DELETE FROM noticias WHERE id = $1", [id]);
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error eliminando noticia:", error);
-        res.status(500).json({ error: "Error interno" });
-    }
-});
-
-module.exports = router;
+}
