@@ -20,35 +20,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 
-    // --- GESTIÓN DE USUARIO ---
+    // --- GESTIÓN DE USUARIO CORREGIDA Y CON PROTECCIÓN ---
     // Usamos localStorage si no está en sessionStorage (persistencia)
     const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let usuario = null;
+
+    // Bloque Try-Catch para parsear el usuario
     try {
         if (stored) {
             usuario = JSON.parse(stored);
         }
     } catch (e) {
         console.error("Error al parsear usuario:", e);
+        // Sesión corrupta, limpiar ambas y forzar la redirección
+        sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
     }
     // ----------------------------------------------------
+
+    // 🛑 LÓGICA DE PROTECCIÓN DE PÁGINA AÑADIDA 🛑
+    if (!usuario) {
+        // Si no hay usuario (ni en sessionStorage, ni en localStorage, ni se pudo parsear)
+        if (typeof mostrarAlerta === 'function') {
+            // Aviso de que debe iniciar sesión
+            mostrarAlerta("Tienes que iniciar sesión para acceder al Calendario.", 'error');
+        } else {
+            // Fallback si 'mostrarAlerta' no está definida
+            console.warn("No hay sesión. Redirigiendo...");
+        }
+
+        // Forzar la redirección al login
+        setTimeout(() => {
+            window.location.href = '../auth/login/login.html';
+        }, 1200);
+        return; // Detiene la ejecución del script para proteger la página
+    }
+    // ----------------------------------------------
 
     const userName = document.getElementById("user-name");
     const loginIcon = document.getElementById("login-icon");
 
-    if (usuario) {
-        userName.textContent = usuario.name;
-        userName.style.display = "inline";
-        loginIcon.style.display = "none";
-
-        // Lógica de redirección a login si la sesión expira o es inválida, 
-        // pero solo si el token es nulo (no necesario si se usa solo para el nombre)
-    } else {
-        // Opcional: Redireccionar si no hay sesión para proteger la página
-        // window.location.href = '../auth/login/login.html'; 
-        userName.style.display = "none";
-        loginIcon.style.display = "inline";
-    }
+    // Si llegamos aquí, 'usuario' es válido
+    userName.textContent = usuario.name;
+    userName.style.display = "inline";
+    loginIcon.style.display = "none";
 
     /* * ❌ CÓDIGO ELIMINADO/CORREGIDO: 
     * Se eliminó el listener directo para logout-btn porque entraba en conflicto
@@ -61,7 +76,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function checkRegistrationStatus(eventId, userId) {
         if (!userId) return false;
-
+        // ... (resto de la función checkRegistrationStatus, sin cambios)
         try {
             const res = await fetch(`/api/events?action=checkRegistration&event_id=${eventId}&user_id=${userId}`);
             const data = await res.json();
@@ -79,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
             return;
         }
-
+        // ... (resto de la función handleRegistration, sin cambios)
         registerBtn.disabled = true;
         statusSpan.textContent = "Inscribiendo...";
 
@@ -118,7 +133,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             mostrarAlerta("Error: Debes iniciar sesión para cancelar.", 'error');
             return;
         }
-
+        // ... (resto de la función handleCancelRegistration, sin cambios)
         cancelBtn.disabled = true;
         statusSpan.textContent = "Cancelando inscripción...";
 
