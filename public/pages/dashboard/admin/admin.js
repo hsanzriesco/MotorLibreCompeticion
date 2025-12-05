@@ -23,21 +23,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // --- VARIABLES DOM Y MODALES ---
+    // --- VARIABLES DOM Y MODALES (CALENDARIO) ---
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
 
-    // 🚀 NUEVO: Modal y elementos para la lista de inscritos (mantengo las variables, aunque la lógica de apertura está en HTML)
     const registrationsModalEl = document.getElementById("registrationsModal");
-
-    // NOTA: Los elementos 'registrationsListBody' y 'registrationsEventTitle' ya no se necesitan aquí,
-    // ya que la carga de datos se movió al script en línea de adminCalendario.html, manejado por el evento show.bs.modal
 
     if (!calendarEl || !eventModalEl) {
         console.error("No se encontraron los elementos 'calendar' o 'eventModal'");
         // Si no estamos en la página del calendario, la ejecución puede terminar aquí.
         if (window.location.pathname.includes('/adminCalendario.html')) {
-            return;
+            // Pero si estamos en otra página de admin, como adminUsuarios.html, ¡seguimos!
         }
     }
 
@@ -46,7 +42,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     let eventModal;
     let registrationsModal;
 
-    // Si estamos en la página de calendario, inicializamos las variables
     if (calendarEl && eventModalEl) {
         eventModal = new bootstrap.Modal(eventModalEl);
         if (registrationsModalEl) {
@@ -59,7 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const titleInput = document.getElementById("title");
     const descriptionInput = document.getElementById("description");
     const locationInput = document.getElementById("location");
-    const capacityInput = document.getElementById("capacity"); // 🔑 Capacidad Máxima
+    const capacityInput = document.getElementById("capacity");
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
     const endTimeInput = document.getElementById("end-time");
@@ -74,15 +69,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saveEventBtn = document.getElementById("saveEventBtn");
     const deleteEventBtn = document.getElementById("deleteEventBtn");
 
-    // 🚀 El botón de ver inscritos se queda sin uso aquí, su funcionalidad de apertura es en HTML.
-    // Lo importante es el contenedor y el contador.
     const registrationsBtnContainer = document.getElementById('registrations-button-container');
     const currentRegisteredCount = document.getElementById('current-registered-count');
 
     let selectedEvent = null;
     let eventInitialState = null;
 
-    // --- FUNCIONES DE ESTADO (SE MODIFICAN CON CAPACITY) ---
+    // --- FUNCIONES DE ESTADO (CALENDARIO) ---
     function captureEventState() {
         const date = startDateInput.value;
         const startTime = startTimeInput.value;
@@ -93,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             title: titleInput.value.trim(),
             description: descriptionInput.value.trim(),
             location: locationInput.value.trim(),
-            capacity: capacityInput.value.trim(), // 🔑 MODIFICADO
+            capacity: capacityInput.value.trim(),
             start: date && startTime ? `${date}T${startTime}` : null,
             end: date && endTime ? `${date}T${endTime}` : null,
             imageURL: imageURLInput.value,
@@ -109,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentState.title !== eventInitialState.title ||
             currentState.description !== eventInitialState.description ||
             currentState.location !== eventInitialState.location ||
-            currentState.capacity !== eventInitialState.capacity || // 🔑 MODIFICADO
+            currentState.capacity !== eventInitialState.capacity ||
             currentState.start !== eventInitialState.start ||
             currentState.end !== eventInitialState.end ||
             currentState.imageURL !== eventInitialState.imageURL;
@@ -119,7 +112,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return fieldsChanged || fileChanged;
     }
 
-    // 🚀 FUNCIÓN CLAVE: Obtener inscritos y actualizar el contador (Se llama en eventClick)
     async function loadEventRegistrationCount(eventId) {
         if (!eventId) {
             registrationsBtnContainer.style.display = 'none';
@@ -128,14 +120,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
-            // Llama a la nueva endpoint para el conteo
             const response = await fetch(`/api/events?action=getRegistrationCount&event_id=${eventId}`);
             const result = await response.json();
 
             if (result.success) {
                 const count = result.count || 0;
                 currentRegisteredCount.textContent = count;
-                registrationsBtnContainer.style.display = 'block'; // Mostrar el botón si hay un ID de evento
+                registrationsBtnContainer.style.display = 'block';
                 return count;
             } else {
                 console.error("Fallo al obtener el conteo de inscritos:", result.message);
@@ -152,12 +143,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // 🔴 ELIMINADA: La función viewEventRegistrations ha sido eliminada. La carga de datos
-    // y transición de modales se gestiona en adminCalendario.html con show.bs.modal.
 
-
-    // --- FUNCIONES DEL CALENDARIO (SE MODIFICAN PARA EL CONTEO) ---
-
+    // --- FUNCIONES DEL CALENDARIO ---
     async function fetchEvents() {
         try {
             const res = await fetch("/api/events");
@@ -171,7 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 extendedProps: {
                     description: e.description,
                     location: e.location,
-                    capacity: e.capacity, // 🔑 MODIFICADO
+                    capacity: e.capacity,
                     image_url: e.image_url
                 }
             }));
@@ -198,7 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 startDateInput.value = info.startStr.split("T")[0];
                 eventIdInput.value = "";
                 deleteEventBtn.style.display = "none";
-                registrationsBtnContainer.style.display = 'none'; // 🚀 Ocultar el botón para nuevo evento
+                registrationsBtnContainer.style.display = 'none';
 
                 imageFileInput.value = "";
                 imageURLInput.value = "";
@@ -208,7 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 eventModal.show();
             },
 
-            eventClick: async (info) => { // 🚀 Hacemos async para el conteo
+            eventClick: async (info) => {
                 const event = info.event;
                 selectedEvent = event;
                 const extendedProps = event.extendedProps;
@@ -218,7 +205,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 titleInput.value = event.title;
                 descriptionInput.value = extendedProps.description || "";
                 locationInput.value = extendedProps.location || "";
-                capacityInput.value = extendedProps.capacity || ""; // 🔑 MODIFICADO
+                capacityInput.value = extendedProps.capacity || "";
 
                 imageURLInput.value = currentURL;
                 imageFileInput.value = "";
@@ -240,14 +227,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (event.end) {
                     const endDate = new Date(event.end);
                     endTimeInput.value = endDate.toTimeString().slice(0, 5);
-                    // Si la hora de fin es medianoche, y FullCalendar usa 'allDay: true' implícitamente, 
-                    // la fecha se puede adelantar un día. Aquí solo nos importa la hora.
                 }
 
                 deleteEventBtn.style.display = "inline-block";
                 eventInitialState = captureEventState();
 
-                // 🚀 LLAMADA CLAVE: Obtener el conteo de inscritos y mostrar el botón
                 await loadEventRegistrationCount(event.id);
 
                 eventModal.show();
@@ -261,7 +245,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         calendar.render();
 
-        // --- MANEJADORES DE EVENTOS (Se añade validación de capacidad) ---
+        // --- MANEJADORES DE EVENTOS (CALENDARIO) ---
 
         imageFileInput.addEventListener('change', function () {
             const file = this.files[0];
@@ -287,9 +271,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentImageContainer.style.display = 'none';
         });
 
-        // 🔴 ELIMINADO: Ya no se necesita un manejador de click para viewRegistrationsBtn,
-        // la funcionalidad es manejada por data-bs-toggle en adminCalendario.html.
-
         saveEventBtn.addEventListener("click", async () => {
             const id = eventIdInput.value;
             const date = startDateInput.value;
@@ -309,15 +290,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             // 🔑 NUEVA VALIDACIÓN DE CAPACIDAD 🔑
             const parsedCapacity = parseInt(capacity);
 
-            // Permitimos 0 (aforo ilimitado), cadena vacía, o números positivos.
             if (capacity.length > 0 && (isNaN(parsedCapacity) || parsedCapacity < 0)) {
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("No se puede colocar ese número en la capacidad máxima. Debe ser un número entero positivo o déjalo vacío/cero para aforo ilimitado.", "error");
                 }
-                return; // Detiene el proceso de guardado
+                return;
             }
-            // 🔑 FIN NUEVA VALIDACIÓN 🔑
-
 
             if (!titleInput.value.trim() || !date || !startTime || !endTime) {
                 if (typeof mostrarAlerta === 'function') {
@@ -329,7 +307,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             // 2. CONFIRMACIÓN ANTES DE GUARDAR
             let confirmado = true;
             if (id) {
-                // Asegúrate de que 'mostrarConfirmacion' esté disponible
                 if (typeof mostrarConfirmacion === 'function') {
                     confirmado = await mostrarConfirmacion("¿Deseas guardar los cambios realizados en el evento?");
                 } else {
@@ -350,7 +327,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             formData.append('title', titleInput.value.trim());
             formData.append('description', descriptionInput.value.trim());
             formData.append('location', locationInput.value.trim());
-            formData.append('capacity', capacity); // 🔑 MODIFICADO
+            formData.append('capacity', capacity);
             formData.append('start', start);
             formData.append('end', end);
 
@@ -360,7 +337,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (file) {
                 formData.append('imageFile', file);
             } else {
-                // Si no hay archivo nuevo, enviamos la URL actual (o vacío) para saber qué mantener/eliminar
                 formData.append('imageURL', currentURL);
             }
 
@@ -422,7 +398,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // --- Lógica de Coche (El resto de tu código, SE MANTIENE IGUAL) ---
+    // --- Lógica de Coche (SE MANTIENE IGUAL) ---
 
     const carGarageForm = document.getElementById("carGarageForm");
     const carModalEl = document.getElementById("carGarageModal");
@@ -459,13 +435,193 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             });
 
-            // Agrego la función del botón de coche para terminar el bloque
             clearCarPhotoBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 carPhotoUrlInput.value = "";
                 carPhotoFileInput.value = "";
                 carPhotoContainer.style.display = 'none';
             });
+        }
+    }
+
+    // ====================================================================
+    // 💥 NUEVA LÓGICA: GESTIÓN DE USUARIOS (CRUD ADMIN) 💥
+    // ====================================================================
+
+    const userTableBody = document.getElementById("userTableBody");
+    const userEditModalEl = document.getElementById("userEditModal"); // Asumiendo que tienes un modal para editar
+
+    // Si el modal de edición de usuario existe, lo inicializamos
+    let userEditModal;
+    if (userEditModalEl) {
+        userEditModal = new bootstrap.Modal(userEditModalEl);
+
+        // Variables de los campos del formulario de edición de usuario
+        const editUserId = document.getElementById("editUserId");
+        const editUserName = document.getElementById("editUserName");
+        const editUserEmail = document.getElementById("editUserEmail");
+        const editUserRole = document.getElementById("editUserRole");
+        const editUserPassword = document.getElementById("editUserPassword");
+        const saveUserBtn = document.getElementById("saveUserBtn");
+        const deleteUserBtn = document.getElementById("deleteUserBtn");
+
+        // ----------------------------------------------------
+        // 🚀 FUNCIÓN CLAVE 1: CARGAR Y MOSTRAR USUARIOS
+        // ----------------------------------------------------
+        async function loadUsers() {
+            if (!userTableBody) return;
+
+            userTableBody.innerHTML = '<tr><td colspan="6">Cargando usuarios...</td></tr>';
+
+            try {
+                // GET a /api/users
+                const res = await fetch("/api/users");
+                const data = await res.json();
+
+                if (!data.success || !Array.isArray(data.data)) throw new Error(data.message || "Fallo al obtener la lista de usuarios.");
+
+                userTableBody.innerHTML = ''; // Limpiar el mensaje de carga
+
+                data.data.forEach(user => {
+                    const row = userTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role}</td>
+                        <td>${user.club_id || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary edit-user-btn" data-user='${JSON.stringify(user)}'>
+                                Editar
+                            </button>
+                        </td>
+                    `;
+                });
+
+                // Añadir listeners a los botones de edición
+                document.querySelectorAll(".edit-user-btn").forEach(btn => {
+                    btn.addEventListener("click", (e) => {
+                        const userData = JSON.parse(e.currentTarget.getAttribute("data-user"));
+                        openUserEditModal(userData);
+                    });
+                });
+
+            } catch (e) {
+                console.error("Error al cargar usuarios:", e);
+                userTableBody.innerHTML = `<tr><td colspan="6">Error al cargar usuarios: ${e.message}</td></tr>`;
+            }
+        }
+
+        // ----------------------------------------------------
+        // 🚀 FUNCIÓN CLAVE 2: ABRIR MODAL DE EDICIÓN
+        // ----------------------------------------------------
+        function openUserEditModal(user) {
+            editUserId.value = user.id;
+            editUserName.value = user.name;
+            editUserEmail.value = user.email;
+            editUserRole.value = user.role;
+            editUserPassword.value = ''; // Siempre limpiar el campo de contraseña por seguridad
+
+            userEditModal.show();
+        }
+
+        // ----------------------------------------------------
+        // 🚀 FUNCIÓN CLAVE 3: GUARDAR EDICIÓN (RESUELVE EL ERROR 400)
+        // ----------------------------------------------------
+        saveUserBtn.addEventListener("click", async () => {
+            const id = editUserId.value;
+            const name = editUserName.value.trim();
+            const email = editUserEmail.value.trim();
+            const role = editUserRole.value;
+            const password = editUserPassword.value.trim(); // Puede estar vacío
+
+            if (!id || !name || !email || !role) {
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Faltan campos obligatorios para actualizar el usuario.", "error");
+                }
+                return;
+            }
+
+            const payload = {
+                name: name,
+                email: email,
+                role: role,
+            };
+
+            if (password) {
+                payload.password = password;
+            }
+
+            try {
+                // 💥 CORRECCIÓN CRÍTICA: ENVÍO DEL ID EN EL QUERY PARAMETER
+                const res = await fetch(`/api/users?id=${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    // Si el servidor devuelve 400 o 500, capturamos el mensaje del body
+                    throw new Error(data.message || `Fallo al guardar (${res.status})`);
+                }
+
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Usuario actualizado correctamente", "exito");
+                }
+                userEditModal.hide();
+                loadUsers(); // Recargar la tabla
+            } catch (e) {
+                console.error("Error al actualizar usuario:", e);
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta(`Error al actualizar usuario: ${e.message}`, "error");
+                }
+            }
+        });
+
+        // ----------------------------------------------------
+        // 🚀 FUNCIÓN CLAVE 4: ELIMINAR USUARIO
+        // ----------------------------------------------------
+        deleteUserBtn.addEventListener("click", async () => {
+            const id = editUserId.value;
+
+            if (!id) return;
+
+            let confirmado;
+            if (typeof mostrarConfirmacion === 'function') {
+                confirmado = await mostrarConfirmacion(`¿Estás seguro de que quieres eliminar al usuario con ID ${id}?`);
+            } else {
+                confirmado = confirm(`¿Estás seguro de que quieres eliminar al usuario con ID ${id}?`);
+            }
+
+            if (confirmado) {
+                try {
+                    // 💥 CORRECCIÓN CRÍTICA: ENVÍO DEL ID EN EL QUERY PARAMETER
+                    const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        throw new Error(data.message || `Fallo al eliminar (${res.status})`);
+                    }
+
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta("Usuario eliminado correctamente", "exito");
+                    }
+                    userEditModal.hide();
+                    loadUsers(); // Recargar la tabla
+                } catch (e) {
+                    console.error("Error al eliminar usuario:", e);
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta(`Error al eliminar usuario: ${e.message}`, "error");
+                    }
+                }
+            }
+        });
+
+        // Cargar usuarios al cargar la página si el elemento de tabla existe.
+        if (userTableBody) {
+            loadUsers();
         }
     }
 });
