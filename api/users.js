@@ -3,12 +3,17 @@
 
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken"; // 👈 IMPORTANTE: Añadir JWT para la generación del token
 
 // --- CONFIGURACIÓN DE BASE DE DATOS ---
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
 });
+
+// ⚠️ NECESITAS DEFINIR ESTO EN TU .env
+// En producción, ¡usa una cadena larga y aleatoria en tu .env!
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_produccion';
 
 // Se requiere configurar `bodyParser: false` para usar `getBody` en userActionHandler y userListCrudHandler
 export const config = {
@@ -122,11 +127,10 @@ async function loginUserHandler(req, res) {
 
         const user = rows[0];
         const hashedPassword = user.password;
-        
+
         // ⚠️ Mejorado: Verificar is_banned directamente desde la tabla users 
-        // antes de verificar la contraseña para detener bots rápidamente (opcional, pero buena práctica)
         if (user.is_banned) {
-             const banInfo = await pool.query(
+            const banInfo = await pool.query(
                 'SELECT ban_reason FROM usuarios_baneados WHERE user_id = $1',
                 [user.id]
             );
@@ -146,10 +150,23 @@ async function loginUserHandler(req, res) {
             return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
         }
 
+        // 🏆 SOLUCIÓN CLAVE: GENERAR EL JWT
+        const token = jwt.sign(
+            // Payload (Datos que contendrá el token, solo lo necesario)
+            { id: user.id, role: user.role },
+            // Secreto (Usar el secreto definido arriba)
+            JWT_SECRET,
+            // Opciones (Token válido por 24 horas)
+            { expiresIn: '24h' }
+        );
+
         console.log(`LOGIN EXITOSO para ${username}.`);
+
+        // 🏆 SOLUCIÓN CLAVE: Devolver el token
         return res.status(200).json({
             success: true,
             message: "Inicio de sesión correcto",
+            token: token, // 👈 Se añade el token aquí
             user: {
                 id: user.id,
                 name: user.name,
@@ -318,44 +335,44 @@ async function userListCrudHandler(req, res) {
                     if (!ban_reason || ban_reason.trim() === "") {
                         return res.status(400).json({ success: false, message: 'La razón del baneo es obligatoria.' });
                     }
-                    
+
                     // 1. BANEAR: Insertar o actualizar la razón en la tabla 'usuarios_baneados'
                     await pool.query(
                         `INSERT INTO usuarios_baneados (user_id, ban_reason) 
-                         VALUES ($1, $2)
-                         ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
+                          VALUES ($1, $2)
+                          ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
                         [id, ban_reason.trim()]
                     );
-                    
+
                     // 2. Sincronizar columna 'is_banned' en la tabla 'users'
                     await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
                     console.log(`Usuario ${id} baneado. Razón: ${ban_reason.trim()}`);
-                    
+
                     // Retornamos inmediatamente para completar la acción de baneo
                     return res.status(200).json({ success: true, message: 'Usuario baneado con éxito.' });
 
                 } else if (is_banned === false) {
                     // DESBANEAR
-                    
+
                     // 1. Eliminar de la tabla 'usuarios_baneados'
                     await pool.query(
                         'DELETE FROM usuarios_baneados WHERE user_id = $1',
                         [id]
                     );
-                    
+
                     // 2. Sincronizar columna 'is_banned' en la tabla 'users'
                     await pool.query('UPDATE users SET is_banned = FALSE WHERE id = $1', [id]);
                     console.log(`Usuario ${id} desbaneado.`);
-                    
+
                     // Retornamos inmediatamente para completar la acción de desbaneo
                     return res.status(200).json({ success: true, message: 'Usuario desbaneado con éxito.' });
                 }
             }
             // 🚀 FIN LÓGICA DE BANEO/DESBANEO 🚀
-            
+
 
             // --- Lógica de Actualización de Perfil (Solo se ejecuta si NO se hizo una acción de baneo) ---
-            
+
             // Lógica de validación de club_id (Mantenida)
             if (club_id !== undefined && club_id !== null) {
                 const userCheck = await pool.query(
@@ -410,7 +427,7 @@ async function userListCrudHandler(req, res) {
         if (method === "DELETE") {
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
-            
+
             // ⚠️ Importante: Es buena práctica eliminar primero de las tablas secundarias (como usuarios_baneados)
             await pool.query("DELETE FROM usuarios_baneados WHERE user_id = $1", [id]);
 
