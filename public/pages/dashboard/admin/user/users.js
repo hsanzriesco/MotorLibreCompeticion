@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function cargarUsuarios() {
         try {
-            const res = await fetch("/api/userList");
+            const res = await fetch("/api/users");
             if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
             const data = await res.json();
 
@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const action = btn.dataset.action;
 
         if (action === "edit") {
-            const res = await fetch("/api/userList");
+            const res = await fetch("/api/users");
             const { data } = await res.json();
             const user = data.find((u) => u.id == id);
 
@@ -153,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     async function eliminarUsuario(id) {
-        const res = await fetch(`/api/userList?id=${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
         const data = await res.json();
 
         if (data.success) {
@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const method = creating ? "POST" : "PUT";
 
-        const res = await fetch("/api/userList", {
+        const res = await fetch("/api/users", {
             method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)

@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const resp = await fetch('/api/userAction?action=updateName', {
+            const resp = await fetch('/api/users?action=updateName', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
