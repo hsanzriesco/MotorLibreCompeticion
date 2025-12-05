@@ -37,7 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                const res = await fetch("/api/users", {
+                // 🚀 CAMBIO CLAVE AQUÍ: Se añade ?action=login para que el handler unificado sepa que debe iniciar sesión.
+                const res = await fetch("/api/users?action=login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password }),
@@ -60,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const user = result.user;
 
-                // ⭐⭐⭐ SOLUCIÓN: guardar también club_id ⭐⭐⭐
+                // ⭐⭐⭐ SOLUCIÓN: guardar también club_id ⭐⭐⭐ (Mantenido de tu código original)
                 sessionStorage.setItem("usuario", JSON.stringify({
                     id: user.id,
                     name: user.name,
@@ -122,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
             sendResetEmailBtn.textContent = "Verificando...";
 
             try {
+                // Asumiendo que esta API de forgotPassword.js sigue existiendo
                 const res = await fetch("/api/forgotPassword", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
