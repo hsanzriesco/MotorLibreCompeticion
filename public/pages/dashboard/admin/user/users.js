@@ -1,9 +1,16 @@
 // users.js
 document.addEventListener("DOMContentLoaded", () => {
 
-    // 🛑 VERIFICACIÓN DE ACCESO DE ADMINISTRADOR 🛑
-    if (!sessionStorage.getItem("token") || sessionStorage.getItem("role") !== "admin") {
-        window.location.href = "/"; // Redirige a index.html (que está en la raíz)
+    const ROOT_REDIRECT = "/"; // Define la ruta de redirección a index.html
+
+    // 🛑 VERIFICACIÓN DE ACCESO DE ADMINISTRADOR (Mejorada) 🛑
+    const token = sessionStorage.getItem("token");
+    const role = sessionStorage.getItem("role");
+
+    if (!token || role !== "admin") {
+        console.error("Acceso denegado. Token no encontrado o rol no es admin.");
+        sessionStorage.clear(); // Limpia la sesión incompleta o inválida
+        window.location.href = ROOT_REDIRECT;
         return;
     }
 
@@ -26,7 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const confirmPasswordContainer = document.getElementById("confirmPasswordContainer");
 
     let userIdToDelete = null;
-    let cachedUsers = {}; // 🚀 NUEVO: Cache para datos de usuario
+    let cachedUsers = {};
+
 
     // ------------------------------------------
     // 🌟 ELEMENTOS DE BANEO 🌟
@@ -75,24 +83,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    // 🛑 CORRECCIÓN: Usar sessionStorage
-                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                    Authorization: `Bearer ${token}`, // Usar la variable 'token'
                 },
             });
+
+            // 🚀 NUEVA VERIFICACIÓN DE AUTORIZACIÓN (401/403)
+            if (response.status === 401 || response.status === 403) {
+                console.error("Token no válido. Redirigiendo a login.");
+                mostrarAlerta("Sesión expirada o no autorizada. Por favor, inicia sesión de nuevo.", "danger");
+                sessionStorage.clear();
+                window.location.href = ROOT_REDIRECT;
+                return;
+            }
 
             const data = await response.json();
 
             if (!response.ok) {
                 mostrarAlerta("Error al cargar usuarios: " + data.message, "danger");
-                // Si la sesión es inválida, forzar cierre de sesión
-                if (response.status === 401 || response.status === 403) {
-                    sessionStorage.clear();
-                    window.location.href = "/";
-                }
                 return;
             }
 
-            // 🚀 ACTUALIZACIÓN: Llenar el caché con los datos completos
+            // Llenar el caché con los datos completos
             cachedUsers = data.data.reduce((acc, user) => {
                 acc[user.id] = user;
                 return acc;
@@ -157,16 +168,10 @@ document.addEventListener("DOMContentLoaded", () => {
             button.addEventListener("click", (e) => {
                 const id = e.currentTarget.dataset.id;
                 const name = e.currentTarget.dataset.name;
-                // Convertir la cadena 'true'/'false' a booleano
                 const isBanned = e.currentTarget.dataset.isbanned === 'true';
 
-                // 🚀 MEJORA: Obtener la razón del caché (o forzar recarga si no existe)
+                // Obtener el objeto de usuario completo
                 const user = cachedUsers[id];
-                if (!user) {
-                    // Si no está en caché, forzar recarga del usuario, pero por ahora usamos los datos básicos
-                    console.warn("Usuario no encontrado en caché. Solo se usa información básica.");
-                    return handleBanUserModal(id, name, isBanned);
-                }
 
                 // Usar el objeto de usuario completo para la acción de baneo
                 handleBanUserModal(user);
@@ -200,13 +205,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadUserForEdit(id) {
         try {
-            // Se usa la función fetchUsers que trae solo los datos listados.
-            // Para la edición, es mejor usar la caché si se cargó al inicio,
-            // pero si necesitas datos adicionales, haz una llamada individual.
 
-            // Si el backend devuelve la razón de baneo, esto no se necesita aquí.
-            // Si el backend YA NO devuelve la contraseña, puedes usar la caché directamente
-            const user = cachedUsers[id];
+            let user = cachedUsers[id];
 
             if (!user) {
                 // Si por alguna razón no está en caché (ej. fallo inicial de carga),
@@ -214,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const response = await fetch(`/api/users?id=${id}`, {
                     method: "GET",
                     headers: {
-                        Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                        Authorization: `Bearer ${token}`, // Usar la variable 'token'
                     },
                 });
                 const data = await response.json();
@@ -282,10 +282,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: method,
                 headers: {
                     "Content-Type": "application/json",
-                    // 🛑 CORRECCIÓN: Usar sessionStorage
-                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                    Authorization: `Bearer ${token}`, // Usar la variable 'token'
                 },
-                // Usamos JSON.stringify(bodyData) aquí porque getBody en el API maneja la lectura cruda
                 body: JSON.stringify(bodyData),
             });
 
@@ -315,8 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    // 🛑 CORRECCIÓN: Usar sessionStorage
-                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                    Authorization: `Bearer ${token}`, // Usar la variable 'token'
                 },
             });
 
@@ -341,16 +338,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // 🌟 LÓGICA DE BANEO 🌟
     // ------------------------------------------
 
-    // 🚀 MODIFICADO: Ahora recibe el objeto de usuario completo
     function handleBanUserModal(user) {
         userIdToBan.value = user.id;
         userBanName.textContent = user.name;
-        banReason.value = user.ban_reason || ""; // 🚀 NUEVO: Cargar razón existente
+        banReason.value = user.ban_reason || "";
 
         if (user.is_banned) {
             // Configurar modal para DESBANEAR
             banModalTitle.textContent = "Desbanear Usuario";
-            banReasonContainer.style.display = 'block'; // Mostrar la razón, pero deshabilitada
+            banReasonContainer.style.display = 'block';
             banReason.disabled = true;
             banAlertMessage.style.display = 'none';
             btnConfirmBan.style.display = 'none';
@@ -398,13 +394,11 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         try {
-            // Nota: El backend ya maneja la URL /api/users?id=... para PUT
             const response = await fetch(`/api/users?id=${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    // 🛑 CORRECCIÓN: Usar sessionStorage
-                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                    Authorization: `Bearer ${token}`, // Usar la variable 'token'
                 },
                 body: JSON.stringify(bodyData),
             });
