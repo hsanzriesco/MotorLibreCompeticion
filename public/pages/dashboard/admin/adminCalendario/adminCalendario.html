@@ -364,8 +364,8 @@
 
     <script>
         // 🚀 VARIBLES Y FUNCIÓN PRINCIPAL DE INSCRITOS
-        const registrationsModal = new bootstrap.Modal(document.getElementById('registrationsModal'));
-        const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+        // NOTA: Se eliminan las inicializaciones redundantes de los modales (registrationsModal y eventModal) 
+        // ya que la lógica principal está en admin.js y solo necesitamos los elementos DOM aquí.
         const registrationsTableBody = document.getElementById('registrationsTableBody');
         const registrationsEmptyMessage = document.getElementById('registrationsEmptyMessage');
         const btnViewRegistrations = document.getElementById('btnViewRegistrations');
@@ -491,7 +491,7 @@
             }
         });
 
-        // 🔴 3. VALIDACIÓN DE CAPACIDAD ANTES DE GUARDAR (SE MANTIENE)
+        // 🔴 3. VALIDACIÓN DE CAPACIDAD Y LUGAR ANTES DE GUARDAR (Se mantiene)
         saveEventBtn.addEventListener('click', (event) => {
 
             const capacityValue = capacityInput.value.trim();

@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // --- Comprobación de Usuario y Redirección (SE MANTIENE IGUAL) ---
-    const storedUser = sessionStorage.getItem("usuario");
+    // --- Comprobación de Usuario y Redirección (CORREGIDO PARA INCLUIR LOCALSTORAGE) ---
+    // 🛑 CAMBIO CRÍTICO: Buscar la sesión en sessionStorage O localStorage
+    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
 
     let usuario = null;
     if (storedUser) {
@@ -12,12 +13,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
+        // Limpiar ambas sesiones para evitar bucles si la información es corrupta/inválida
         sessionStorage.removeItem("usuario");
+        localStorage.removeItem("usuario");
+
         // Asegúrate de que 'mostrarAlerta' esté disponible globalmente o importada
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000);
         }
+
+        // Redirigir al login
         setTimeout(() => {
+            // Se usa la ruta absoluta /pages/auth/login/login.html para mayor seguridad
             window.location.href = "/pages/auth/login/login.html";
         }, 1500);
         return;

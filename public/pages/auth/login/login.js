@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const usernameInput = document.getElementById("username");
             const passwordInput = document.getElementById("password");
+            // Nota: Aquí se podría añadir la comprobación de "Recuérdame" si tienes un checkbox
 
             const username = usernameInput.value.trim();
             const password = passwordInput.value.trim();
@@ -64,31 +65,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 const user = result.user;
                 const token = result.token; // 🚨 ASUMIMOS QUE EL TOKEN VIENE EN result.token
 
-                // ⭐⭐⭐ INICIO DE LA SOLUCIÓN CLAVE ⭐⭐⭐
-                // 1. Guardamos las variables que users.js espera.
-                if (token && user.role) {
-                    sessionStorage.setItem("token", token);
-                    sessionStorage.setItem("role", user.role);
-                } else {
-                    // Si el backend no envía el token o el rol, alertamos
+                // ⭐⭐⭐ INICIO DE LAS CORRECCIONES CLAVE ⭐⭐⭐
+
+                if (!token || !user.role) {
                     console.error("Falta token o rol en la respuesta del servidor.");
                     mostrarAlerta("Error de sesión: Falta información clave del usuario.", "error");
                     return;
                 }
 
-                // 2. Guardamos el objeto completo del usuario (para compatibilidad con otros scripts)
                 const userData = {
                     id: user.id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
                     club_id: user.club_id || null,
-                    // Ya no guardamos la contraseña, solo el rol y el token son necesarios
                 };
 
-                sessionStorage.setItem("usuario", JSON.stringify(userData));
-                localStorage.setItem("usuario", JSON.stringify(userData));
-                // ⭐⭐⭐ FIN DE LA SOLUCIÓN CLAVE ⭐⭐⭐
+                const userDataString = JSON.stringify(userData);
+
+                // 1. Guardar el token y el rol en SESSIONSTORAGE (para la sesión actual)
+                sessionStorage.setItem("token", token);
+                sessionStorage.setItem("role", user.role);
+                sessionStorage.setItem("usuario", userDataString);
+
+                // 2. Guardar el token, rol y usuario en LOCALSTORAGE (para persistencia)
+                // 🛑 CRÍTICO: Si el usuario quiere persistencia (como en el admin), esto debe guardarse
+                localStorage.setItem("token", token);
+                localStorage.setItem("role", user.role);
+                localStorage.setItem("usuario", userDataString);
+
+                // ⭐⭐⭐ FIN DE LAS CORRECCIONES CLAVE ⭐⭐⭐
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
