@@ -53,7 +53,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const titleInput = document.getElementById("title");
     const descriptionInput = document.getElementById("description");
-    const locationInput = document.getElementById("location");
+
+    // 🟢 CAMBIO CRÍTICO 1/3: Actualizar la variable DOM
+    const locationIdSelect = document.getElementById("locationId");
+    // const locationInput = document.getElementById("location"); // <--- ¡ELIMINADO!
+
     const capacityInput = document.getElementById("capacity");
     const startDateInput = document.getElementById("start-date");
     const startTimeInput = document.getElementById("start-time");
@@ -81,11 +85,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const startTime = startTimeInput.value;
         const endTime = endTimeInput.value;
 
+        // 🟢 CAMBIO CRÍTICO 2/3: Usar locationIdSelect.value (SOLUCIONA EL ERROR)
         return {
             id: eventIdInput.value,
             title: titleInput.value.trim(),
             description: descriptionInput.value.trim(),
-            location: locationInput.value.trim(),
+            location_id: locationIdSelect.value.trim(), // <--- CAMBIADO
             capacity: capacityInput.value.trim(),
             start: date && startTime ? `${date}T${startTime}` : null,
             end: date && endTime ? `${date}T${endTime}` : null,
@@ -98,10 +103,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const currentState = captureEventState();
 
+        // Nota: He cambiado 'location' por 'location_id' en la comparación
         const fieldsChanged =
             currentState.title !== eventInitialState.title ||
             currentState.description !== eventInitialState.description ||
-            currentState.location !== eventInitialState.location ||
+            currentState.location_id !== eventInitialState.location_id || // <--- CAMBIADO
             currentState.capacity !== eventInitialState.capacity ||
             currentState.start !== eventInitialState.start ||
             currentState.end !== eventInitialState.end ||
@@ -157,7 +163,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 end: e.end,
                 extendedProps: {
                     description: e.description,
-                    location: e.location,
+                    // Si tu backend devuelve 'location_id', úsalo aquí. 
+                    // Por ahora, usamos 'location' o 'location_id' si existe.
+                    location_id: e.location_id || e.location,
                     capacity: e.capacity,
                     image_url: e.image_url
                 }
@@ -201,10 +209,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const extendedProps = event.extendedProps;
                 const currentURL = extendedProps.image_url || "";
 
+                // Obtenemos el ID de lugar (puede venir como location_id o location)
+                const locationIdValue = extendedProps.location_id || extendedProps.location || "";
+
                 eventIdInput.value = event.id;
                 titleInput.value = event.title;
                 descriptionInput.value = extendedProps.description || "";
-                locationInput.value = extendedProps.location || "";
+
+                // 🟢 CAMBIO CRÍTICO 3/3: Asignar el ID de ubicación al campo SELECT
+                locationIdSelect.value = locationIdValue; // <--- CAMBIADO
+
                 capacityInput.value = extendedProps.capacity || "";
 
                 imageURLInput.value = currentURL;
@@ -278,6 +292,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             const endTime = endTimeInput.value;
             const capacity = capacityInput.value.trim();
 
+            // Leer el nuevo valor del select
+            const locationId = locationIdSelect.value.trim();
+
             // 1. COMPROBACIÓN DE CAMBIOS
             if (id && !hasEventChanged()) {
                 if (typeof mostrarAlerta === 'function') {
@@ -293,6 +310,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (capacity.length > 0 && (isNaN(parsedCapacity) || parsedCapacity < 0)) {
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("No se puede colocar ese número en la capacidad máxima. Debe ser un número entero positivo o déjalo vacío/cero para aforo ilimitado.", "error");
+                }
+                return;
+            }
+
+            // 🔑 NUEVA VALIDACIÓN: Debe seleccionar un lugar 🔑
+            if (!locationId) {
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Debes seleccionar una Ubicación para el evento.", "advertencia");
                 }
                 return;
             }
@@ -318,7 +343,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // --- Lógica de guardado (se añade capacidad) ---
+            // --- Lógica de guardado (se añade capacity y location_id) ---
 
             const start = `${date}T${startTime}`;
             const end = `${date}T${endTime}`;
@@ -326,7 +351,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             const formData = new FormData();
             formData.append('title', titleInput.value.trim());
             formData.append('description', descriptionInput.value.trim());
-            formData.append('location', locationInput.value.trim());
+
+            // 🟢 CAMBIO CRÍTICO 4/3: Usar locationId y enviarlo como 'location_id' (o 'location' si tu API lo espera así)
+            formData.append('location_id', locationId); // <--- CAMBIADO (asumiendo que tu API ahora espera location_id)
+
             formData.append('capacity', capacity);
             formData.append('start', start);
             formData.append('end', end);
