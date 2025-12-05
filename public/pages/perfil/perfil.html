@@ -151,6 +151,9 @@
             <a href="../calendario/calendario.html" class="d-block text-light mb-2">
                 Calendario
             </a>
+            <a href="../clubes/clubes.html" class="d-block text-light mb-2">
+                Clubes
+            </a>
             <a href="./perfil.html" class="d-block text-danger fw-bold mb-2">
                 Mi perfil
             </a>
@@ -310,6 +313,7 @@
 
     <script>
         // LÓGICA DE CIERRE DE SESIÓN
+        // NOTA: Esta lógica se está duplicando parcialmente de navbar.js, pero es aceptable para manejar la visibilidad y el modal localmente.
         document.addEventListener("DOMContentLoaded", () => {
             const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
             const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
@@ -325,15 +329,19 @@
                 logoutBtn.addEventListener("click", (e) => {
                     if (!usuario) {
                         e.preventDefault();
-                        mostrarAlerta("Debes iniciar sesión para cerrarla.", 'error', 3000);
+                        // 🟢 Si el usuario no existe, simplemente cierra el offcanvas y muestra una alerta.
+                        if (typeof mostrarAlerta === 'function') {
+                            mostrarAlerta("Debes iniciar sesión para cerrarla.", 'error', 3000);
+                        }
                         const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
                         if (offcanvasMenu) offcanvasMenu.hide();
                         return;
                     }
+                    // Si el usuario existe, se permite el modal (data-bs-toggle="modal" lo hace automáticamente)
                 });
             }
 
-            // 2. Cerrar sesión al confirmar en el modal
+            // 2. Cerrar sesión al confirmar en el modal (Lógica local por si navbar.js no lo hace correctamente)
             if (btnConfirmLogout) {
                 btnConfirmLogout.addEventListener("click", () => {
                     // Cierra el modal localmente
@@ -344,9 +352,14 @@
                     // Lógica de cierre de sesión: limpia storage y redirige.
                     sessionStorage.removeItem("usuario");
                     localStorage.removeItem("usuario");
-                    mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
+
+                    // 🟢 Asegurarse de que la función existe antes de llamarla
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
+                    }
+
                     setTimeout(() => {
-                        window.location.href = '/index.html';
+                        window.location.href = '/index.html'; // Redirige al index principal
                     }, 1500);
                 });
             }
