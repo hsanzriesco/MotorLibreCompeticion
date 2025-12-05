@@ -1,6 +1,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // --- Comprobación de Usuario y Redirección (CORREGIDO PARA INCLUIR LOCALSTORAGE) ---
-    // 🛑 CAMBIO CRÍTICO: Buscar la sesión en sessionStorage O localStorage
+    // ====================================================================
+    // 🛡️ LÓGICA DE SEGURIDAD Y ACCESO (MODIFICADO)
+    // ====================================================================
+
+    // --- Comprobación de Usuario y Redirección ---
+    // Busca la sesión en sessionStorage O localStorage. 
+    // Esta es la lógica que debe ser idéntica en todas las páginas de admin.
     const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
 
     let usuario = null;
@@ -30,163 +35,151 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
+    // ====================================================================
+    // 📅 LÓGICA DE CALENDARIO (MODIFICADO: Location ID y Validaciones)
+    // ====================================================================
+
     // --- VARIABLES DOM Y MODALES (CALENDARIO) ---
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
-
     const registrationsModalEl = document.getElementById("registrationsModal");
 
-    if (!calendarEl || !eventModalEl) {
-        console.error("No se encontraron los elementos 'calendar' o 'eventModal'");
-        // Si no estamos en la página del calendario, la ejecución puede terminar aquí.
-        if (window.location.pathname.includes('/adminCalendario.html')) {
-            // Pero si estamos en otra página de admin, como adminUsuarios.html, ¡seguimos!
-        }
-    }
-
-    // Solo inicializamos modales y variables de calendario si estamos en la página del calendario
     let calendar;
     let eventModal;
     let registrationsModal;
 
+    // Solo inicializamos modales y variables de calendario si estamos en la página del calendario
     if (calendarEl && eventModalEl) {
         eventModal = new bootstrap.Modal(eventModalEl);
         if (registrationsModalEl) {
             registrationsModal = new bootstrap.Modal(registrationsModalEl);
         }
-    }
 
-    const form = document.getElementById("eventForm");
+        const form = document.getElementById("eventForm");
+        const titleInput = document.getElementById("title");
+        const descriptionInput = document.getElementById("description");
 
-    const titleInput = document.getElementById("title");
-    const descriptionInput = document.getElementById("description");
+        // 🟢 CORRECCIÓN 1: Variable para el campo SELECT de Ubicación
+        const locationIdSelect = document.getElementById("locationId");
 
-    // 🟢 CAMBIO CRÍTICO 1/3: Actualizar la variable DOM
-    const locationIdSelect = document.getElementById("locationId");
-    // const locationInput = document.getElementById("location"); // <--- ¡ELIMINADO!
+        const capacityInput = document.getElementById("capacity");
+        const startDateInput = document.getElementById("start-date");
+        const startTimeInput = document.getElementById("start-time");
+        const endTimeInput = document.getElementById("end-time");
+        const eventIdInput = document.getElementById("eventId");
 
-    const capacityInput = document.getElementById("capacity");
-    const startDateInput = document.getElementById("start-date");
-    const startTimeInput = document.getElementById("start-time");
-    const endTimeInput = document.getElementById("end-time");
-    const eventIdInput = document.getElementById("eventId");
+        const imageFileInput = document.getElementById("imageFile");
+        const imageURLInput = document.getElementById("imageURL");
+        const currentImagePreview = document.getElementById("currentImagePreview");
+        const currentImageContainer = document.getElementById("currentImageContainer");
+        const clearImageBtn = document.getElementById("clearImageBtn");
 
-    const imageFileInput = document.getElementById("imageFile");
-    const imageURLInput = document.getElementById("imageURL");
-    const currentImagePreview = document.getElementById("currentImagePreview");
-    const currentImageContainer = document.getElementById("currentImageContainer");
-    const clearImageBtn = document.getElementById("clearImageBtn");
+        const saveEventBtn = document.getElementById("saveEventBtn");
+        const deleteEventBtn = document.getElementById("deleteEventBtn");
+        const registrationsBtnContainer = document.getElementById('registrations-button-container');
+        const currentRegisteredCount = document.getElementById('current-registered-count');
 
-    const saveEventBtn = document.getElementById("saveEventBtn");
-    const deleteEventBtn = document.getElementById("deleteEventBtn");
+        let selectedEvent = null;
+        let eventInitialState = null;
 
-    const registrationsBtnContainer = document.getElementById('registrations-button-container');
-    const currentRegisteredCount = document.getElementById('current-registered-count');
+        // --- FUNCIONES DE ESTADO (CALENDARIO) ---
+        function captureEventState() {
+            const date = startDateInput.value;
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
 
-    let selectedEvent = null;
-    let eventInitialState = null;
-
-    // --- FUNCIONES DE ESTADO (CALENDARIO) ---
-    function captureEventState() {
-        const date = startDateInput.value;
-        const startTime = startTimeInput.value;
-        const endTime = endTimeInput.value;
-
-        // 🟢 CAMBIO CRÍTICO 2/3: Usar locationIdSelect.value (SOLUCIONA EL ERROR)
-        return {
-            id: eventIdInput.value,
-            title: titleInput.value.trim(),
-            description: descriptionInput.value.trim(),
-            location_id: locationIdSelect.value.trim(), // <--- CAMBIADO
-            capacity: capacityInput.value.trim(),
-            start: date && startTime ? `${date}T${startTime}` : null,
-            end: date && endTime ? `${date}T${endTime}` : null,
-            imageURL: imageURLInput.value,
-        };
-    }
-
-    function hasEventChanged() {
-        if (!eventInitialState) return true;
-
-        const currentState = captureEventState();
-
-        // Nota: He cambiado 'location' por 'location_id' en la comparación
-        const fieldsChanged =
-            currentState.title !== eventInitialState.title ||
-            currentState.description !== eventInitialState.description ||
-            currentState.location_id !== eventInitialState.location_id || // <--- CAMBIADO
-            currentState.capacity !== eventInitialState.capacity ||
-            currentState.start !== eventInitialState.start ||
-            currentState.end !== eventInitialState.end ||
-            currentState.imageURL !== eventInitialState.imageURL;
-
-        const fileChanged = imageFileInput.files.length > 0;
-
-        return fieldsChanged || fileChanged;
-    }
-
-    async function loadEventRegistrationCount(eventId) {
-        if (!eventId) {
-            registrationsBtnContainer.style.display = 'none';
-            currentRegisteredCount.textContent = '0';
-            return 0;
+            // 🟢 CORRECCIÓN 2: Captura del valor del SELECT
+            return {
+                id: eventIdInput.value,
+                title: titleInput.value.trim(),
+                description: descriptionInput.value.trim(),
+                location_id: locationIdSelect.value.trim(), // <--- CORREGIDO
+                capacity: capacityInput.value.trim(),
+                start: date && startTime ? `${date}T${startTime}` : null,
+                end: date && endTime ? `${date}T${endTime}` : null,
+                imageURL: imageURLInput.value,
+            };
         }
 
-        try {
-            const response = await fetch(`/api/events?action=getRegistrationCount&event_id=${eventId}`);
-            const result = await response.json();
+        function hasEventChanged() {
+            if (!eventInitialState) return true;
 
-            if (result.success) {
-                const count = result.count || 0;
-                currentRegisteredCount.textContent = count;
-                registrationsBtnContainer.style.display = 'block';
-                return count;
-            } else {
-                console.error("Fallo al obtener el conteo de inscritos:", result.message);
+            const currentState = captureEventState();
+
+            // 🟢 CORRECCIÓN 3: Comparación usando location_id
+            const fieldsChanged =
+                currentState.title !== eventInitialState.title ||
+                currentState.description !== eventInitialState.description ||
+                currentState.location_id !== eventInitialState.location_id || // <--- CORREGIDO
+                currentState.capacity !== eventInitialState.capacity ||
+                currentState.start !== eventInitialState.start ||
+                currentState.end !== eventInitialState.end ||
+                currentState.imageURL !== eventInitialState.imageURL;
+
+            const fileChanged = imageFileInput.files.length > 0;
+
+            return fieldsChanged || fileChanged;
+        }
+
+        async function loadEventRegistrationCount(eventId) {
+            if (!eventId) {
+                registrationsBtnContainer.style.display = 'none';
+                currentRegisteredCount.textContent = '0';
+                return 0;
+            }
+
+            try {
+                const response = await fetch(`/api/events?action=getRegistrationCount&event_id=${eventId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const count = result.count || 0;
+                    currentRegisteredCount.textContent = count;
+                    registrationsBtnContainer.style.display = 'block';
+                    return count;
+                } else {
+                    console.error("Fallo al obtener el conteo de inscritos:", result.message);
+                    currentRegisteredCount.textContent = '0';
+                    registrationsBtnContainer.style.display = 'none';
+                    return 0;
+                }
+
+            } catch (error) {
+                console.error("Error de red al obtener el conteo de inscritos:", error);
                 currentRegisteredCount.textContent = '0';
                 registrationsBtnContainer.style.display = 'none';
                 return 0;
             }
-
-        } catch (error) {
-            console.error("Error de red al obtener el conteo de inscritos:", error);
-            currentRegisteredCount.textContent = '0';
-            registrationsBtnContainer.style.display = 'none';
-            return 0;
         }
-    }
 
-
-    // --- FUNCIONES DEL CALENDARIO ---
-    async function fetchEvents() {
-        try {
-            const res = await fetch("/api/events");
-            const json = await res.json();
-            if (!json.success || !Array.isArray(json.data)) throw new Error(json.message || "Error desconocido al obtener eventos.");
-            return json.data.map((e) => ({
-                id: e.id,
-                title: e.title,
-                start: e.start,
-                end: e.end,
-                extendedProps: {
-                    description: e.description,
-                    // Si tu backend devuelve 'location_id', úsalo aquí. 
-                    // Por ahora, usamos 'location' o 'location_id' si existe.
-                    location_id: e.location_id || e.location,
-                    capacity: e.capacity,
-                    image_url: e.image_url
+        // --- FUNCIONES DEL CALENDARIO ---
+        async function fetchEvents() {
+            try {
+                const res = await fetch("/api/events");
+                const json = await res.json();
+                if (!json.success || !Array.isArray(json.data)) throw new Error(json.message || "Error desconocido al obtener eventos.");
+                return json.data.map((e) => ({
+                    id: e.id,
+                    title: e.title,
+                    start: e.start,
+                    end: e.end,
+                    extendedProps: {
+                        description: e.description,
+                        location_id: e.location_id || e.location,
+                        capacity: e.capacity,
+                        image_url: e.image_url
+                    }
+                }));
+            } catch (e) {
+                console.error("Error al obtener eventos:", e);
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("Error al cargar los eventos: " + e.message, "error");
                 }
-            }));
-        } catch (e) {
-            console.error("Error al obtener eventos:", e);
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("Error al cargar los eventos: " + e.message, "error");
+                return [];
             }
-            return [];
         }
-    }
 
-    if (calendarEl) {
+        // --- Inicialización FullCalendar ---
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
             selectable: true,
@@ -201,7 +194,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 eventIdInput.value = "";
                 deleteEventBtn.style.display = "none";
                 registrationsBtnContainer.style.display = 'none';
-
                 imageFileInput.value = "";
                 imageURLInput.value = "";
                 currentImageContainer.style.display = "none";
@@ -215,19 +207,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 selectedEvent = event;
                 const extendedProps = event.extendedProps;
                 const currentURL = extendedProps.image_url || "";
-
-                // Obtenemos el ID de lugar (puede venir como location_id o location)
                 const locationIdValue = extendedProps.location_id || extendedProps.location || "";
 
                 eventIdInput.value = event.id;
                 titleInput.value = event.title;
                 descriptionInput.value = extendedProps.description || "";
 
-                // 🟢 CAMBIO CRÍTICO 3/3: Asignar el ID de ubicación al campo SELECT
-                locationIdSelect.value = locationIdValue; // <--- CAMBIADO
+                // 🟢 CORRECCIÓN 4: Asignar el ID de ubicación al campo SELECT
+                locationIdSelect.value = locationIdValue; // <--- CORREGIDO
 
                 capacityInput.value = extendedProps.capacity || "";
-
                 imageURLInput.value = currentURL;
                 imageFileInput.value = "";
 
@@ -298,8 +287,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const startTime = startTimeInput.value;
             const endTime = endTimeInput.value;
             const capacity = capacityInput.value.trim();
-
-            // Leer el nuevo valor del select
             const locationId = locationIdSelect.value.trim();
 
             // 1. COMPROBACIÓN DE CAMBIOS
@@ -321,7 +308,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 🔑 NUEVA VALIDACIÓN: Debe seleccionar un lugar 🔑
+            // 🔑 VALIDACIÓN: Debe seleccionar un lugar 🔑
             if (!locationId) {
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("Debes seleccionar una Ubicación para el evento.", "advertencia");
@@ -350,7 +337,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // --- Lógica de guardado (se añade capacity y location_id) ---
+            // --- Lógica de guardado ---
 
             const start = `${date}T${startTime}`;
             const end = `${date}T${endTime}`;
@@ -359,8 +346,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             formData.append('title', titleInput.value.trim());
             formData.append('description', descriptionInput.value.trim());
 
-            // 🟢 CAMBIO CRÍTICO 4/3: Usar locationId y enviarlo como 'location_id' (o 'location' si tu API lo espera así)
-            formData.append('location_id', locationId); // <--- CAMBIADO (asumiendo que tu API ahora espera location_id)
+            // 🟢 CORRECCIÓN 5: Envío del location_id al API
+            formData.append('location_id', locationId); // <--- CORREGIDO
 
             formData.append('capacity', capacity);
             formData.append('start', start);
@@ -433,7 +420,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // --- Lógica de Coche (SE MANTIENE IGUAL) ---
+    // ====================================================================
+    // 🚗 LÓGICA DE COCHE (SIN CAMBIOS)
+    // ====================================================================
 
     const carGarageForm = document.getElementById("carGarageForm");
     const carModalEl = document.getElementById("carGarageModal");
@@ -480,18 +469,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // ====================================================================
-    // 💥 NUEVA LÓGICA: GESTIÓN DE USUARIOS (CRUD ADMIN) 💥
+    // 👥 NUEVA LÓGICA: GESTIÓN DE USUARIOS (CRUD ADMIN) - CORREGIDO
     // ====================================================================
 
     const userTableBody = document.getElementById("userTableBody");
-    const userEditModalEl = document.getElementById("userEditModal"); // Asumiendo que tienes un modal para editar
+    const userEditModalEl = document.getElementById("userEditModal");
 
-    // Si el modal de edición de usuario existe, lo inicializamos
     let userEditModal;
     if (userEditModalEl) {
         userEditModal = new bootstrap.Modal(userEditModalEl);
 
-        // Variables de los campos del formulario de edición de usuario
         const editUserId = document.getElementById("editUserId");
         const editUserName = document.getElementById("editUserName");
         const editUserEmail = document.getElementById("editUserEmail");
@@ -501,7 +488,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const deleteUserBtn = document.getElementById("deleteUserBtn");
 
         // ----------------------------------------------------
-        // 🚀 FUNCIÓN CLAVE 1: CARGAR Y MOSTRAR USUARIOS
+        // 🚀 FUNCIÓN 1: CARGAR Y MOSTRAR USUARIOS
         // ----------------------------------------------------
         async function loadUsers() {
             if (!userTableBody) return;
@@ -509,7 +496,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             userTableBody.innerHTML = '<tr><td colspan="6">Cargando usuarios...</td></tr>';
 
             try {
-                // GET a /api/users
                 const res = await fetch("/api/users");
                 const data = await res.json();
 
@@ -548,27 +534,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // ----------------------------------------------------
-        // 🚀 FUNCIÓN CLAVE 2: ABRIR MODAL DE EDICIÓN
+        // 🚀 FUNCIÓN 2: ABRIR MODAL DE EDICIÓN
         // ----------------------------------------------------
         function openUserEditModal(user) {
             editUserId.value = user.id;
             editUserName.value = user.name;
             editUserEmail.value = user.email;
             editUserRole.value = user.role;
-            editUserPassword.value = ''; // Siempre limpiar el campo de contraseña por seguridad
+            editUserPassword.value = '';
 
             userEditModal.show();
         }
 
         // ----------------------------------------------------
-        // 🚀 FUNCIÓN CLAVE 3: GUARDAR EDICIÓN (RESUELVE EL ERROR 400)
+        // 🚀 FUNCIÓN 3: GUARDAR EDICIÓN (CORREGIDO: Manejo de errores 400/500)
         // ----------------------------------------------------
         saveUserBtn.addEventListener("click", async () => {
             const id = editUserId.value;
             const name = editUserName.value.trim();
             const email = editUserEmail.value.trim();
             const role = editUserRole.value;
-            const password = editUserPassword.value.trim(); // Puede estar vacío
+            const password = editUserPassword.value.trim();
 
             if (!id || !name || !email || !role) {
                 if (typeof mostrarAlerta === 'function') {
@@ -588,7 +574,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             try {
-                // 💥 CORRECCIÓN CRÍTICA: ENVÍO DEL ID EN EL QUERY PARAMETER
+                // 💥 CORRECCIÓN CRÍTICA: Asegurar la correcta captura de errores y el envío del ID
                 const res = await fetch(`/api/users?id=${id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -616,7 +602,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         // ----------------------------------------------------
-        // 🚀 FUNCIÓN CLAVE 4: ELIMINAR USUARIO
+        // 🚀 FUNCIÓN 4: ELIMINAR USUARIO (CORREGIDO: Manejo de errores 400/500)
         // ----------------------------------------------------
         deleteUserBtn.addEventListener("click", async () => {
             const id = editUserId.value;
@@ -632,7 +618,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (confirmado) {
                 try {
-                    // 💥 CORRECCIÓN CRÍTICA: ENVÍO DEL ID EN EL QUERY PARAMETER
+                    // 💥 CORRECCIÓN CRÍTICA: Envío del ID en el query parameter para DELETE
                     const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
                     const data = await res.json();
 
