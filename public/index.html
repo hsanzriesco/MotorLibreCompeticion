@@ -31,6 +31,16 @@
     .btn-close-white {
       filter: invert(1) grayscale(100%) brightness(200%);
     }
+
+    /* Efecto al pasar sobre las tarjetas de noticias */
+    .card {
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
+    }
   </style>
 
 </head>
@@ -71,7 +81,6 @@
         Calendario
       </a>
 
-      <!-- 🔥 NUEVA OPCIÓN CLUBES -->
       <a href="./pages/clubes/clubes.html" class="d-block text-light mb-2">
         Clubes
       </a>
@@ -137,6 +146,64 @@
   <!-- ===================================================== -->
   <!-- FIN DEL CARRUSEL -->
   <!-- ===================================================== -->
+
+  <!-- ===================================================== -->
+  <!-- 📰 SECCIÓN DE NOTICIAS -->
+  <!-- ===================================================== -->
+
+  <section class="container my-5">
+    <h2 class="text-center text-danger mb-4">Últimas Noticias</h2>
+
+    <div class="row g-4">
+
+      <!-- Tarjeta 1 -->
+      <div class="col-md-4">
+        <div class="card bg-dark text-light border-danger h-100">
+          <div class="card-body">
+            <h5 class="card-title text-danger">Inicio del Campeonato 2025</h5>
+            <p class="card-text">
+              La nueva temporada comienza el 12 de marzo con una carrera inaugural en el Circuito Las Eras.
+              Participarán más de 30 pilotos de toda la región.
+            </p>
+            <a href="#" class="btn btn-outline-danger">Leer más</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta 2 -->
+      <div class="col-md-4">
+        <div class="card bg-dark text-light border-danger h-100">
+          <div class="card-body">
+            <h5 class="card-title text-danger">Nuevos Clubes Registrados</h5>
+            <p class="card-text">
+              Esta semana se han integrado 4 nuevos clubes al sistema, ampliando la comunidad y la competitividad.
+            </p>
+            <a href="#" class="btn btn-outline-danger">Ver detalles</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta 3 -->
+      <div class="col-md-4">
+        <div class="card bg-dark text-light border-danger h-100">
+          <div class="card-body">
+            <h5 class="card-title text-danger">Actualización del Reglamento Técnico</h5>
+            <p class="card-text">
+              La federación ha publicado nuevas normas para las categorías 125cc y 250cc. Es obligatorio revisarlas
+              antes de competir.
+            </p>
+            <a href="#" class="btn btn-outline-danger">Descargar PDF</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- FIN DE NOTICIAS -->
+  <!-- ===================================================== -->
+
 
   <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
     aria-hidden="true">
