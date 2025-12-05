@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const usersTableBody = document.getElementById("usersTableBody");
     // Inicialización de Modales
     const userModal = new bootstrap.Modal(document.getElementById("userModal"));
-    const banUserModal = new bootstrap.Modal(document.getElementById("banUserModal")); 
+    const banUserModal = new bootstrap.Modal(document.getElementById("banUserModal"));
     const deleteConfirmModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
 
     // Elementos del formulario y modales
@@ -104,13 +104,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Determinar si el usuario está baneado
             const isBanned = user.is_banned;
-            
+
             // 🌟 Renderización del estado y del botón de acción 🌟
             const banButtonClass = isBanned ? 'btn-success' : 'btn-danger';
             const banButtonIcon = isBanned ? 'bi-lock-open-fill' : 'bi-lock-fill';
             const banButtonText = isBanned ? 'Desbanear' : 'Banear';
-            const statusBadge = isBanned 
-                ? '<span class="badge text-bg-danger">BANEADO</span>' 
+            const statusBadge = isBanned
+                ? '<span class="badge text-bg-danger">BANEADO</span>'
                 : '<span class="badge text-bg-success">ACTIVO</span>';
 
             row.innerHTML = `
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const id = e.currentTarget.dataset.id;
                 const name = e.currentTarget.dataset.name;
                 // Convertir la cadena 'true'/'false' a booleano
-                const isBanned = e.currentTarget.dataset.isbanned === 'true'; 
+                const isBanned = e.currentTarget.dataset.isbanned === 'true';
                 handleBanUserModal(id, name, isBanned);
             });
         });
@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmPasswordContainer.style.display = 'block';
         userPassword.required = true;
         userPassword2.required = true;
-        userPassword.placeholder = ""; 
+        userPassword.placeholder = "";
         userModal.show();
     });
 
@@ -241,9 +241,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (newPassword) {
             bodyData.password = newPassword;
         } else if (!id) {
-             // Esto no debería suceder si newPassword.required=true en la creación, pero es una doble capa
-             mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
-             return;
+            // Esto no debería suceder si newPassword.required=true en la creación, pero es una doble capa
+            mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
+            return;
         }
 
         try {
@@ -255,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     Authorization: `Bearer ${sessionStorage.getItem("token")}`,
                 },
                 // Usamos JSON.stringify(bodyData) aquí porque getBody en el API maneja la lectura cruda
-                body: JSON.stringify(bodyData), 
+                body: JSON.stringify(bodyData),
             });
 
             const data = await response.json();
@@ -359,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const bodyData = {
             is_banned: shouldBan,
             // Solo incluimos la razón si estamos baneando
-            ...(shouldBan && { ban_reason: reason }) 
+            ...(shouldBan && { ban_reason: reason })
         };
 
         try {
