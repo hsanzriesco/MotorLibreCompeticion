@@ -11,8 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
 
-    // 1. CARGA DE USUARIO Y VALIDACIÓN DE SESIÓN (Usa localStorage o sessionStorage)
-    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+    // 1. CARGA DE USUARIO Y VALIDACIÓN DE SESIÓN (SOLO sessionStorage)
+    const storedUser = sessionStorage.getItem("usuario");
     let user = null;
 
     if (storedUser) {
@@ -22,8 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (loginLink) loginLink.style.display = "none";
         } catch (e) {
             console.error("Error parseando usuario:", e);
+            // CAMBIO CLAVE 2: Solo limpiamos sessionStorage si hay un error
             sessionStorage.removeItem("usuario");
-            localStorage.removeItem("usuario"); // Limpiamos ambos por seguridad
         }
     } else {
         if (userName) userName.style.display = "none";
@@ -74,9 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 🔑 FUNCIÓN CENTRAL DE CIERRE DE SESIÓN
     function logoutUserAndRedirect() {
-        // Limpiar ambos almacenamientos para asegurar el cierre de sesión
+        // CAMBIO CLAVE 3: Solo eliminar de sessionStorage
         sessionStorage.removeItem("usuario");
-        localStorage.removeItem("usuario");
 
         // Ocultar el modal si está visible
         if (logoutConfirmModal) {

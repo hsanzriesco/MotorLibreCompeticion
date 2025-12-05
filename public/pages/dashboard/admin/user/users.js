@@ -3,8 +3,9 @@
 document.addEventListener("DOMContentLoaded", () => {
     // --- 1. CONFIGURACIÓN Y VARIABLES ---
 
-    // Autenticación (Se mantiene la lógica para ambos almacenamientos, aunque sessionStorage es preferible para admin)
-    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+    // Autenticación (Ahora solo lee de sessionStorage)
+    // 🛑 CAMBIO CLAVE 1: Solo lee de sessionStorage
+    const storedUser = sessionStorage.getItem("usuario");
     let usuario = null;
     if (storedUser) {
         try {
@@ -87,19 +88,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 const tr = document.createElement("tr");
 
                 tr.innerHTML = `
-                    <td>${user.name}</td>
-                    <td>${user.email}</td>
-                    <td>${user.role}</td>
-                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-danger me-2 edit-user-btn" data-id="${user.id}">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger delete-user-btn" data-id="${user.id}">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                `;
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.role}</td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger me-2 edit-user-btn" data-id="${user.id}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-user-btn" data-id="${user.id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
 
                 usersTableBody.appendChild(tr);
             });

@@ -1,7 +1,8 @@
 // public/js/clubes.js
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
-    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+    // 🛑 CAMBIO CLAVE 1: Solo lee de sessionStorage
+    const storedUser = sessionStorage.getItem("usuario");
     const usuario = storedUser ? JSON.parse(storedUser) : null;
 
     function escapeHtml(s = "") {
@@ -47,19 +48,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const isMember = userClubId && Number(club.id) === userClubId;
 
             col.innerHTML = `
-        <div class="club-card h-100 p-3" style="background:#141414;border:1px solid rgba(229,9,20,0.2);border-radius:8px">
-          ${club.imagen_club ? `<img src="${escapeHtml(club.imagen_club)}" alt="${escapeHtml(club.nombre_evento)}" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">` : `<img src="/img/placeholder.jpg" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">`}
-          <h4 class="text-danger">${escapeHtml(club.nombre_evento)}</h4>
-          <p>${escapeHtml(club.descripcion || "")}</p>
-          <div>
-            ${usuario ? (isMember
+        <div class="club-card h-100 p-3" style="background:#141414;border:1px solid rgba(229,9,20,0.2);border-radius:8px">
+          ${club.imagen_club ? `<img src="${escapeHtml(club.imagen_club)}" alt="${escapeHtml(club.nombre_evento)}" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">` : `<img src="/img/placeholder.jpg" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">`}
+          <h4 class="text-danger">${escapeHtml(club.nombre_evento)}</h4>
+          <p>${escapeHtml(club.descripcion || "")}</p>
+          <div>
+            ${usuario ? (isMember
                     ? `<button class="btn btn-outline-light w-100 leave-btn" data-id="${club.id}">Salir del club</button>`
                     : `<button class="btn btn-netflix w-100 join-btn" data-id="${club.id}">Unirme al club</button>`
                 ) : `<a href="/pages/auth/login/login.html" class="btn btn-netflix w-100">Inicia sesión para unirte</a>`
                 }
-          </div>
-        </div>
-      `;
+          </div>
+        </div>
+      `;
             row.appendChild(col);
         });
 
@@ -88,8 +89,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             usuario.club_id = Number(club_id);
+            // 🛑 CAMBIO CLAVE 2: Solo actualiza sessionStorage
             sessionStorage.setItem("usuario", JSON.stringify(usuario));
-            localStorage.setItem("usuario", JSON.stringify(usuario));
 
             mostrarAlerta("Te has unido al club", "exito");
             cargarClubes();
@@ -129,8 +130,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 usuario.club_id = null;
+                // 🛑 CAMBIO CLAVE 3: Solo actualiza sessionStorage
                 sessionStorage.setItem("usuario", JSON.stringify(usuario));
-                localStorage.setItem("usuario", JSON.stringify(usuario));
 
                 mostrarAlerta("Te has salido del club", "exito");
                 cargarClubes();
