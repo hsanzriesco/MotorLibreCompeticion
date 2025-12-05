@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const carList = document.getElementById('car-list');
     const userNameElement = document.getElementById('user-name');
     const loginIcon = document.getElementById('login-icon');
-    // const logoutBtn = document.getElementById('logout-btn'); // No se usa si no tiene listener
     const noCarsMessage = document.getElementById('no-cars-message');
     const deleteCarBtn = document.getElementById('delete-car-btn');
     const openAddCarBtn = document.getElementById('open-add-car-btn');
@@ -16,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const carModelInput = document.getElementById('car-model');
     const carYearInput = document.getElementById('car-year');
     const carDescriptionInput = document.getElementById('car-description');
-    const vehicleTypeSelect = document.getElementById('vehicle-type-select');
-    const vehicleTypeInput = document.getElementById('vehicle-type');
+    const vehicleTypeSelect = document.getElementById('vehicle-type-select'); // EL SELECT A USAR
+    // const vehicleTypeInput = document.getElementById('vehicle-type'); // <--- ELIMINADO/Comentado para arreglar el TypeError
     const vehicleNameLabel = document.getElementById('vehicle-name-label');
     const carPhotoFileInput = document.getElementById('carPhotoFile');
     const carPhotoUrlInput = document.getElementById('car-photo-url');
@@ -68,9 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const nameKey = isCar ? 'car_name' : 'motorcycle_name';
         const name = vehicle[nameKey];
 
+        // 🖼️ CORRECCIÓN: Usamos placehold.co para evitar ERR_NAME_NOT_RESOLVED
         const defaultImg = isCar
-            ? 'https://via.placeholder.com/400x225?text=Coche+Sin+Foto'
-            : 'https://via.placeholder.com/400x225?text=Moto+Sin+Foto';
+            ? 'https://placehold.co/400x225/343a40/ffffff?text=Coche+Sin+Foto'
+            : 'https://placehold.co/400x225/343a40/ffffff?text=Moto+Sin+Foto';
 
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
@@ -171,9 +171,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /**
+     * @description Actualiza el texto del modal y deshabilita el select si se está editando.
+     * @param {string} type - 'car' o 'motorcycle'
+     * @param {boolean} isEdit - Si es true, estamos editando.
+     */
     function updateCarModalUI(type, isEdit = false) {
         const isCar = type === 'car';
-        vehicleTypeInput.value = type;
+
+        // CORRECCIÓN: Aquí se eliminó la línea vehicleTypeInput.value = type; que causaba el error
+        // ya que vehicleTypeInput era null. El valor del select se establece en openCarModal.
 
         carModalTitle.textContent = isEdit ? `Editar ${isCar ? 'Coche' : 'Moto'}` : `Añadir ${isCar ? 'Coche' : 'Moto'}`;
         vehicleNameLabel.textContent = isCar ? 'Nombre del coche' : 'Nombre de la moto';
@@ -214,7 +221,9 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteCarBtn.style.display = 'none';
         }
 
+        // Establecer el valor del SELECT para el tipo de vehículo
         vehicleTypeSelect.value = type;
+
         updateCarModalUI(type, isEdit);
     }
 
@@ -224,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     vehicleTypeSelect.addEventListener('change', (e) => {
+        // Solo actualiza la UI si estamos en modo "Añadir" (no hay vehículo actual)
         if (!currentVehicle) {
             updateCarModalUI(e.target.value, false);
         }
@@ -259,7 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const id = carIdInput.value;
-        const type = vehicleTypeInput.value;
+        // 🛠️ CORRECCIÓN: Obtener el tipo del SELECT, no del input eliminado
+        const type = vehicleTypeSelect.value;
         const isCar = type === 'car';
         const nameInput = carNameInput.value.trim();
 
