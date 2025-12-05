@@ -7,6 +7,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
+    // 🟢 RUTAS CENTRALIZADAS DEL DASHBOARD
+    // Es crucial que estas rutas sean ABSOLUTAS (desde la raíz /)
+    const ADMIN_DASHBOARD_HOME = "/pages/dashboard/admin/admin.html";
+    const LOGIN_PAGE_PATH = "/auth/login.html";
+
     // ⭐ Referencias para el modal de Cierre de Sesión (de admin.html)
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
     const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
@@ -61,7 +66,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Redirigir
         setTimeout(() => {
-            window.location.href = "/index.html"; // Redirige a la página principal
+            // Se mantiene el index.html para usuarios normales, no admin.html
+            window.location.href = "/index.html";
         }, 500);
     }
 
@@ -108,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 🚨 GUARDIA DE RUTA: Si no hay usuario y NO estamos en la página de inicio o login/registro, forzar redirección.
         const currentPath = window.location.pathname;
         if (!currentPath.includes('/index.html') &&
-            !currentPath.includes('/auth/login.html') &&
+            !currentPath.includes(LOGIN_PAGE_PATH) && // 🟢 CORREGIDO: Usar constante
             !currentPath.includes('/auth/register.html')) {
             // Limpiar por si acaso y redirigir al index.
             localStorage.removeItem("usuario");
@@ -134,22 +140,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------------------------------------------------
-    // 2. REDIRECCIÓN DEL LOGO (Mantenido)
+    // 2. REDIRECCIÓN DEL LOGO (MODIFICADO: Usar constante)
     // -----------------------------------------------------------------------------------
     if (logoLink) {
         if (user && user.role === "admin") {
-            logoLink.href = "/pages/dashboard/admin/admin.html";
+            // 🟢 CORRECCIÓN: Usar la constante para la ruta de inicio del admin
+            logoLink.href = ADMIN_DASHBOARD_HOME;
         } else {
             logoLink.href = "/index.html";
         }
     }
 
-    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS (Mantenido)
+    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS (MODIFICADO: Usar constante)
     if (menuInicio) {
         menuInicio.addEventListener("click", (ev) => {
             ev.preventDefault();
             if (user && user.role === "admin") {
-                window.location.href = "/pages/dashboard/admin/admin.html";
+                // 🟢 CORRECCIÓN: Usar la constante para la ruta de inicio del admin
+                window.location.href = ADMIN_DASHBOARD_HOME;
             } else {
                 window.location.href = "/index.html";
             }
