@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- Variables del DOM ---
     const profileForm = document.getElementById('profile-form');
     const carForm = document.getElementById('car-form');
     const carList = document.getElementById('car-list');
@@ -15,8 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const carModelInput = document.getElementById('car-model');
     const carYearInput = document.getElementById('car-year');
     const carDescriptionInput = document.getElementById('car-description');
-    const vehicleTypeSelect = document.getElementById('vehicle-type-select'); // EL SELECT A USAR
-    // const vehicleTypeInput = document.getElementById('vehicle-type'); // <--- ELIMINADO/Comentado para arreglar el TypeError
+    const vehicleTypeSelect = document.getElementById('vehicle-type-select');
     const vehicleNameLabel = document.getElementById('vehicle-name-label');
     const carPhotoFileInput = document.getElementById('carPhotoFile');
     const carPhotoUrlInput = document.getElementById('car-photo-url');
@@ -26,24 +26,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentVehicle = null;
 
-    // 🛑 LÓGICA DE AUTENTICACIÓN 🛑
-    const stored = sessionStorage.getItem('usuario');
+    // 🛑 LÓGICA DE AUTENTICACIÓN CORREGIDA 🛑
+    // 1. INTENTAR RECUPERAR DE sessionStorage O localStorage
+    const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
+    let user = null;
+
     if (!stored) {
+        // No hay sesión en ningún lado
         mostrarAlerta("Tienes que iniciar sesión para entrar a tu perfil", 'error');
+        // Redirigir usando la ruta relativa correcta
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
         return; // Detiene la ejecución del script
     }
-    // ----------------------------------------
 
-    let user;
+    // 2. PARSEAR Y VERIFICAR INTEGRIDAD DE LA SESIÓN
     try {
         user = JSON.parse(stored);
     } catch (err) {
+        // Sesión corrupta, limpiar ambas por seguridad y redirigir
         sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
         mostrarAlerta("Sesión corrupta. Vuelve a iniciar sesión.", 'error');
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
         return;
     }
+    // ----------------------------------------
+
+    // Si llegamos aquí, 'user' es válido.
 
     userNameElement.textContent = user.name || 'Usuario';
     if (loginIcon) loginIcon.style.display = 'none';
@@ -178,9 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function updateCarModalUI(type, isEdit = false) {
         const isCar = type === 'car';
-
-        // CORRECCIÓN: Aquí se eliminó la línea vehicleTypeInput.value = type; que causaba el error
-        // ya que vehicleTypeInput era null. El valor del select se establece en openCarModal.
 
         carModalTitle.textContent = isEdit ? `Editar ${isCar ? 'Coche' : 'Moto'}` : `Añadir ${isCar ? 'Coche' : 'Moto'}`;
         vehicleNameLabel.textContent = isCar ? 'Nombre del coche' : 'Nombre de la moto';
@@ -502,8 +508,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(json.message || 'Error al actualizar perfil.');
             }
 
+            // CORRECCIÓN: Si la actualización fue exitosa, también actualiza localStorage
+            // si el usuario fue originalmente cargado desde allí (aunque aquí no se diferencia, 
+            // al menos actualizamos la sessionStorage que es la que se usa prioritariamente).
             user.name = newName;
             user.email = newEmail;
+
+            // Si la sesión original viene de localStorage, actualiza ambos.
+            if (localStorage.getItem('usuario')) {
+                localStorage.setItem('usuario', JSON.stringify(user));
+            }
             sessionStorage.setItem('usuario', JSON.stringify(user));
 
             userNameElement.textContent = newName || 'Usuario';
