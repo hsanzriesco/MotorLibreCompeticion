@@ -9,19 +9,9 @@ import { dirname } from 'path';
 import noticiasRoutes from "./api/noticias.js";
 
 
-// ...
-// Importaciones de APIs: Debemos dejar de importar resetPasswordHandler si no lo usamos
-// import resetPasswordHandler from './api/resetPassword.js'; // <-- COMENTAR O ELIMINAR ESTA LÍNEA
-
-// ...
-const app = express();
-// ...
-
-// app.use(express.urlencoded({ extended: true }));
-
 
 app.all('/api/users', usersListHandler);
-app.post('/api/loginUser', loginUserHandler);
+app.post('/api/users', loginUserHandler);
 
 app.all('/api/carGarage', carGarageHandler);
 app.use("/api/noticias", noticiasRoutes);
