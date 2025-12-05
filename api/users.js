@@ -306,14 +306,29 @@ async function userListCrudHandler(req, res) {
         if (method === "GET") {
             if (query.id) {
                 // Obtener un solo usuario por ID
-                const result = await pool.query(
+                const userResult = await pool.query(
                     "SELECT id, name, email, role, created_at, club_id, is_banned FROM users WHERE id = $1",
                     [query.id]
                 );
-                if (result.rows.length === 0) {
+
+                if (userResult.rows.length === 0) {
                     return res.status(404).json({ success: false, message: "Usuario no encontrado" });
                 }
-                return res.status(200).json({ success: true, data: result.rows });
+
+                const user = userResult.rows[0];
+
+                // 🚀 MEJORA: Obtener la razón del baneo si existe
+                if (user.is_banned) {
+                    const banInfo = await pool.query(
+                        'SELECT ban_reason FROM usuarios_baneados WHERE user_id = $1',
+                        [user.id]
+                    );
+                    // Añadir la razón de baneo al objeto de usuario si está baneado
+                    user.ban_reason = banInfo.rows.length > 0 ? banInfo.rows[0].ban_reason : '';
+                }
+
+
+                return res.status(200).json({ success: true, data: [user] });
             }
 
             // LISTAR TODOS
