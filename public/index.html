@@ -2,24 +2,17 @@
 <html lang="es">
 
 <head>
-   
   <meta charset="UTF-8">
-   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motor Libre Competición</title>
+  <title>Motor Libre Competición</title>
 
-   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-   
   <link rel="stylesheet" href="./css/style.css">
-   
   <link rel="stylesheet" href="./css/alertas.css">
-   
   <link rel="icon" type="image/png" href="./img/imagen-tfg.png">
 
-    <style>
+  <style>
     body {
       background-color: #111;
       color: white;
@@ -54,180 +47,185 @@
 
 <body>
 
-    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+  <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
-        <a id="logo-link" href="./index.html" class="navbar-brand d-flex align-items-center">
-            <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
-          </a>
+    <a id="logo-link" href="./index.html" class="navbar-brand d-flex align-items-center">
+      <img src="./img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+    </a>
 
-        <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center">
 
-            <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
-                <i class="bi bi-person-circle fs-4"></i>
-              </a>
+      <a href="./pages/auth/login/login.html" id="login-icon" class="text-light me-3">
+        <i class="bi bi-person-circle fs-4"></i>
+      </a>
 
-            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+      <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
 
-            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"        
+      <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                <i class="bi bi-list fs-4"></i>
-              </button>
+        <i class="bi bi-list fs-4"></i>
+      </button>
 
-          </div>
-      </nav>
+    </div>
+  </nav>
 
-    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-        <div class="offcanvas-header border-bottom border-secondary">
-            <h5 class="offcanvas-title">Menú</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-          </div>
+  <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+    <div class="offcanvas-header border-bottom border-secondary">
+      <h5 class="offcanvas-title">Menú</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
 
-        <div class="offcanvas-body">
+    <div class="offcanvas-body">
 
-            <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
-                Calendario
-              </a>
+      <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
+        Calendario
+      </a>
 
-            <a href="./pages/clubes/clubes.html" class="d-block text-light mb-2">
-                Clubes
-              </a>
+      <a href="./pages/clubes/clubes.html" class="d-block text-light mb-2">
+        Clubes
+      </a>
 
-            <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
-                Mi perfil
-              </a>
+      <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
+        Mi perfil
+      </a>
 
-           
       <hr class="border-secondary">
 
-            <a href="#" id="logout-btn" class="d-block text-danger">
-                Cerrar sesión
-              </a>
-         
+      <a href="#" id="logout-btn" class="d-block text-danger">
+        Cerrar sesión
+      </a>
     </div>
-      </div>
+  </div>
 
-    <main class="text-center mt-5">
-        <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
-        <h4 id="bienvenida" class="mt-3 text-danger"></h4>
-      </main>
+  <main class="text-center mt-5">
+    <h1 class="text-light">Bienvenido a Motor Libre Competición</h1>
+    <h4 id="bienvenida" class="mt-3 text-danger"></h4>
+  </main>
 
-          <div id="carouselExampleIndicators" class="carousel slide mt-4 mx-auto" style="max-width: 900px;"    
+  <!-- ===================================================== -->
+  <!-- 🏎️ CARRUSEL DE IMÁGENES BOOTSTRAP -->
+  <!-- ===================================================== -->
+
+  <div id="carouselExampleIndicators" class="carousel slide mt-4 mx-auto" style="max-width: 900px;"
     data-bs-ride="carousel">
 
-        <div class="carousel-indicators">
-            <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0"
-        class="active"></button>
-            <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1"></button>
-            <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2"></button>
-          </div>
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active"></button>
+      <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1"></button>
+      <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2"></button>
+    </div>
 
-        <div class="carousel-inner rounded shadow">
+    <div class="carousel-inner rounded shadow">
 
-            <div class="carousel-item active">
-                <img src="./img/img_Expo.png" class="d-block w-100" alt="Imagen 1">
-                <div class="carousel-caption d-none d-md-block">
-                            </div>
-              </div>
+      <div class="carousel-item active">
+        <img src="./img/img_Expo.png" class="d-block w-100" alt="Imagen 1">
+      </div>
 
-            <div class="carousel-item">
-                <img src="./img/img_DriftNocturno.png" class="d-block w-100" alt="Imagen 2">
-                <div class="carousel-caption d-none d-md-block">
-                            </div>
-              </div>
+      <div class="carousel-item">
+        <img src="./img/img_DriftNocturno.png" class="d-block w-100" alt="Imagen 2">
+      </div>
 
-            <div class="carousel-item">
-                <img src="./img/img_DragRace.png" class="d-block w-100" alt="Imagen 3">
-                <div class="carousel-caption d-none d-md-block">
-                            </div>
-              </div>
+      <div class="carousel-item">
+        <img src="./img/img_DragRace.png" class="d-block w-100" alt="Imagen 3">
+      </div>
 
-          </div>
+    </div>
 
-        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators"      
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators"
       data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span>
-          </button>
+      <span class="carousel-control-prev-icon"></span>
+    </button>
 
-        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators"      
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators"
       data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span>
-          </button>
+      <span class="carousel-control-next-icon"></span>
+    </button>
 
-      </div>
+  </div>
 
-                <section class="container my-5">
-        <h2 class="text-center text-danger mb-4">Últimas Noticias</h2>
+  <!-- ===================================================== -->
+  <!-- FIN DEL CARRUSEL -->
+  <!-- ===================================================== -->
 
-        <div class="row g-4">
+  <!-- ===================================================== -->
+  <!-- 📰 SECCIÓN DE NOTICIAS -->
+  <!-- ===================================================== -->
 
-                  <div class="col-md-4">
-                <div class="card bg-dark text-light border-danger h-100">
-                    <div class="card-body">
-                        <h5 class="card-title text-danger">Inicio del Campeonato 2025</h5>
-                        <p class="card-text">
-                            La nueva temporada comienza el 12 de marzo con una carrera inaugural en el Circuito Las
-              Eras.
-                            Participarán más de 30 pilotos de toda la región.
-                          </p>
-                        <a href="#" class="btn btn-outline-danger">Leer más</a>
-                      </div>
-                  </div>
-              </div>
+  <section class="container my-5">
+    <h2 class="text-center text-danger mb-4">Últimas Noticias</h2>
 
-                  <div class="col-md-4">
-                <div class="card bg-dark text-light border-danger h-100">
-                    <div class="card-body">
-                        <h5 class="card-title text-danger">Nuevos Clubes Registrados</h5>
-                        <p class="card-text">
-                            Esta semana se han integrado 4 nuevos clubes al sistema, ampliando la comunidad y la
-              competitividad.
-                          </p>
-                        <a href="#" class="btn btn-outline-danger">Ver detalles</a>
-                      </div>
-                  </div>
-              </div>
+    <div class="row g-4">
 
-                  <div class="col-md-4">
-                <div class="card bg-dark text-light border-danger h-100">
-                    <div class="card-body">
-                        <h5 class="card-title text-danger">Actualización del Reglamento Técnico</h5>
-                        <p class="card-text">
-                            La federación ha publicado nuevas normas para las categorías 125cc y 250cc. Es obligatorio
-              revisarlas
-                            antes de competir.
-                          </p>
-                        <a href="#" class="btn btn-outline-danger">Descargar PDF</a>
-                      </div>
-                  </div>
-              </div>
+      <!-- Tarjeta 1 -->
+      <div class="col-md-4">
+        <div class="card bg-dark text-light border-danger h-100">
+          <div class="card-body">
+            <h5 class="card-title text-danger">Inicio del Campeonato 2025</h5>
+            <p class="card-text">
+              La nueva temporada comienza el 12 de marzo con una carrera inaugural en el Circuito Las Eras.
+              Participarán más de 30 pilotos de toda la región.
+            </p>
+            <a href="#" class="btn btn-outline-danger">Leer más</a>
+          </div>
+        </div>
+      </div>
 
-          </div>
-      </section>
+      <!-- Tarjeta 2 -->
+      <div class="col-md-4">
+        <div class="card bg-dark text-light border-danger h-100">
+          <div class="card-body">
+            <h5 class="card-title text-danger">Nuevos Clubes Registrados</h5>
+            <p class="card-text">
+              Esta semana se han integrado 4 nuevos clubes al sistema, ampliando la comunidad y la competitividad.
+            </p>
+            <a href="#" class="btn btn-outline-danger">Ver detalles</a>
+          </div>
+        </div>
+      </div>
 
-          <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"    
+      <!-- Tarjeta 3 -->
+      <div class="col-md-4">
+        <div class="card bg-dark text-light border-danger h-100">
+          <div class="card-body">
+            <h5 class="card-title text-danger">Actualización del Reglamento Técnico</h5>
+            <p class="card-text">
+              La federación ha publicado nuevas normas para las categorías 125cc y 250cc. Es obligatorio revisarlas
+              antes de competir.
+            </p>
+            <a href="#" class="btn btn-outline-danger">Descargar PDF</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================== -->
+  <!-- FIN DE NOTICIAS -->
+  <!-- ===================================================== -->
+
+
+  <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
     aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header border-danger">
-                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-            aria-label="Close"></button>
-                  </div>
-                <div class="modal-body">
-                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
-                  </div>
-                <div class="modal-footer border-danger">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
-                    </div>
-              </div>
-          </div>
-      </div>
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header border-danger">
+          <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+        </div>
+        <div class="modal-footer border-danger">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-   
   <script src="./js/alertas.js"></script>
 
-   
   <script>
     document.addEventListener("DOMContentLoaded", () => {
 
@@ -235,8 +233,7 @@
       const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
-      // MODIFICADO: Solo lee de sessionStorage
-      const storedUser = sessionStorage.getItem("usuario");
+      const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
       const usuario = storedUser ? JSON.parse(storedUser) : null;
 
       const bienvenida = document.getElementById("bienvenida");
@@ -285,8 +282,8 @@
 
           if (logoutConfirmModal) logoutConfirmModal.hide();
 
-          // MODIFICADO: Solo elimina de sessionStorage
           sessionStorage.removeItem("usuario");
+          localStorage.removeItem("usuario");
 
           mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
@@ -298,7 +295,6 @@
     });
   </script>
 
-   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>

@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const user = result.user;
 
-                // ⭐⭐⭐ ACCIÓN: Guardar SOLO en sessionStorage ⭐⭐⭐
+                // ⭐⭐⭐ SOLUCIÓN: guardar también club_id ⭐⭐⭐ (Mantenido de tu código original)
                 sessionStorage.setItem("usuario", JSON.stringify({
                     id: user.id,
                     name: user.name,
@@ -71,6 +71,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     password: password
                 }));
 
+                localStorage.setItem("usuario", JSON.stringify({
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    club_id: user.club_id || null,
+                    password: password
+                }));
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
