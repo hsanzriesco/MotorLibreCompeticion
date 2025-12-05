@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function cargarUsuarios() {
         if (!usersTableBody) return;
-        usersTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Cargando usuarios...</td></tr>';
+        usersTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">Cargando usuarios...</td></tr>';
 
         try {
             const res = await fetch("/api/users");
@@ -83,17 +83,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
             usersTableBody.innerHTML = "";
 
+            // ⚠️ Importante: Modificar el thead en users.html para añadir la columna "Estado" ⚠️
+            // <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Creado en</th><th>Acciones</th></tr>
+
             data.data.forEach((user) => {
                 const tr = document.createElement("tr");
 
+                // Lógica de Baneo para el Frontend
+                const isBanned = user.is_banned;
+                const banButtonText = isBanned ? 'Desbanear' : 'Banear';
+                const banButtonClass = isBanned ? 'btn-success' : 'btn-danger';
+                const statusBadge = isBanned
+                    ? '<span class="badge bg-danger">Baneado</span>'
+                    : '<span class="badge bg-success">Activo</span>';
+
+                // Generación de la Fila con la nueva columna 'Estado' y el botón de baneo
                 tr.innerHTML = `
                     <td>${user.name}</td>
                     <td>${user.email}</td>
                     <td>${user.role}</td>
+                    <td>${statusBadge}</td>
                     <td>${new Date(user.created_at).toLocaleDateString()}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-danger me-2 edit-user-btn" data-id="${user.id}">
+                        <button class="btn btn-sm btn-outline-warning me-2 edit-user-btn" data-id="${user.id}">
                             <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm me-2 btn-ban ${banButtonClass}" 
+                            data-id="${user.id}" 
+                            data-is-banned="${isBanned}">
+                            ${banButtonText}
                         </button>
                         <button class="btn btn-sm btn-outline-danger delete-user-btn" data-id="${user.id}">
                             <i class="bi bi-trash"></i>
@@ -106,9 +124,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error("Error al cargar usuarios:", err);
-            usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar usuarios: ${err.message}</td></tr>`;
+            usersTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar usuarios: ${err.message}</td></tr>`;
         }
     }
+
+    // Nueva función para manejar el baneo/desbaneo
+    async function manejarBaneo(userId, estadoActualBaneo) {
+        const nuevoEstado = !estadoActualBaneo;
+
+        try {
+            const response = await fetch(`/api/users?id=${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // El payload solo necesita el ID (en la URL) y el nuevo estado
+                body: JSON.stringify({ is_banned: nuevoEstado }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || `Error HTTP: ${response.status}`);
+            }
+
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta(`Usuario ${nuevoEstado ? 'baneado' : 'desbaneado'} con éxito.`, "exito");
+            }
+            // Recargar la tabla para actualizar la interfaz
+            cargarUsuarios();
+
+        } catch (error) {
+            console.error("Fallo al banear/desbanear:", error);
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta(`Error al procesar la acción de baneo: ${error.message}`, "error");
+            }
+        }
+    }
+
 
     // Manejador para abrir el modal de edición/creación
     async function openUserEditModal(id) {
@@ -153,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- 4. LISTENERS ---
 
-    // 4.1. Listener de la Tabla (Edición y Eliminación)
+    // 4.1. Listener de la Tabla (Edición, Eliminación y BANEO)
     usersTableBody.addEventListener("click", async (e) => {
         const btn = e.target.closest("button");
         if (!btn) return;
@@ -162,6 +215,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (btn.classList.contains("edit-user-btn")) {
             await openUserEditModal(id);
+        }
+
+        // 🚀 NUEVO: Listener para el botón de Baneo/Desbaneo
+        if (btn.classList.contains("btn-ban")) {
+            // El atributo data-is-banned es un string, lo convertimos a booleano
+            const isBanned = btn.dataset.isBanned === 'true';
+            await manejarBaneo(id, isBanned);
+            return; // Detenemos la ejecución después de manejar el baneo
         }
 
         if (btn.classList.contains("delete-user-btn")) {
@@ -279,13 +340,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
 
             if (!res.ok) {
-                // Manejo del 400 Bad Request que venías experimentando, ahora capturado aquí.
+                // Manejo del 409 Conflict (nombre/correo duplicado)
                 if (res.status === 409) {
                     if (typeof mostrarAlerta === 'function') {
                         return mostrarAlerta("El nombre o correo ya están en uso.", "error");
                     }
                 }
-                // Cualquier otro error, incluyendo el 400 del backend (ID faltante, datos inválidos)
+                // Cualquier otro error
                 throw new Error(data.message || `Error al guardar (${res.status})`);
             }
 
