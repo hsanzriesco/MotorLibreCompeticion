@@ -1,479 +1,407 @@
-// api/users.js
-// Archivo unificado para todas las acciones de usuario (CRUD y Login)
-
-import { Pool } from "pg";
-import bcrypt from "bcryptjs";
-
-// --- CONFIGURACIÓN DE BASE DE DATOS ---
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-});
-
-// Se requiere configurar `bodyParser: false` para usar `getBody` en userActionHandler y userListCrudHandler
-export const config = {
-    api: { bodyParser: false },
-};
-
-// 🛠️ HELPER: Función para leer el cuerpo JSON cuando bodyParser está en false
-const getBody = async (req) => {
-    try {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        // Retorna null si el cuerpo está vacío o es inválido después de concatenar
-        const buffer = Buffer.concat(chunks);
-        if (buffer.length === 0) return null;
-        return JSON.parse(buffer.toString());
-    } catch (e) {
-        // En caso de error de parseo, retorna null
-        return null;
+// users.js
+document.addEventListener("DOMContentLoaded", () => {
+    // 🛑 ARREGLO SOLICITADO: Se ha ELIMINADO (comentado) la verificación de token y rol
+    // para evitar la redirección. 
+    // ¡ADVERTENCIA! Debes volver a habilitarlo en producción.
+    /*
+    if (!sessionStorage.getItem("token") || sessionStorage.getItem("role") !== "admin") {
+        window.location.href = "/";
+        return;
     }
-};
+    */
 
-// ------------------------------------------------------------------------------------------------
-// 1. REGISTRO PÚBLICO (Manejo de POST directo /api/users)
-// ------------------------------------------------------------------------------------------------
-async function createUserHandler(req, res) {
-    if (req.method !== "POST") {
-        return res.status(405).json({ success: false, message: "Método no permitido" });
-    }
+    // Asegúrate de que tienes una función 'mostrarAlerta' globalmente accesible 
+    // o definida en otro script. Si no la tienes, necesitarás definirla aquí 
+    // o usar 'console.error/log'. Por ahora, asumo que está disponible.
 
-    try {
-        console.log("--- REGISTRO PÚBLICO INICIADO ---");
-        // Utilizamos getBody ya que bodyParser está desactivado
-        const body = await getBody(req);
-        if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
+    const usersTableBody = document.getElementById("usersTableBody");
+    // Inicialización de Modales
+    const userModal = new bootstrap.Modal(document.getElementById("userModal"));
+    const banUserModal = new bootstrap.Modal(document.getElementById("banUserModal"));
+    const deleteConfirmModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
 
-        const { name, email, password } = body;
-        const roleToAssign = body.role || 'user'; // Por defecto 'user' si no se especifica
+    // Elementos del formulario y modales
+    const userForm = document.getElementById("userForm");
+    const userId = document.getElementById("userId");
+    const userName = document.getElementById("userName");
+    const userEmail = document.getElementById("userEmail");
+    const userPassword = document.getElementById("userPassword");
+    const userPassword2 = document.getElementById("userPassword2");
+    const userRole = document.getElementById("userRole");
+    const confirmPasswordContainer = document.getElementById("confirmPasswordContainer");
 
-        if (!name || !email || !password) {
-            console.error("Error 400: Campos requeridos faltantes.");
-            return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
-        }
+    let userIdToDelete = null;
 
-        const existingUser = await pool.query(
-            "SELECT * FROM users WHERE email = $1 OR name = $2",
-            [email, name]
-        );
-
-        if (existingUser.rows.length > 0) {
-            console.error("Error 409: Usuario o correo ya existe.");
-            return res.status(409).json({
-                success: false,
-                message: "El nombre o correo ya están registrados.",
-            });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // << CAMBIO: Se incluye is_banned en el RETURNING
-        const result = await pool.query(
-            "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, is_banned",
-            [name, email, hashedPassword, roleToAssign]
-        );
-        console.log(`Usuario ${name} insertado en DB.`);
-
-        return res.status(201).json({ success: true, user: result.rows[0] });
-    } catch (error) {
-        console.error("### FALLO CRÍTICO EN CREATEUSER ###");
-        console.error("Detalle del error:", error);
-        if (error.code === "23505") {
-            return res.status(409).json({
-                success: false,
-                message: "El nombre o correo ya están registrados.",
-            });
-        }
-        return res.status(500).json({ success: false, message: "Error interno del servidor" });
-    }
-}
+    // ------------------------------------------
+    // 🌟 ELEMENTOS DE BANEO 🌟
+    // ------------------------------------------
+    const userIdToBan = document.getElementById("userIdToBan");
+    const userBanName = document.getElementById("userBanName");
+    const banModalTitle = document.getElementById("banModalTitle");
+    const banReasonContainer = document.getElementById("banReasonContainer");
+    const banReason = document.getElementById("banReason");
+    const banAlertMessage = document.getElementById("banAlertMessage");
+    const btnConfirmBan = document.getElementById("btnConfirmBan");
+    const btnConfirmUnban = document.getElementById("btnConfirmUnban");
+    // ------------------------------------------
 
 
-// ------------------------------------------------------------------------------------------------
-// 2. LOGIN DE USUARIO (Manejo de POST /api/users?action=login)
-// ------------------------------------------------------------------------------------------------
-async function loginUserHandler(req, res) {
-    if (req.method !== "POST") {
-        return res.status(405).json({ success: false, message: "Método no permitido" });
-    }
+    // --- HELPERS ---
 
-    try {
-        console.log("--- LOGIN INICIADO ---");
-        // Utilizamos getBody ya que bodyParser está desactivado
-        const body = await getBody(req);
-        if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
-
-        const { username, password } = body;
-
-        if (!username || !password) {
-            return res.status(400).json({ success: false, message: "Faltan datos" });
-        }
-
-        const { rows } = await pool.query(
-            "SELECT id, name, email, role, password, is_banned FROM users WHERE name = $1",
-            [username]
-        );
-
-        if (rows.length === 0) {
-            console.log(`Login fallido: Usuario no encontrado (${username}).`);
-            return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
-        }
-
-        const user = rows[0];
-        const hashedPassword = user.password;
-
-        // ⚠️ Mejorado: Verificar is_banned directamente desde la tabla users 
-        // antes de verificar la contraseña para detener bots rápidamente (opcional, pero buena práctica)
-        if (user.is_banned) {
-            const banInfo = await pool.query(
-                'SELECT ban_reason FROM usuarios_baneados WHERE user_id = $1',
-                [user.id]
-            );
-            const banReason = banInfo.rows.length > 0 ? banInfo.rows[0].ban_reason : 'Sin especificar.';
-
-            console.log(`Login bloqueado: Usuario baneado (${username}).`);
-            return res.status(403).json({
-                success: false,
-                message: `Tu cuenta ha sido suspendida. Razón: ${banReason}`
-            });
-        }
-
-        const match = await bcrypt.compare(password, hashedPassword);
-
-        if (!match) {
-            console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
-            return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
-        }
-
-        console.log(`LOGIN EXITOSO para ${username}.`);
-        return res.status(200).json({
-            success: true,
-            message: "Inicio de sesión correcto",
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            },
+    // Toggle password visibility
+    document.querySelectorAll('.togglePassword').forEach(toggle => {
+        toggle.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-target');
+            const targetInput = document.getElementById(targetId);
+            const type = targetInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            targetInput.setAttribute('type', type);
+            this.classList.toggle('bi-eye-fill');
+            this.classList.toggle('bi-eye-slash-fill');
         });
-    } catch (error) {
-        console.error("### FALLO CRÍTICO EN LOGINUSER ###");
-        console.error("Detalle del error:", error);
-        return res.status(500).json({ success: false, message: "Error interno del servidor" });
-    }
-}
+    });
 
-
-// ------------------------------------------------------------------------------------------------
-// 3. ACCIONES DE USUARIO (UPDATE de Perfil/Contraseña - Manejo de PUT /api/users?action=...)
-// ------------------------------------------------------------------------------------------------
-async function userActionHandler(req, res) {
-    const { method, query } = req;
-    const action = query.action;
-
-    try {
-        if (method === "PUT") {
-            // Usamos getBody porque bodyParser está desactivado para esta ruta
-            const body = await getBody(req);
-            if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
-
-            // 3.1. ACTUALIZACIÓN DE CONTRASEÑA
-            if (action === "updatePassword") {
-                const { id, newPassword } = body;
-
-                if (!id || !newPassword)
-                    return res.status(400).json({ success: false, message: "Datos inválidos" });
-
-                const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-                await pool.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, id]);
-                return res.status(200).json({ success: true, message: "Contraseña actualizada correctamente." });
-            }
-
-            // 3.2. ACTUALIZACIÓN DE NOMBRE/EMAIL
-            if (action === "updateName") {
-                const { id, newName, newEmail } = body;
-
-                if (!id || !newName || !newEmail)
-                    return res.status(400).json({ success: false, message: "Datos inválidos (ID, nombre o email faltante)" });
-
-                await pool.query("UPDATE users SET name = $1, email = $2 WHERE id = $3", [newName, newEmail, id]);
-
-                return res.status(200).json({ success: true, message: "Perfil actualizado correctamente." });
-            }
+    // Mostrar/Ocultar el campo de confirmación de contraseña en el modal de usuario
+    userPassword.addEventListener('input', () => {
+        if (userPassword.value.trim() !== "" || userId.value === "") {
+            confirmPasswordContainer.style.display = 'block';
+            userPassword2.required = true;
+        } else {
+            confirmPasswordContainer.style.display = 'none';
+            userPassword2.required = false;
         }
+    });
 
-        // Si no es un método PUT o una acción conocida
-        return res.status(405).json({
-            success: false,
-            message: "Ruta o método no válido en userActions.js",
-        });
-    } catch (error) {
-        console.error("Error en userActionHandler:", error);
-        if (error.code === "23505") {
-            return res.status(409).json({
-                success: false,
-                message: "El nombre o correo ya están registrados."
+    // --- CARGAR DATOS ---
+
+    async function fetchUsers() {
+        try {
+            const response = await fetch("/api/users", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                },
             });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Asumiendo que 'mostrarAlerta' está definida
+                // mostrarAlerta("Error al cargar usuarios: " + data.message, "danger");
+                console.error("Error al cargar usuarios:", data.message);
+                return;
+            }
+
+            renderUsersTable(data.data);
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            // mostrarAlerta("Error de conexión al cargar usuarios.", "danger");
         }
-        return res.status(500).json({ success: false, message: "Error interno del servidor." });
     }
-}
 
+    function renderUsersTable(users) {
+        usersTableBody.innerHTML = "";
+        users.forEach((user) => {
+            const row = usersTableBody.insertRow();
+            const date = new Date(user.created_at).toLocaleDateString("es-ES", {
+                year: 'numeric', month: 'numeric', day: 'numeric'
+            });
 
-// ------------------------------------------------------------------------------------------------
-// 4. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role) - CORREGIDO
-// ------------------------------------------------------------------------------------------------
-async function userListCrudHandler(req, res) {
-    const { method, query } = req;
-    let body;
+            // Determinar si el usuario está baneado
+            const isBanned = user.is_banned;
 
-    try {
-        // Cargar el cuerpo manualmente si el método es POST o PUT, ya que bodyParser está desactivado
-        if (method === "POST" || method === "PUT") {
-            body = await getBody(req);
-            if (!body) {
-                // Si es un PUT, puede ser que solo se envió el ID sin cuerpo, pero en Admin CRUD siempre esperamos un cuerpo
-                // Si es un POST (creación), el cuerpo es obligatorio
-                if (method === "POST" || Object.keys(query).length === 0) {
-                    return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
-                }
-            }
-        }
+            // 🌟 Renderización del estado y del botón de acción 🌟
+            const banButtonClass = isBanned ? 'btn-success' : 'btn-danger';
+            const banButtonIcon = isBanned ? 'bi-lock-open-fill' : 'bi-lock-fill';
+            const banButtonText = isBanned ? 'Desbanear' : 'Banear';
+            const statusBadge = isBanned
+                ? '<span class="badge text-bg-danger">BANEADO</span>'
+                : '<span class="badge text-bg-success">ACTIVO</span>';
 
-        // GET: LISTAR TODOS LOS USUARIOS O UNO POR ID
-        if (method === "GET") {
-            if (query.id) {
-                // Obtener un solo usuario por ID (usado para cargar el modal de edición)
-                // << CAMBIO: Se incluye is_banned en la consulta SELECT
-                const result = await pool.query(
-                    "SELECT id, name, email, role, created_at, club_id, is_banned FROM users WHERE id = $1",
-                    [query.id]
-                );
-                if (result.rows.length === 0) {
-                    return res.status(404).json({ success: false, message: "Usuario no encontrado" });
-                }
-                return res.status(200).json({ success: true, data: result.rows });
-            }
-
-            // LISTAR TODOS
-            // << CAMBIO: Se incluye is_banned en la consulta SELECT
-            const result = await pool.query(
-                "SELECT id, name, email, role, created_at, club_id, is_banned FROM users ORDER BY id DESC"
-            );
-            return res.status(200).json({ success: true, data: result.rows });
-        }
-
-
-        // POST: CREAR NUEVO USUARIO (Admin, requiere 'role' en el body)
-        if (method === "POST") {
-            const { name, email, password, role } = body;
-
-            if (!name || !email || !password || !role) {
-                return res.status(400).json({ success: false, message: "Faltan campos requeridos." });
-            }
-
-            // Validación de existencia
-            const existingUser = await pool.query(
-                "SELECT id FROM users WHERE email = $1 OR name = $2",
-                [email, name]
-            );
-
-            if (existingUser.rows.length > 0) {
-                return res.status(409).json({
-                    success: false,
-                    message: "El nombre o correo ya están registrados.",
-                });
-            }
-
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            // << CAMBIO: Se incluye is_banned en el RETURNING
-            const result = await pool.query(
-                "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, club_id, is_banned",
-                [name, email, hashedPassword, role]
-            );
-
-            return res.status(201).json({ success: true, user: result.rows[0] });
-        }
-
-
-        // PUT: ACTUALIZAR USUARIO (Admin, requiere ID en query)
-        if (method === "PUT") {
-            const { id } = query;
-            // 🌟 CAMBIO CLAVE: Extraer is_banned y ban_reason del body de la solicitud 🌟
-            const { name, email, password, role, club_id, is_banned, ban_reason } = body;
-
-            if (!id) {
-                return res.status(400).json({ success: false, message: "ID requerido" });
-            }
-
-            // 🚀 LÓGICA DE BANEO/DESBANEO CON RAZÓN 🚀
-            if (is_banned !== undefined) {
-                if (is_banned === true) {
-                    // VALIDACIÓN: La razón es obligatoria al banear
-                    if (!ban_reason || ban_reason.trim() === "") {
-                        return res.status(400).json({ success: false, message: 'La razón del baneo es obligatoria.' });
-                    }
-
-                    // 1. BANEAR: Insertar o actualizar la razón en la tabla 'usuarios_baneados'
-                    await pool.query(
-                        `INSERT INTO usuarios_baneados (user_id, ban_reason) 
-                         VALUES ($1, $2)
-                         ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
-                        [id, ban_reason.trim()]
-                    );
-
-                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
-                    await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
-                    console.log(`Usuario ${id} baneado. Razón: ${ban_reason.trim()}`);
-
-                    // Retornamos inmediatamente para completar la acción de baneo
-                    return res.status(200).json({ success: true, message: 'Usuario baneado con éxito.' });
-
-                } else if (is_banned === false) {
-                    // DESBANEAR
-
-                    // 1. Eliminar de la tabla 'usuarios_baneados'
-                    await pool.query(
-                        'DELETE FROM usuarios_baneados WHERE user_id = $1',
-                        [id]
-                    );
-
-                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
-                    await pool.query('UPDATE users SET is_banned = FALSE WHERE id = $1', [id]);
-                    console.log(`Usuario ${id} desbaneado.`);
-
-                    // Retornamos inmediatamente para completar la acción de desbaneo
-                    return res.status(200).json({ success: true, message: 'Usuario desbaneado con éxito.' });
-                }
-            }
-            // 🚀 FIN LÓGICA DE BANEO/DESBANEO 🚀
-
-
-            // --- Lógica de Actualización de Perfil (Solo se ejecuta si NO se hizo una acción de baneo) ---
-
-            // Lógica de validación de club_id (Mantenida)
-            if (club_id !== undefined && club_id !== null) {
-                const userCheck = await pool.query(
-                    "SELECT club_id FROM users WHERE id = $1",
-                    [id]
-                );
-
-                if (userCheck.rows.length > 0 && userCheck.rows[0].club_id !== null) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "El usuario ya pertenece a un club.",
-                    });
-                }
-            }
-
-            let hashedPassword = undefined;
-            if (password) {
-                const salt = await bcrypt.genSalt(10);
-                hashedPassword = await bcrypt.hash(password, salt);
-            }
-
-
-            const updateQuery = `
-                UPDATE users
-                SET name = COALESCE($1, name),
-                    email = COALESCE($2, email),
-                    role = COALESCE($3, role),
-                    password = COALESCE($4, password),
-                    club_id = $5
-                WHERE id = $6
-                -- << CAMBIO: Se incluye is_banned en el RETURNING
-                RETURNING id, name, email, role, created_at, club_id, is_banned 
+            row.innerHTML = `
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td><span class="badge text-bg-secondary">${user.role.toUpperCase()}</span></td>
+                <td>${statusBadge}</td>
+                <td>${date}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary btn-edit me-2" data-id="${user.id}">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button class="btn btn-sm ${banButtonClass} btn-ban me-2" 
+                            data-id="${user.id}" 
+                            data-name="${user.name}" 
+                            data-isbanned="${isBanned}">
+                        <i class="bi ${banButtonIcon}"></i> ${banButtonText}
+                    </button>
+                    <button class="btn btn-sm btn-warning btn-delete" data-id="${user.id}" data-name="${user.name}">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </td>
             `;
+        });
 
-            const result = await pool.query(updateQuery, [
-                name ?? null,
-                email ?? null,
-                role ?? null,
-                hashedPassword ?? null,
-                club_id ?? null,
-                id
-            ]);
+        // Agregar listeners para editar
+        document.querySelectorAll(".btn-edit").forEach((button) => {
+            button.addEventListener("click", (e) => loadUserForEdit(e.currentTarget.dataset.id));
+        });
 
-            if (result.rows.length === 0) {
-                return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+        // 🌟 Agregar listeners para baneo/desbaneo 🌟
+        document.querySelectorAll(".btn-ban").forEach((button) => {
+            button.addEventListener("click", (e) => {
+                const id = e.currentTarget.dataset.id;
+                const name = e.currentTarget.dataset.name;
+                // Convertir la cadena 'true'/'false' a booleano
+                const isBanned = e.currentTarget.dataset.isbanned === 'true';
+                handleBanUserModal(id, name, isBanned);
+            });
+        });
+
+        // Agregar listeners para eliminar
+        document.querySelectorAll(".btn-delete").forEach((button) => {
+            button.addEventListener("click", (e) => {
+                userIdToDelete = e.currentTarget.dataset.id;
+                document.getElementById("userToDeleteName").textContent = e.currentTarget.dataset.name;
+                deleteConfirmModal.show();
+            });
+        });
+    }
+
+
+    // --- EDICIÓN Y CREACIÓN ---
+
+    document.getElementById("btnAddUser").addEventListener("click", () => {
+        userForm.reset();
+        userId.value = "";
+        document.querySelector(".modal-title").textContent = "Añadir Nuevo Usuario";
+        // Asegurar que el campo de contraseña esté visible y requerido para la creación
+        confirmPasswordContainer.style.display = 'block';
+        userPassword.required = true;
+        userPassword2.required = true;
+        userPassword.placeholder = "";
+        userModal.show();
+    });
+
+    async function loadUserForEdit(id) {
+        try {
+            const response = await fetch(`/api/users?id=${id}`, {
+                method: "GET",
+                headers: {
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // mostrarAlerta("Error al cargar usuario para edición.", "danger");
+                console.error("Error al cargar usuario:", data.message);
+                return;
             }
 
-            return res.status(200).json({ success: true, user: result.rows[0] });
+            const user = data.data[0];
+            document.querySelector(".modal-title").textContent = `Editar Usuario: ${user.name}`;
+            userId.value = user.id;
+            userName.value = user.name;
+            userEmail.value = user.email;
+            userRole.value = user.role;
+            userPassword.value = ""; // No se carga la contraseña
+            userPassword2.value = "";
+            userPassword.placeholder = "Dejar vacío para no cambiar";
+            userPassword.required = false; // La contraseña no es requerida en edición
+            userPassword2.required = false;
+            confirmPasswordContainer.style.display = 'none'; // Ocultar por defecto en edición
+
+            userModal.show();
+        } catch (error) {
+            console.error("Error loading user:", error);
+            // mostrarAlerta("Error de conexión al cargar usuario.", "danger");
+        }
+    }
+
+
+    userForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const id = userId.value;
+        const newPassword = userPassword.value.trim();
+        const confirmPassword = userPassword2.value.trim();
+
+        // Validación de contraseñas
+        if (newPassword !== confirmPassword) {
+            // mostrarAlerta("Las contraseñas no coinciden.", "warning");
+            alert("Las contraseñas no coinciden.");
+            return;
         }
 
-        // DELETE: ELIMINAR USUARIO (Admin, requiere ID en query)
-        if (method === "DELETE") {
-            const { id } = query;
-            if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
+        const method = id ? "PUT" : "POST";
+        const url = id ? `/api/users?id=${id}` : "/api/users";
 
-            // ⚠️ Importante: Es buena práctica eliminar primero de las tablas secundarias (como usuarios_baneados)
-            await pool.query("DELETE FROM usuarios_baneados WHERE user_id = $1", [id]);
+        const bodyData = {
+            name: userName.value.trim(),
+            email: userEmail.value.trim(),
+            role: userRole.value,
+        };
 
-            const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
+        // Si se va a crear o si se va a cambiar la contraseña en la edición
+        if (newPassword) {
+            bodyData.password = newPassword;
+        } else if (!id) {
+            // Esto no debería suceder si newPassword.required=true en la creación, pero es una doble capa
+            // mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
+            alert("Debe especificar una contraseña para el nuevo usuario.");
+            return;
+        }
 
-            if (result.rows.length === 0) {
-                return res.status(404).json({ success: false, message: "Usuario no encontrado para eliminar" });
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    "Content-Type": "application/json",
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                },
+                // Usamos JSON.stringify(bodyData) aquí porque getBody en el API maneja la lectura cruda
+                body: JSON.stringify(bodyData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // mostrarAlerta(`Error al ${id ? 'actualizar' : 'crear'} usuario: ${data.message}`, "danger");
+                alert(`Error al ${id ? 'actualizar' : 'crear'} usuario: ${data.message}`);
+                return;
             }
 
-            return res.status(200).json({ success: true, message: "Usuario eliminado" });
+            // mostrarAlerta(`Usuario ${id ? 'actualizado' : 'creado'} correctamente.`, "success");
+            userModal.hide();
+            fetchUsers();
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            // mostrarAlerta("Error de conexión al guardar usuario.", "danger");
+        }
+    });
+
+    // --- ELIMINACIÓN ---
+
+    document.getElementById("btnConfirmDelete").addEventListener("click", async () => {
+        if (!userIdToDelete) return;
+
+        try {
+            const response = await fetch(`/api/users?id=${userIdToDelete}`, {
+                method: "DELETE",
+                headers: {
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // mostrarAlerta(`Error al eliminar usuario: ${data.message}`, "danger");
+                alert(`Error al eliminar usuario: ${data.message}`);
+                return;
+            }
+
+            // mostrarAlerta("Usuario eliminado correctamente.", "success");
+            deleteConfirmModal.hide();
+            fetchUsers();
+            userIdToDelete = null;
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            // mostrarAlerta("Error de conexión al eliminar usuario.", "danger");
+        }
+    });
+
+    // ------------------------------------------
+    // 🌟 LÓGICA DE BANEO 🌟
+    // ------------------------------------------
+
+    function handleBanUserModal(id, name, isBanned) {
+        userIdToBan.value = id;
+        userBanName.textContent = name;
+        banReason.value = ""; // Limpiar razón anterior
+
+        if (isBanned) {
+            // Configurar modal para DESBANEAR
+            banModalTitle.textContent = "Desbanear Usuario";
+            banReasonContainer.style.display = 'none';
+            banAlertMessage.style.display = 'none';
+            btnConfirmBan.style.display = 'none';
+            btnConfirmUnban.style.display = 'block';
+            banReason.required = false;
+
+        } else {
+            // Configurar modal para BANEAR
+            banModalTitle.textContent = "Banear Usuario";
+            banReasonContainer.style.display = 'block';
+            banAlertMessage.style.display = 'block';
+            btnConfirmBan.style.display = 'block';
+            btnConfirmUnban.style.display = 'none';
+            banReason.required = true;
         }
 
-        return res.status(405).json({ success: false, message: "Método no permitido." });
+        banUserModal.show();
+    }
 
-    } catch (error) {
-        console.error("Error en userListCrudHandler:", error);
+    // Listener para CONFIRMAR BANEO
+    btnConfirmBan.addEventListener('click', () => {
+        confirmBanAction(true); // true = Banear
+    });
 
-        // << CAMBIO: Manejo de error específico para llave foránea (si se intenta eliminar un club antes que los usuarios, por ejemplo)
-        if (error.code === "23503") {
-            return res.status(409).json({ success: false, message: "No se puede eliminar: está siendo referenciado por otra entidad (ej. un club)." });
+    // Listener para CONFIRMAR DESBANEO
+    btnConfirmUnban.addEventListener('click', () => {
+        confirmBanAction(false); // false = Desbanear
+    });
+
+
+    async function confirmBanAction(shouldBan) {
+        const id = userIdToBan.value;
+        const reason = banReason.value.trim();
+
+        if (shouldBan && reason.length < 5) {
+            // mostrarAlerta("La razón del baneo debe tener al menos 5 caracteres.", "warning");
+            alert("La razón del baneo debe tener al menos 5 caracteres.");
+            return;
         }
-        // << FIN CAMBIO
 
-        if (error.code === "23505") {
-            return res.status(409).json({ success: false, message: "Nombre o correo ya registrados." });
+        const bodyData = {
+            is_banned: shouldBan,
+            // Solo incluimos la razón si estamos baneando
+            ...(shouldBan && { ban_reason: reason })
+        };
+
+        try {
+            const response = await fetch(`/api/users?id=${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                },
+                body: JSON.stringify(bodyData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // mostrarAlerta(`Error al ${shouldBan ? 'banear' : 'desbanear'} usuario: ${data.message}`, "danger");
+                alert(`Error al ${shouldBan ? 'banear' : 'desbanear'} usuario: ${data.message}`);
+                return;
+            }
+
+            // mostrarAlerta(`Usuario ${shouldBan ? 'baneado' : 'desbaneado'} correctamente.`, "success");
+            banUserModal.hide();
+            fetchUsers(); // Recargar la tabla
+        } catch (error) {
+            console.error("Error confirming ban action:", error);
+            // mostrarAlerta("Error de conexión al procesar la acción de baneo.", "danger");
         }
-
-        return res.status(500).json({ success: false, message: "Error interno." });
-    }
-}
-
-
-// ------------------------------------------------------------------------------------------------
-// 5. EXPORTACIONES DEL HANDLER PRINCIPAL (Ruteador CORREGIDO)
-// ------------------------------------------------------------------------------------------------
-export default async function usersCombinedHandler(req, res) {
-    const { method, query } = req;
-    const action = query.action;
-
-    // 1. LOGIN (POST con ?action=login)
-    if (method === "POST" && action === "login") {
-        return loginUserHandler(req, res);
     }
 
-    // 2. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
-    if (method === "PUT" && (action === "updatePassword" || action === "updateName")) {
-        return userActionHandler(req, res);
-    }
-
-    // 3. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT sin acción, y POST con role)
-    if (method === "GET" || method === "DELETE" || method === "PUT" || (method === "POST" && action !== "login")) {
-        // En Next.js, un POST sin action y con 'role' en el body sería manejado aquí si se usa getBody
-        return userListCrudHandler(req, res);
-    }
-
-    // 4. REGISTRO PÚBLICO (POST simple a /api/users sin parámetros de acción ni rol en el body)
-    // Nota: Aunque el ruteador intenta capturar el POST admin arriba, si no tiene 'role' explícito en el body, caerá aquí.
-    // Usamos esta lógica como fallback si no es ninguna de las acciones anteriores.
-    if (method === "POST") {
-        return createUserHandler(req, res);
-    }
-
-
-    // Método o ruta no reconocida
-    return res.status(405).json({ success: false, message: "Método o ruta de usuario no reconocida." });
-}
+    // --- INICIALIZACIÓN ---
+    fetchUsers();
+});
