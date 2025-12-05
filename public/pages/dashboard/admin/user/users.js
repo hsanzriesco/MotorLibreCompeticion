@@ -1,16 +1,13 @@
 // users.js
 document.addEventListener("DOMContentLoaded", () => {
 
-    // 🛑 CORRECCIÓN CLAVE: Usar sessionStorage para la verificación de token y rol
-    // ESTA VERIFICACIÓN AHORA FUNCIONARÁ CORRECTAMENTE GRACIAS AL CAMBIO EN login.js
+    // 🛑 VERIFICACIÓN DE ACCESO DE ADMINISTRADOR 🛑
     if (!sessionStorage.getItem("token") || sessionStorage.getItem("role") !== "admin") {
         window.location.href = "/"; // Redirige a index.html (que está en la raíz)
         return;
     }
 
-    // Asegúrate de que tienes una función 'mostrarAlerta' globalmente accesible 
-    // o definida en otro script. Si no la tienes, necesitarás definirla aquí 
-    // o usar 'console.error/log'. Por ahora, asumo que está disponible.
+    // Nota: Asumimos que 'mostrarAlerta' está disponible globalmente.
 
     const usersTableBody = document.getElementById("usersTableBody");
     // Inicialización de Modales
@@ -29,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const confirmPasswordContainer = document.getElementById("confirmPasswordContainer");
 
     let userIdToDelete = null;
+    let cachedUsers = {}; // 🚀 NUEVO: Cache para datos de usuario
 
     // ------------------------------------------
     // 🌟 ELEMENTOS DE BANEO 🌟
@@ -86,8 +84,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!response.ok) {
                 mostrarAlerta("Error al cargar usuarios: " + data.message, "danger");
+                // Si la sesión es inválida, forzar cierre de sesión
+                if (response.status === 401 || response.status === 403) {
+                    sessionStorage.clear();
+                    window.location.href = "/";
+                }
                 return;
             }
+
+            // 🚀 ACTUALIZACIÓN: Llenar el caché con los datos completos
+            cachedUsers = data.data.reduce((acc, user) => {
+                acc[user.id] = user;
+                return acc;
+            }, {});
 
             renderUsersTable(data.data);
         } catch (error) {
@@ -150,7 +159,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 const name = e.currentTarget.dataset.name;
                 // Convertir la cadena 'true'/'false' a booleano
                 const isBanned = e.currentTarget.dataset.isbanned === 'true';
-                handleBanUserModal(id, name, isBanned);
+
+                // 🚀 MEJORA: Obtener la razón del caché (o forzar recarga si no existe)
+                const user = cachedUsers[id];
+                if (!user) {
+                    // Si no está en caché, forzar recarga del usuario, pero por ahora usamos los datos básicos
+                    console.warn("Usuario no encontrado en caché. Solo se usa información básica.");
+                    return handleBanUserModal(id, name, isBanned);
+                }
+
+                // Usar el objeto de usuario completo para la acción de baneo
+                handleBanUserModal(user);
             });
         });
 
@@ -181,22 +200,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadUserForEdit(id) {
         try {
-            const response = await fetch(`/api/users?id=${id}`, {
-                method: "GET",
-                headers: {
-                    // 🛑 CORRECCIÓN: Usar sessionStorage
-                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
-                },
-            });
+            // Se usa la función fetchUsers que trae solo los datos listados.
+            // Para la edición, es mejor usar la caché si se cargó al inicio,
+            // pero si necesitas datos adicionales, haz una llamada individual.
 
-            const data = await response.json();
+            // Si el backend devuelve la razón de baneo, esto no se necesita aquí.
+            // Si el backend YA NO devuelve la contraseña, puedes usar la caché directamente
+            const user = cachedUsers[id];
 
-            if (!response.ok) {
-                mostrarAlerta("Error al cargar usuario para edición.", "danger");
-                return;
+            if (!user) {
+                // Si por alguna razón no está en caché (ej. fallo inicial de carga),
+                // forzar la llamada para obtener el usuario específico.
+                const response = await fetch(`/api/users?id=${id}`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+                    },
+                });
+                const data = await response.json();
+                if (!response.ok || !data.data || data.data.length === 0) {
+                    mostrarAlerta("Error al cargar usuario para edición.", "danger");
+                    return;
+                }
+                user = data.data[0];
             }
 
-            const user = data.data[0];
+            // Llenar el formulario con los datos del usuario
             document.querySelector(".modal-title").textContent = `Editar Usuario: ${user.name}`;
             userId.value = user.id;
             userName.value = user.name;
@@ -225,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmPassword = userPassword2.value.trim();
 
         // Validación de contraseñas
-        if (newPassword !== confirmPassword) {
+        if (newPassword && newPassword !== confirmPassword) {
             mostrarAlerta("Las contraseñas no coinciden.", "warning");
             return;
         }
@@ -243,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (newPassword) {
             bodyData.password = newPassword;
         } else if (!id) {
-            // Esto no debería suceder si newPassword.required=true en la creación, pero es una doble capa
+            // Esto no debería suceder si newPassword.required=true en la creación
             mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
             return;
         }
@@ -312,15 +341,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // 🌟 LÓGICA DE BANEO 🌟
     // ------------------------------------------
 
-    function handleBanUserModal(id, name, isBanned) {
-        userIdToBan.value = id;
-        userBanName.textContent = name;
-        banReason.value = ""; // Limpiar razón anterior
+    // 🚀 MODIFICADO: Ahora recibe el objeto de usuario completo
+    function handleBanUserModal(user) {
+        userIdToBan.value = user.id;
+        userBanName.textContent = user.name;
+        banReason.value = user.ban_reason || ""; // 🚀 NUEVO: Cargar razón existente
 
-        if (isBanned) {
+        if (user.is_banned) {
             // Configurar modal para DESBANEAR
             banModalTitle.textContent = "Desbanear Usuario";
-            banReasonContainer.style.display = 'none';
+            banReasonContainer.style.display = 'block'; // Mostrar la razón, pero deshabilitada
+            banReason.disabled = true;
             banAlertMessage.style.display = 'none';
             btnConfirmBan.style.display = 'none';
             btnConfirmUnban.style.display = 'block';
@@ -330,6 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Configurar modal para BANEAR
             banModalTitle.textContent = "Banear Usuario";
             banReasonContainer.style.display = 'block';
+            banReason.disabled = false;
             banAlertMessage.style.display = 'block';
             btnConfirmBan.style.display = 'block';
             btnConfirmUnban.style.display = 'none';
@@ -366,6 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         try {
+            // Nota: El backend ya maneja la URL /api/users?id=... para PUT
             const response = await fetch(`/api/users?id=${id}`, {
                 method: "PUT",
                 headers: {
