@@ -1,8 +1,10 @@
 // users.js
 document.addEventListener("DOMContentLoaded", () => {
+
     // 🛑 CORRECCIÓN CLAVE: Usar sessionStorage para la verificación de token y rol
+    // ESTA VERIFICACIÓN AHORA FUNCIONARÁ CORRECTAMENTE GRACIAS AL CAMBIO EN login.js
     if (!sessionStorage.getItem("token") || sessionStorage.getItem("role") !== "admin") {
-        window.location.href = "/";
+        window.location.href = "/"; // Redirige a index.html (que está en la raíz)
         return;
     }
 
@@ -283,6 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await fetch(`/api/users?id=${userIdToDelete}`, {
                 method: "DELETE",
                 headers: {
+                    "Content-Type": "application/json",
                     // 🛑 CORRECCIÓN: Usar sessionStorage
                     Authorization: `Bearer ${sessionStorage.getItem("token")}`,
                 },

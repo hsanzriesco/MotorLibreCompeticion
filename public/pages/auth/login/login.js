@@ -1,3 +1,4 @@
+// login.js
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("loginForm");
     const forgotPasswordLink = document.getElementById("forgotPasswordLink");
@@ -59,26 +60,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
+                // Asegúrate de que tu Backend devuelve: { success: true, token: '...', user: { id:..., role: '...' } }
                 const user = result.user;
+                const token = result.token; // 🚨 ASUMIMOS QUE EL TOKEN VIENE EN result.token
 
-                // ⭐⭐⭐ SOLUCIÓN: guardar también club_id ⭐⭐⭐ (Mantenido de tu código original)
-                sessionStorage.setItem("usuario", JSON.stringify({
+                // ⭐⭐⭐ INICIO DE LA SOLUCIÓN CLAVE ⭐⭐⭐
+                // 1. Guardamos las variables que users.js espera.
+                if (token && user.role) {
+                    sessionStorage.setItem("token", token);
+                    sessionStorage.setItem("role", user.role);
+                } else {
+                    // Si el backend no envía el token o el rol, alertamos
+                    console.error("Falta token o rol en la respuesta del servidor.");
+                    mostrarAlerta("Error de sesión: Falta información clave del usuario.", "error");
+                    return;
+                }
+
+                // 2. Guardamos el objeto completo del usuario (para compatibilidad con otros scripts)
+                const userData = {
                     id: user.id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
                     club_id: user.club_id || null,
-                    password: password
-                }));
+                    // Ya no guardamos la contraseña, solo el rol y el token son necesarios
+                };
 
-                localStorage.setItem("usuario", JSON.stringify({
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    club_id: user.club_id || null,
-                    password: password
-                }));
+                sessionStorage.setItem("usuario", JSON.stringify(userData));
+                localStorage.setItem("usuario", JSON.stringify(userData));
+                // ⭐⭐⭐ FIN DE LA SOLUCIÓN CLAVE ⭐⭐⭐
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
@@ -97,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Olvidé mi contraseña
+    // Olvidé mi contraseña (no modificado)
     if (forgotPasswordLink && emailRequestForm && sendResetEmailBtn) {
 
         forgotPasswordLink.addEventListener("click", (e) => {
