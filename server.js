@@ -15,6 +15,7 @@ app.post('/api/users', loginUserHandler);
 
 app.all('/api/carGarage', carGarageHandler);
 app.use("/api/noticias", noticiasRoutes);
+app.use(express.static(__dirname));
 
 
 // **¡ELIMINAR ESTA LÍNEA!** Vercel debe manejar api/resetPassword.js directamente.
