@@ -3,7 +3,7 @@
 
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken"; // 👈 IMPORTANTE: Añadir JWT para la generación del token
+import jwt from "jsonwebtoken";
 
 // --- CONFIGURACIÓN DE BASE DE DATOS ---
 const pool = new Pool({
@@ -15,7 +15,7 @@ const pool = new Pool({
 // En producción, ¡usa una cadena larga y aleatoria en tu .env!
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_produccion';
 
-// Se requiere configurar `bodyParser: false` para usar `getBody` en userActionHandler y userListCrudHandler
+// Se requiere configurar `bodyParser: false` para usar `getBody`
 export const config = {
     api: { bodyParser: false },
 };
@@ -25,13 +25,43 @@ const getBody = async (req) => {
     try {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
-        // Retorna null si el cuerpo está vacío o es inválido después de concatenar
         const buffer = Buffer.concat(chunks);
         if (buffer.length === 0) return null;
         return JSON.parse(buffer.toString());
     } catch (e) {
-        // En caso de error de parseo, retorna null
         return null;
+    }
+};
+
+// 🔒 NUEVO MIDDLEWARE DE SEGURIDAD: Verifica el JWT y el Rol de Administrador
+/**
+ * Verifica el JWT del header de autorización y asegura que el usuario sea 'admin'.
+ * @param {object} req El objeto de la solicitud (Request)
+ * @returns {object} El payload decodificado del JWT si es válido y es admin.
+ * @throws {Error} Si el token es inválido, no existe, o el usuario no es admin.
+ */
+const verifyAdmin = (req) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.error("Acceso denegado: Token no proporcionado.");
+        throw new Error('No autorizado: Token de autenticación requerido.');
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded.role !== 'admin') {
+            console.error(`Acceso denegado: Rol '${decoded.role}' no es 'admin'.`);
+            throw new Error('Acceso denegado: Se requiere rol de administrador.');
+        }
+
+        return decoded;
+    } catch (e) {
+        console.error("Fallo al verificar el token JWT:", e.message);
+        throw new Error('No autorizado: Token inválido o expirado.');
     }
 };
 
@@ -45,18 +75,18 @@ async function createUserHandler(req, res) {
 
     try {
         console.log("--- REGISTRO PÚBLICO INICIADO ---");
-        // Utilizamos getBody ya que bodyParser está desactivado
         const body = await getBody(req);
         if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
         const { name, email, password } = body;
-        const roleToAssign = body.role || 'user'; // Por defecto 'user' si no se especifica
+        const roleToAssign = body.role || 'user';
 
         if (!name || !email || !password) {
             console.error("Error 400: Campos requeridos faltantes.");
             return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
         }
 
+        // Revisión de usuario existente por email o nombre
         const existingUser = await pool.query(
             "SELECT * FROM users WHERE email = $1 OR name = $2",
             [email, name]
@@ -73,7 +103,6 @@ async function createUserHandler(req, res) {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // << CAMBIO: Se incluye is_banned en el RETURNING
         const result = await pool.query(
             "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, is_banned",
             [name, email, hashedPassword, roleToAssign]
@@ -84,7 +113,6 @@ async function createUserHandler(req, res) {
     } catch (error) {
         console.error("### FALLO CRÍTICO EN CREATEUSER ###");
         console.error("Detalle del error:", error);
-        // Manejo de error de unicidad (si está configurado en DB)
         if (error.code === "23505") {
             return res.status(409).json({
                 success: false,
@@ -106,31 +134,31 @@ async function loginUserHandler(req, res) {
 
     try {
         console.log("--- LOGIN INICIADO ---");
-        // Utilizamos getBody ya que bodyParser está desactivado
         const body = await getBody(req);
         if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
-        // En el login, se busca por nombre (username), no por email
+        // Acepta username (nombre de usuario o email) y password
         const { username, password } = body;
 
         if (!username || !password) {
             return res.status(400).json({ success: false, message: "Faltan datos" });
         }
 
+        // 🔑 CAMBIO CLAVE: Búsqueda por 'name' O 'email'
         const { rows } = await pool.query(
-            "SELECT id, name, email, role, password, is_banned FROM users WHERE name = $1",
+            "SELECT id, name, email, role, password, is_banned FROM users WHERE name = $1 OR email = $1",
             [username]
         );
 
         if (rows.length === 0) {
-            console.log(`Login fallido: Usuario no encontrado (${username}).`);
+            console.log(`Login fallido: Usuario o Email no encontrado (${username}).`);
             return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
         }
 
         const user = rows[0];
         const hashedPassword = user.password;
 
-        // ⚠️ Mejorado: Verificar is_banned directamente desde la tabla users 
+        // Verificar is_banned
         if (user.is_banned) {
             const banInfo = await pool.query(
                 'SELECT ban_reason FROM usuarios_baneados WHERE user_id = $1',
@@ -152,23 +180,20 @@ async function loginUserHandler(req, res) {
             return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
         }
 
-        // 🏆 SOLUCIÓN CLAVE: GENERAR EL JWT
+        // Generar el JWT
         const token = jwt.sign(
-            // Payload (Datos que contendrá el token, solo lo necesario)
             { id: user.id, role: user.role },
-            // Secreto (Usar el secreto definido arriba)
             JWT_SECRET,
-            // Opciones (Token válido por 24 horas)
             { expiresIn: '24h' }
         );
 
         console.log(`LOGIN EXITOSO para ${username}.`);
 
-        // 🏆 SOLUCIÓN CLAVE: Devolver el token
+        // Devolver el token
         return res.status(200).json({
             success: true,
             message: "Inicio de sesión correcto",
-            token: token, // 👈 Se añade el token aquí
+            token: token,
             user: {
                 id: user.id,
                 name: user.name,
@@ -193,7 +218,6 @@ async function userActionHandler(req, res) {
 
     try {
         if (method === "PUT") {
-            // Usamos getBody porque bodyParser está desactivado para esta ruta
             const body = await getBody(req);
             if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
@@ -218,6 +242,20 @@ async function userActionHandler(req, res) {
                 if (!id || !newName || !newEmail)
                     return res.status(400).json({ success: false, message: "Datos inválidos (ID, nombre o email faltante)" });
 
+                // Validación de unicidad antes de actualizar
+                const existingUser = await pool.query(
+                    "SELECT id FROM users WHERE (email = $1 OR name = $2) AND id != $3",
+                    [newEmail, newName, id]
+                );
+
+                if (existingUser.rows.length > 0) {
+                    return res.status(409).json({
+                        success: false,
+                        message: "El nuevo nombre o correo ya están registrados por otro usuario.",
+                    });
+                }
+
+
                 await pool.query("UPDATE users SET name = $1, email = $2 WHERE id = $3", [newName, newEmail, id]);
 
                 return res.status(200).json({ success: true, message: "Perfil actualizado correctamente." });
@@ -234,7 +272,7 @@ async function userActionHandler(req, res) {
         if (error.code === "23505") {
             return res.status(409).json({
                 success: false,
-                message: "El nombre o correo ya están registrados."
+                message: "El nombre o correo ya están registrados.",
             });
         }
         return res.status(500).json({ success: false, message: "Error interno del servidor." });
@@ -243,19 +281,21 @@ async function userActionHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 4. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role) - CORREGIDO
+// 4. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role) - AHORA PROTEGIDO
 // ------------------------------------------------------------------------------------------------
 async function userListCrudHandler(req, res) {
     const { method, query } = req;
     let body;
 
     try {
-        // Cargar el cuerpo manualmente si el método es POST o PUT, ya que bodyParser está desactivado
+        // 🚨 CAMBIO CLAVE: Ejecutar la verificación de admin al inicio del CRUD
+        verifyAdmin(req);
+        console.log(`Acceso de administrador verificado para la operación ${method}.`);
+
+        // Cargar el cuerpo manualmente si el método es POST o PUT
         if (method === "POST" || method === "PUT") {
             body = await getBody(req);
             if (!body) {
-                // Si es un PUT, puede ser que solo se envió el ID sin cuerpo, pero en Admin CRUD siempre esperamos un cuerpo
-                // Si es un POST (creación), el cuerpo es obligatorio
                 if (method === "POST" || Object.keys(query).length === 0) {
                     return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
                 }
@@ -265,8 +305,7 @@ async function userListCrudHandler(req, res) {
         // GET: LISTAR TODOS LOS USUARIOS O UNO POR ID
         if (method === "GET") {
             if (query.id) {
-                // Obtener un solo usuario por ID (usado para cargar el modal de edición)
-                // << CAMBIO: Se incluye is_banned en la consulta SELECT
+                // Obtener un solo usuario por ID
                 const result = await pool.query(
                     "SELECT id, name, email, role, created_at, club_id, is_banned FROM users WHERE id = $1",
                     [query.id]
@@ -278,7 +317,6 @@ async function userListCrudHandler(req, res) {
             }
 
             // LISTAR TODOS
-            // << CAMBIO: Se incluye is_banned en la consulta SELECT
             const result = await pool.query(
                 "SELECT id, name, email, role, created_at, club_id, is_banned FROM users ORDER BY id DESC"
             );
@@ -291,7 +329,6 @@ async function userListCrudHandler(req, res) {
             const { name, email, password, role } = body;
 
             if (!name || !email || !password || !role) {
-                // Aquí se devuelve el 400 que estabas viendo!
                 return res.status(400).json({ success: false, message: "Faltan campos requeridos." });
             }
 
@@ -311,7 +348,6 @@ async function userListCrudHandler(req, res) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            // << CAMBIO: Se incluye is_banned en el RETURNING
             const result = await pool.query(
                 "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, club_id, is_banned",
                 [name, email, hashedPassword, role]
@@ -324,7 +360,6 @@ async function userListCrudHandler(req, res) {
         // PUT: ACTUALIZAR USUARIO (Admin, requiere ID en query)
         if (method === "PUT") {
             const { id } = query;
-            // 🌟 CAMBIO CLAVE: Extraer is_banned y ban_reason del body de la solicitud 🌟
             const { name, email, password, role, club_id, is_banned, ban_reason } = body;
 
             if (!id) {
@@ -351,7 +386,6 @@ async function userListCrudHandler(req, res) {
                     await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
                     console.log(`Usuario ${id} baneado. Razón: ${ban_reason.trim()}`);
 
-                    // Retornamos inmediatamente para completar la acción de baneo
                     return res.status(200).json({ success: true, message: 'Usuario baneado con éxito.' });
 
                 } else if (is_banned === false) {
@@ -367,7 +401,6 @@ async function userListCrudHandler(req, res) {
                     await pool.query('UPDATE users SET is_banned = FALSE WHERE id = $1', [id]);
                     console.log(`Usuario ${id} desbaneado.`);
 
-                    // Retornamos inmediatamente para completar la acción de desbaneo
                     return res.status(200).json({ success: true, message: 'Usuario desbaneado con éxito.' });
                 }
             }
@@ -375,6 +408,17 @@ async function userListCrudHandler(req, res) {
 
 
             // --- Lógica de Actualización de Perfil (Solo se ejecuta si NO se hizo una acción de baneo) ---
+
+            // Validación de unicidad de nombre/email (excluyendo al propio usuario)
+            if (name || email) {
+                const checkConflict = await pool.query(
+                    "SELECT id FROM users WHERE (email = $1 OR name = $2) AND id != $3",
+                    [email, name, id]
+                );
+                if (checkConflict.rows.length > 0) {
+                    return res.status(409).json({ success: false, message: "El nuevo nombre o correo ya están registrados." });
+                }
+            }
 
             // Lógica de validación de club_id (Mantenida)
             if (club_id !== undefined && club_id !== null) {
@@ -406,7 +450,6 @@ async function userListCrudHandler(req, res) {
                     password = COALESCE($4, password),
                     club_id = $5
                 WHERE id = $6
-                -- << CAMBIO: Se incluye is_banned en el RETURNING
                 RETURNING id, name, email, role, created_at, club_id, is_banned 
             `;
 
@@ -448,11 +491,15 @@ async function userListCrudHandler(req, res) {
     } catch (error) {
         console.error("Error en userListCrudHandler:", error);
 
-        // << CAMBIO: Manejo de error específico para llave foránea (si se intenta eliminar un club antes que los usuarios, por ejemplo)
+        // Manejo de errores de autorización (Middleware)
+        if (error.message.includes('No autorizado') || error.message.includes('Acceso denegado')) {
+            return res.status(401).json({ success: false, message: error.message });
+        }
+
+        // Manejo de error específico para llave foránea (si se intenta eliminar un club antes que los usuarios, por ejemplo)
         if (error.code === "23503") {
             return res.status(409).json({ success: false, message: "No se puede eliminar: está siendo referenciado por otra entidad (ej. un club)." });
         }
-        // << FIN CAMBIO
 
         if (error.code === "23505") {
             return res.status(409).json({ success: false, message: "Nombre o correo ya registrados." });
@@ -471,12 +518,7 @@ export default async function usersCombinedHandler(req, res) {
     const action = query.action;
 
     // 1. REGISTRO PÚBLICO (POST simple a /api/users sin action)
-    // 💡 CAMBIO CLAVE: Mover esta condición antes del CRUD de Admin para capturar el POST simple.
-    // Solo si es POST y NO tiene la acción 'login' o 'crud', se asume que es registro.
     if (method === "POST" && !action) {
-        // Asumimos que un POST sin 'action' es la creación de un usuario público/normal (Registro)
-        // Nota: Si el POST de Admin no pasa 'role' en el body, también caerá aquí y el handler lo tratará.
-        // Lo importante es que el POST simple de registro público caiga aquí.
         return createUserHandler(req, res);
     }
 
@@ -486,16 +528,16 @@ export default async function usersCombinedHandler(req, res) {
     }
 
     // 3. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
+    // NOTA: Esta ruta NO está protegida por admin, se asume que la aplicación frontend
+    // maneja la identidad del usuario a través de su propio JWT o sesión.
     if (method === "PUT" && (action === "updatePassword" || action === "updateName")) {
         return userActionHandler(req, res);
     }
 
-    // 4. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT sin acción, o POST con action=crud o POST con role en el body)
-    // Si llegamos a POST aquí, es porque NO cumplió la condición de arriba (no es POST simple, sino que tiene action o lo maneja por el body)
+    // 4. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT/POST que no cumplen las condiciones anteriores)
     if (method === "GET" || method === "DELETE" || method === "PUT" || method === "POST") {
         return userListCrudHandler(req, res);
     }
-
 
     // Método o ruta no reconocida
     return res.status(405).json({ success: false, message: "Método o ruta de usuario no reconocida." });
