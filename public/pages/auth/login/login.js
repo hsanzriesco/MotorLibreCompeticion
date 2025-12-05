@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const passwordInput = document.getElementById("password");
     const togglePassword = document.getElementById("togglePassword");
 
+    // Asumimos que esta función está definida en otro script global
     const mostrarAlerta = window.mostrarAlerta;
 
     // Mostrar / ocultar contraseña
@@ -28,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const usernameInput = document.getElementById("username");
             const passwordInput = document.getElementById("password");
-            // Nota: Aquí se podría añadir la comprobación de "Recuérdame" si tienes un checkbox
 
             const username = usernameInput.value.trim();
             const password = passwordInput.value.trim();
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
-                // 🚀 CAMBIO CLAVE AQUÍ: Se añade ?action=login para que el handler unificado sepa que debe iniciar sesión.
+                // Llamada al API de login
                 const res = await fetch("/api/users?action=login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     result = JSON.parse(raw);
                 } catch {
-                    mostrarAlerta("Error inesperado del servidor.", "error");
+                    mostrarAlerta("Error inesperado del servidor. Respuesta no JSON.", "error");
                     return;
                 }
 
@@ -61,13 +61,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // Asegúrate de que tu Backend devuelve: { success: true, token: '...', user: { id:..., role: '...' } }
                 const user = result.user;
-                const token = result.token; // 🚨 ASUMIMOS QUE EL TOKEN VIENE EN result.token
+                const token = result.token;
 
-                // ⭐⭐⭐ INICIO DE LAS CORRECCIONES CLAVE ⭐⭐⭐
-
-                if (!token || !user.role) {
+                // ⭐⭐ VERIFICACIÓN DE DATOS ESENCIALES ⭐⭐
+                if (!token || !user || !user.role) {
                     console.error("Falta token o rol en la respuesta del servidor.");
                     mostrarAlerta("Error de sesión: Falta información clave del usuario.", "error");
                     return;
@@ -83,26 +81,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const userDataString = JSON.stringify(userData);
 
-                // 1. Guardar el token y el rol en SESSIONSTORAGE (para la sesión actual)
+                // Guardar la sesión en SESSIONSTORAGE (usado por users.js)
                 sessionStorage.setItem("token", token);
                 sessionStorage.setItem("role", user.role);
                 sessionStorage.setItem("usuario", userDataString);
 
-                // 2. Guardar el token, rol y usuario en LOCALSTORAGE (para persistencia)
-                // 🛑 CRÍTICO: Si el usuario quiere persistencia (como en el admin), esto debe guardarse
-                localStorage.setItem("token", token);
-                localStorage.setItem("role", user.role);
-                localStorage.setItem("usuario", userDataString);
-
-                // ⭐⭐⭐ FIN DE LAS CORRECCIONES CLAVE ⭐⭐⭐
+                // Limpiar LOCALSTORAGE para evitar conflictos si no se usa persistencia
+                localStorage.clear();
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
+                // 🟢 CORRECCIÓN DE RUTAS DE REDIRECCIÓN A ABSOLUTAS (desde la raíz /)
                 setTimeout(() => {
                     if (user.role === "admin") {
-                        window.location.href = "../../dashboard/admin/admin.html";
+                        // Redirigir a la página de gestión de usuarios (asumiendo que es la ruta deseada)
+                        window.location.href = "/dashboard/admin/users.html";
                     } else {
-                        window.location.href = "../../../index.html";
+                        // Redirigir al índice para usuarios normales
+                        window.location.href = "/index.html";
                     }
                 }, 1200);
 
@@ -139,7 +135,6 @@ document.addEventListener("DOMContentLoaded", () => {
             sendResetEmailBtn.textContent = "Verificando...";
 
             try {
-                // Asumiendo que esta API de forgotPassword.js sigue existiendo
                 const res = await fetch("/api/forgotPassword", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
