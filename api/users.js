@@ -84,6 +84,7 @@ async function createUserHandler(req, res) {
     } catch (error) {
         console.error("### FALLO CRÍTICO EN CREATEUSER ###");
         console.error("Detalle del error:", error);
+        // Manejo de error de unicidad (si está configurado en DB)
         if (error.code === "23505") {
             return res.status(409).json({
                 success: false,
@@ -109,6 +110,7 @@ async function loginUserHandler(req, res) {
         const body = await getBody(req);
         if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
+        // En el login, se busca por nombre (username), no por email
         const { username, password } = body;
 
         if (!username || !password) {
@@ -289,6 +291,7 @@ async function userListCrudHandler(req, res) {
             const { name, email, password, role } = body;
 
             if (!name || !email || !password || !role) {
+                // Aquí se devuelve el 400 que estabas viendo!
                 return res.status(400).json({ success: false, message: "Faltan campos requeridos." });
             }
 
@@ -339,8 +342,8 @@ async function userListCrudHandler(req, res) {
                     // 1. BANEAR: Insertar o actualizar la razón en la tabla 'usuarios_baneados'
                     await pool.query(
                         `INSERT INTO usuarios_baneados (user_id, ban_reason) 
-                          VALUES ($1, $2)
-                          ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
+                         VALUES ($1, $2)
+                         ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
                         [id, ban_reason.trim()]
                     );
 
@@ -467,27 +470,30 @@ export default async function usersCombinedHandler(req, res) {
     const { method, query } = req;
     const action = query.action;
 
-    // 1. LOGIN (POST con ?action=login)
+    // 1. REGISTRO PÚBLICO (POST simple a /api/users sin action)
+    // 💡 CAMBIO CLAVE: Mover esta condición antes del CRUD de Admin para capturar el POST simple.
+    // Solo si es POST y NO tiene la acción 'login' o 'crud', se asume que es registro.
+    if (method === "POST" && !action) {
+        // Asumimos que un POST sin 'action' es la creación de un usuario público/normal (Registro)
+        // Nota: Si el POST de Admin no pasa 'role' en el body, también caerá aquí y el handler lo tratará.
+        // Lo importante es que el POST simple de registro público caiga aquí.
+        return createUserHandler(req, res);
+    }
+
+    // 2. LOGIN (POST con ?action=login)
     if (method === "POST" && action === "login") {
         return loginUserHandler(req, res);
     }
 
-    // 2. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
+    // 3. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
     if (method === "PUT" && (action === "updatePassword" || action === "updateName")) {
         return userActionHandler(req, res);
     }
 
-    // 3. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT sin acción, y POST con role)
-    if (method === "GET" || method === "DELETE" || method === "PUT" || (method === "POST" && action !== "login")) {
-        // En Next.js, un POST sin action y con 'role' en el body sería manejado aquí si se usa getBody
+    // 4. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT sin acción, o POST con action=crud o POST con role en el body)
+    // Si llegamos a POST aquí, es porque NO cumplió la condición de arriba (no es POST simple, sino que tiene action o lo maneja por el body)
+    if (method === "GET" || method === "DELETE" || method === "PUT" || method === "POST") {
         return userListCrudHandler(req, res);
-    }
-
-    // 4. REGISTRO PÚBLICO (POST simple a /api/users sin parámetros de acción ni rol en el body)
-    // Nota: Aunque el ruteador intenta capturar el POST admin arriba, si no tiene 'role' explícito en el body, caerá aquí.
-    // Usamos esta lógica como fallback si no es ninguna de las acciones anteriores.
-    if (method === "POST") {
-        return createUserHandler(req, res);
     }
 
 
