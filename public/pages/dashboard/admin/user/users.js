@@ -1,16 +1,22 @@
 // users.js
 document.addEventListener("DOMContentLoaded", () => {
-    // Verificar si el usuario es administrador antes de cargar la página
-    if (!localStorage.getItem("token") || localStorage.getItem("role") !== "admin") {
+    // 🛑 CORRECCIÓN CLAVE: Usar sessionStorage para la verificación de token y rol
+    if (!sessionStorage.getItem("token") || sessionStorage.getItem("role") !== "admin") {
         window.location.href = "/";
         return;
     }
 
+    // Asegúrate de que tienes una función 'mostrarAlerta' globalmente accesible 
+    // o definida en otro script. Si no la tienes, necesitarás definirla aquí 
+    // o usar 'console.error/log'. Por ahora, asumo que está disponible.
+
     const usersTableBody = document.getElementById("usersTableBody");
+    // Inicialización de Modales
     const userModal = new bootstrap.Modal(document.getElementById("userModal"));
-    const banUserModal = new bootstrap.Modal(document.getElementById("banUserModal")); // 🌟 NUEVO MODAL
+    const banUserModal = new bootstrap.Modal(document.getElementById("banUserModal")); 
     const deleteConfirmModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
 
+    // Elementos del formulario y modales
     const userForm = document.getElementById("userForm");
     const userId = document.getElementById("userId");
     const userName = document.getElementById("userName");
@@ -69,7 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
                 },
             });
 
@@ -175,7 +182,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await fetch(`/api/users?id=${id}`, {
                 method: "GET",
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
                 },
             });
 
@@ -243,7 +251,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: method,
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
                 },
                 // Usamos JSON.stringify(bodyData) aquí porque getBody en el API maneja la lectura cruda
                 body: JSON.stringify(bodyData), 
@@ -274,7 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await fetch(`/api/users?id=${userIdToDelete}`, {
                 method: "DELETE",
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
                 },
             });
 
@@ -357,7 +367,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    // 🛑 CORRECCIÓN: Usar sessionStorage
+                    Authorization: `Bearer ${sessionStorage.getItem("token")}`,
                 },
                 body: JSON.stringify(bodyData),
             });
