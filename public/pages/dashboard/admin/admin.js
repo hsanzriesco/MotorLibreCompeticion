@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // Comprobación de rol de administrador (se verifica que el rol exista y sea 'admin')
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
         // Limpiar ambas sesiones para evitar bucles si la información es corrupta/inválida
         sessionStorage.removeItem("usuario");
@@ -29,8 +30,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Redirigir al login
         setTimeout(() => {
-            // Se usa la ruta absoluta /pages/auth/login/login.html para mayor seguridad
-            window.location.href = "/pages/auth/login/login.html";
+            // 🟢 CORRECCIÓN DE RUTA: Se utiliza la ruta absoluta asumida: /auth/login.html
+            // Si el login está en /public/auth/login.html, su ruta web es /auth/login.html
+            window.location.href = "/auth/login.html"; // <--- RUTA CORREGIDA
         }, 1500);
         return;
     }
