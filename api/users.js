@@ -11,6 +11,11 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false },
 });
 
+// Se requiere configurar `bodyParser: false` en Next.js para usar `getBody` en userActionHandler
+export const config = {
+    api: { bodyParser: false },
+};
+
 // 🛠️ HELPER: Función para leer el cuerpo JSON cuando bodyParser está en false (Tomado de userAction.js)
 const getBody = async (req) => {
     try {
@@ -24,7 +29,7 @@ const getBody = async (req) => {
 };
 
 // ------------------------------------------------------------------------------------------------
-// 1. REGISTRO DE USUARIO (Manejo de POST directo /api/users o /api/users?action=create)
+// 1. REGISTRO PÚBLICO (Manejo de POST directo /api/users)
 // ------------------------------------------------------------------------------------------------
 async function createUserHandler(req, res) {
     if (req.method !== "POST") {
@@ -33,6 +38,7 @@ async function createUserHandler(req, res) {
 
     try {
         console.log("--- REGISTRO INICIADO ---");
+        // Nota: Si el bodyParser está activo (que lo está para esta ruta), req.body ya contiene los datos.
         const { name, email, password } = req.body;
         const roleToAssign = req.body.role || 'user'; // Por defecto 'user' si no se especifica
 
@@ -67,7 +73,7 @@ async function createUserHandler(req, res) {
     } catch (error) {
         console.error("### FALLO CRÍTICO EN CREATEUSER ###");
         console.error("Detalle del error:", error);
-        if (error.code === "23505") { // Código de violación de restricción de unicidad
+        if (error.code === "23505") {
             return res.status(409).json({
                 success: false,
                 message: "El nombre o correo ya están registrados.",
@@ -79,9 +85,10 @@ async function createUserHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 2. LOGIN DE USUARIO (Se recomienda un endpoint dedicado como /api/login)
+// 2. LOGIN DE USUARIO (Manejo de POST /api/users?action=login)
 // ------------------------------------------------------------------------------------------------
 export async function loginUserHandler(req, res) {
+    // El ruteador principal ya chequeó que el método sea POST, pero lo dejamos por seguridad.
     if (req.method !== "POST") {
         return res.status(405).json({ success: false, message: "Método no permitido" });
     }
@@ -134,21 +141,15 @@ export async function loginUserHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 3. ACCIONES DE USUARIO (UPDATE de Perfil/Contraseña - Tomado de userAction.js)
+// 3. ACCIONES DE USUARIO (UPDATE de Perfil/Contraseña - Manejo de PUT /api/users?action=...)
 // ------------------------------------------------------------------------------------------------
-// Se requiere configurar `bodyParser: false` en Next.js para usar `getBody`
-export const config = {
-    api: { bodyParser: false },
-};
-
 async function userActionHandler(req, res) {
-    const { method } = req;
-    const urlParts = new URL(req.url, `http://${req.headers.host}`);
-    const action = urlParts.searchParams.get("action");
+    const { method, query } = req;
+    const action = query.action;
 
     try {
         if (method === "PUT") {
-            const body = await getBody(req);
+            const body = await getBody(req); // Usamos getBody porque bodyParser está desactivado para esta ruta
             if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
             // 3.1. ACTUALIZACIÓN DE CONTRASEÑA
@@ -178,7 +179,7 @@ async function userActionHandler(req, res) {
             }
         }
 
-        // Si no es un método/acción conocido
+        // Si no es un método PUT o una acción conocida
         return res.status(405).json({
             success: false,
             message: "Ruta o método no válido en userActions.js",
@@ -197,10 +198,10 @@ async function userActionHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 4. LISTADO, CREACIÓN (Admin), ACTUALIZACIÓN (Admin) y ELIMINACIÓN (Admin) (Tomado de userList.js)
+// 4. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role)
 // ------------------------------------------------------------------------------------------------
 async function userListCrudHandler(req, res) {
-    const { method } = req;
+    const { method, query, body } = req;
 
     try {
         // GET: LISTAR TODOS LOS USUARIOS
@@ -211,10 +212,9 @@ async function userListCrudHandler(req, res) {
             return res.status(200).json({ success: true, data: result.rows });
         }
 
-        // POST: CREAR NUEVO USUARIO (similar a createUserHandler, pero asume que el rol se pasa explícitamente)
+        // POST: CREAR NUEVO USUARIO (Admin, requiere 'role' en el body)
         if (method === "POST") {
-            // Nota: Esta lógica es redundante con `createUserHandler`, pero se mantiene por si /api/users tiene lógica distinta a /api/createUser
-            const { name, email, password, role } = req.body;
+            const { name, email, password, role } = body;
 
             if (!name || !email || !password || !role) {
                 return res.status(400).json({ success: false, message: "Faltan campos requeridos." });
@@ -243,15 +243,16 @@ async function userListCrudHandler(req, res) {
             return res.status(201).json({ success: true, user: result.rows[0] });
         }
 
-        // PUT: ACTUALIZAR USUARIO O UNIRLO A UN CLUB
+        // PUT: ACTUALIZAR USUARIO O UNIRLO A UN CLUB (Admin, requiere ID en query)
         if (method === "PUT") {
-            const { id } = req.query;
-            const { name, email, password, role, club_id } = req.body;
+            const { id } = query;
+            const { name, email, password, role, club_id } = body;
 
             if (!id) {
                 return res.status(400).json({ success: false, message: "ID requerido" });
             }
 
+            // Lógica de validación de club_id
             if (club_id !== undefined && club_id !== null) {
                 const userCheck = await pool.query(
                     "SELECT club_id FROM users WHERE id = $1",
@@ -299,9 +300,9 @@ async function userListCrudHandler(req, res) {
             return res.status(200).json({ success: true, user: result.rows[0] });
         }
 
-        // DELETE: ELIMINAR USUARIO
+        // DELETE: ELIMINAR USUARIO (Admin, requiere ID en query)
         if (method === "DELETE") {
-            const { id } = req.query; // Asume que el ID se pasa como query param
+            const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
 
             const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
@@ -328,27 +329,33 @@ async function userListCrudHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 5. EXPORTACIONES DEL HANDLER PRINCIPAL (Ruteador)
+// 5. EXPORTACIONES DEL HANDLER PRINCIPAL (Ruteador CORREGIDO)
 // ------------------------------------------------------------------------------------------------
-// Este handler exportado actuará como el punto de entrada principal para /api/users
 export default async function usersCombinedHandler(req, res) {
-    const { url } = req;
+    const { method, query } = req;
+    const action = query.action; // Parámetro principal para diferenciar acciones
 
-    // Ruteo por nombre de archivo/lógica original. Asume:
-    // /api/users/login -> loginUserHandler
-    // /api/users/actions -> userActionHandler
-    // /api/users (GET, POST, PUT, DELETE) -> userListCrudHandler
-
-    if (url.includes("/login")) {
+    // 1. LOGIN (POST con ?action=login)
+    if (method === "POST" && action === "login") {
         return loginUserHandler(req, res);
-    } else if (url.includes("/actions") || req.query.action) {
-        // userActionHandler necesita el getBody por su configuración
+    }
+
+    // 2. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
+    if (method === "PUT" && (action === "updatePassword" || action === "updateName")) {
         return userActionHandler(req, res);
-    } else if (req.method === "POST" && !req.query.role) {
-        // Si es un POST y no tiene role explícito, asume el registro de usuario normal
+    }
+
+    // 3. REGISTRO PÚBLICO (POST simple a /api/users sin parámetros de acción ni rol)
+    if (method === "POST" && !action && !req.body?.role) {
         return createUserHandler(req, res);
-    } else {
-        // Para GET, PUT (admin), DELETE (admin) y POST (admin con rol)
+    }
+
+    // 4. CRUD DE ADMINISTRACIÓN (GET, DELETE, PUT sin acción, y POST con role)
+    // Cubre: Listar, Admin Update (con ID), Eliminar (con ID), y Admin Create (con role)
+    if (method === "GET" || method === "DELETE" || method === "PUT" || (method === "POST" && req.body?.role)) {
         return userListCrudHandler(req, res);
     }
+
+    // Método o ruta no reconocida
+    return res.status(405).json({ success: false, message: "Método o ruta de usuario no reconocida." });
 }
