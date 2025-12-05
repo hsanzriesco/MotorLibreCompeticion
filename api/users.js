@@ -68,8 +68,9 @@ async function createUserHandler(req, res) {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // << CAMBIO: Se incluye is_banned en el RETURNING
         const result = await pool.query(
-            "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
+            "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, is_banned",
             [name, email, hashedPassword, roleToAssign]
         );
         console.log(`Usuario ${name} insertado en DB.`);
@@ -128,6 +129,22 @@ async function loginUserHandler(req, res) {
             console.log(`Login fallido: Contraseña incorrecta para ${username}.`);
             return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
         }
+
+        // << CAMBIO: Lógica de VERIFICACIÓN DE BANEO
+        const isBanned = await pool.query(
+            'SELECT razon FROM usuarios_baneados WHERE user_id = $1',
+            [user.id]
+        );
+
+        if (isBanned.rows.length > 0) {
+            console.log(`Login bloqueado: Usuario baneado (${username}).`);
+            const banReason = isBanned.rows[0].razon;
+            return res.status(403).json({
+                success: false,
+                message: `Tu cuenta ha sido suspendida. Razón: ${banReason || 'Sin especificar.'}`
+            });
+        }
+        // << FIN CAMBIO
 
         console.log(`LOGIN EXITOSO para ${username}.`);
         return res.status(200).json({
@@ -230,8 +247,9 @@ async function userListCrudHandler(req, res) {
         if (method === "GET") {
             if (query.id) {
                 // Obtener un solo usuario por ID (usado para cargar el modal de edición)
+                // << CAMBIO: Se incluye is_banned en la consulta SELECT
                 const result = await pool.query(
-                    "SELECT id, name, email, role, created_at, club_id FROM users WHERE id = $1",
+                    "SELECT id, name, email, role, created_at, club_id, is_banned FROM users WHERE id = $1",
                     [query.id]
                 );
                 if (result.rows.length === 0) {
@@ -241,8 +259,9 @@ async function userListCrudHandler(req, res) {
             }
 
             // LISTAR TODOS
+            // << CAMBIO: Se incluye is_banned en la consulta SELECT
             const result = await pool.query(
-                "SELECT id, name, email, role, created_at, club_id FROM users ORDER BY id DESC"
+                "SELECT id, name, email, role, created_at, club_id, is_banned FROM users ORDER BY id DESC"
             );
             return res.status(200).json({ success: true, data: result.rows });
         }
@@ -272,8 +291,9 @@ async function userListCrudHandler(req, res) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
+            // << CAMBIO: Se incluye is_banned en el RETURNING
             const result = await pool.query(
-                "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, club_id",
+                "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, club_id, is_banned",
                 [name, email, hashedPassword, role]
             );
 
@@ -284,7 +304,8 @@ async function userListCrudHandler(req, res) {
         // PUT: ACTUALIZAR USUARIO (Admin, requiere ID en query)
         if (method === "PUT") {
             const { id } = query;
-            const { name, email, password, role, club_id } = body;
+            // << CAMBIO: Extraer is_banned del body de la solicitud
+            const { name, email, password, role, club_id, is_banned } = body;
 
             if (!id) {
                 return res.status(400).json({ success: false, message: "ID requerido" });
@@ -311,6 +332,33 @@ async function userListCrudHandler(req, res) {
                 hashedPassword = await bcrypt.hash(password, salt);
             }
 
+            // << CAMBIO: NUEVA LÓGICA DE BANEO/DESBANEO
+            if (is_banned !== undefined) {
+                if (is_banned === true) {
+                    // 1. BANEAR: Insertar en la tabla 'usuarios_baneados'
+                    await pool.query(
+                        `INSERT INTO usuarios_baneados (user_id, razon) 
+                         VALUES ($1, $2)
+                         ON CONFLICT (user_id) DO NOTHING`,
+                        [id, 'Baneado por el administrador']
+                    );
+                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
+                    await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
+                    console.log(`Usuario ${id} baneado.`);
+
+                } else if (is_banned === false) {
+                    // 1. DESBANEAR: Eliminar de la tabla 'usuarios_baneados'
+                    await pool.query(
+                        'DELETE FROM usuarios_baneados WHERE user_id = $1',
+                        [id]
+                    );
+                    // 2. Sincronizar columna 'is_banned' en la tabla 'users'
+                    await pool.query('UPDATE users SET is_banned = FALSE WHERE id = $1', [id]);
+                    console.log(`Usuario ${id} desbaneado.`);
+                }
+            }
+            // << FIN CAMBIO DE BANEO/DESBANEO
+
             const updateQuery = `
                 UPDATE users
                 SET name = COALESCE($1, name),
@@ -319,7 +367,8 @@ async function userListCrudHandler(req, res) {
                     password = COALESCE($4, password),
                     club_id = $5
                 WHERE id = $6
-                RETURNING id, name, email, role, created_at, club_id
+                -- << CAMBIO: Se incluye is_banned en el RETURNING
+                RETURNING id, name, email, role, created_at, club_id, is_banned 
             `;
 
             const result = await pool.query(updateQuery, [
@@ -356,6 +405,12 @@ async function userListCrudHandler(req, res) {
 
     } catch (error) {
         console.error("Error en userListCrudHandler:", error);
+
+        // << CAMBIO: Manejo de error específico para llave foránea (si se intenta eliminar un club antes que los usuarios, por ejemplo)
+        if (error.code === "23503") {
+            return res.status(409).json({ success: false, message: "No se puede eliminar: está siendo referenciado por otra entidad (ej. un club)." });
+        }
+        // << FIN CAMBIO
 
         if (error.code === "23505") {
             return res.status(409).json({ success: false, message: "Nombre o correo ya registrados." });
