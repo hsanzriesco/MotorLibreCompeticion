@@ -1,46 +1,17 @@
-// pages/dashboard/admin/users.js
-
+// users.js
 document.addEventListener("DOMContentLoaded", () => {
-    // --- 1. CONFIGURACIÓN Y VARIABLES ---
-
-    // Autenticación (Se mantiene la lógica para ambos almacenamientos, aunque sessionStorage es preferible para admin)
-    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-    let usuario = null;
-    if (storedUser) {
-        try {
-            usuario = JSON.parse(storedUser);
-        } catch (e) {
-            console.error("Error al parsear usuario:", e);
-        }
-    }
-
-    if (!usuario || usuario.role !== "admin") {
-        if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta("Acceso denegado. Solo administradores pueden acceder.", "error", 2000);
-        }
-        setTimeout(() => {
-            window.location.href = "/pages/auth/login/login.html";
-        }, 2000);
+    // Verificar si el usuario es administrador antes de cargar la página
+    if (!localStorage.getItem("token") || localStorage.getItem("role") !== "admin") {
+        window.location.href = "/";
         return;
     }
 
-    // Redirección del logo (Se mantiene)
-    document.getElementById("logoRedirect").addEventListener("click", (e) => {
-        e.preventDefault();
-        window.location.href = "/pages/dashboard/admin/admin.html";
-    });
-
-
-    // Variables DOM
     const usersTableBody = document.getElementById("usersTableBody");
-    const userModalEl = document.getElementById("userModal");
-    const userModal = new bootstrap.Modal(userModalEl);
+    const userModal = new bootstrap.Modal(document.getElementById("userModal"));
+    const banUserModal = new bootstrap.Modal(document.getElementById("banUserModal")); // 🌟 NUEVO MODAL
     const deleteConfirmModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
+
     const userForm = document.getElementById("userForm");
-
-    const btnAddUser = document.getElementById("btnAddUser");
-    const btnConfirmDelete = document.getElementById("btnConfirmDelete");
-
     const userId = document.getElementById("userId");
     const userName = document.getElementById("userName");
     const userEmail = document.getElementById("userEmail");
@@ -49,404 +20,364 @@ document.addEventListener("DOMContentLoaded", () => {
     const userRole = document.getElementById("userRole");
     const confirmPasswordContainer = document.getElementById("confirmPasswordContainer");
 
-    const passwordHelp = document.getElementById("passwordHelp"); // Asegúrate de que este ID exista en tu HTML si lo usas
-    const userToDeleteName = document.getElementById("userToDeleteName");
-    let currentUserIdToDelete = null;
+    let userIdToDelete = null;
 
-    // 🚀 NUEVAS VARIABLES DOM para la RAZÓN DE BANEO 🚀
-    const banReasonModalEl = document.getElementById("banReasonModal");
-    const banReasonModal = new bootstrap.Modal(banReasonModalEl);
-    const banUserIdInput = document.getElementById("banUserId");
-    const banUserNewStatusInput = document.getElementById("banUserNewStatus");
-    const banReasonInput = document.getElementById("banReason");
+    // ------------------------------------------
+    // 🌟 ELEMENTOS DE BANEO 🌟
+    // ------------------------------------------
+    const userIdToBan = document.getElementById("userIdToBan");
+    const userBanName = document.getElementById("userBanName");
+    const banModalTitle = document.getElementById("banModalTitle");
+    const banReasonContainer = document.getElementById("banReasonContainer");
+    const banReason = document.getElementById("banReason");
+    const banAlertMessage = document.getElementById("banAlertMessage");
     const btnConfirmBan = document.getElementById("btnConfirmBan");
-    const reasonInputContainer = document.getElementById("reasonInputContainer");
+    const btnConfirmUnban = document.getElementById("btnConfirmUnban");
+    // ------------------------------------------
 
 
-    // --- 2. FUNCIONES DE UTILIDAD Y VALIDACIÓN ---
+    // --- HELPERS ---
 
-    function validatePassword(password) {
-        const lengthOK = password.length >= 8 && password.length <= 12;
-        const upperCaseOK = /[A-Z]/.test(password);
-        const numberOK = /[0-9]/.test(password);
-        const symbolOK = /[^A-Za-z0-9]/.test(password);
+    // Toggle password visibility
+    document.querySelectorAll('.togglePassword').forEach(toggle => {
+        toggle.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-target');
+            const targetInput = document.getElementById(targetId);
+            const type = targetInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            targetInput.setAttribute('type', type);
+            this.classList.toggle('bi-eye-fill');
+            this.classList.toggle('bi-eye-slash-fill');
+        });
+    });
 
-        if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
-        if (!upperCaseOK) return "Debe contener al menos una letra mayúscula.";
-        if (!numberOK) return "Debe incluir al menos un número.";
-        if (!symbolOK) return "Debe incluir al menos un símbolo.";
-        return null;
-    }
-
-    // --- 3. CRUD: CARGA Y EVENTOS ---
-
-    async function cargarUsuarios() {
-        if (!usersTableBody) return;
-        usersTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">Cargando usuarios...</td></tr>';
-
-        try {
-            const res = await fetch("/api/users");
-            if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
-            const data = await res.json();
-
-            if (!data.success || !Array.isArray(data.data)) throw new Error(data.message || "Fallo al obtener la lista de usuarios.");
-
-            usersTableBody.innerHTML = "";
-
-            data.data.forEach((user) => {
-                const tr = document.createElement("tr");
-
-                // Lógica de Baneo para el Frontend
-                const isBanned = user.is_banned;
-                const banButtonText = isBanned ? 'Desbanear' : 'Banear';
-                const banButtonClass = isBanned ? 'btn-success' : 'btn-danger';
-                const statusBadge = isBanned
-                    ? '<span class="badge bg-danger">Baneado</span>'
-                    : '<span class="badge bg-success">Activo</span>';
-
-                // Generación de la Fila con la nueva columna 'Estado' y el botón de baneo
-                tr.innerHTML = `
-                    <td>${user.name}</td>
-                    <td>${user.email}</td>
-                    <td>${user.role}</td>
-                    <td>${statusBadge}</td>
-                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-warning me-2 edit-user-btn" data-id="${user.id}">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm me-2 btn-ban ${banButtonClass}" 
-                            data-id="${user.id}" 
-                            data-is-banned="${isBanned}">
-                            ${banButtonText}
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger delete-user-btn" data-id="${user.id}">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                `;
-
-                usersTableBody.appendChild(tr);
-            });
-
-        } catch (err) {
-            console.error("Error al cargar usuarios:", err);
-            usersTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar usuarios: ${err.message}</td></tr>`;
+    // Mostrar/Ocultar el campo de confirmación de contraseña en el modal de usuario
+    userPassword.addEventListener('input', () => {
+        if (userPassword.value.trim() !== "" || userId.value === "") {
+            confirmPasswordContainer.style.display = 'block';
+            userPassword2.required = true;
+        } else {
+            confirmPasswordContainer.style.display = 'none';
+            userPassword2.required = false;
         }
-    }
+    });
 
-    // 🚀 NUEVA FUNCIÓN: Envía la petición PUT con la razón del baneo 🚀
-    async function confirmarBaneo(userId, nuevoEstado, razon = null) {
+    // --- CARGAR DATOS ---
 
-        const payload = { is_banned: nuevoEstado };
-
-        if (nuevoEstado) {
-            // Solo incluimos la razón si estamos baneando
-            if (!razon || razon.trim() === "") {
-                if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta("La razón del baneo es obligatoria.", "error");
-                }
-                return;
-            }
-            payload.ban_reason = razon.trim();
-        }
-
+    async function fetchUsers() {
         try {
-            const response = await fetch(`/api/users?id=${userId}`, {
-                method: 'PUT',
+            const response = await fetch("/api/users", {
+                method: "GET",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
-                body: JSON.stringify(payload),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || `Error HTTP: ${response.status}`);
+                mostrarAlerta("Error al cargar usuarios: " + data.message, "danger");
+                return;
             }
 
-            banReasonModal.hide(); // Cerrar el modal de baneo
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(`Usuario ${nuevoEstado ? 'baneado' : 'desbaneado'} con éxito.`, "exito");
-            }
-            cargarUsuarios();
-
+            renderUsersTable(data.data);
         } catch (error) {
-            console.error("Fallo al banear/desbanear:", error);
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(`Error al procesar la acción de baneo: ${error.message}`, "error");
-            }
+            console.error("Error fetching users:", error);
+            mostrarAlerta("Error de conexión al cargar usuarios.", "danger");
         }
     }
 
+    function renderUsersTable(users) {
+        usersTableBody.innerHTML = "";
+        users.forEach((user) => {
+            const row = usersTableBody.insertRow();
+            const date = new Date(user.created_at).toLocaleDateString("es-ES", {
+                year: 'numeric', month: 'numeric', day: 'numeric'
+            });
 
-    // Manejador para abrir el modal de edición/creación
-    async function openUserEditModal(id) {
+            // Determinar si el usuario está baneado
+            const isBanned = user.is_banned;
+            
+            // 🌟 Renderización del estado y del botón de acción 🌟
+            const banButtonClass = isBanned ? 'btn-success' : 'btn-danger';
+            const banButtonIcon = isBanned ? 'bi-lock-open-fill' : 'bi-lock-fill';
+            const banButtonText = isBanned ? 'Desbanear' : 'Banear';
+            const statusBadge = isBanned 
+                ? '<span class="badge text-bg-danger">BANEADO</span>' 
+                : '<span class="badge text-bg-success">ACTIVO</span>';
+
+            row.innerHTML = `
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td><span class="badge text-bg-secondary">${user.role.toUpperCase()}</span></td>
+                <td>${statusBadge}</td>
+                <td>${date}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary btn-edit me-2" data-id="${user.id}">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button class="btn btn-sm ${banButtonClass} btn-ban me-2" 
+                            data-id="${user.id}" 
+                            data-name="${user.name}" 
+                            data-isbanned="${isBanned}">
+                        <i class="bi ${banButtonIcon}"></i> ${banButtonText}
+                    </button>
+                    <button class="btn btn-sm btn-warning btn-delete" data-id="${user.id}" data-name="${user.name}">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </td>
+            `;
+        });
+
+        // Agregar listeners para editar
+        document.querySelectorAll(".btn-edit").forEach((button) => {
+            button.addEventListener("click", (e) => loadUserForEdit(e.currentTarget.dataset.id));
+        });
+
+        // 🌟 Agregar listeners para baneo/desbaneo 🌟
+        document.querySelectorAll(".btn-ban").forEach((button) => {
+            button.addEventListener("click", (e) => {
+                const id = e.currentTarget.dataset.id;
+                const name = e.currentTarget.dataset.name;
+                // Convertir la cadena 'true'/'false' a booleano
+                const isBanned = e.currentTarget.dataset.isbanned === 'true'; 
+                handleBanUserModal(id, name, isBanned);
+            });
+        });
+
+        // Agregar listeners para eliminar
+        document.querySelectorAll(".btn-delete").forEach((button) => {
+            button.addEventListener("click", (e) => {
+                userIdToDelete = e.currentTarget.dataset.id;
+                document.getElementById("userToDeleteName").textContent = e.currentTarget.dataset.name;
+                deleteConfirmModal.show();
+            });
+        });
+    }
+
+
+    // --- EDICIÓN Y CREACIÓN ---
+
+    document.getElementById("btnAddUser").addEventListener("click", () => {
         userForm.reset();
-        userPassword.disabled = false;
-        userId.value = id || "";
+        userId.value = "";
+        document.querySelector(".modal-title").textContent = "Añadir Nuevo Usuario";
+        // Asegurar que el campo de contraseña esté visible y requerido para la creación
+        confirmPasswordContainer.style.display = 'block';
+        userPassword.required = true;
+        userPassword2.required = true;
+        userPassword.placeholder = ""; 
+        userModal.show();
+    });
 
-        const isNew = !id;
+    async function loadUserForEdit(id) {
+        try {
+            const response = await fetch(`/api/users?id=${id}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
 
-        document.querySelector("#userModal .modal-title").textContent = isNew ? "Nuevo Usuario" : "Editar Usuario";
+            const data = await response.json();
 
-        // Configuración de campos de contraseña
-        confirmPasswordContainer.style.display = isNew ? "block" : "none";
-        if (passwordHelp) passwordHelp.style.display = isNew ? "block" : "none";
-        userPassword.placeholder = isNew ? "Contraseña requerida" : "Dejar vacío para no cambiar";
-
-
-        if (!isNew) {
-            try {
-                // 💥 CORRECCIÓN CRÍTICA: Se hace GET a un solo usuario por ID 💥
-                const res = await fetch(`/api/users?id=${id}`);
-                const data = await res.json();
-
-                if (!res.ok || !data.success || !data.data || !data.data.length) throw new Error(data.message || "Usuario no encontrado.");
-
-                const user = data.data[0];
-
-                userName.value = user.name;
-                userEmail.value = user.email;
-                userRole.value = user.role;
-
-            } catch (error) {
-                console.error("Error al obtener datos del usuario:", error);
-                if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta(`Error al cargar datos del usuario: ${error.message}`, "error");
-                }
+            if (!response.ok) {
+                mostrarAlerta("Error al cargar usuario para edición.", "danger");
                 return;
             }
+
+            const user = data.data[0];
+            document.querySelector(".modal-title").textContent = `Editar Usuario: ${user.name}`;
+            userId.value = user.id;
+            userName.value = user.name;
+            userEmail.value = user.email;
+            userRole.value = user.role;
+            userPassword.value = ""; // No se carga la contraseña
+            userPassword2.value = "";
+            userPassword.placeholder = "Dejar vacío para no cambiar";
+            userPassword.required = false; // La contraseña no es requerida en edición
+            userPassword2.required = false;
+            confirmPasswordContainer.style.display = 'none'; // Ocultar por defecto en edición
+
+            userModal.show();
+        } catch (error) {
+            console.error("Error loading user:", error);
+            mostrarAlerta("Error de conexión al cargar usuario.", "danger");
         }
-        userModal.show();
     }
 
-    // --- 4. LISTENERS ---
 
-    // 4.1. Listener de la Tabla (Edición, Eliminación y BANEO)
-    usersTableBody.addEventListener("click", async (e) => {
-        const btn = e.target.closest("button");
-        if (!btn) return;
-
-        const id = btn.dataset.id;
-
-        if (btn.classList.contains("edit-user-btn")) {
-            await openUserEditModal(id);
-        }
-
-        // 🚀 MODIFICADO: Listener para el botón de Baneo/Desbaneo (ABRE EL MODAL)
-        if (btn.classList.contains("btn-ban")) {
-            // El atributo data-is-banned es un string, lo convertimos a booleano
-            const isBanned = btn.dataset.isBanned === 'true';
-            const userId = btn.dataset.id;
-            const nuevoEstado = !isBanned;
-
-            banUserIdInput.value = userId;
-            banUserNewStatusInput.value = nuevoEstado;
-            banReasonInput.value = ""; // Limpiar siempre el campo de razón
-
-            const actionText = nuevoEstado ? 'banear' : 'desbanear';
-
-            document.getElementById('banReasonModalTitle').textContent = `Confirmar ${nuevoEstado ? 'Baneo' : 'Desbaneo'}`;
-            document.getElementById('banReasonMessage').textContent = `¿Estás seguro de que deseas ${actionText} a este usuario?`;
-
-            // Mostrar u ocultar el campo de razón
-            if (nuevoEstado) {
-                reasonInputContainer.style.display = 'block';
-                document.getElementById('btnConfirmBan').classList.add('btn-danger');
-                document.getElementById('btnConfirmBan').classList.remove('btn-success');
-            } else {
-                reasonInputContainer.style.display = 'none';
-                document.getElementById('btnConfirmBan').classList.add('btn-success');
-                document.getElementById('btnConfirmBan').classList.remove('btn-danger');
-            }
-
-            banReasonModal.show();
-            return; // Detenemos la ejecución
-        }
-
-        if (btn.classList.contains("delete-user-btn")) {
-            userToDeleteName.textContent = btn.closest("tr").children[0].textContent;
-            currentUserIdToDelete = id;
-            deleteConfirmModal.show();
-        }
-    });
-
-    // 4.2. Listener de Añadir Usuario
-    btnAddUser.addEventListener("click", () => {
-        openUserEditModal(null); // Abre el modal en modo creación
-    });
-
-    // 4.3. Listener de Eliminación Confirmada
-    btnConfirmDelete.addEventListener("click", async () => {
-        if (!currentUserIdToDelete) return;
-
-        try {
-            // 💥 CORRECCIÓN CRÍTICA: ID en la URL para DELETE 💥
-            const res = await fetch(`/api/users?id=${currentUserIdToDelete}`, { method: "DELETE" });
-            const data = await res.json();
-
-            if (!res.ok) throw new Error(data.message || `Fallo al eliminar (${res.status})`);
-
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("Usuario eliminado", "exito");
-            }
-            deleteConfirmModal.hide();
-            cargarUsuarios();
-        } catch (err) {
-            console.error("Error al eliminar usuario:", err);
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(`Error al eliminar usuario: ${err.message}`, "error");
-            }
-        }
-    });
-
-    // 🚀 NUEVO LISTENER: Confirmación del Modal de Baneo 🚀
-    btnConfirmBan.addEventListener("click", () => {
-        const userId = banUserIdInput.value;
-        // El valor del input es un string, lo convertimos a booleano
-        const nuevoEstado = banUserNewStatusInput.value === 'true';
-
-        let razon = null;
-        if (nuevoEstado) {
-            razon = banReasonInput.value.trim();
-            // Validación obligatoria solo si estamos baneando
-            if (razon === "") {
-                if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta("Por favor, introduce una razón para el baneo.", "error");
-                }
-                return;
-            }
-        }
-
-        confirmarBaneo(userId, nuevoEstado, razon);
-    });
-
-
-    // 4.4. Listener de la Contraseña (Mostrar/Ocultar Confirmación)
-    userPassword.addEventListener('input', () => {
-        const passwordValue = userPassword.value.trim();
-        const isEditing = userId.value !== "";
-
-        if (passwordValue.length > 0 && isEditing) {
-            confirmPasswordContainer.style.display = "block";
-            if (passwordHelp) passwordHelp.style.display = "block";
-        } else if (isEditing && passwordValue.length === 0) {
-            confirmPasswordContainer.style.display = "none";
-            userPassword2.value = ""; // Limpiar el campo de confirmación
-            if (passwordHelp) passwordHelp.style.display = "none";
-        }
-    });
-
-
-    // 4.5. Listener de Envío del Formulario (Creación/Edición)
     userForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const creating = userId.value === "";
+        const id = userId.value;
         const newPassword = userPassword.value.trim();
-        const changingPassword = newPassword.length > 0;
+        const confirmPassword = userPassword2.value.trim();
 
-        // Validaciones de Contraseña
-        if (creating || changingPassword) {
-            if (newPassword === "" && creating) {
-                if (typeof mostrarAlerta === 'function') {
-                    return mostrarAlerta("La contraseña es obligatoria para un nuevo usuario.", "error");
-                }
-            }
-
-            if (newPassword !== userPassword2.value.trim()) {
-                if (typeof mostrarAlerta === 'function') {
-                    return mostrarAlerta("Las contraseñas no coinciden.", "error");
-                }
-            }
-
-            const passwordError = validatePassword(newPassword);
-            if (passwordError) {
-                if (typeof mostrarAlerta === 'function') {
-                    return mostrarAlerta(passwordError, "error");
-                }
-            }
+        // Validación de contraseñas
+        if (newPassword !== confirmPassword) {
+            mostrarAlerta("Las contraseñas no coinciden.", "warning");
+            return;
         }
 
-        // Validación de campos principales
-        if (!userName.value.trim() || !userEmail.value.trim()) {
-            if (typeof mostrarAlerta === 'function') {
-                return mostrarAlerta("El nombre y el email son obligatorios.", "error");
-            }
-        }
+        const method = id ? "PUT" : "POST";
+        const url = id ? `/api/users?id=${id}` : "/api/users";
 
-        // Construcción del Payload
-        const payload = {
+        const bodyData = {
             name: userName.value.trim(),
             email: userEmail.value.trim(),
             role: userRole.value,
         };
 
-        if (changingPassword || creating) {
-            payload.password = newPassword;
+        // Si se va a crear o si se va a cambiar la contraseña en la edición
+        if (newPassword) {
+            bodyData.password = newPassword;
+        } else if (!id) {
+             // Esto no debería suceder si newPassword.required=true en la creación, pero es una doble capa
+             mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
+             return;
         }
-
-        const method = creating ? "POST" : "PUT";
-        // 💥 CORRECCIÓN CRÍTICA: Añadir ID a la URL para PUT 💥
-        const url = creating ? "/api/users" : `/api/users?id=${userId.value}`;
 
         try {
-            const res = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                // Usamos JSON.stringify(bodyData) aquí porque getBody en el API maneja la lectura cruda
+                body: JSON.stringify(bodyData), 
             });
 
-            const data = await res.json();
+            const data = await response.json();
 
-            if (!res.ok) {
-                // Manejo del 409 Conflict (nombre/correo duplicado)
-                if (res.status === 409) {
-                    if (typeof mostrarAlerta === 'function') {
-                        return mostrarAlerta("El nombre o correo ya están en uso.", "error");
-                    }
-                }
-                // Cualquier otro error
-                throw new Error(data.message || `Error al guardar (${res.status})`);
+            if (!response.ok) {
+                mostrarAlerta(`Error al ${id ? 'actualizar' : 'crear'} usuario: ${data.message}`, "danger");
+                return;
             }
 
-
-            if (data.success) {
-                if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta(creating ? "Usuario creado" : "Usuario actualizado", "exito");
-                }
-                userModal.hide();
-                cargarUsuarios();
-            } else {
-                if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta(data.message || "Error al guardar el usuario.", "error");
-                }
-            }
-        } catch (err) {
-            console.error("Fallo en la petición:", err);
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(`Error al guardar: ${err.message}`, "error");
-            }
+            mostrarAlerta(`Usuario ${id ? 'actualizado' : 'creado'} correctamente.`, "success");
+            userModal.hide();
+            fetchUsers();
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            mostrarAlerta("Error de conexión al guardar usuario.", "danger");
         }
     });
 
-    // 4.6. Lógica de Mostrar/Ocultar Contraseña (Toggle)
-    document.addEventListener("click", (e) => {
-        if (!e.target.classList.contains("togglePassword")) return;
+    // --- ELIMINACIÓN ---
 
-        const input = document.getElementById(e.target.dataset.target);
+    document.getElementById("btnConfirmDelete").addEventListener("click", async () => {
+        if (!userIdToDelete) return;
 
-        if (input.type === "password") {
-            input.type = "text";
-            e.target.classList.replace("bi-eye-slash-fill", "bi-eye-fill");
+        try {
+            const response = await fetch(`/api/users?id=${userIdToDelete}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                mostrarAlerta(`Error al eliminar usuario: ${data.message}`, "danger");
+                return;
+            }
+
+            mostrarAlerta("Usuario eliminado correctamente.", "success");
+            deleteConfirmModal.hide();
+            fetchUsers();
+            userIdToDelete = null;
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            mostrarAlerta("Error de conexión al eliminar usuario.", "danger");
+        }
+    });
+
+    // ------------------------------------------
+    // 🌟 LÓGICA DE BANEO 🌟
+    // ------------------------------------------
+
+    function handleBanUserModal(id, name, isBanned) {
+        userIdToBan.value = id;
+        userBanName.textContent = name;
+        banReason.value = ""; // Limpiar razón anterior
+
+        if (isBanned) {
+            // Configurar modal para DESBANEAR
+            banModalTitle.textContent = "Desbanear Usuario";
+            banReasonContainer.style.display = 'none';
+            banAlertMessage.style.display = 'none';
+            btnConfirmBan.style.display = 'none';
+            btnConfirmUnban.style.display = 'block';
+            banReason.required = false;
+
         } else {
-            input.type = "password";
-            e.target.classList.replace("bi-eye-fill", "bi-eye-slash-fill");
+            // Configurar modal para BANEAR
+            banModalTitle.textContent = "Banear Usuario";
+            banReasonContainer.style.display = 'block';
+            banAlertMessage.style.display = 'block';
+            btnConfirmBan.style.display = 'block';
+            btnConfirmUnban.style.display = 'none';
+            banReason.required = true;
         }
+
+        banUserModal.show();
+    }
+
+    // Listener para CONFIRMAR BANEO
+    btnConfirmBan.addEventListener('click', () => {
+        confirmBanAction(true); // true = Banear
     });
 
-    // --- 5. INICIALIZACIÓN ---
-    cargarUsuarios();
+    // Listener para CONFIRMAR DESBANEO
+    btnConfirmUnban.addEventListener('click', () => {
+        confirmBanAction(false); // false = Desbanear
+    });
+
+
+    async function confirmBanAction(shouldBan) {
+        const id = userIdToBan.value;
+        const reason = banReason.value.trim();
+
+        if (shouldBan && reason.length < 5) {
+            mostrarAlerta("La razón del baneo debe tener al menos 5 caracteres.", "warning");
+            return;
+        }
+
+        const bodyData = {
+            is_banned: shouldBan,
+            // Solo incluimos la razón si estamos baneando
+            ...(shouldBan && { ban_reason: reason }) 
+        };
+
+        try {
+            const response = await fetch(`/api/users?id=${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify(bodyData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                mostrarAlerta(`Error al ${shouldBan ? 'banear' : 'desbanear'} usuario: ${data.message}`, "danger");
+                return;
+            }
+
+            mostrarAlerta(`Usuario ${shouldBan ? 'baneado' : 'desbaneado'} correctamente.`, "success");
+            banUserModal.hide();
+            fetchUsers(); // Recargar la tabla
+        } catch (error) {
+            console.error("Error confirming ban action:", error);
+            mostrarAlerta("Error de conexión al procesar la acción de baneo.", "danger");
+        }
+    }
+
+    // --- INICIALIZACIÓN ---
+    fetchUsers();
 });
