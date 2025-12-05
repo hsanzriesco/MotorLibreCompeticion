@@ -20,7 +20,7 @@ const app = express();
 // app.use(express.urlencoded({ extended: true }));
 
 
-app.all('/api/usersList', usersListHandler);
+app.all('/api/users', usersListHandler);
 app.post('/api/loginUser', loginUserHandler);
 
 app.all('/api/carGarage', carGarageHandler);
