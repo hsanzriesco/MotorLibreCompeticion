@@ -43,10 +43,9 @@
     }
 
     /* ===================================================== */
-    /* ⭐⭐⭐ CÓDIGO MODIFICADO PARA TAMAÑO UNIFORME DEL CARRUSEL ⭐⭐⭐ */
+    /* ⭐⭐⭐ CÓDIGO DE TAMAÑO UNIFORME Y RESPONSIVO (CORRECTO) ⭐⭐⭐ */
     /* ===================================================== */
     .carousel-inner {
-      /* Se quita height: auto/450px y se deja que el HTML (clase ratio) defina el tamaño */
       height: 100%;
     }
 
@@ -57,16 +56,13 @@
     .carousel-item img {
       width: 100%;
       height: 100%;
-      /* ⭐ IMPORANTE: '100%' para que ocupe todo el espacio del contenedor 'ratio'. */
-      /* ⭐ IMPORANTE: 'cover' recorta si es necesario para asegurar que el espacio se llene. */
       object-fit: cover;
     }
 
-    /* Opcional: Limita la altura máxima en escritorio para que no sea excesivamente alto */
+    /* Opcional: Limita la altura máxima en escritorio */
     .carousel-container-wrapper {
       max-height: 450px;
       overflow: hidden;
-      /* Oculta si la imagen intenta ser más alta */
     }
 
     /* ===================================================== */
@@ -132,7 +128,7 @@
   </main>
 
   <div class="carousel-container-wrapper mt-4 mx-auto" style="max-width: 900px;">
-    <div id="carouselExampleIndicators" class="carousel slide ratio ratio-16x9" data-bs-ride="carousel">
+    <div id="carouselExampleIndicators" class="carousel slide ratio ratio-16x9 rounded shadow" data-bs-ride="carousel">
 
       <div class="carousel-indicators">
         <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active"></button>
@@ -140,7 +136,7 @@
         <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2"></button>
       </div>
 
-      <div class="carousel-inner rounded shadow">
+      <div class="carousel-inner">
 
         <div class="carousel-item active">
           <img src="./img/img_Expo.png" class="d-block w-100" alt="Imagen 1">
