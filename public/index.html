@@ -43,21 +43,12 @@
     }
 
     /* ===================================================== */
-    /* ⭐⭐⭐ CÓDIGO FINAL DE TAMAÑO Y POSICIÓN DEL CARRUSEL ⭐⭐⭐ */
+    /* ⭐⭐⭐ CÓDIGO FINAL DE TAMAÑO UNIFORME Y RESPONSIVO DEL CARRUSEL ⭐⭐⭐ */
     /* ===================================================== */
-    .carousel-inner {
-      /* Definimos la altura máxima del carrusel para un tamaño uniforme */
-      max-height: 450px;
-      height: 100%;
-      /* Aseguramos que ocupe el espacio */
-    }
 
-    /* En móviles, reducimos la altura máxima para mejor visualización */
-    @media (max-width: 576px) {
-      .carousel-inner {
-        max-height: 300px;
-        /* Altura más corta en móvil */
-      }
+    .carousel-inner {
+      /* Fija la altura uniforme para todos los carruseles por defecto (escritorio) */
+      height: 450px;
     }
 
     .carousel-item {
@@ -67,8 +58,18 @@
     .carousel-item img {
       width: 100%;
       height: 100%;
-      /* 'cover' asegura que la imagen llene el área, aunque recorte ligeramente */
+      /* Asegura que la imagen llene la caja de 450px/300px, recortando si es necesario */
       object-fit: cover;
+      /* Ayuda a centrar la imagen para que el recorte sea más uniforme */
+      object-position: center center;
+    }
+
+    /* Regla para dispositivos móviles (< 576px) */
+    @media (max-width: 576px) {
+      .carousel-inner {
+        /* Fija la altura uniforme para móviles, un tamaño más corto */
+        height: 300px;
+      }
     }
 
     /* ===================================================== */
