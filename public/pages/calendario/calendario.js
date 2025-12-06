@@ -50,34 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         loginIcon.style.display = "inline";
     }
 
-    // FUNCIÓN CRÍTICA: Marca el evento como finalizado en la base de datos
-    async function finalizeEventStatus(eventId) {
-        const apiUrl = `/api/events?action=finalize&event_id=${eventId}`;
-
-        try {
-            const res = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    event_id: eventId,
-                    status: 'Finalizado' // Estado a guardar en eventos_estado
-                })
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                console.log(`Evento ${eventId} marcado como finalizado en la base de datos.`);
-            } else {
-                console.error(`Error al marcar el evento ${eventId} como finalizado:`, data.message);
-            }
-
-        } catch (error) {
-            console.error("Error de red al intentar finalizar el evento:", error);
-        }
-    }
+    // ⭐ FUNCIÓN finalizeEventStatus ELIMINADA, LA LÓGICA PASA AL BACKEND
 
     // --- FUNCIONES DE REGISTRO Y CANCELACIÓN ---
 
@@ -100,7 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // Comprobación adicional para bloquear la inscripción si el evento terminó
+        // Comprobación de hora de fin para el bloqueo de UI (El bloqueo definitivo es en el backend)
         const eventEndTimeString = registerBtn.getAttribute('data-event-end-time');
         if (eventEndTimeString) {
             const eventEndDate = new Date(eventEndTimeString);
@@ -108,6 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (eventEndDate < now) {
                 mostrarAlerta("No es posible inscribirse. Este evento ya ha finalizado.", 'error');
+                // Ya que el botón no debería estar visible, solo alertamos.
                 return;
             }
         }
@@ -116,6 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         statusSpan.textContent = "Inscribiendo...";
 
         try {
+            // ⭐ EL BACKEND DEBE COMPROBAR AQUÍ SI EL EVENTO HA TERMINADO ANTES DE INSCRIBIR
             const res = await fetch('/api/events?action=register', {
                 method: 'POST',
                 headers: {
@@ -133,6 +108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 mostrarAlerta(data.message, 'exito');
                 updateRegistrationUI(true);
             } else {
+                // Si el backend rechaza la inscripción por evento finalizado, el mensaje de error debe reflejarlo.
                 mostrarAlerta(data.message || 'Error desconocido al inscribir.', 'error');
                 registerBtn.disabled = false;
                 statusSpan.textContent = "";
@@ -241,7 +217,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
-            // --- PASO 1: RECOGER LA HORA DE FINALIZACIÓN Y COMPARAR ---
+            // --- RECOGER LA HORA DE FINALIZACIÓN Y COMPARAR ---
             const eventEndDate = new Date(e.end);
             const now = new Date();
             const diffMs = eventEndDate - now; // < 0 si ha finalizado
@@ -251,24 +227,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             eventStatusMessage.classList.remove('alert-warning', 'alert-danger');
             eventStatusMessage.textContent = '';
 
-            // Restablecer la visibilidad de los botones para la comprobación de registro/finalización
+            // Restablecer la visibilidad de los botones
             registerBtn.style.display = 'inline-block';
-            cancelBtn.style.display = 'none'; // Se oculta inicialmente, se mostrará en updateRegistrationUI si está inscrito
+            cancelBtn.style.display = 'none';
             registerBtn.disabled = false;
             cancelBtn.disabled = false;
             // ---------------------------------------------------
 
             if (diffMs < 0) {
-                // Evento ya terminado (la fecha de fin ha pasado)
+                // Evento ya terminado 
                 eventStatusMessage.textContent = 'El evento ha finalizado.';
                 eventStatusMessage.classList.add('alert-danger');
                 eventStatusMessage.style.display = 'block';
 
-                // ⭐ SOLUCIÓN: OCULTAR COMPLETAMENTE LOS BOTONES (Requisito cumplido)
+                // OCULTAR COMPLETAMENTE LOS BOTONES
                 registerBtn.style.display = 'none';
                 cancelBtn.style.display = 'none';
 
-                finalizeEventStatus(eventId);
+                // ⭐ LA ACTUALIZACIÓN A 'Finalizado' AHORA DEBE SER MANEJADA POR EL BACKEND
             }
             // ---------------------------------------------------
 
@@ -276,7 +252,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
-            // Formatear las fechas
             const formattedStart = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
             const formattedEnd = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS);
 
@@ -304,18 +279,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (userId) {
                 const isRegistered = await checkRegistrationStatus(eventId, userId);
 
-                // Solo actualizamos la UI si el evento NO ha finalizado, para no re-mostrar los botones
+                // Solo actualizamos la UI si el evento NO ha finalizado
                 if (diffMs >= 0) {
                     updateRegistrationUI(isRegistered);
                 } else {
-                    statusSpan.textContent = ''; // Limpiar el estado de inscripción si ya terminó
+                    statusSpan.textContent = '';
                 }
             } else {
                 // Si no hay usuario, y el evento NO ha terminado
                 if (diffMs >= 0) {
                     updateRegistrationUI(false);
                 } else {
-                    // Si terminó, ya están ocultos por la lógica principal (registerBtn.style.display = 'none')
+                    // Si terminó, los botones ya están ocultos
                     statusSpan.textContent = '';
                 }
             }
