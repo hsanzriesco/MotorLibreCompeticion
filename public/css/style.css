@@ -209,11 +209,28 @@ main p {
   /* Iconos en blanco/gris claro */
   color: #f5f5f5;
   transition: color 0.2s;
-  /* ⭐ MODIFICADO: Hace los iconos un poco más pequeños */
+  /* Hace los iconos un poco más pequeños */
   font-size: 1.2rem;
 }
 
 #main-footer a i:hover {
   /* Hover de iconos en rojo */
   color: #e50914;
+}
+
+/* ⭐⭐⭐ NUEVO ESTILO: Separador Vertical para el Footer ⭐⭐⭐ */
+.vertical-hr {
+  /* Fondo del separador */
+  background-color: #e50914;
+  /* Ancho de la línea */
+  width: 2px;
+  /* Altura de la línea: '100%' funciona bien con align-items-stretch de Bootstrap */
+  height: 100%;
+  /* Margen horizontal para separarlo del contenido */
+  margin: 0 15px;
+}
+
+/* ⭐⭐⭐ AJUSTE ADICIONAL para asegurar que los elementos del footer se centren verticalmente alrededor del logo/separador */
+#main-footer .row {
+  align-items: center;
 }
