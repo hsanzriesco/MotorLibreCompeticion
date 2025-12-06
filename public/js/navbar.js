@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-    // Se crea la instancia de Bootstrap Modal solo si el elemento existe
     const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
     const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
@@ -26,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             user = JSON.parse(storedUser);
             if (userName) userName.textContent = user.name;
             if (loginLink) loginLink.style.display = "none";
-            // El logoutBtn se mantiene visible por defecto (o ya visible si se usó CSS)
+            // El logoutBtn se mantiene activo si hay sesión
         } catch (e) {
             console.error("Error parseando usuario:", e);
             // Si el JSON es inválido, forzamos el cierre de sesión
@@ -35,11 +34,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 💥 MODIFICACIÓN CRÍTICA PARA OCULTAR LOGOUT SI NO HAY SESIÓN 💥
+    // 💥 MODIFICACIÓN CRÍTICA PARA DESHABILITAR Y OCULTAR SI NO HAY SESIÓN 💥
     if (!user) { // Si no hay usuario:
         if (userName) userName.style.display = "none";
-        if (logoutBtn) logoutBtn.style.display = "none"; // <--- OCULTAR EL BOTÓN DE CERRAR SESIÓN
+
+        if (logoutBtn) {
+            logoutBtn.classList.add('disabled-link'); // <-- AÑADE CLASE PARA DESHABILITAR VISUALMENTE
+            logoutBtn.removeAttribute('href');        // <-- ELIMINA EL HREF para que no sea clickable
+        }
+    } else {
+        // Si el usuario está logueado, aseguramos que el botón esté habilitado (por si acaso)
+        if (logoutBtn) {
+            logoutBtn.classList.remove('disabled-link');
+            // Asegura que tiene el href para la navegación (aunque lo manejamos con click event)
+            logoutBtn.href = "#";
+        }
     }
+
 
     // -----------------------------------------------------------------------------------
     // 🔑 FUNCIONES DE SESIÓN Y CIERRE
@@ -128,20 +139,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // Limpiar por si acaso
             localStorage.removeItem("usuario");
             sessionStorage.removeItem("usuario");
-
-            // 🛑 BLOQUE COMENTADO PARA ELIMINAR LA ALERTA (Amarilla) 🛑
-            /*
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", 'advertencia');
-            }
-            */
-
-            // 🛑 BLOQUE COMENTADO PARA ELIMINAR LA REDIRECCIÓN 🛑
-            /*
-            setTimeout(() => {
-                window.location.href = "/index.html";
-            }, 500);
-            */
         }
     }
 
@@ -195,9 +192,10 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
 
-            // Solo proceder si el usuario existe (aunque el botón debería estar oculto)
+            // Evitar la ejecución si está deshabilitado
             if (!user) {
-                console.warn("Intento de cierre de sesión sin usuario logueado.");
+                // No hace nada si no hay usuario
+                console.warn("Cierre de sesión bloqueado: Usuario no logueado.");
                 return;
             }
 
