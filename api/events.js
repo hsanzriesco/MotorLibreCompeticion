@@ -215,30 +215,41 @@ export default async function handler(req, res) {
                 }
 
                 // --------------------------------------------------------------------------------------------------------
-                // ⭐ VERIFICACIÓN DE FINALIZACIÓN: Usando la tabla de auditoría 'evento_finalizado'
+                // ⭐ SOLUCIÓN DEFINITIVA: Verificación de existencia Y estado en tiempo real (event_end > NOW())
                 // --------------------------------------------------------------------------------------------------------
-                const finalizadoCheck = await client.query(
-                    `SELECT event_id FROM evento_finalizado WHERE event_id = $1`,
+                const existenceAndStatusCheck = await client.query(
+                    `SELECT 
+                        id 
+                     FROM 
+                        events 
+                     WHERE 
+                        id = $1 
+                        AND event_end > NOW()`, // <-- Solo permite el registro si la hora de fin es MAYOR a la hora actual
                     [parsedEventId]
                 );
 
-                if (finalizadoCheck.rows.length > 0) {
-                    // El evento ha sido marcado como finalizado por el Cron Job
-                    return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado y está cerrado." });
+                if (existenceAndStatusCheck.rows.length === 0) {
+                    // Si la consulta no devuelve filas, el evento no existe O HA FINALIZADO.
+
+                    // Verificamos si realmente no existe (404) o si terminó (403)
+                    const simpleExistenceCheck = await client.query(
+                        `SELECT id FROM events WHERE id = $1`,
+                        [parsedEventId]
+                    );
+
+                    if (simpleExistenceCheck.rows.length === 0) {
+                        // Si el ID no existe
+                        return res.status(404).json({ success: false, message: "Evento no encontrado." });
+                    } else {
+                        // Si el ID existe, pero event_end <= NOW()
+                        return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado y está cerrado." });
+                    }
                 }
                 // --------------------------------------------------------------------------------------------------------
+                // Nota: La verificación contra la tabla 'evento_finalizado' es ahora redundante para el bloqueo 
+                // ya que el chequeo en tiempo real es superior, y ha sido eliminada de aquí para optimización.
+                // --------------------------------------------------------------------------------------------------------
 
-                // Verificación de existencia del evento (necesario si no está en finalizados ni en inscripciones)
-                const existenceCheck = await client.query(
-                    `SELECT id FROM events WHERE id = $1`,
-                    [parsedEventId]
-                );
-
-                if (existenceCheck.rows.length === 0) {
-                    // 404 si el evento no existe
-                    return res.status(404).json({ success: false, message: "Evento no encontrado." });
-                }
-                // FIN DE VERIFICACIÓN DE EXISTENCIA
 
                 // 2. Verificar si ya está inscrito
                 const check = await client.query(
@@ -287,7 +298,7 @@ export default async function handler(req, res) {
                 const dataResult = await client.query(dataQuery, [parsedUserId, parsedEventId]);
 
                 if (dataResult.rows.length === 0) {
-                    // Este caso no debería ocurrir si existenceCheck pasó, pero lo mantenemos por seguridad
+                    // Este caso no debería ocurrir si el chequeo de existencia pasó
                     return res.status(404).json({ success: false, message: 'Usuario o evento no encontrado para obtener los nombres.' });
                 }
 
