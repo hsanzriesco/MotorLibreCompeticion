@@ -72,30 +72,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // ⭐ CORRECCIÓN/REVISIÓN DE TIEMPO (Frontend)
+        // ⭐ LÓGICA REFORZADA: Chequeo de hora de fin (doble chequeo en UI antes de API)
         const eventEndTimeString = registerBtn.getAttribute('data-event-end-time');
         if (eventEndTimeString) {
-            // Usar new Date() sin modificar la zona horaria ya que FullCalendar usa el tiempo local/dado
             const eventEndDate = new Date(eventEndTimeString);
             const now = new Date();
 
             if (eventEndDate < now) {
                 mostrarAlerta("No es posible inscribirse. Este evento ya ha finalizado.", 'error');
-                // Ocultar botones de nuevo para reforzar la UI
+                // Ocultar botones y estado para reflejar el estado finalizado
                 registerBtn.style.display = 'none';
                 cancelBtn.style.display = 'none';
                 statusSpan.textContent = "";
                 return;
             }
         }
-        // ⭐ FIN CORRECCIÓN/REVISIÓN DE TIEMPO
+        // ⭐ FIN LÓGICA REFORZADA
 
         registerBtn.disabled = true;
         statusSpan.textContent = "Inscribiendo...";
 
         try {
-            // Aquí es donde el BACKEND (que ya modificamos) debe hacer la verificación de hora de fin definitiva 
-            // y, si procede, actualizar la tabla evento_finalizado.
+            // El BACKEND debe ser la fuente definitiva de verificación de la hora de fin.
             const res = await fetch('/api/events?action=register', {
                 method: 'POST',
                 headers: {
@@ -182,10 +180,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const eventId = e.currentTarget.getAttribute('data-event-id');
         const userId = (usuario && usuario.id) ? usuario.id : null;
 
-        if (eventId && userId) {
+        if (eventId) {
             handleRegistration(parseInt(eventId), userId);
         } else {
-            // Llama a handleRegistration para manejar el caso de usuario no logeado
+            // Llama a handleRegistration para manejar el caso de usuario no logeado (si userId es null)
             handleRegistration(null, userId);
         }
     });
@@ -236,25 +234,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             eventStatusMessage.classList.remove('alert-warning', 'alert-danger');
             eventStatusMessage.textContent = '';
 
-            // Restablecer la visibilidad de los botones al abrir el modal
+            // 1. Restablecer la visibilidad de los botones al abrir el modal (estado predeterminado: Inscribirse)
             registerBtn.style.display = 'inline-block';
             cancelBtn.style.display = 'none';
             registerBtn.disabled = false;
             cancelBtn.disabled = false;
-            statusSpan.textContent = ""; // Limpiar el estado de inscripción previo
+            statusSpan.textContent = "";
             // ---------------------------------------------------
 
             if (diffMs < 0) {
-                // Evento ya terminado 
+                // 2. Lógica para evento FINALIZADO: Ocultar todo y mostrar alerta.
                 eventStatusMessage.textContent = 'El evento ha finalizado.';
                 eventStatusMessage.classList.add('alert-danger');
                 eventStatusMessage.style.display = 'block';
 
-                // ✅ REQUISITO CUMPLIDO: OCULTAR COMPLETAMENTE EL BOTÓN DE INSCRIPCIÓN/CANCELACIÓN
+                // Ocultar botones de inscripción/cancelación
                 registerBtn.style.display = 'none';
                 cancelBtn.style.display = 'none';
-                // Asegurar que el estado de inscripción esté vacío
-                statusSpan.textContent = '';
+                statusSpan.textContent = ''; // Asegurar que el estado esté vacío
             }
             // ---------------------------------------------------
 
@@ -262,6 +259,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
+            // Asegurar que las fechas se muestren correctamente
             const formattedStart = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
             const formattedEnd = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS);
 
@@ -286,16 +284,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const userId = (usuario && usuario.id) ? usuario.id : null;
 
-            if (userId && diffMs >= 0) {
-                // Solo chequeamos la inscripción si el usuario está logeado Y el evento NO ha terminado
-                const isRegistered = await checkRegistrationStatus(eventId, userId);
-                updateRegistrationUI(isRegistered);
-
-            } else if (diffMs >= 0) {
-                // Si NO hay usuario y el evento NO ha terminado, se muestra el botón de inscripción (estado 'false')
-                updateRegistrationUI(false);
+            if (diffMs >= 0) {
+                // 3. Lógica para evento ACTIVO: Gestionar si el usuario está inscrito o no.
+                if (userId) {
+                    const isRegistered = await checkRegistrationStatus(eventId, userId);
+                    updateRegistrationUI(isRegistered);
+                } else {
+                    // Si no hay usuario, mostrar botón de inscripción (estado no inscrito)
+                    updateRegistrationUI(false);
+                }
             }
-            // Si el evento ha terminado (diffMs < 0), no se hace nada con los botones (ya están ocultos)
+            // Si diffMs < 0, los botones ya están ocultos por el punto 2.
 
 
             const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
