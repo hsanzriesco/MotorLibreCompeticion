@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------------------------------------------------
-    // 7. INICIALIZACIÓN DE INACTIVIDAD Y GUARDIA DE RUTA (CORREGIDA)
+    // 7. INICIALIZACIÓN DE INACTIVIDAD Y GUARDIA DE RUTA (MODIFICADA)
     // -----------------------------------------------------------------------------------
 
     if (user) {
@@ -120,21 +120,26 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPath.includes(LOGIN_PAGE_PATH) ||
             currentPath.includes('/auth/register.html') ||
             currentPath.includes('/pages/calendario/calendario.html') || // <-- PERMITIDO SIN SESIÓN
-            currentPath.includes('/pages/clubes/clubes.html');           // <-- PERMITIDO SIN SESIÓN
+            currentPath.includes('/pages/clubes/clubes.html');           // <-- PERMITIDO SIN SESIÓN
 
         if (!isPublicPage) {
-            // Limpiar por si acaso y redirigir al index.
+            // Limpiar por si acaso
             localStorage.removeItem("usuario");
             sessionStorage.removeItem("usuario");
 
-            // Opcional: Mostrar una alerta antes de redirigir
+            // 🛑 BLOQUE COMENTADO PARA ELIMINAR LA ALERTA 🛑
+            /*
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", 'advertencia');
             }
+            */
 
+            // 🛑 BLOQUE COMENTADO PARA ELIMINAR LA REDIRECCIÓN 🛑
+            /*
             setTimeout(() => {
                 window.location.href = "/index.html";
             }, 500);
+            */
         }
     }
 
