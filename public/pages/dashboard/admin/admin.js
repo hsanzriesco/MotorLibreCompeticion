@@ -1,11 +1,10 @@
 document.addEventListener("DOMContentLoaded", async () => {
     // ====================================================================
-    // 🛡️ LÓGICA DE SEGURIDAD Y ACCESO (MODIFICADO)
+    // 🛡️ LÓGICA DE SEGURIDAD Y ACCESO (MODIFICADO: DESACTIVADO PARA DEPURACIÓN)
     // ====================================================================
 
     // --- Comprobación de Usuario y Redirección ---
     // Busca la sesión en sessionStorage O localStorage. 
-    // Esta es la lógica que debe ser idéntica en todas las páginas de admin.
     const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
 
     let usuario = null;
@@ -17,6 +16,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    /* 🛑 INICIO BLOQUE DE SEGURIDAD COMENTADO 🛑 */
+    /*
     // Comprobación de rol de administrador (se verifica que el rol exista y sea 'admin')
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
         // Limpiar ambas sesiones para evitar bucles si la información es corrupta/inválida
@@ -25,17 +26,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Asegúrate de que 'mostrarAlerta' esté disponible globalmente o importada
         if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000);
+            mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000); // 👈 ESTA ES LA ALERTA ROJA
         }
 
         // Redirigir al login
         setTimeout(() => {
             // 🟢 CORRECCIÓN DE RUTA: Se utiliza la ruta absoluta asumida: /auth/login.html
             // Si el login está en /public/auth/login.html, su ruta web es /auth/login.html
-            window.location.href = "/auth/login.html"; // <--- RUTA CORREGIDA
+            window.location.href = "/auth/login.html"; 
         }, 1500);
-        return;
+        return; // Detiene la ejecución del script si no hay acceso
     }
+    */
+    /* 🛑 FIN BLOQUE DE SEGURIDAD COMENTADO 🛑 */
+
 
     // ====================================================================
     // 📅 LÓGICA DE CALENDARIO (MODIFICADO: Location ID y Validaciones)
