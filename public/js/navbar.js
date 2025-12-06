@@ -29,8 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 userName.textContent = user.name;
                 userName.style.display = "inline"; // ⭐ HACER VISIBLE EL NOMBRE
 
-                // 💡 CAMBIO SOLICITADO: Establecer el texto en negrita
-                userName.style.fontWeight = "bold";
+                // ❌ LÍNEA ELIMINADA/COMENTADA: El estilo de negrita ahora se gestiona con la clase 'fw-bold'
+                // ❌ en el HTML para estandarizar el estilo.
+                // userName.style.fontWeight = "bold"; 
             }
 
             // Ocultar el icono de inicio de sesión
