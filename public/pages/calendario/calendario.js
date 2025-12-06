@@ -72,14 +72,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // ⭐ CORRECCIÓN CRÍTICA: Chequeo de hora de fin al hacer clic
+        // ⭐ CORRECCIÓN CRÍTICA: Chequeo de hora de fin usando getTime()
         const eventEndTimeString = registerBtn.getAttribute('data-event-end-time');
         if (eventEndTimeString) {
             const eventEndDate = new Date(eventEndTimeString);
             const now = new Date();
 
-            // Usamos eventEndDate <= now para incluir el instante exacto de finalización.
-            if (eventEndDate <= now) {
+            // Comparamos los valores numéricos de tiempo (milisegundos) para evitar errores de zona horaria
+            const eventEndTimeMs = eventEndDate.getTime();
+            const nowTimeMs = now.getTime();
+
+            // Usamos <= para incluir el instante exacto de finalización.
+            if (eventEndTimeMs <= nowTimeMs) {
                 mostrarAlerta("No es posible inscribirse. Este evento ya ha finalizado.", 'error');
                 // Forzamos la ocultación de botones para reflejar el estado correcto
                 registerBtn.style.display = 'none';
@@ -228,8 +232,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             // --- LECTURA DE LA HORA DE FIN (events.end) Y COMPARACIÓN ---
             const eventEndDate = new Date(e.end);
             const now = new Date();
+
+            // ⭐ CAMBIO CRÍTICO: Comparamos los valores numéricos de tiempo (milisegundos)
+            const eventEndTimeMs = eventEndDate.getTime();
+            const nowTimeMs = now.getTime();
+
             // Usamos <= para incluir el instante exacto de finalización como "terminado"
-            const isFinished = eventEndDate <= now;
+            const isFinished = eventEndTimeMs <= nowTimeMs;
 
             // Limpiar el mensaje de estado previo
             eventStatusMessage.style.display = 'none';
