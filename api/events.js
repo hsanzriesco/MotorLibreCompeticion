@@ -214,21 +214,24 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "Los IDs de usuario o evento deben ser números válidos." });
                 }
 
-                // ⭐ 1. VERIFICACIÓN DE TIEMPO: Comprobar si el evento ya ha finalizado
+                // ⭐ 1. VERIFICACIÓN DE TIEMPO Y EXISTENCIA DEL EVENTO
                 const timeCheck = await client.query(
                     `SELECT event_end FROM events WHERE id = $1`,
                     [parsedEventId]
                 );
 
+                // 🛑 CORRECCIÓN CLAVE: Verifica que el evento exista antes de acceder a la fila [0]
                 if (timeCheck.rows.length === 0) {
+                    // Retorna un error 404 si el evento no existe
                     return res.status(404).json({ success: false, message: "Evento no encontrado para verificar el tiempo." });
                 }
 
+                // Si el evento existe, procede con la verificación de tiempo
                 const eventEndTime = new Date(timeCheck.rows[0].event_end);
                 const currentTime = new Date();
 
                 if (eventEndTime < currentTime) {
-                    // 403 Forbidden: No se permite la acción
+                    // Retorna 403 (Forbidden) si el evento ha finalizado
                     return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado." });
                 }
                 // ⭐ FIN DE VERIFICACIÓN DE TIEMPO
