@@ -49,27 +49,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         userName.style.display = "none";
         loginIcon.style.display = "inline";
     }
-
-    // --- NUEVA FUNCIÓN: Marca el evento como finalizado en la base de datos ---
+    
+    // ⭐ FUNCIÓN CRÍTICA: Marca el evento como finalizado en la base de datos
+    // NOTA: Tu servidor (backend) debe implementar el endpoint /api/events?action=finalize
+    // para que esto funcione correctamente.
     async function finalizeEventStatus(eventId) {
         const apiUrl = `/api/events?action=finalize&event_id=${eventId}`;
-
-        // ⭐ NOTA: Tu servidor debe implementar el código para manejar esta solicitud 
-        // y actualizar la tabla 'eventos_estado'.
+        
         try {
             const res = await fetch(apiUrl, {
-                method: 'POST',
+                method: 'POST', 
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     event_id: eventId,
-                    status: 'Finalizado'
+                    status: 'Finalizado' // Estado a guardar en eventos_estado
                 })
             });
 
             const data = await res.json();
-
+            
             if (data.success) {
                 console.log(`Evento ${eventId} marcado como finalizado en la base de datos.`);
             } else {
@@ -101,16 +101,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
             return;
         }
-
-        // Comprobación de estado del evento antes de intentar inscribir
-        const eventEndDate = new Date(document.getElementById('modalEnd').textContent); // Usamos el texto del modalEnd
-        const now = new Date();
-        const diffMs = eventEndDate - now;
-
-        if (diffMs < 0) {
-            mostrarAlerta("No es posible inscribirse, este evento ya ha finalizado.", 'error');
-            return;
+        
+        // ⭐ COMPROBACIÓN ADICIONAL AL HACER CLIC:
+        // Obtener la hora de fin del atributo de datos (establecido en eventClick)
+        const eventEndTimeString = registerBtn.getAttribute('data-event-end-time');
+        if (eventEndTimeString) {
+            const eventEndDate = new Date(eventEndTimeString);
+            const now = new Date();
+            
+            if (eventEndDate < now) {
+                mostrarAlerta("No es posible inscribirse. Este evento ya ha finalizado.", 'error');
+                return;
+            }
         }
+        // FIN COMPROBACIÓN ADICIONAL
 
         registerBtn.disabled = true;
         statusSpan.textContent = "Inscribiendo...";
@@ -150,7 +154,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             mostrarAlerta("Error: Debes iniciar sesión para cancelar.", 'error');
             return;
         }
-
+        
         cancelBtn.disabled = true;
         statusSpan.textContent = "Cancelando inscripción...";
 
@@ -241,16 +245,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
-            // --- CÁLCULO PARA VERIFICAR SI EL EVENTO HA FINALIZADO ---
+            // --- PASO 1: RECOGER LA HORA DE FINALIZACIÓN Y COMPARAR ---
             const eventEndDate = new Date(e.end);
             const now = new Date();
-            const diffMs = eventEndDate - now; // Diferencia en milisegundos
-
+            const diffMs = eventEndDate - now; // < 0 si ha finalizado
+            
             // Limpiar el mensaje de estado previo
             eventStatusMessage.style.display = 'none';
             eventStatusMessage.classList.remove('alert-warning', 'alert-danger');
             eventStatusMessage.textContent = '';
-
+            
             // Reestablecer la posibilidad de habilitar/deshabilitar botones por estado de registro
             registerBtn.disabled = false;
             cancelBtn.disabled = false;
@@ -261,22 +265,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                 eventStatusMessage.textContent = 'El evento ha finalizado.';
                 eventStatusMessage.classList.add('alert-danger');
                 eventStatusMessage.style.display = 'block';
-
-                // ⭐ DESHABILITAR BOTONES PARA EVENTOS FINALIZADOS (Requisito cumplido)
+                
+                // ⭐ PASO 2: DESHABILITAR BOTONES E INSCRIBIR EN BASE DE DATOS
                 registerBtn.disabled = true;
                 cancelBtn.disabled = true;
-
-                // ⭐ LLAMADA AL BACKEND PARA GUARDAR EN 'eventos_estado' (Requisito cumplido)
-                finalizeEventStatus(eventId);
-
+                
+                finalizeEventStatus(eventId); 
             }
             // ---------------------------------------------------
 
             modalTitle.textContent = e.title;
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
-            modalStart.textContent = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
-            modalEnd.textContent = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS);
+            
+            // Formatear las fechas
+            const formattedStart = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
+            const formattedEnd = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS);
+            
+            modalStart.textContent = formattedStart;
+            modalEnd.textContent = formattedEnd;
+            
             const imageUrl = extendedProps.image_url;
 
             if (imageUrl) {
@@ -289,27 +297,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             registerBtn.setAttribute('data-event-id', eventId);
             cancelBtn.setAttribute('data-event-id', eventId);
-
+            
+            // ⭐ PASO 3: Guardar la hora de fin en un atributo para la comprobación al hacer clic
+            registerBtn.setAttribute('data-event-end-time', e.end);
 
             const userId = (usuario && usuario.id) ? usuario.id : null;
 
             if (userId) {
                 const isRegistered = await checkRegistrationStatus(eventId, userId);
                 updateRegistrationUI(isRegistered);
-
-                // Si el evento terminó, los botones deben estar deshabilitados
+                
+                // Aplicar la deshabilitación final si el evento terminó
                 if (diffMs < 0) {
-                    registerBtn.disabled = true;
-                    cancelBtn.disabled = true;
+                   registerBtn.disabled = true;
+                   cancelBtn.disabled = true;
                 }
             } else {
-                // Si no hay usuario, mostramos el botón de registro pero sin estado de inscripción
                 updateRegistrationUI(false);
-                // Si el evento terminó, deshabilitamos el botón para invitados
                 if (diffMs < 0) {
-                    registerBtn.disabled = true;
+                   registerBtn.disabled = true;
                 } else {
-                    registerBtn.disabled = false;
+                   registerBtn.disabled = false;
                 }
             }
 
