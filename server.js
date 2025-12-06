@@ -4,6 +4,8 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
+import { startScheduler } from "./api/db_scheduler.js";
+
 // Rutas API
 import usersRouter from "./api/users.js";
 import noticiasRoutes from "./api/noticias.js";
@@ -19,17 +21,17 @@ app.use(express.urlencoded({ extended: true }));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// --- RUTAS API ---
-app.use("/api/users", usersRouter);   // 👈 AHORA ES UN ROUTER REAL
+app.use("/api/users", usersRouter);
 app.use("/api/noticias", noticiasRoutes);
 app.use("/api/carGarage", carGarageHandler);
 
-// --- FRONTEND ---
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+startScheduler();
 
 app.listen(PORT, () => {
     console.log(`Servidor iniciado en puerto ${PORT}`);

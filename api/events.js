@@ -214,31 +214,31 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "Los IDs de usuario o evento deben ser números válidos." });
                 }
 
-                // ⭐ 1. VERIFICACIÓN DE TIEMPO Y EXISTENCIA DEL EVENTO (CORRECCIÓN ZONA HORARIA)
-                // Usamos la DB para determinar si el evento ha finalizado (event_end <= NOW())
-                const activeCheck = await client.query(
-                    `SELECT id FROM events WHERE id = $1 AND event_end > NOW()`,
+                // --------------------------------------------------------------------------------------------------------
+                // ⭐ VERIFICACIÓN DE FINALIZACIÓN: Usando la tabla de auditoría 'evento_finalizado'
+                // --------------------------------------------------------------------------------------------------------
+                const finalizadoCheck = await client.query(
+                    `SELECT event_id FROM evento_finalizado WHERE event_id = $1`,
                     [parsedEventId]
                 );
 
-                if (activeCheck.rows.length === 0) {
-                    // Si no hay filas, el evento no existe O ha finalizado.
-
-                    // Verificación de existencia para dar la respuesta HTTP correcta
-                    const existenceCheck = await client.query(
-                        `SELECT id FROM events WHERE id = $1`,
-                        [parsedEventId]
-                    );
-
-                    if (existenceCheck.rows.length === 0) {
-                        // 404 si el evento no existe
-                        return res.status(404).json({ success: false, message: "Evento no encontrado." });
-                    }
-
-                    // 403 si el evento existe, pero event_end <= NOW() (ya finalizó)
-                    return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado." });
+                if (finalizadoCheck.rows.length > 0) {
+                    // El evento ha sido marcado como finalizado por el Cron Job
+                    return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado y está cerrado." });
                 }
-                // ⭐ FIN DE VERIFICACIÓN DE TIEMPO
+                // --------------------------------------------------------------------------------------------------------
+
+                // Verificación de existencia del evento (necesario si no está en finalizados ni en inscripciones)
+                const existenceCheck = await client.query(
+                    `SELECT id FROM events WHERE id = $1`,
+                    [parsedEventId]
+                );
+
+                if (existenceCheck.rows.length === 0) {
+                    // 404 si el evento no existe
+                    return res.status(404).json({ success: false, message: "Evento no encontrado." });
+                }
+                // FIN DE VERIFICACIÓN DE EXISTENCIA
 
                 // 2. Verificar si ya está inscrito
                 const check = await client.query(
@@ -287,6 +287,7 @@ export default async function handler(req, res) {
                 const dataResult = await client.query(dataQuery, [parsedUserId, parsedEventId]);
 
                 if (dataResult.rows.length === 0) {
+                    // Este caso no debería ocurrir si existenceCheck pasó, pero lo mantenemos por seguridad
                     return res.status(404).json({ success: false, message: 'Usuario o evento no encontrado para obtener los nombres.' });
                 }
 

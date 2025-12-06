@@ -5,6 +5,7 @@
     "cloudinary": "^2.8.0",
     "formidable": "^3.5.4",
     "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.10",
     "pg": "^8.16.3"
   }
