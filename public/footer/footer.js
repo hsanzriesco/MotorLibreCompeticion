@@ -1,4 +1,4 @@
-// /js/footer.js
+// /footer/footer.js
 // Este script crea el elemento <footer> y lo añade al documento.
 
 document.addEventListener("DOMContentLoaded", () => {
