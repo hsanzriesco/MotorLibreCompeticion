@@ -214,7 +214,26 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "Los IDs de usuario o evento deben ser números válidos." });
                 }
 
-                // 1. Verificar si ya está inscrito
+                // ⭐ 1. VERIFICACIÓN DE TIEMPO: Comprobar si el evento ya ha finalizado
+                const timeCheck = await client.query(
+                    `SELECT event_end FROM events WHERE id = $1`,
+                    [parsedEventId]
+                );
+
+                if (timeCheck.rows.length === 0) {
+                    return res.status(404).json({ success: false, message: "Evento no encontrado para verificar el tiempo." });
+                }
+
+                const eventEndTime = new Date(timeCheck.rows[0].event_end);
+                const currentTime = new Date();
+
+                if (eventEndTime < currentTime) {
+                    // 403 Forbidden: No se permite la acción
+                    return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado." });
+                }
+                // ⭐ FIN DE VERIFICACIÓN DE TIEMPO
+
+                // 2. Verificar si ya está inscrito
                 const check = await client.query(
                     `SELECT id FROM event_registrations WHERE user_id = $1 AND event_id = $2`,
                     [parsedUserId, parsedEventId]
@@ -224,16 +243,16 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 2. Verificar si quedan cupos (capacidad_max > num_inscritos)
+                // 3. Verificar si quedan cupos (capacidad_max > num_inscritos)
                 const capacityCheck = await client.query(`
-                    SELECT 
-                        e.capacidad_max, 
-                        COUNT(r.id) AS num_inscritos 
-                    FROM events e 
-                    LEFT JOIN event_registrations r ON e.id = r.event_id 
-                    WHERE e.id = $1 
-                    GROUP BY e.id
-                `, [parsedEventId]);
+                    SELECT 
+                        e.capacidad_max, 
+                        COUNT(r.id) AS num_inscritos 
+                    FROM events e 
+                    LEFT JOIN event_registrations r ON e.id = r.event_id 
+                    WHERE e.id = $1 
+                    GROUP BY e.id
+                `, [parsedEventId]);
 
                 if (capacityCheck.rows.length > 0) {
                     const { capacidad_max, num_inscritos } = capacityCheck.rows[0];
@@ -246,17 +265,17 @@ export default async function handler(req, res) {
                     }
                 }
 
-                // 3. Obtener solo el nombre del usuario y el título del evento
+                // 4. Obtener solo el nombre del usuario y el título del evento
                 const dataQuery = `
-                    SELECT
-                        u.name AS user_name,
-                        e.title AS event_title
-                    FROM
-                        users u,
-                        events e
-                    WHERE
-                        u.id = $1 AND e.id = $2;
-                `;
+                    SELECT
+                        u.name AS user_name,
+                        e.title AS event_title
+                    FROM
+                        users u,
+                        events e
+                    WHERE
+                        u.id = $1 AND e.id = $2;
+                `;
 
                 const dataResult = await client.query(dataQuery, [parsedUserId, parsedEventId]);
 
@@ -267,7 +286,7 @@ export default async function handler(req, res) {
                 const { user_name, event_title } = dataResult.rows[0];
 
 
-                // 4. Insertar inscripción SOLO con el nombre
+                // 5. Insertar inscripción SOLO con el nombre
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId, user_name, event_title]
