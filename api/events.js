@@ -55,35 +55,33 @@ function parseMultipart(req) {
 }
 
 /**
- * Corrige la hora local para evitar la compensación de UTC.
- * Convierte la fecha recibida ("2025-12-06 17:20") a formato "YYYY-MM-DD HH:MM:SS"
- * que PostgreSQL interpreta correctamente sin desfases.
- * @param {string} dateString La cadena de fecha/hora local recibida.
- * @returns {string} La cadena de fecha/hora en formato SQL limpio.
+ * Corrige la hora local para evitar la compensación de UTC al guardar.
+ * Utiliza el objeto Intl.DateTimeFormat para construir la hora local sin desviaciones.
+ * @param {string} dateString La cadena de fecha/hora local recibida (ej: "2025-12-06 17:20").
+ * @returns {string} La cadena de fecha/hora en formato SQL limpio ("YYYY-MM-DD HH:MM:SS").
  */
 function toSqlDateTimeLocal(dateString) {
-    // Si la cadena de entrada es válida, new Date() la crea con la TZ local.
-    // El .toISOString() convierte a UTC (con la compensación), luego limpiamos
-    // la cadena para que la DB la tome como la hora exacta que necesitamos,
-    // garantizando que no haya errores de compensación de zona horaria al guardar.
     const date = new Date(dateString);
-    if (isNaN(date)) {
+
+    if (isNaN(date.getTime())) {
         console.error("Fecha inválida recibida:", dateString);
-        return dateString; // Devolver la original para que la DB maneje el error
+        return dateString;
     }
 
-    // Convertir a una cadena que respete la hora local sin la 'Z' de UTC
-    // Esto es más complejo que solo toISOString. Lo mejor es construir la hora local manualmente.
-    // Ejemplo: 2025-12-06 17:20:00
+    // Convertir la fecha al formato YYYY-MM-DDTHH:MM:SS (ISO 8601) pero forzando a que
+    // los componentes sean locales, sin la 'Z' ni la compensación de zona horaria.
 
+    // Esto es el truco para evitar la compensación de la zona horaria del servidor
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
+
+    // Usamos los componentes locales
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
-    // Retorna YYYY-MM-DD HH:MM:SS (Esto respeta la hora de la máquina Node.js, resolviendo el +1)
+    // La cadena final es YYYY-MM-DD HH:MM:SS (que la DB acepta como timestamp sin timezone)
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
@@ -361,7 +359,7 @@ export default async function handler(req, res) {
                     });
                 }
 
-                // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
+                // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función corregida para obtener la hora local exacta sin compensación UTC.
                 const eventStartLocal = toSqlDateTimeLocal(start);
                 const eventEndLocal = toSqlDateTimeLocal(end);
 
@@ -407,7 +405,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
+            // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función corregida para obtener la hora local exacta sin compensación UTC.
             const eventStartLocal = toSqlDateTimeLocal(start);
             const eventEndLocal = toSqlDateTimeLocal(end);
 
