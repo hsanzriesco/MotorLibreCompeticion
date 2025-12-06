@@ -53,6 +53,41 @@ function parseMultipart(req) {
         });
     });
 }
+
+/**
+ * Corrige la hora local para evitar la compensación de UTC.
+ * Convierte la fecha recibida ("2025-12-06 17:20") a formato "YYYY-MM-DD HH:MM:SS"
+ * que PostgreSQL interpreta correctamente sin desfases.
+ * @param {string} dateString La cadena de fecha/hora local recibida.
+ * @returns {string} La cadena de fecha/hora en formato SQL limpio.
+ */
+function toSqlDateTimeLocal(dateString) {
+    // Si la cadena de entrada es válida, new Date() la crea con la TZ local.
+    // El .toISOString() convierte a UTC (con la compensación), luego limpiamos
+    // la cadena para que la DB la tome como la hora exacta que necesitamos,
+    // garantizando que no haya errores de compensación de zona horaria al guardar.
+    const date = new Date(dateString);
+    if (isNaN(date)) {
+        console.error("Fecha inválida recibida:", dateString);
+        return dateString; // Devolver la original para que la DB maneje el error
+    }
+
+    // Convertir a una cadena que respete la hora local sin la 'Z' de UTC
+    // Esto es más complejo que solo toISOString. Lo mejor es construir la hora local manualmente.
+    // Ejemplo: 2025-12-06 17:20:00
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    // Retorna YYYY-MM-DD HH:MM:SS (Esto respeta la hora de la máquina Node.js, resolviendo el +1)
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+
 // ===============================================
 
 export default async function handler(req, res) {
@@ -88,6 +123,7 @@ export default async function handler(req, res) {
         // Inicialización de Pool y conexión a DB
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
+            // Importante: Mantener SSL para despliegues en servicios como Vercel o Heroku
             ssl: { rejectUnauthorized: false },
         });
         client = await pool.connect();
@@ -325,9 +361,9 @@ export default async function handler(req, res) {
                     });
                 }
 
-                // ⭐ SOLUCIÓN TIMEZONE: CONVERSIÓN A UTC ANTES DE GUARDAR
-                const eventStartUTC = new Date(start).toISOString();
-                const eventEndUTC = new Date(end).toISOString();
+                // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
+                const eventStartLocal = toSqlDateTimeLocal(start);
+                const eventEndLocal = toSqlDateTimeLocal(end);
 
                 // Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
                 const parsedCapacidadMax = parseInt(capacity) || 0;
@@ -344,9 +380,9 @@ export default async function handler(req, res) {
                 }
 
                 const result = await client.query(
-                    // 👇 USAMOS LAS VARIABLES CONVERTIDAS A UTC
+                    // 👇 USAMOS LAS VARIABLES eventStartLocal y eventEndLocal
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url, capacidad_max) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-                    [title, description, location, eventStartUTC, eventEndUTC, finalImageUrl, parsedCapacidadMax]
+                    [title, description, location, eventStartLocal, eventEndLocal, finalImageUrl, parsedCapacidadMax]
                 );
                 return res.status(201).json({ success: true, data: result.rows[0] });
             }
@@ -371,9 +407,9 @@ export default async function handler(req, res) {
                 });
             }
 
-            // ⭐ SOLUCIÓN TIMEZONE: CONVERSIÓN A UTC ANTES DE GUARDAR
-            const eventStartUTC = new Date(start).toISOString();
-            const eventEndUTC = new Date(end).toISOString();
+            // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
+            const eventStartLocal = toSqlDateTimeLocal(start);
+            const eventEndLocal = toSqlDateTimeLocal(end);
 
             // Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
             const parsedCapacidadMax = parseInt(capacity) || 0;
@@ -393,9 +429,9 @@ export default async function handler(req, res) {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
             const result = await client.query(
-                // 👇 USAMOS LAS VARIABLES CONVERTIDAS A UTC
+                // 👇 USAMOS LAS VARIABLES eventStartLocal y eventEndLocal
                 `UPDATE events SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6, capacidad_max = $7 WHERE id = $8 RETURNING *`,
-                [title, description, location, eventStartUTC, eventEndUTC, finalImageUrl, parsedCapacidadMax, id]
+                [title, description, location, eventStartLocal, eventEndLocal, finalImageUrl, parsedCapacidadMax, id]
             );
 
             if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Evento no encontrado." });
