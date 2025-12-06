@@ -72,22 +72,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // ⭐ LÓGICA REFORZADA: Chequeo de hora de fin (doble chequeo en UI antes de API)
+        // ⭐ CORRECCIÓN CRÍTICA: Chequeo de hora de fin al hacer clic
         const eventEndTimeString = registerBtn.getAttribute('data-event-end-time');
         if (eventEndTimeString) {
             const eventEndDate = new Date(eventEndTimeString);
             const now = new Date();
 
-            if (eventEndDate < now) {
+            // Usamos eventEndDate <= now para incluir el instante exacto de finalización.
+            if (eventEndDate <= now) {
                 mostrarAlerta("No es posible inscribirse. Este evento ya ha finalizado.", 'error');
-                // Ocultar botones y estado para reflejar el estado finalizado
+                // Forzamos la ocultación de botones para reflejar el estado correcto
                 registerBtn.style.display = 'none';
                 cancelBtn.style.display = 'none';
                 statusSpan.textContent = "";
                 return;
             }
         }
-        // ⭐ FIN LÓGICA REFORZADA
+        // ⭐ FIN CORRECCIÓN CRÍTICA
 
         registerBtn.disabled = true;
         statusSpan.textContent = "Inscribiendo...";
@@ -227,7 +228,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             // --- LECTURA DE LA HORA DE FIN (events.end) Y COMPARACIÓN ---
             const eventEndDate = new Date(e.end);
             const now = new Date();
-            const diffMs = eventEndDate - now; // < 0 si ha finalizado
+            // Usamos <= para incluir el instante exacto de finalización como "terminado"
+            const isFinished = eventEndDate <= now;
 
             // Limpiar el mensaje de estado previo
             eventStatusMessage.style.display = 'none';
@@ -242,7 +244,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             statusSpan.textContent = "";
             // ---------------------------------------------------
 
-            if (diffMs < 0) {
+            if (isFinished) {
                 // 2. Lógica para evento FINALIZADO: Ocultar todo y mostrar alerta.
                 eventStatusMessage.textContent = 'El evento ha finalizado.';
                 eventStatusMessage.classList.add('alert-danger');
@@ -284,7 +286,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const userId = (usuario && usuario.id) ? usuario.id : null;
 
-            if (diffMs >= 0) {
+            if (!isFinished) {
                 // 3. Lógica para evento ACTIVO: Gestionar si el usuario está inscrito o no.
                 if (userId) {
                     const isRegistered = await checkRegistrationStatus(eventId, userId);
@@ -294,7 +296,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     updateRegistrationUI(false);
                 }
             }
-            // Si diffMs < 0, los botones ya están ocultos por el punto 2.
+            // Si isFinished es true, los botones ya están ocultos por el punto 2.
 
 
             const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
