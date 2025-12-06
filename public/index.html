@@ -43,25 +43,26 @@
     }
 
     /* ===================================================== */
-    /* ⭐⭐⭐ CÓDIGO AÑADIDO PARA LA UNIFORMIDAD DEL CARRUSEL ⭐⭐⭐ */
+    /* ⭐⭐⭐ CÓDIGO MODIFICADO PARA RESPONSIVIDAD DEL CARRUSEL ⭐⭐⭐ */
     /* ===================================================== */
     .carousel-inner {
-      /* 1. Establecer una altura fija para el carrusel */
-      height: 450px;
-      /* Puedes ajustar esta altura según tus preferencias */
+      /* Se quita la altura fija, el carrusel usará la altura de la imagen. */
+      height: auto;
     }
 
     .carousel-item {
-      /* 2. Asegurar que el elemento ocupe toda la altura disponible */
       height: 100%;
     }
 
     .carousel-item img {
-      /* 3. Asegurar que la imagen ocupe todo el espacio de su contenedor */
       width: 100%;
-      height: 100%;
-      /* 4. Usar object-fit para que la imagen cubra el área sin distorsionarse, recortando si es necesario */
-      object-fit: cover;
+      height: auto;
+      /* ⭐ IMPORANTE: 'auto' mantiene la relación de aspecto. */
+      /* ⭐ IMPORANTE: 'contain' asegura que la imagen se vea completa. */
+      object-fit: contain;
+
+      /* Opcional: Limita la altura máxima para que no sea excesivamente grande en escritorio */
+      max-height: 450px;
     }
 
     /* ===================================================== */
