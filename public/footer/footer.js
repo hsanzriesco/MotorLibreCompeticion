@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Le asignamos el ID que usas en el CSS: #main-footer
     footerElement.id = 'main-footer';
 
-    // 2. Definir el contenido HTML con estructura Bootstrap (Clases: text-danger, text-light, etc.)
+    // 2. Definir el contenido HTML sin la línea de derechos de autor
     footerElement.innerHTML = `
         <div class="footer-content container py-5">
             <div class="row">
@@ -38,11 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             
             <div class="footer-bottom text-center pt-3 border-top border-secondary">
-                <p class="mb-0 text-white-50">&copy; ${new Date().getFullYear()} Motor Libre Competición. Todos los derechos reservados.</p>
-            </div>
+                </div>
         </div>
     `;
 
-    // 3. Añadir el footer al final del body para que se muestre en la página
+    // 3. Añadir el footer al final del body
     document.body.appendChild(footerElement);
 });
