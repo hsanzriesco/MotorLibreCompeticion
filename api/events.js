@@ -214,24 +214,28 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "Los IDs de usuario o evento deben ser números válidos." });
                 }
 
-                // ⭐ 1. VERIFICACIÓN DE TIEMPO Y EXISTENCIA DEL EVENTO
-                const timeCheck = await client.query(
-                    `SELECT event_end FROM events WHERE id = $1`,
+                // ⭐ 1. VERIFICACIÓN DE TIEMPO Y EXISTENCIA DEL EVENTO (CORRECCIÓN ZONA HORARIA)
+                // Usamos la DB para determinar si el evento ha finalizado (event_end <= NOW())
+                const activeCheck = await client.query(
+                    `SELECT id FROM events WHERE id = $1 AND event_end > NOW()`,
                     [parsedEventId]
                 );
 
-                // 🛑 CORRECCIÓN: Evita el error 500 si el evento no existe (timeCheck.rows.length === 0)
-                if (timeCheck.rows.length === 0) {
-                    // Retorna un error 404 si el evento no existe
-                    return res.status(404).json({ success: false, message: "Evento no encontrado para verificar el tiempo." });
-                }
+                if (activeCheck.rows.length === 0) {
+                    // Si no hay filas, el evento no existe O ha finalizado.
 
-                // Si el evento existe, procede con la verificación de tiempo
-                const eventEndTime = new Date(timeCheck.rows[0].event_end);
-                const currentTime = new Date();
+                    // Verificación de existencia para dar la respuesta HTTP correcta
+                    const existenceCheck = await client.query(
+                        `SELECT id FROM events WHERE id = $1`,
+                        [parsedEventId]
+                    );
 
-                if (eventEndTime < currentTime) {
-                    // Retorna 403 (Forbidden) si el evento ha finalizado
+                    if (existenceCheck.rows.length === 0) {
+                        // 404 si el evento no existe
+                        return res.status(404).json({ success: false, message: "Evento no encontrado." });
+                    }
+
+                    // 403 si el evento existe, pero event_end <= NOW() (ya finalizó)
                     return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado." });
                 }
                 // ⭐ FIN DE VERIFICACIÓN DE TIEMPO
@@ -246,12 +250,7 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // =========================================================================
-                // 🛑 3. VERIFICACIÓN DE CAPACIDAD (Aforo) - ESTA SECCIÓN ESTÁ AISLADA
-                // -------------------------------------------------------------------------
-                // SI EL ERROR 500 DESAPARECE, EL ERROR DE SINTAXIS ESTÁ EN ESTA CONSULTA.
-                // Revisa: Tabla 'events', columna 'capacidad_max', Tabla 'event_registrations'
-                // =========================================================================
+                // 3. Verificar si quedan cupos (capacidad_max > num_inscritos)
                 const capacityCheck = await client.query(`
                     SELECT 
                         e.capacidad_max, 
@@ -272,16 +271,8 @@ export default async function handler(req, res) {
                         return res.status(403).json({ success: false, message: "Aforo completo. No se puede realizar la inscripción." });
                     }
                 }
-                // -------------------------------------------------------------------------
-                // 🛑 FIN DE VERIFICACIÓN DE CAPACIDAD
-                // =========================================================================
-
 
                 // 4. Obtener solo el nombre del usuario y el título del evento
-                // =========================================================================
-                // SI EL ERROR 500 PERSISTE, COMENTA ESTE BLOQUE Y REVISA:
-                // Tablas 'users' y 'events', columnas 'name' y 'title'.
-                // =========================================================================
                 const dataQuery = `
                     SELECT
                         u.name AS user_name,
@@ -303,10 +294,6 @@ export default async function handler(req, res) {
 
 
                 // 5. Insertar inscripción SOLO con el nombre
-                // =========================================================================
-                // SI EL ERROR 500 PERSISTE, COMENTA ESTE BLOQUE Y REVISA:
-                // Tabla 'event_registrations', columnas 'usuario_inscrito' y 'nombre_evento'.
-                // =========================================================================
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId, user_name, event_title]
