@@ -9,6 +9,8 @@ body {
   overflow-x: hidden;
 }
 
+/* --- Navbar Styles --- */
+
 .navbar {
   background: linear-gradient(90deg, #000000, #1a1a1a);
   border-bottom: 2px solid #e50914;
@@ -48,6 +50,8 @@ body {
   margin-right: 6px;
 }
 
+/* --- Main Content & Typography --- */
+
 main {
   margin-top: 8vh;
   text-align: center;
@@ -67,6 +71,8 @@ main p {
   line-height: 1.6;
 }
 
+/* --- Button Styles --- */
+
 .btn-custom {
   background: #e50914;
   color: #fff;
@@ -83,6 +89,8 @@ main p {
   transform: translateY(-2px);
 }
 
+/* --- Animations --- */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -95,6 +103,8 @@ main p {
   }
 }
 
+/* --- Media Queries (Responsiveness) --- */
+
 @media (max-width: 768px) {
   main h1 {
     font-size: 2rem;
@@ -105,6 +115,8 @@ main p {
   }
 }
 
+/* --- Utility Classes --- */
+
 .navbar-logo {
   height: 50px;
   width: auto;
@@ -114,6 +126,8 @@ main p {
 .main-content {
   padding-top: 100px;
 }
+
+/* --- Custom Alerts (Aleras.css rules moved here for completeness, though best practice is often separate) --- */
 
 .custom-alert {
   position: fixed;
@@ -148,20 +162,17 @@ main p {
   color: #1f2937;
 }
 
-/* ===================================================== */
-/* ⭐⭐⭐ ESTILOS PIE DE PÁGINA AÑADIDOS ⭐⭐⭐ */
-/* ===================================================== */
+/* --- Footer Styles --- */
 
 #main-footer {
   /* Fondo muy oscuro (negro) */
   background-color: #000000;
-  /* Borde superior llamativo en rojo (estilo de Netflix) */
+  /* Borde superior llamativo en rojo */
   border-top: 3px solid #e50914;
   padding-top: 20px;
 }
 
 #main-footer .footer-content {
-  /* Estructura si no se usa container de Bootstrap con un ancho definido */
   max-width: 1200px;
   margin: 0 auto;
 }
