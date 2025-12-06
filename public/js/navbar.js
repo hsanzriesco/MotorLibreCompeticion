@@ -28,6 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (userName) {
                 userName.textContent = user.name;
                 userName.style.display = "inline"; // ⭐ HACER VISIBLE EL NOMBRE
+
+                // 💡 CAMBIO SOLICITADO: Establecer el texto en negrita
+                userName.style.fontWeight = "bold";
             }
 
             // Ocultar el icono de inicio de sesión
