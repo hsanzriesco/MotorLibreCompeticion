@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const cancelBtn = document.getElementById("btn-cancel-event");
     const statusSpan = document.getElementById("registration-status");
 
-    // ⭐ NUEVO ELEMENTO: Mensaje de estado del evento (a punto de terminar)
+    // Elemento para mostrar el estado del evento (solo se usará para "Finalizado")
     const eventStatusMessage = document.getElementById("event-status-message");
 
     // ---------------------------------
@@ -23,40 +23,62 @@ document.addEventListener("DOMContentLoaded", async () => {
         minute: '2-digit'
     };
 
-
-    // --- GESTIÓN DE USUARIO (SOLO PARA DISPONIBILIDAD) ---
+    // --- GESTIÓN DE USUARIO ---
     const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let usuario = null;
 
-    // Bloque Try-Catch para parsear el usuario
     try {
         if (stored) {
             usuario = JSON.parse(stored);
         }
     } catch (e) {
         console.error("Error al parsear usuario:", e);
-        // Sesión corrupta, limpiar ambas (la navegación será manejada por navbar.js)
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
-        // Aseguramos que usuario sea null
         usuario = null;
     }
-    // ----------------------------------------------------
-
-    // ----------------------------------------------------
 
     const userName = document.getElementById("user-name");
     const loginIcon = document.getElementById("login-icon");
 
-    // Si hay usuario, actualizamos la interfaz de navegación
     if (usuario) {
         userName.textContent = usuario.name;
         userName.style.display = "inline";
         loginIcon.style.display = "none";
     } else {
-        // Si no hay usuario, aseguramos que se muestre el icono de login
         userName.style.display = "none";
         loginIcon.style.display = "inline";
+    }
+
+    // --- NUEVA FUNCIÓN: Marca el evento como finalizado en la base de datos ---
+    async function finalizeEventStatus(eventId) {
+        const apiUrl = `/api/events?action=finalize&event_id=${eventId}`;
+
+        // ⭐ NOTA: Tu servidor debe implementar el código para manejar esta solicitud 
+        // y actualizar la tabla 'eventos_estado'.
+        try {
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event_id: eventId,
+                    status: 'Finalizado'
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                console.log(`Evento ${eventId} marcado como finalizado en la base de datos.`);
+            } else {
+                console.error(`Error al marcar el evento ${eventId} como finalizado:`, data.message);
+            }
+
+        } catch (error) {
+            console.error("Error de red al intentar finalizar el evento:", error);
+        }
     }
 
     // --- FUNCIONES DE REGISTRO Y CANCELACIÓN ---
@@ -75,13 +97,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function handleRegistration(eventId, userId) {
         if (!userId) {
-            // Si el usuario intenta inscribirse sin sesión, mostramos la alerta y redirigimos
             mostrarAlerta("Debes iniciar sesión para inscribirte.", 'advertencia');
-            // Usamos la ruta relativa correcta desde calendario.html
             setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
             return;
         }
-        // ... (resto de la función handleRegistration, sin cambios)
+
+        // Comprobación de estado del evento antes de intentar inscribir
+        const eventEndDate = new Date(document.getElementById('modalEnd').textContent); // Usamos el texto del modalEnd
+        const now = new Date();
+        const diffMs = eventEndDate - now;
+
+        if (diffMs < 0) {
+            mostrarAlerta("No es posible inscribirse, este evento ya ha finalizado.", 'error');
+            return;
+        }
+
         registerBtn.disabled = true;
         statusSpan.textContent = "Inscribiendo...";
 
@@ -120,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             mostrarAlerta("Error: Debes iniciar sesión para cancelar.", 'error');
             return;
         }
-        // ... (resto de la función handleCancelRegistration, sin cambios)
+
         cancelBtn.disabled = true;
         statusSpan.textContent = "Cancelando inscripción...";
 
@@ -172,7 +202,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (eventId && userId) {
             handleRegistration(parseInt(eventId), userId);
         } else {
-            // Llamamos a handleRegistration para que maneje la redirección si no hay userId
             handleRegistration(null, userId);
         }
     });
@@ -184,7 +213,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (eventId && userId) {
             handleCancelRegistration(parseInt(eventId), userId);
         } else {
-            // Este caso solo debería ocurrir si el usuario manipula la UI
             mostrarAlerta('Error: Información de usuario o evento faltante.', 'error');
         }
     });
@@ -213,13 +241,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
-            // --- CÁLCULO DE AVISO DE TIEMPO RESTANTE (10 MIN) ⭐ MODIFICADO ---
+            // --- CÁLCULO PARA VERIFICAR SI EL EVENTO HA FINALIZADO ---
             const eventEndDate = new Date(e.end);
             const now = new Date();
             const diffMs = eventEndDate - now; // Diferencia en milisegundos
-
-            // ⭐ VALOR CAMBIADO DE 15 MIN A 10 MIN
-            const terminationWarningMs = 10 * 60 * 1000; // 10 minutos
 
             // Limpiar el mensaje de estado previo
             eventStatusMessage.style.display = 'none';
@@ -231,21 +256,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             cancelBtn.disabled = false;
             // ---------------------------------------------------
 
-            if (diffMs > 0 && diffMs <= terminationWarningMs) {
-                // Evento a punto de terminar (10 min o menos, pero no ha terminado)
-                eventStatusMessage.textContent = 'El evento está a punto de terminar.';
-                eventStatusMessage.classList.add('alert-warning');
-                eventStatusMessage.style.display = 'block';
-
-            } else if (diffMs < 0) {
+            if (diffMs < 0) {
                 // Evento ya terminado (la fecha de fin ha pasado)
                 eventStatusMessage.textContent = 'El evento ha finalizado.';
                 eventStatusMessage.classList.add('alert-danger');
                 eventStatusMessage.style.display = 'block';
 
-                // Deshabilitar botones de registro/cancelación si el evento terminó
+                // ⭐ DESHABILITAR BOTONES PARA EVENTOS FINALIZADOS (Requisito cumplido)
                 registerBtn.disabled = true;
                 cancelBtn.disabled = true;
+
+                // ⭐ LLAMADA AL BACKEND PARA GUARDAR EN 'eventos_estado' (Requisito cumplido)
+                finalizeEventStatus(eventId);
 
             }
             // ---------------------------------------------------
@@ -254,7 +276,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
             modalStart.textContent = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
-            modalEnd.textContent = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS); // Usamos eventEndDate para el formato
+            modalEnd.textContent = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS);
             const imageUrl = extendedProps.image_url;
 
             if (imageUrl) {
@@ -275,8 +297,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const isRegistered = await checkRegistrationStatus(eventId, userId);
                 updateRegistrationUI(isRegistered);
 
-                // Si el evento terminó, los botones de inscripción/cancelación deben estar deshabilitados, 
-                // incluso después de la actualización de UI
+                // Si el evento terminó, los botones deben estar deshabilitados
                 if (diffMs < 0) {
                     registerBtn.disabled = true;
                     cancelBtn.disabled = true;
