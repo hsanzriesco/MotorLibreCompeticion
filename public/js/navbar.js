@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 🚨 GUARDIA DE RUTA: Si no hay usuario y NO estamos en una de las páginas permitidas, forzar redirección.
         const currentPath = window.location.pathname;
 
-        // 🟢 EXCEPCIONES: Páginas permitidas sin sesión (index, login, register, calendario, clubes)
+        // 🟢 EXCEPCIONES: Páginas permitidas sin sesión (Index, Login, Register, Calendario, Clubes)
         const isPublicPage =
             currentPath.endsWith('/index.html') ||
             currentPath.includes(LOGIN_PAGE_PATH) ||
@@ -193,14 +193,12 @@ document.addEventListener("DOMContentLoaded", () => {
             // Limpiar el temporizador al iniciar el proceso manual de cierre de sesión
             clearTimeout(inactivityTimeout);
 
-            // ✅ MODIFICACIÓN: Si el modal existe en la página actual, muéstralo.
-            // Esto permite que el modal se muestre tanto a usuarios estándar como a administradores,
-            // siempre que el HTML del modal esté presente.
+            // ✅ CORRECCIÓN: Si el modal existe en la página actual, muéstralo para CONFIRMACIÓN.
+            // Esto elimina la restricción de rol 'admin' y depende solo de si el HTML del modal está cargado.
             if (logoutConfirmModal) {
                 logoutConfirmModal.show();
             } else {
-                // Si el modal no existe, o no se encontró el elemento (ej. en una página que no lo incluye),
-                // se cierra la sesión directamente.
+                // Si el modal no existe en esta página, se cierra la sesión directamente.
                 logoutUserAndRedirect();
             }
         });
