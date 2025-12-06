@@ -9,13 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 🟢 RUTAS CENTRALIZADAS DEL DASHBOARD
     const ADMIN_DASHBOARD_HOME = "/pages/dashboard/admin/admin.html";
-    // ⚠️ ATENCIÓN: Esta ruta parece incorrecta si tu login está en /pages/auth/login/login.html
-    // Asumo que tienes una redirección desde /auth/login.html o que esta ruta es la correcta.
-    // Si tu ruta es /pages/auth/login/login.html, deberías usar esa.
     const LOGIN_PAGE_PATH = "/auth/login.html";
 
-    // ⭐ Referencias para el modal de Cierre de Sesión (de admin.html)
+    // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
+    // Se crea la instancia de Bootstrap Modal solo si el elemento existe
     const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
     const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
@@ -33,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // Si el JSON es inválido, forzamos el cierre de sesión
             sessionStorage.removeItem("usuario");
             localStorage.removeItem("usuario");
-            // Esto forzará la redirección en la Guardia de Ruta (Paso 7)
         }
     } else {
         if (userName) userName.style.display = "none";
@@ -119,8 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPath.endsWith('/index.html') ||
             currentPath.includes(LOGIN_PAGE_PATH) ||
             currentPath.includes('/auth/register.html') ||
-            currentPath.includes('/pages/calendario/calendario.html') || 
-            currentPath.includes('/pages/clubes/clubes.html');           
+            currentPath.includes('/pages/calendario/calendario.html') ||
+            currentPath.includes('/pages/clubes/clubes.html');
 
         if (!isPublicPage) {
             // Limpiar por si acaso
@@ -145,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------------------------------------------------
-    // 8. CIERRE DE SESIÓN AL CERRAR LA PESTAÑA (CORREGIDO: BLOQUEADO)
+    // 8. CIERRE DE SESIÓN AL CERRAR LA PESTAÑA (BLOQUEADO)
     // -----------------------------------------------------------------------------------
 
     /*
@@ -164,23 +161,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------------------------------------------------
-    // 2. REDIRECCIÓN DEL LOGO (MODIFICADO: Usar constante)
+    // 2. REDIRECCIÓN DEL LOGO
     // -----------------------------------------------------------------------------------
     if (logoLink) {
         if (user && user.role === "admin") {
-            // 🟢 CORRECCIÓN: Usar la constante para la ruta de inicio del admin
             logoLink.href = ADMIN_DASHBOARD_HOME;
         } else {
             logoLink.href = "/index.html";
         }
     }
 
-    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS (MODIFICADO: Usar constante)
+    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS
     if (menuInicio) {
         menuInicio.addEventListener("click", (ev) => {
             ev.preventDefault();
             if (user && user.role === "admin") {
-                // 🟢 CORRECCIÓN: Usar la constante para la ruta de inicio del admin
                 window.location.href = ADMIN_DASHBOARD_HOME;
             } else {
                 window.location.href = "/index.html";
@@ -188,19 +183,24 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 4. LÓGICA DE CERRAR SESIÓN MANUAL (Ajustado para limpiar temporizador)
+    // -----------------------------------------------------------------------------------
+    // 4. LÓGICA DE CERRAR SESIÓN MANUAL (CORREGIDA)
+    // -----------------------------------------------------------------------------------
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
 
-            // ⚠️ IMPORTANTE: Limpiar el temporizador al iniciar el proceso manual de cierre de sesión
+            // Limpiar el temporizador al iniciar el proceso manual de cierre de sesión
             clearTimeout(inactivityTimeout);
 
-            if (user && user.role === "admin" && logoutConfirmModal) {
-                // Si es admin y existe el modal, muestra el modal
+            // ✅ MODIFICACIÓN: Si el modal existe en la página actual, muéstralo.
+            // Esto permite que el modal se muestre tanto a usuarios estándar como a administradores,
+            // siempre que el HTML del modal esté presente.
+            if (logoutConfirmModal) {
                 logoutConfirmModal.show();
             } else {
-                // Cierra la sesión directamente 
+                // Si el modal no existe, o no se encontró el elemento (ej. en una página que no lo incluye),
+                // se cierra la sesión directamente.
                 logoutUserAndRedirect();
             }
         });
