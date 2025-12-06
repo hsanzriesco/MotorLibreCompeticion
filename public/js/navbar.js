@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------------------------------------------------
-    // 6. LÓGICA DE CIERRE DE SESIÓN AUTOMÁTICO POR INACTIVIDAD (NUEVO)
+    // 6. LÓGICA DE CIERRE DE SESIÓN AUTOMÁTICO POR INACTIVIDAD
     // -----------------------------------------------------------------------------------
 
     const INACTIVITY_TIMEOUT = 60000;
@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------------------------------------------------
-    // 7. INICIALIZACIÓN DE INACTIVIDAD Y GUARDIA DE RUTA (MODIFICADA)
+    // 7. INICIALIZACIÓN DE INACTIVIDAD Y GUARDIA DE RUTA (GUARDRAIL)
     // -----------------------------------------------------------------------------------
 
     if (user) {
@@ -114,20 +114,20 @@ document.addEventListener("DOMContentLoaded", () => {
         // 🚨 GUARDIA DE RUTA: Si no hay usuario y NO estamos en una de las páginas permitidas, forzar redirección.
         const currentPath = window.location.pathname;
 
-        // 🟢 NUEVAS EXCEPCIONES AÑADIDAS: Calendario y Clubes
+        // 🟢 EXCEPCIONES: Páginas permitidas sin sesión (index, login, register, calendario, clubes)
         const isPublicPage =
             currentPath.endsWith('/index.html') ||
             currentPath.includes(LOGIN_PAGE_PATH) ||
             currentPath.includes('/auth/register.html') ||
-            currentPath.includes('/pages/calendario/calendario.html') || // <-- PERMITIDO SIN SESIÓN
-            currentPath.includes('/pages/clubes/clubes.html');           // <-- PERMITIDO SIN SESIÓN
+            currentPath.includes('/pages/calendario/calendario.html') || 
+            currentPath.includes('/pages/clubes/clubes.html');           
 
         if (!isPublicPage) {
             // Limpiar por si acaso
             localStorage.removeItem("usuario");
             sessionStorage.removeItem("usuario");
 
-            // 🛑 BLOQUE COMENTADO PARA ELIMINAR LA ALERTA 🛑
+            // 🛑 BLOQUE COMENTADO PARA ELIMINAR LA ALERTA (Amarilla) 🛑
             /*
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", 'advertencia');
@@ -145,9 +145,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------------------------------------------------
-    // 8. CIERRE DE SESIÓN AL CERRAR LA PESTAÑA (NUEVO)
+    // 8. CIERRE DE SESIÓN AL CERRAR LA PESTAÑA (CORREGIDO: BLOQUEADO)
     // -----------------------------------------------------------------------------------
 
+    /*
+    // 🛑 BLOQUE DESACTIVADO: La limpieza de sesión en 'beforeunload' se dispara al navegar
+    // dentro de la app (cambio de página), causando cierres de sesión automáticos no deseados.
     window.addEventListener('beforeunload', function (e) {
         // Solo limpiar si hay un usuario logueado
         if (user) {
@@ -157,6 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // console.log("Token limpiado al cerrar la pestaña.");
         }
     });
+    */
 
 
     // -----------------------------------------------------------------------------------
