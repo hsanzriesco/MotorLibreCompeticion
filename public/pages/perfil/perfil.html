@@ -132,6 +132,7 @@
                 <i class="bi bi-person-circle fs-4"></i>
             </a>
             <span id="user-name" class="text-danger fw-bold me-3"></span>
+
             <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
                 data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
                 <i class="bi bi-list fs-4"></i>
@@ -144,21 +145,27 @@
             <h5 class="offcanvas-title">Menú</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
+
         <div class="offcanvas-body">
-            <a id="menu-inicio" class="d-block text-light mb-2" href="#">
+
+            <a id="menu-inicio" class="d-block text-light mb-2" href="/index.html">
                 Inicio
             </a>
+
             <a href="../calendario/calendario.html" class="d-block text-light mb-2">
                 Calendario
             </a>
+
             <a href="../clubes/clubes.html" class="d-block text-light mb-2">
                 Clubes
             </a>
+
             <a href="./perfil.html" class="d-block text-danger fw-bold mb-2">
                 Mi perfil
             </a>
 
             <hr class="border-secondary" />
+
             <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
                 data-bs-target="#logoutConfirmModal">
                 Cerrar sesión
@@ -286,7 +293,6 @@
             </div>
         </div>
     </div>
-
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -310,61 +316,6 @@
     <script src="../../js/navbar.js"></script>
     <script src="./perfil.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        // LÓGICA DE CIERRE DE SESIÓN
-        // NOTA: Esta lógica se está duplicando parcialmente de navbar.js, pero es aceptable para manejar la visibilidad y el modal localmente.
-        document.addEventListener("DOMContentLoaded", () => {
-            const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-            const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
-            const btnConfirmLogout = document.getElementById("btnConfirmLogout");
-            const logoutBtn = document.getElementById("logout-btn");
-
-            // La lógica de usuario DEBE LEERSE de la lógica de navbar.js
-            const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-            const usuario = storedUser ? JSON.parse(storedUser) : null;
-
-            // 1. Manejar el click en el botón del offcanvas (si el usuario no existe, impide el modal)
-            if (logoutBtn) {
-                logoutBtn.addEventListener("click", (e) => {
-                    if (!usuario) {
-                        e.preventDefault();
-                        // 🟢 Si el usuario no existe, simplemente cierra el offcanvas y muestra una alerta.
-                        if (typeof mostrarAlerta === 'function') {
-                            mostrarAlerta("Debes iniciar sesión para cerrarla.", 'error', 3000);
-                        }
-                        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-                        if (offcanvasMenu) offcanvasMenu.hide();
-                        return;
-                    }
-                    // Si el usuario existe, se permite el modal (data-bs-toggle="modal" lo hace automáticamente)
-                });
-            }
-
-            // 2. Cerrar sesión al confirmar en el modal (Lógica local por si navbar.js no lo hace correctamente)
-            if (btnConfirmLogout) {
-                btnConfirmLogout.addEventListener("click", () => {
-                    // Cierra el modal localmente
-                    if (logoutConfirmModal) {
-                        logoutConfirmModal.hide();
-                    }
-
-                    // Lógica de cierre de sesión: limpia storage y redirige.
-                    sessionStorage.removeItem("usuario");
-                    localStorage.removeItem("usuario");
-
-                    // 🟢 Asegurarse de que la función existe antes de llamarla
-                    if (typeof mostrarAlerta === 'function') {
-                        mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
-                    }
-
-                    setTimeout(() => {
-                        window.location.href = '/index.html'; // Redirige al index principal
-                    }, 1500);
-                });
-            }
-        });
-    </script>
 
 </body>
 
