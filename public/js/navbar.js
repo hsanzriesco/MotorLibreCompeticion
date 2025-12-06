@@ -3,7 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const userName = document.getElementById("user-name");
     const loginLink = document.getElementById("login-icon");
-    const logoutBtn = document.getElementById("logout-btn"); // <--- Obtenemos la referencia aquí
+    const logoutBtn = document.getElementById("logout-btn");
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
@@ -23,9 +23,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (storedUser) {
         try {
             user = JSON.parse(storedUser);
-            if (userName) userName.textContent = user.name;
+
+            // 🟢 MODIFICACIÓN CLAVE: Mostrar el nombre de usuario
+            if (userName) {
+                userName.textContent = user.name;
+                userName.style.display = "inline"; // ⭐ HACER VISIBLE EL NOMBRE
+            }
+
+            // Ocultar el icono de inicio de sesión
             if (loginLink) loginLink.style.display = "none";
-            // El logoutBtn se mantiene activo si hay sesión
+
         } catch (e) {
             console.error("Error parseando usuario:", e);
             // Si el JSON es inválido, forzamos el cierre de sesión
@@ -36,17 +43,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 💥 MODIFICACIÓN CRÍTICA PARA DESHABILITAR Y OCULTAR SI NO HAY SESIÓN 💥
     if (!user) { // Si no hay usuario:
-        if (userName) userName.style.display = "none";
+        if (userName) userName.style.display = "none"; // Asegurar que el nombre está oculto
+
+        // Asegurar que el login link está visible
+        if (loginLink) loginLink.style.display = "block"; // o 'inline-block' si prefieres
 
         if (logoutBtn) {
-            logoutBtn.classList.add('disabled-link'); // <-- AÑADE CLASE PARA DESHABILITAR VISUALMENTE
-            logoutBtn.removeAttribute('href');        // <-- ELIMINA EL HREF para que no sea clickable
+            logoutBtn.classList.add('disabled-link');
+            logoutBtn.removeAttribute('href');
         }
     } else {
-        // Si el usuario está logueado, aseguramos que el botón esté habilitado (por si acaso)
+        // Si el usuario está logueado, aseguramos que el botón esté habilitado
         if (logoutBtn) {
             logoutBtn.classList.remove('disabled-link');
-            // Asegura que tiene el href para la navegación (aunque lo manejamos con click event)
             logoutBtn.href = "#";
         }
     }
@@ -136,7 +145,16 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPath.includes('/pages/clubes/clubes.html');
 
         if (!isPublicPage) {
-            // Limpiar por si acaso
+            // Mostrar alerta de inicio de sesión antes de redirigir
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "advertencia");
+            }
+
+            // Limpiar y redirigir
+            setTimeout(() => {
+                window.location.href = "/index.html"; // Redirigir a Index o a Login si prefieres
+            }, 1500); // 1.5 segundos para que se vea la alerta.
+
             localStorage.removeItem("usuario");
             sessionStorage.removeItem("usuario");
         }
@@ -194,7 +212,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Evitar la ejecución si está deshabilitado
             if (!user) {
-                // No hace nada si no hay usuario
                 console.warn("Cierre de sesión bloqueado: Usuario no logueado.");
                 return;
             }
