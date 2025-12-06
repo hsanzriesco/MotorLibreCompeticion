@@ -213,11 +213,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
-            // --- CÁLCULO DE AVISO DE TIEMPO RESTANTE (15 MIN) ---
+            // --- CÁLCULO DE AVISO DE TIEMPO RESTANTE (10 MIN) ⭐ MODIFICADO ---
             const eventEndDate = new Date(e.end);
             const now = new Date();
             const diffMs = eventEndDate - now; // Diferencia en milisegundos
-            const fifteenMinutesInMs = 15 * 60 * 1000;
+
+            // ⭐ VALOR CAMBIADO DE 15 MIN A 10 MIN
+            const terminationWarningMs = 10 * 60 * 1000; // 10 minutos
 
             // Limpiar el mensaje de estado previo
             eventStatusMessage.style.display = 'none';
@@ -229,8 +231,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             cancelBtn.disabled = false;
             // ---------------------------------------------------
 
-            if (diffMs > 0 && diffMs <= fifteenMinutesInMs) {
-                // Evento a punto de terminar (15 min o menos, pero no ha terminado)
+            if (diffMs > 0 && diffMs <= terminationWarningMs) {
+                // Evento a punto de terminar (10 min o menos, pero no ha terminado)
                 eventStatusMessage.textContent = 'El evento está a punto de terminar.';
                 eventStatusMessage.classList.add('alert-warning');
                 eventStatusMessage.style.display = 'block';
