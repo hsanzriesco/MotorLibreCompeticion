@@ -20,8 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 
-    // --- GESTIÓN DE USUARIO CORREGIDA Y CON PROTECCIÓN ---
-    // Usamos localStorage si no está en sessionStorage (persistencia)
+    // --- GESTIÓN DE USUARIO (SOLO PARA DISPONIBILIDAD) ---
     const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let usuario = null;
 
@@ -32,51 +31,38 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     } catch (e) {
         console.error("Error al parsear usuario:", e);
-        // Sesión corrupta, limpiar ambas y forzar la redirección
+        // Sesión corrupta, limpiar ambas (la navegación será manejada por navbar.js)
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
+        // Aseguramos que usuario sea null
+        usuario = null;
     }
     // ----------------------------------------------------
 
-    // 🛑 LÓGICA DE PROTECCIÓN DE PÁGINA AÑADIDA 🛑
-    if (!usuario) {
-        // Si no hay usuario (ni en sessionStorage, ni en localStorage, ni se pudo parsear)
-        if (typeof mostrarAlerta === 'function') {
-            // Aviso de que debe iniciar sesión
-            mostrarAlerta("Tienes que iniciar sesión para acceder al Calendario.", 'error');
-        } else {
-            // Fallback si 'mostrarAlerta' no está definida
-            console.warn("No hay sesión. Redirigiendo...");
-        }
+    // ✅ BLOQUE DE PROTECCIÓN ELIMINADO: 
+    // La guardia de ruta ahora se manejará globalmente en navbar.js, 
+    // que ya permite el acceso a /calendario/ sin sesión.
 
-        // Forzar la redirección al login
-        setTimeout(() => {
-            window.location.href = '../auth/login/login.html';
-        }, 1200);
-        return; // Detiene la ejecución del script para proteger la página
-    }
-    // ----------------------------------------------
+    // ----------------------------------------------------
 
     const userName = document.getElementById("user-name");
     const loginIcon = document.getElementById("login-icon");
 
-    // Si llegamos aquí, 'usuario' es válido
-    userName.textContent = usuario.name;
-    userName.style.display = "inline";
-    loginIcon.style.display = "none";
-
-    /* * ❌ CÓDIGO ELIMINADO/CORREGIDO: 
-    * Se eliminó el listener directo para logout-btn porque entraba en conflicto
-    * con el modal de confirmación de Bootstrap definido en el HTML.
-    * La lógica de cierre se maneja ahora completamente en el <script> de calendario.html.
-    */
-
+    // Si hay usuario, actualizamos la interfaz de navegación
+    if (usuario) {
+        userName.textContent = usuario.name;
+        userName.style.display = "inline";
+        loginIcon.style.display = "none";
+    } else {
+        // Si no hay usuario, aseguramos que se muestre el icono de login
+        userName.style.display = "none";
+        loginIcon.style.display = "inline";
+    }
 
     // --- FUNCIONES DE REGISTRO Y CANCELACIÓN ---
 
     async function checkRegistrationStatus(eventId, userId) {
         if (!userId) return false;
-        // ... (resto de la función checkRegistrationStatus, sin cambios)
         try {
             const res = await fetch(`/api/events?action=checkRegistration&event_id=${eventId}&user_id=${userId}`);
             const data = await res.json();
@@ -89,6 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function handleRegistration(eventId, userId) {
         if (!userId) {
+            // Si el usuario intenta inscribirse sin sesión, mostramos la alerta y redirigimos
             mostrarAlerta("Debes iniciar sesión para inscribirte.", 'advertencia');
             // Usamos la ruta relativa correcta desde calendario.html
             setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
@@ -185,7 +172,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (eventId && userId) {
             handleRegistration(parseInt(eventId), userId);
         } else {
-            handleRegistration(null, null);
+            // Llamamos a handleRegistration para que maneje la redirección si no hay userId
+            handleRegistration(null, userId);
         }
     });
 
@@ -196,6 +184,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (eventId && userId) {
             handleCancelRegistration(parseInt(eventId), userId);
         } else {
+            // Este caso solo debería ocurrir si el usuario manipula la UI
             mostrarAlerta('Error: Información de usuario o evento faltante.', 'error');
         }
     });
@@ -248,6 +237,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const isRegistered = await checkRegistrationStatus(eventId, userId);
                 updateRegistrationUI(isRegistered);
             } else {
+                // Si no hay usuario, mostramos el botón de registro pero sin estado de inscripción
                 updateRegistrationUI(false);
                 registerBtn.disabled = false;
             }
@@ -257,4 +247,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
     });
     calendar.render();
-});
+}); 
