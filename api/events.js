@@ -215,7 +215,7 @@ export default async function handler(req, res) {
                 }
 
                 // --------------------------------------------------------------------------------------------------------
-                // ⭐ SOLUCIÓN DEFINITIVA: Verificación de existencia Y estado en tiempo real (event_end > NOW())
+                // ⭐ VERIFICACIÓN CRUCIAL: Verificación de existencia Y estado en tiempo real (event_end > NOW())
                 // --------------------------------------------------------------------------------------------------------
                 const existenceAndStatusCheck = await client.query(
                     `SELECT 
@@ -246,10 +246,6 @@ export default async function handler(req, res) {
                     }
                 }
                 // --------------------------------------------------------------------------------------------------------
-                // Nota: La verificación contra la tabla 'evento_finalizado' es ahora redundante para el bloqueo 
-                // ya que el chequeo en tiempo real es superior, y ha sido eliminada de aquí para optimización.
-                // --------------------------------------------------------------------------------------------------------
-
 
                 // 2. Verificar si ya está inscrito
                 const check = await client.query(
@@ -329,6 +325,10 @@ export default async function handler(req, res) {
                     });
                 }
 
+                // ⭐ SOLUCIÓN TIMEZONE: CONVERSIÓN A UTC ANTES DE GUARDAR
+                const eventStartUTC = new Date(start).toISOString();
+                const eventEndUTC = new Date(end).toISOString();
+
                 // Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
                 const parsedCapacidadMax = parseInt(capacity) || 0;
 
@@ -344,8 +344,9 @@ export default async function handler(req, res) {
                 }
 
                 const result = await client.query(
+                    // 👇 USAMOS LAS VARIABLES CONVERTIDAS A UTC
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url, capacidad_max) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-                    [title, description, location, start, end, finalImageUrl, parsedCapacidadMax]
+                    [title, description, location, eventStartUTC, eventEndUTC, finalImageUrl, parsedCapacidadMax]
                 );
                 return res.status(201).json({ success: true, data: result.rows[0] });
             }
@@ -370,6 +371,10 @@ export default async function handler(req, res) {
                 });
             }
 
+            // ⭐ SOLUCIÓN TIMEZONE: CONVERSIÓN A UTC ANTES DE GUARDAR
+            const eventStartUTC = new Date(start).toISOString();
+            const eventEndUTC = new Date(end).toISOString();
+
             // Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
             const parsedCapacidadMax = parseInt(capacity) || 0;
 
@@ -388,8 +393,9 @@ export default async function handler(req, res) {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
             const result = await client.query(
+                // 👇 USAMOS LAS VARIABLES CONVERTIDAS A UTC
                 `UPDATE events SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6, capacidad_max = $7 WHERE id = $8 RETURNING *`,
-                [title, description, location, start, end, finalImageUrl, parsedCapacidadMax, id]
+                [title, description, location, eventStartUTC, eventEndUTC, finalImageUrl, parsedCapacidadMax, id]
             );
 
             if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Evento no encontrado." });
