@@ -91,11 +91,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
-                // 🟢 CORRECCIÓN DE LA RUTA DE REDIRECCIÓN
+                // 🟢 CORRECCIÓN DE LA RUTA DE REDIRECCIÓN (Usando la ruta absoluta correcta)
                 setTimeout(() => {
                     if (user.role === "admin") {
                         // ✅ Redirigir a la página principal del administrador (admin.html)
-                        window.location.href = "/dashboard/admin/admin.html";
+                        window.location.href = "/pages/dashboard/admin/admin.html";
                     } else {
                         // Redirigir al índice para usuarios normales
                         window.location.href = "/index.html";
