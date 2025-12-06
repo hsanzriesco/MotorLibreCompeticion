@@ -8,8 +8,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const menuInicio = document.getElementById("menu-inicio");
 
     // 🟢 RUTAS CENTRALIZADAS DEL DASHBOARD
-    // Es crucial que estas rutas sean ABSOLUTAS (desde la raíz /)
     const ADMIN_DASHBOARD_HOME = "/pages/dashboard/admin/admin.html";
+    // ⚠️ ATENCIÓN: Esta ruta parece incorrecta si tu login está en /pages/auth/login/login.html
+    // Asumo que tienes una redirección desde /auth/login.html o que esta ruta es la correcta.
+    // Si tu ruta es /pages/auth/login/login.html, deberías usar esa.
     const LOGIN_PAGE_PATH = "/auth/login.html";
 
     // ⭐ Referencias para el modal de Cierre de Sesión (de admin.html)
@@ -66,7 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Redirigir
         setTimeout(() => {
-            // Se mantiene el index.html para usuarios normales, no admin.html
             window.location.href = "/index.html";
         }, 500);
     }
@@ -75,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // 6. LÓGICA DE CIERRE DE SESIÓN AUTOMÁTICO POR INACTIVIDAD (NUEVO)
     // -----------------------------------------------------------------------------------
 
-    // 1 minuto (60000 milisegundos)
     const INACTIVITY_TIMEOUT = 60000;
     let inactivityTimeout;
 
@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------------------------------------------------
-    // 7. INICIALIZACIÓN DE INACTIVIDAD Y GUARDIA DE RUTA
+    // 7. INICIALIZACIÓN DE INACTIVIDAD Y GUARDIA DE RUTA (CORREGIDA)
     // -----------------------------------------------------------------------------------
 
     if (user) {
@@ -111,15 +111,30 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener('scroll', resetTimer);
 
     } else {
-        // 🚨 GUARDIA DE RUTA: Si no hay usuario y NO estamos en la página de inicio o login/registro, forzar redirección.
+        // 🚨 GUARDIA DE RUTA: Si no hay usuario y NO estamos en una de las páginas permitidas, forzar redirección.
         const currentPath = window.location.pathname;
-        if (!currentPath.includes('/index.html') &&
-            !currentPath.includes(LOGIN_PAGE_PATH) && // 🟢 CORREGIDO: Usar constante
-            !currentPath.includes('/auth/register.html')) {
+
+        // 🟢 NUEVAS EXCEPCIONES AÑADIDAS: Calendario y Clubes
+        const isPublicPage =
+            currentPath.endsWith('/index.html') ||
+            currentPath.includes(LOGIN_PAGE_PATH) ||
+            currentPath.includes('/auth/register.html') ||
+            currentPath.includes('/pages/calendario/calendario.html') || // <-- PERMITIDO SIN SESIÓN
+            currentPath.includes('/pages/clubes/clubes.html');           // <-- PERMITIDO SIN SESIÓN
+
+        if (!isPublicPage) {
             // Limpiar por si acaso y redirigir al index.
             localStorage.removeItem("usuario");
             sessionStorage.removeItem("usuario");
-            window.location.href = "/index.html";
+
+            // Opcional: Mostrar una alerta antes de redirigir
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", 'advertencia');
+            }
+
+            setTimeout(() => {
+                window.location.href = "/index.html";
+            }, 500);
         }
     }
 
