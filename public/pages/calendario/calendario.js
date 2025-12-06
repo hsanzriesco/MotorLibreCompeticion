@@ -10,6 +10,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const registerBtn = document.getElementById("btn-register-event");
     const cancelBtn = document.getElementById("btn-cancel-event");
     const statusSpan = document.getElementById("registration-status");
+
+    // ⭐ NUEVO ELEMENTO: Mensaje de estado del evento (a punto de terminar)
+    const eventStatusMessage = document.getElementById("event-status-message");
+
     // ---------------------------------
     const DATE_OPTIONS = {
         year: 'numeric',
@@ -38,10 +42,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         usuario = null;
     }
     // ----------------------------------------------------
-
-    // ✅ BLOQUE DE PROTECCIÓN ELIMINADO: 
-    // La guardia de ruta ahora se manejará globalmente en navbar.js, 
-    // que ya permite el acceso a /calendario/ sin sesión.
 
     // ----------------------------------------------------
 
@@ -213,11 +213,46 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
+            // --- CÁLCULO DE AVISO DE TIEMPO RESTANTE (15 MIN) ---
+            const eventEndDate = new Date(e.end);
+            const now = new Date();
+            const diffMs = eventEndDate - now; // Diferencia en milisegundos
+            const fifteenMinutesInMs = 15 * 60 * 1000;
+
+            // Limpiar el mensaje de estado previo
+            eventStatusMessage.style.display = 'none';
+            eventStatusMessage.classList.remove('alert-warning', 'alert-danger');
+            eventStatusMessage.textContent = '';
+
+            // Reestablecer la posibilidad de habilitar/deshabilitar botones por estado de registro
+            registerBtn.disabled = false;
+            cancelBtn.disabled = false;
+            // ---------------------------------------------------
+
+            if (diffMs > 0 && diffMs <= fifteenMinutesInMs) {
+                // Evento a punto de terminar (15 min o menos, pero no ha terminado)
+                eventStatusMessage.textContent = 'El evento está a punto de terminar.';
+                eventStatusMessage.classList.add('alert-warning');
+                eventStatusMessage.style.display = 'block';
+
+            } else if (diffMs < 0) {
+                // Evento ya terminado (la fecha de fin ha pasado)
+                eventStatusMessage.textContent = 'El evento ha finalizado.';
+                eventStatusMessage.classList.add('alert-danger');
+                eventStatusMessage.style.display = 'block';
+
+                // Deshabilitar botones de registro/cancelación si el evento terminó
+                registerBtn.disabled = true;
+                cancelBtn.disabled = true;
+
+            }
+            // ---------------------------------------------------
+
             modalTitle.textContent = e.title;
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
             modalStart.textContent = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
-            modalEnd.textContent = new Date(e.end).toLocaleDateString("es-ES", DATE_OPTIONS);
+            modalEnd.textContent = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS); // Usamos eventEndDate para el formato
             const imageUrl = extendedProps.image_url;
 
             if (imageUrl) {
@@ -231,15 +266,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             registerBtn.setAttribute('data-event-id', eventId);
             cancelBtn.setAttribute('data-event-id', eventId);
 
+
             const userId = (usuario && usuario.id) ? usuario.id : null;
 
             if (userId) {
                 const isRegistered = await checkRegistrationStatus(eventId, userId);
                 updateRegistrationUI(isRegistered);
+
+                // Si el evento terminó, los botones de inscripción/cancelación deben estar deshabilitados, 
+                // incluso después de la actualización de UI
+                if (diffMs < 0) {
+                    registerBtn.disabled = true;
+                    cancelBtn.disabled = true;
+                }
             } else {
                 // Si no hay usuario, mostramos el botón de registro pero sin estado de inscripción
                 updateRegistrationUI(false);
-                registerBtn.disabled = false;
+                // Si el evento terminó, deshabilitamos el botón para invitados
+                if (diffMs < 0) {
+                    registerBtn.disabled = true;
+                } else {
+                    registerBtn.disabled = false;
+                }
             }
 
             const eventModal = new bootstrap.Modal(document.getElementById('eventViewModal'));
@@ -247,4 +295,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
     });
     calendar.render();
-}); 
+});
