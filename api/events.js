@@ -220,7 +220,7 @@ export default async function handler(req, res) {
                     [parsedEventId]
                 );
 
-                // 🛑 CORRECCIÓN CLAVE: Verifica que el evento exista antes de acceder a la fila [0]
+                // 🛑 CORRECCIÓN: Evita el error 500 si el evento no existe (timeCheck.rows.length === 0)
                 if (timeCheck.rows.length === 0) {
                     // Retorna un error 404 si el evento no existe
                     return res.status(404).json({ success: false, message: "Evento no encontrado para verificar el tiempo." });
@@ -246,16 +246,21 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 3. Verificar si quedan cupos (capacidad_max > num_inscritos)
+                // =========================================================================
+                // 🛑 3. VERIFICACIÓN DE CAPACIDAD (Aforo) - ESTA SECCIÓN ESTÁ AISLADA
+                // -------------------------------------------------------------------------
+                // SI EL ERROR 500 DESAPARECE, EL ERROR DE SINTAXIS ESTÁ EN ESTA CONSULTA.
+                // Revisa: Tabla 'events', columna 'capacidad_max', Tabla 'event_registrations'
+                // =========================================================================
                 const capacityCheck = await client.query(`
-                    SELECT 
-                        e.capacidad_max, 
-                        COUNT(r.id) AS num_inscritos 
-                    FROM events e 
-                    LEFT JOIN event_registrations r ON e.id = r.event_id 
-                    WHERE e.id = $1 
-                    GROUP BY e.id
-                `, [parsedEventId]);
+                    SELECT 
+                        e.capacidad_max, 
+                        COUNT(r.id) AS num_inscritos 
+                    FROM events e 
+                    LEFT JOIN event_registrations r ON e.id = r.event_id 
+                    WHERE e.id = $1 
+                    GROUP BY e.id
+                `, [parsedEventId]);
 
                 if (capacityCheck.rows.length > 0) {
                     const { capacidad_max, num_inscritos } = capacityCheck.rows[0];
@@ -267,18 +272,26 @@ export default async function handler(req, res) {
                         return res.status(403).json({ success: false, message: "Aforo completo. No se puede realizar la inscripción." });
                     }
                 }
+                // -------------------------------------------------------------------------
+                // 🛑 FIN DE VERIFICACIÓN DE CAPACIDAD
+                // =========================================================================
+
 
                 // 4. Obtener solo el nombre del usuario y el título del evento
+                // =========================================================================
+                // SI EL ERROR 500 PERSISTE, COMENTA ESTE BLOQUE Y REVISA:
+                // Tablas 'users' y 'events', columnas 'name' y 'title'.
+                // =========================================================================
                 const dataQuery = `
-                    SELECT
-                        u.name AS user_name,
-                        e.title AS event_title
-                    FROM
-                        users u,
-                        events e
-                    WHERE
-                        u.id = $1 AND e.id = $2;
-                `;
+                    SELECT
+                        u.name AS user_name,
+                        e.title AS event_title
+                    FROM
+                        users u,
+                        events e
+                    WHERE
+                        u.id = $1 AND e.id = $2;
+                `;
 
                 const dataResult = await client.query(dataQuery, [parsedUserId, parsedEventId]);
 
@@ -290,6 +303,10 @@ export default async function handler(req, res) {
 
 
                 // 5. Insertar inscripción SOLO con el nombre
+                // =========================================================================
+                // SI EL ERROR 500 PERSISTE, COMENTA ESTE BLOQUE Y REVISA:
+                // Tabla 'event_registrations', columnas 'usuario_inscrito' y 'nombre_evento'.
+                // =========================================================================
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId, user_name, event_title]
@@ -448,8 +465,10 @@ export default async function handler(req, res) {
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.code === '42601') {
+            // Este es el error de sintaxis SQL que estamos debuggeando
             errorMessage = 'Error de sintaxis SQL. Revise que las tablas y sus columnas existan y estén escritas correctamente.';
         } else if (error.code === '42P01') {
+            // Este es el error de tabla inexistente
             errorMessage = `Error: La tabla requerida (${error.message.match(/"(.*?)"/) ? error.message.match(/"(.*?)"/)[1] : 'desconocida'}) no existe en la base de datos.`;
         }
 
