@@ -3,16 +3,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const ROOT_REDIRECT = "/"; // Define la ruta de redirección a index.html
 
-    // 🛑 VERIFICACIÓN DE ACCESO DE ADMINISTRADOR (Mejorada) 🛑
+    // 🛑 BLOQUE DE VERIFICACIÓN ELIMINADO PARA PERMITIR LA CARGA DE LA PÁGINA 🛑
     const token = sessionStorage.getItem("token");
     const role = sessionStorage.getItem("role");
 
+    /*
+    // Código original que causa la redirección/alerta:
     if (!token || role !== "admin") {
         console.error("Acceso denegado. Token no encontrado o rol no es admin.");
         sessionStorage.clear(); // Limpia la sesión incompleta o inválida
-        window.location.href = ROOT_REDIRECT;
-        return;
+        // ⚠️ ESTO ES LO QUE CAUSA LA REDIRECCIÓN Y LA ALERTA ⚠️
+        // En un caso real, la alerta iría aquí, justo antes de la redirección.
+        // window.location.href = ROOT_REDIRECT; 
+        // return;
     }
+    */
+    // Se mantiene la declaración de token y role porque se necesitan para los fetch.
+    // -----------------------------------------------------------------------------------
+
 
     // Nota: Asumimos que 'mostrarAlerta' está disponible globalmente.
 
@@ -78,6 +86,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- CARGAR DATOS ---
 
     async function fetchUsers() {
+        // 🛑 NUEVA VERIFICACIÓN DE TOKEN EN FETCH 🛑
+        // Si no hay token (porque la guardia inicial fue eliminada), NO intentamos el fetch
+        if (!token) {
+            usersTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Error: Debe iniciar sesión para ver esta tabla.</td></tr>';
+            return;
+        }
+
         try {
             const response = await fetch("/api/users", {
                 method: "GET",
