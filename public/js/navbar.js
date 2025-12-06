@@ -3,7 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const userName = document.getElementById("user-name");
     const loginLink = document.getElementById("login-icon");
-    const logoutBtn = document.getElementById("logout-btn");
+    const logoutBtn = document.getElementById("logout-btn"); // <--- Obtenemos la referencia aquí
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
@@ -26,14 +26,19 @@ document.addEventListener("DOMContentLoaded", () => {
             user = JSON.parse(storedUser);
             if (userName) userName.textContent = user.name;
             if (loginLink) loginLink.style.display = "none";
+            // El logoutBtn se mantiene visible por defecto (o ya visible si se usó CSS)
         } catch (e) {
             console.error("Error parseando usuario:", e);
             // Si el JSON es inválido, forzamos el cierre de sesión
             sessionStorage.removeItem("usuario");
             localStorage.removeItem("usuario");
         }
-    } else {
+    }
+
+    // 💥 MODIFICACIÓN CRÍTICA PARA OCULTAR LOGOUT SI NO HAY SESIÓN 💥
+    if (!user) { // Si no hay usuario:
         if (userName) userName.style.display = "none";
+        if (logoutBtn) logoutBtn.style.display = "none"; // <--- OCULTAR EL BOTÓN DE CERRAR SESIÓN
     }
 
     // -----------------------------------------------------------------------------------
@@ -190,15 +195,20 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
 
+            // Solo proceder si el usuario existe (aunque el botón debería estar oculto)
+            if (!user) {
+                console.warn("Intento de cierre de sesión sin usuario logueado.");
+                return;
+            }
+
             // Limpiar el temporizador al iniciar el proceso manual de cierre de sesión
             clearTimeout(inactivityTimeout);
 
-            // ✅ CORRECCIÓN: Si el modal existe en la página actual, muéstralo para CONFIRMACIÓN.
-            // Esto elimina la restricción de rol 'admin' y depende solo de si el HTML del modal está cargado.
+            // Muestra el modal si el elemento existe en la página actual.
             if (logoutConfirmModal) {
                 logoutConfirmModal.show();
             } else {
-                // Si el modal no existe en esta página, se cierra la sesión directamente.
+                // Si el modal no existe, o no se encontró el elemento, se cierra la sesión directamente.
                 logoutUserAndRedirect();
             }
         });
