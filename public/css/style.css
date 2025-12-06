@@ -167,12 +167,13 @@ main p {
 #main-footer {
   /* Fondo muy oscuro (negro) */
   background-color: #000000;
-  /* Borde superior llamativo en rojo */
+  /* Borde superior llamativo en rojo (estilo de Netflix) */
   border-top: 3px solid #e50914;
   padding-top: 20px;
 }
 
 #main-footer .footer-content {
+  /* Estructura si no se usa container de Bootstrap con un ancho definido */
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -208,6 +209,8 @@ main p {
   /* Iconos en blanco/gris claro */
   color: #f5f5f5;
   transition: color 0.2s;
+  /* ⭐ MODIFICADO: Hace los iconos un poco más pequeños */
+  font-size: 1.2rem;
 }
 
 #main-footer a i:hover {
