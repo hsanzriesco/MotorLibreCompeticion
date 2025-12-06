@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import pg from 'pg'; // Importación necesaria para configurar el parser de tipos
 import { v2 as cloudinary } from 'cloudinary';
 import formidable from 'formidable';
 
@@ -9,7 +10,21 @@ export const config = {
 };
 
 // ===============================================
-// FUNCIONES DE PARSEO
+// CONFIGURACIÓN DE TIMEZONE PARA POSTGRESQL (PG)
+// SOLUCIÓN DEFINITIVA DE HORA (+1) EN LECTURA
+// ===============================================
+// El OID 1114 es el identificador para TIMESTAMP WITHOUT TIME ZONE
+// Esto fuerza al driver de Node.js a devolver la hora como una CADENA LITERAL,
+// evitando que Node.js la convierta automáticamente a un objeto Date
+// y le aplique una compensación de zona horaria adicional.
+pg.types.setTypeParser(1114, function (stringValue) {
+    return stringValue;
+});
+// ===============================================
+
+
+// ===============================================
+// FUNCIONES DE PARSEO Y CORRECCIÓN DE HORA
 // ===============================================
 
 function readJsonBody(req) {
@@ -23,7 +38,6 @@ function readJsonBody(req) {
                 if (!body) return resolve({});
                 resolve(JSON.parse(body));
             } catch (e) {
-                // Captura el error específico 'Unexpected end of JSON input' o cualquier otro error de parseo
                 reject(new Error("Error al parsear el cuerpo JSON de la solicitud."));
             }
         });
@@ -48,7 +62,6 @@ function parseMultipart(req) {
                 Object.entries(fields).map(([key, value]) => [key, value[0]])
             );
 
-            // Nota: files.imageFile es un array o undefined. Lo usaremos como files.imageFile?.[0]
             resolve({ fields: singleFields, files });
         });
     });
@@ -56,7 +69,7 @@ function parseMultipart(req) {
 
 /**
  * Corrige la hora local para evitar la compensación de UTC al guardar.
- * Utiliza el objeto Intl.DateTimeFormat para construir la hora local sin desviaciones.
+ * Construye la hora a partir de los componentes locales del objeto Date.
  * @param {string} dateString La cadena de fecha/hora local recibida (ej: "2025-12-06 17:20").
  * @returns {string} La cadena de fecha/hora en formato SQL limpio ("YYYY-MM-DD HH:MM:SS").
  */
@@ -68,20 +81,17 @@ function toSqlDateTimeLocal(dateString) {
         return dateString;
     }
 
-    // Convertir la fecha al formato YYYY-MM-DDTHH:MM:SS (ISO 8601) pero forzando a que
-    // los componentes sean locales, sin la 'Z' ni la compensación de zona horaria.
-
-    // Esto es el truco para evitar la compensación de la zona horaria del servidor
+    // Extracción manual de los componentes locales para forzar la hora introducida
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
 
-    // Usamos los componentes locales
+    // Estos son los componentes que se ven desplazados si el servidor está en UTC
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
-    // La cadena final es YYYY-MM-DD HH:MM:SS (que la DB acepta como timestamp sin timezone)
+    // La base de datos guarda esta cadena literalmente como la hora que has introducido
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
@@ -121,7 +131,6 @@ export default async function handler(req, res) {
         // Inicialización de Pool y conexión a DB
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
-            // Importante: Mantener SSL para despliegues en servicios como Vercel o Heroku
             ssl: { rejectUnauthorized: false },
         });
         client = await pool.connect();
@@ -150,7 +159,7 @@ export default async function handler(req, res) {
             // GET: Cargar todos los eventos
             if (!action) {
                 const result = await client.query(
-                    // Se incluye la capacidad_max en la consulta principal
+                    // Las columnas 'start' y 'end' se devuelven ahora como cadenas de texto gracias al setTypeParser(1114)
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url, capacidad_max AS capacity FROM events ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
@@ -195,7 +204,7 @@ export default async function handler(req, res) {
 
                 return res.status(200).json({
                     success: true,
-                    count: count // Renombramos a 'count' para que coincida con el frontend
+                    count: count
                 });
             }
 
@@ -265,17 +274,14 @@ export default async function handler(req, res) {
                 if (existenceAndStatusCheck.rows.length === 0) {
                     // Si la consulta no devuelve filas, el evento no existe O HA FINALIZADO.
 
-                    // Verificamos si realmente no existe (404) o si terminó (403)
                     const simpleExistenceCheck = await client.query(
                         `SELECT id FROM events WHERE id = $1`,
                         [parsedEventId]
                     );
 
                     if (simpleExistenceCheck.rows.length === 0) {
-                        // Si el ID no existe
                         return res.status(404).json({ success: false, message: "Evento no encontrado." });
                     } else {
-                        // Si el ID existe, pero event_end <= NOW()
                         return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado y está cerrado." });
                     }
                 }
@@ -304,7 +310,6 @@ export default async function handler(req, res) {
 
                 if (capacityCheck.rows.length > 0) {
                     const { capacidad_max, num_inscritos } = capacityCheck.rows[0];
-                    // Convertir a entero. Si es NULL o 0, el aforo es ilimitado
                     const maxCapacity = parseInt(capacidad_max) || 0;
                     const currentRegistrations = parseInt(num_inscritos) || 0;
 
@@ -328,7 +333,6 @@ export default async function handler(req, res) {
                 const dataResult = await client.query(dataQuery, [parsedUserId, parsedEventId]);
 
                 if (dataResult.rows.length === 0) {
-                    // Este caso no debería ocurrir si el chequeo de existencia pasó
                     return res.status(404).json({ success: false, message: 'Usuario o evento no encontrado para obtener los nombres.' });
                 }
 
@@ -348,7 +352,6 @@ export default async function handler(req, res) {
             if (!action) {
                 const { fields, files } = await parseMultipart(req);
 
-                // Se incluye capacidad_max
                 const { title, description, location, start, end, imageURL, capacity } = fields;
                 const file = files.imageFile?.[0];
 
@@ -359,11 +362,10 @@ export default async function handler(req, res) {
                     });
                 }
 
-                // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función corregida para obtener la hora local exacta sin compensación UTC.
+                // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
                 const eventStartLocal = toSqlDateTimeLocal(start);
                 const eventEndLocal = toSqlDateTimeLocal(end);
 
-                // Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
                 const parsedCapacidadMax = parseInt(capacity) || 0;
 
 
@@ -378,7 +380,7 @@ export default async function handler(req, res) {
                 }
 
                 const result = await client.query(
-                    // 👇 USAMOS LAS VARIABLES eventStartLocal y eventEndLocal
+                    // USAMOS LAS VARIABLES eventStartLocal y eventEndLocal (hora exacta introducida)
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url, capacidad_max) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
                     [title, description, location, eventStartLocal, eventEndLocal, finalImageUrl, parsedCapacidadMax]
                 );
@@ -394,7 +396,6 @@ export default async function handler(req, res) {
             // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
 
-            // Se incluye capacity
             const { title, description, location, start, end, imageURL, capacity } = fields;
             const file = files.imageFile?.[0];
 
@@ -405,11 +406,10 @@ export default async function handler(req, res) {
                 });
             }
 
-            // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función corregida para obtener la hora local exacta sin compensación UTC.
+            // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
             const eventStartLocal = toSqlDateTimeLocal(start);
             const eventEndLocal = toSqlDateTimeLocal(end);
 
-            // Usamos 'capacity' del frontend y lo mapeamos a 'capacidad_max' en la DB
             const parsedCapacidadMax = parseInt(capacity) || 0;
 
             let finalImageUrl = imageURL || null;
@@ -427,7 +427,7 @@ export default async function handler(req, res) {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
             const result = await client.query(
-                // 👇 USAMOS LAS VARIABLES eventStartLocal y eventEndLocal
+                // USAMOS LAS VARIABLES eventStartLocal y eventEndLocal
                 `UPDATE events SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6, capacidad_max = $7 WHERE id = $8 RETURNING *`,
                 [title, description, location, eventStartLocal, eventEndLocal, finalImageUrl, parsedCapacidadMax, id]
             );
@@ -488,27 +488,21 @@ export default async function handler(req, res) {
 
         // Manejo de errores de PostgreSQL más específicos
         if (error.code === '42703' && error.message.includes('user')) {
-            errorMessage = 'Error de Base de Datos: Columna "user" no encontrada. Por favor, asegúrese de que la base de datos esté sincronizada y si no es necesaria, revise la consulta.';
+            errorMessage = 'Error de Base de Datos: Columna "user" no encontrada.';
         } else if (error.code === '22P02') {
-            errorMessage = 'Error de Base de Datos: Valor de ID o dato numérico inválido. Asegúrese de que todos los números sean válidos y que los campos obligatorios no estén vacíos.';
+            errorMessage = 'Error de Base de Datos: Valor de ID o dato numérico inválido.';
         } else if (error.message.includes('Error al parsear el cuerpo JSON')) {
             errorMessage = 'Error de formato de datos (JSON) en la solicitud.';
-        } else if (error.message.includes('Cloudinary Upload Failed')) {
-            errorMessage = `Error al subir la imagen: ${error.message}`;
-        } else if (error.message.includes('Cloudinary')) {
-            errorMessage = 'Error de autenticación de Cloudinary. Revisa tus credenciales.';
-        } else if (error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
-            errorMessage = 'Error de conexión a la base de datos o timeout. Revisa la DATABASE_URL.';
         } else if (error.code === '22007') {
             errorMessage = 'Error de formato de fecha/hora o ID inválido al intentar guardar en la DB.';
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
         } else if (error.code === '42601') {
-            // Este es el error de sintaxis SQL que estamos debuggeando
-            errorMessage = 'Error de sintaxis SQL. Revise que las tablas y sus columnas existan y estén escritas correctamente.';
+            errorMessage = 'Error de sintaxis SQL.';
         } else if (error.code === '42P01') {
-            // Este es el error de tabla inexistente
-            errorMessage = `Error: La tabla requerida (${error.message.match(/"(.*?)"/) ? error.message.match(/"(.*?)"/)[1] : 'desconocida'}) no existe en la base de datos.`;
+            errorMessage = `Error: La tabla requerida no existe.`;
+        } else if (error.message.includes('ECONNREFUSED')) {
+            errorMessage = 'Error de conexión a la base de datos.';
         }
 
 

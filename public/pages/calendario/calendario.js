@@ -50,6 +50,51 @@ document.addEventListener("DOMContentLoaded", async () => {
         loginIcon.style.display = "inline";
     }
 
+
+    // ===============================================================
+    // ⭐⭐ FUNCIÓN CORREGIDA PARA EL FORMATO DE HORA (FRONTEND) ⭐⭐
+    // ===============================================================
+
+    /**
+     * Convierte la cadena de fecha SQL limpia ("YYYY-MM-DD HH:MM:SS") 
+     * en una representación que JavaScript interprete correctamente como hora local,
+     * para evitar el error de +1 hora en el navegador (que es una compensación
+     * de la zona horaria).
+     * @param {string} sqlTimeString La cadena de fecha/hora limpia recibida.
+     * @returns {string} La fecha/hora formateada para el usuario.
+     */
+    function formatLocalTime(sqlTimeString) {
+        if (!sqlTimeString) return 'Fecha/Hora no válida';
+
+        try {
+            // Dividimos la cadena en componentes para construir la fecha
+            const [datePart, timePart] = sqlTimeString.split(' ');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hour, minute] = timePart.split(':').map(Number);
+
+            // Creamos la fecha pasándole los componentes, forzando la interpretación como hora LOCAL.
+            // Nota: El mes es 0-indexado, por eso es month - 1.
+            const date = new Date(year, month - 1, day, hour, minute);
+
+            // Si la conversión falla (Date.getTime() devuelve NaN), devolvemos la cadena original
+            if (isNaN(date.getTime())) {
+                console.error("Fallo al construir la fecha local a partir de:", sqlTimeString);
+                return sqlTimeString;
+            }
+
+            // Formateamos la fecha a la configuración regional deseada
+            return date.toLocaleDateString("es-ES", DATE_OPTIONS);
+        } catch (error) {
+            console.error("Error en formatLocalTime:", error);
+            return sqlTimeString;
+        }
+    }
+
+    // ===============================================================
+    // FIN FUNCIÓN DE FORMATO
+    // ===============================================================
+
+
     // --- FUNCIONES DE REGISTRO Y CANCELACIÓN ---
 
     async function checkRegistrationStatus(eventId, userId) {
@@ -73,19 +118,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // ⭐ CORRECCIÓN CRÍTICA: Chequeo de hora de fin usando getTime()
-        const eventEndTimeString = registerBtn.getAttribute('data-event-end-time');
-        if (eventEndTimeString) {
-            const eventEndDate = new Date(eventEndTimeString);
+        // Recuperamos la hora de fin. FullCalendar ya lo ha convertido a Date.
+        const eventEndDateString = registerBtn.getAttribute('data-event-end-time');
+
+        if (eventEndDateString) {
+            // Utilizamos la cadena para hacer el chequeo
+            const eventEndDate = new Date(eventEndDateString);
             const now = new Date();
 
-            // Comparamos los valores numéricos de tiempo (milisegundos) para evitar errores de zona horaria
             const eventEndTimeMs = eventEndDate.getTime();
             const nowTimeMs = now.getTime();
 
-            // Usamos <= para incluir el instante exacto de finalización.
             if (eventEndTimeMs <= nowTimeMs) {
                 mostrarAlerta("No es posible inscribirse. Este evento ya ha finalizado.", 'error');
-                // Forzamos la ocultación de botones para reflejar el estado correcto
                 registerBtn.style.display = 'none';
                 cancelBtn.style.display = 'none';
                 statusSpan.textContent = "";
@@ -147,7 +192,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (res.ok && data.success) {
                 mostrarAlerta(data.message, 'exito');
                 updateRegistrationUI(false);
-                // Si la cancelación es exitosa, se puede recargar el calendario para actualizar el color del evento
                 calendar.refetchEvents();
             } else {
                 mostrarAlerta(data.message || 'Error desconocido al cancelar.', 'error');
@@ -229,16 +273,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
-            // --- LECTURA DE LA HORA DE FIN (events.end) Y COMPARACIÓN ---
-            const eventEndDate = new Date(e.end);
+            // FullCalendar devuelve e.start y e.end como objetos Date (si se usan con JSON Feed), 
+            // pero para ser extra seguros con la corrección del backend, trabajaremos con las cadenas
+            // que nos da FullCalendar para luego usar nuestra función de formato.
+
+            // Si el backend devuelve cadenas, FullCalendar las convierte en objetos Date. 
+            // Para el chequeo de finalizado, usamos el objeto Date que da FullCalendar:
+            const eventEndDate = e.end ? new Date(e.end) : null;
             const now = new Date();
 
-            // ⭐ CAMBIO CRÍTICO: Comparamos los valores numéricos de tiempo (milisegundos)
-            const eventEndTimeMs = eventEndDate.getTime();
-            const nowTimeMs = now.getTime();
-
-            // Usamos <= para incluir el instante exacto de finalización como "terminado"
-            const isFinished = eventEndTimeMs <= nowTimeMs;
+            let isFinished = false;
+            if (eventEndDate) {
+                const eventEndTimeMs = eventEndDate.getTime();
+                const nowTimeMs = now.getTime();
+                isFinished = eventEndTimeMs <= nowTimeMs;
+            }
 
             // Limpiar el mensaje de estado previo
             eventStatusMessage.style.display = 'none';
@@ -270,9 +319,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
-            // Asegurar que las fechas se muestren correctamente
-            const formattedStart = new Date(e.start).toLocaleDateString("es-ES", DATE_OPTIONS);
-            const formattedEnd = eventEndDate.toLocaleDateString("es-ES", DATE_OPTIONS);
+            // ⭐⭐ APLICACIÓN DE LA CORRECCIÓN DE HORA ⭐⭐
+            // Usamos las cadenas de texto 'start' y 'end' del objeto original que FullCalendar
+            // almacena en e.startStr y e.endStr, si están disponibles, o e.start/e.end.
+
+            // FullCalendar usa 'startStr' y 'endStr' para las cadenas literales
+            const startTimeString = e.startStr || e.start;
+            const endTimeString = e.endStr || e.end;
+
+            const formattedStart = formatLocalTime(startTimeString);
+            const formattedEnd = formatLocalTime(endTimeString);
 
             modalStart.textContent = formattedStart;
             modalEnd.textContent = formattedEnd;
@@ -290,8 +346,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             registerBtn.setAttribute('data-event-id', eventId);
             cancelBtn.setAttribute('data-event-id', eventId);
 
-            // Guardar la hora de fin en un atributo para el chequeo de seguridad en handleRegistration
-            registerBtn.setAttribute('data-event-end-time', e.end);
+            // Guardar la cadena de hora de fin para el chequeo de seguridad en handleRegistration
+            // Guardamos la cadena limpia (e.endStr) para evitar problemas en new Date()
+            registerBtn.setAttribute('data-event-end-time', endTimeString);
 
             const userId = (usuario && usuario.id) ? usuario.id : null;
 
