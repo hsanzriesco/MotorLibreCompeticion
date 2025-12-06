@@ -4,7 +4,10 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
-import { startScheduler } from "./api/db_scheduler.js";
+// ----------------------------------------------------------------------
+// ✅ Importación corregida: Usando el nuevo nombre de archivo y función
+// ----------------------------------------------------------------------
+import { iniciarCierreAutomatico } from "./api/cierre_eventos_automatico.js";
 
 // Rutas API
 import usersRouter from "./api/users.js";
@@ -31,7 +34,10 @@ app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-startScheduler();
+// ----------------------------------------------------
+// ✅ Llamada corregida: Iniciando el proceso de cierre automático
+// ----------------------------------------------------
+iniciarCierreAutomatico();
 
 app.listen(PORT, () => {
     console.log(`Servidor iniciado en puerto ${PORT}`);
