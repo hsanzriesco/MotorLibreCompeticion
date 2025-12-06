@@ -7,42 +7,48 @@ document.addEventListener("DOMContentLoaded", () => {
     // Le asignamos el ID que usas en el CSS: #main-footer
     footerElement.id = 'main-footer';
 
-    // 2. Definir el contenido HTML. Se reemplaza el texto de la primera columna por la imagen.
+    // 2. Definir el contenido HTML. Se usa una estructura de 3 columnas (3, 4, 5) para distribuir el contenido.
     footerElement.innerHTML = `
         <div class="footer-content container py-5">
             <div class="row">
                 
-                <div class="col-md-4 mb-4 text-center">
+                <div class="col-md-3 mb-5 mb-md-3 text-center text-md-start">
                     
                     <a href="./index.html" class="d-inline-block">
-                        <img src="./img/imagen-tfg.png" alt="Motor Libre Competición Logo" height="80" class="img-fluid mb-2">
+                        <img src="./img/imagen-tfg.png" alt="MLC Logo" height="80" class="img-fluid mb-3">
                     </a>
-                    
-                    <h5 class="text-danger fw-bold mt-2">Motor Libre Competición</h5>
-                    <p class="text-white-50">
-                        La plataforma oficial para gestionar competiciones y eventos de motor en tu región.
-                    </p>
+
+                    <div class="mt-3">
+                        <a href="#" class="text-light me-3"><i class="bi bi-facebook fs-4"></i></a>
+                        <a href="#" class="text-light me-3"><i class="bi bi-twitter fs-4"></i></a>
+                        <a href="#" class="text-light"><i class="bi bi-instagram fs-4"></i></a>
+                    </div>
                 </div>
                 
-                <div class="col-md-4 mb-4 text-center text-md-start">
-                    <h5 class="text-danger fw-bold">Navegación</h5>
+                <div class="col-md-4 mb-3 text-center text-md-start">
+                    <h5 class="text-danger fw-bold mb-3">INFORMACIÓN</h5>
                     <ul class="list-unstyled">
-                        <li><a href="./index.html" class="text-light text-decoration-none">Inicio</a></li>
-                        <li><a href="./pages/calendario/calendario.html" class="text-light text-decoration-none">Calendario</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Prensa</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Media</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Contacto</a></li>
+                        <li class="mt-2"><a href="./pages/calendario/calendario.html" class="text-light text-decoration-none">Calendario</a></li>
                         <li><a href="./pages/clubes/clubes.html" class="text-light text-decoration-none">Clubes</a></li>
-                        <li><a href="./pages/perfil/perfil.html" class="text-light text-decoration-none">Mi Perfil</a></li>
                     </ul>
                 </div>
 
-                <div class="col-md-4 mb-4 text-center text-md-end">
-                    <h5 class="text-danger fw-bold">Síguenos</h5>
-                    <a href="#" class="text-light me-3"><i class="bi bi-facebook fs-4"></i></a>
-                    <a href="#" class="text-light me-3"><i class="bi bi-twitter fs-4"></i></a>
-                    <a href="#" class="text-light"><i class="bi bi-instagram fs-4"></i></a>
+                <div class="col-md-5 mb-3 text-center text-md-start">
+                    <h5 class="text-danger fw-bold mb-3">SOBRE</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">Aviso Legal</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Aviso de Cookies</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Política de Privacidad</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Términos y Condiciones</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Venta Online</a></li>
+                    </ul>
                 </div>
             </div>
             
-            <div class="footer-bottom text-center pt-3 border-top border-secondary">
+            <div class="footer-bottom text-center pt-3 mt-4 border-top border-danger">
                 </div>
         </div>
     `;
