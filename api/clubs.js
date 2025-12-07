@@ -243,19 +243,20 @@ async function clubsHandler(req, res) {
         // --- 2.1. GET: Obtener clubes ---
         if (method === "GET") {
             const { estado, id } = query;
-            // 🚨 Añadido LEFT JOIN para contar miembros (asumiendo tabla 'club_members') 🚨
+
+            // 🚨 CORRECCIÓN: Se elimina la subquery 'club_members' para evitar el error 500 🚨
             let queryText = `
                 SELECT 
-                    c.id, c.nombre_evento, c.descripcion, c.imagen_club, c.fecha_creacion, 
-                    c.estado, c.id_presidente, c.nombre_presidente, 
-                    (SELECT COUNT(*) FROM club_members cm WHERE cm.club_id = c.id) as miembros
-                FROM clubs c
+                    id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
+                    estado, id_presidente, nombre_presidente, 
+                    0 as miembros -- Temporalmente 0 para evitar error si 'club_members' no existe.
+                FROM clubs
             `;
             const values = [];
 
             if (id) {
                 // Obtener un club activo específico por ID
-                queryText += " WHERE c.id = $1 AND c.estado = 'activo'";
+                queryText += " WHERE id = $1 AND estado = 'activo'";
                 values.push(id);
                 const result = await pool.query(queryText, values);
                 if (result.rows.length === 0) {
@@ -266,7 +267,7 @@ async function clubsHandler(req, res) {
             } else if (estado) {
                 if (estado === 'activo') {
                     // Obtener todos los clubes activos
-                    queryText += " WHERE c.estado = $1 ORDER BY c.fecha_creacion DESC";
+                    queryText += " WHERE estado = $1 ORDER BY fecha_creacion DESC";
                     values.push('activo');
                     const result = await pool.query(queryText, values);
                     return res.status(200).json({ success: true, clubs: result.rows });
@@ -281,12 +282,13 @@ async function clubsHandler(req, res) {
             }
 
             // Si no se especifica ID ni estado, devolver todos los clubes activos por defecto.
+            // 🚨 CORRECCIÓN: Se elimina la subquery 'club_members' también en la consulta por defecto 🚨
             const defaultResult = await pool.query(`
                 SELECT 
-                    c.id, c.nombre_evento, c.descripcion, c.imagen_club, c.fecha_creacion, 
-                    c.estado, c.id_presidente, c.nombre_presidente, 
-                    (SELECT COUNT(*) FROM club_members cm WHERE cm.club_id = c.id) as miembros
-                FROM clubs c WHERE c.estado = 'activo' ORDER BY c.fecha_creacion DESC
+                    id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
+                    estado, id_presidente, nombre_presidente, 
+                    0 as miembros -- Temporalmente 0 para evitar error si 'club_members' no existe.
+                FROM clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
             `);
             return res.status(200).json({ success: true, clubs: defaultResult.rows });
         }
