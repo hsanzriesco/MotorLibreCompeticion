@@ -10,24 +10,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalSalirClubEl = document.getElementById('modalSalirClub');
     const confirmarSalirClubBtn = document.getElementById('confirmarSalirClub');
 
+    // Asume que esta función existe en otro lugar de tu código
+    // (es necesaria para mostrar las alertas)
+    // function mostrarAlerta(mensaje, tipo) { /* ... implementación ... */ } 
+
     // ----------------------------------------------------
     // UTIL: LLAMADA A LA API O DATOS SIMULADOS
     // ----------------------------------------------------
     async function fetchClubesActivos() {
         try {
-            // ⭐ REEMPLAZA ESTA URL CON TU ENDPOINT REAL PARA OBTENER CLUBES ACTIVOS ⭐
+            // ⭐ URL: /api/clubs?estado=activo es correcto. ⭐
             const res = await fetch("/api/clubs?estado=activo");
             const data = await res.json();
 
             if (!data.success) {
-                mostrarAlerta("Error al cargar la lista de clubes.", "error");
+                mostrarAlerta(data.message || "Error al cargar la lista de clubes.", "error");
                 return [];
             }
 
-            // Suponemos que la API devuelve ya el campo 'esMiembro' si el usuario está logeado,
-            // o que la lógica para saber si 'esMiembro' se hace en otro endpoint.
-            // Para la simulación, lo calcularemos en el renderizado si la API no lo hace.
-            return data.data;
+            // 🚨 CORRECCIÓN CLAVE AQUÍ 🚨
+            // La API de Next.js devuelve el arreglo en 'clubs', no en 'data'.
+            // Usamos || [] para asegurar que siempre devolvemos un array (incluso si está undefined).
+            return data.clubs || [];
 
         } catch (error) {
             console.error("Error fetching clubes:", error);
@@ -44,11 +48,12 @@ document.addEventListener("DOMContentLoaded", () => {
     async function renderClubes() {
         if (!clubesContainer) return;
 
-        // Cargar los clubes activos (solo los aprobados)
+        // Cargar los clubes activos (ya verificados para ser un array o [])
         const clubesActivos = await fetchClubesActivos();
 
         clubesContainer.innerHTML = '';
 
+        // Línea ~52: Esta verificación ahora es segura porque 'clubesActivos' es un array.
         if (clubesActivos.length === 0) {
             clubesContainer.innerHTML = '<p class="text-warning mt-5">No hay clubes activos en este momento.</p>';
             return;
@@ -56,12 +61,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         clubesActivos.forEach(club => {
             // ⭐ Lógica de Rol: ¿El usuario logeado es el presidente de este club? ⭐
-            // Asegúrate de que club.id_presidente y userId son del mismo tipo (ej: ambos Strings o ambos Numbers)
-            const esPresidente = userId && club.id_presidente === userId;
+            // Asegúrate de que club.id_presidente es del mismo tipo que userId (convertimos a String por seguridad)
+            const esPresidente = userId && String(club.id_presidente) === String(userId);
 
-            // ⭐ Lógica de Membresía: ¿El usuario es socio? (Ajusta esto a tu estructura de datos) ⭐
-            // Suponemos que club.esMiembro viene de la API o se calcula en el cliente. 
-            // Si tu API no devuelve 'esMiembro', tendrías que hacer una llamada adicional aquí.
+            // ⭐ Lógica de Membresía: ¿El usuario es socio? (Asume que club.esMiembro se establece en true/false
+            // o que la lógica real de membresía se implementará en otro lugar y este es un placeholder) ⭐
             const esMiembro = club.esMiembro || false;
 
             const clubCol = document.createElement('div');
@@ -166,7 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         confirmarSalirClubBtn.onclick = async () => {
             const clubId = confirmarSalirClubBtn.getAttribute('data-target-club-id');
-            const modalInstance = bootstrap.Modal.getInstance(modalSalirClubEl);
+            // Aseguramos que la instancia de Bootstrap Modal está disponible
+            const modalInstance = typeof bootstrap !== 'undefined' ? bootstrap.Modal.getInstance(modalSalirClubEl) : null;
 
             try {
                 // ⭐ Reemplaza esta URL con tu endpoint para salir del club (DELETE/PUT a membresía) ⭐
