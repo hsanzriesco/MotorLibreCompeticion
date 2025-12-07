@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------
-    // CARGAR LISTA DE CLUBES Y DISTRIBUIR
+    // CARGAR LISTA DE CLUBES Y DISTRIBUIR (MODIFICADA)
     // -----------------------------------------
     async function cargarClubes() {
         const token = getToken();
@@ -99,19 +99,27 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             // ⭐ LLAMADA 1: Obtener clubes activos
             const resActivos = await fetch("/api/clubs?estado=activo", { headers });
-            // Manejar 403 o fallos de red aquí
-            if (resActivos.status === 403) throw new Error("Acceso denegado (403): El usuario no es Admin.");
 
+            // 🚨 CORRECCIÓN: Manejar fallos de HTTP (401, 403, 500, etc.) antes de leer JSON
+            if (!resActivos.ok) {
+                // Leer el cuerpo de la respuesta para obtener detalles del error si es posible
+                const errorText = await resActivos.text();
+                // Lanzar un error con el código de estado
+                throw new Error(`Fallo al cargar activos: ${resActivos.status} ${resActivos.statusText}. Detalle: ${errorText.substring(0, 100)}...`);
+            }
             const dataActivos = await resActivos.json();
 
             // ⭐ LLAMADA 2: Obtener solicitudes pendientes
             const resPendientes = await fetch("/api/clubs?estado=pendiente", { headers });
-            // Manejar 403 o fallos de red aquí
-            if (resPendientes.status === 403) throw new Error("Acceso denegado (403): El usuario no es Admin.");
 
+            // 🚨 CORRECCIÓN: Manejar fallos de HTTP (401, 403, 500, etc.) antes de leer JSON
+            if (!resPendientes.ok) {
+                const errorText = await resPendientes.text();
+                throw new Error(`Fallo al cargar pendientes: ${resPendientes.status} ${resPendientes.statusText}. Detalle: ${errorText.substring(0, 100)}...`);
+            }
             const dataPendientes = await resPendientes.json();
 
-            // ✅ CORRECCIÓN CLAVE: Garantizar que la variable es un array o vacío
+            // ✅ Garantizar que la variable es un array o vacío
             const activos = dataActivos.success ? (dataActivos.clubs || []) : [];
             const pendientes = dataPendientes.success ? (dataPendientes.pending_clubs || []) : [];
 
@@ -126,13 +134,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (!dataActivos.success || !dataPendientes.success) {
-                mostrarAlerta("Advertencia: Fallo una de las llamadas a la API.", "info");
+                mostrarAlerta("Advertencia: Fallo una de las llamadas a la API (pero los datos parciales se cargaron).", "info");
             }
 
         } catch (error) {
             console.error("Error cargarClubes:", error);
-            const errorMessage = error.message.includes("403") ? error.message : "Error al conectar con el servidor.";
-            mostrarAlerta(errorMessage, "error");
+
+            // Manejo de errores más específico
+            let customMessage = "Error al conectar con el servidor.";
+            if (error.message.includes('401') || error.message.includes('403')) {
+                customMessage = "Acceso denegado (401/403): El usuario no es Admin o el token expiró.";
+            } else if (error.message.includes('Fallo al cargar activos') || error.message.includes('Fallo al cargar pendientes')) {
+                customMessage = `Error al cargar datos: ${error.message}`;
+            }
+
+            mostrarAlerta(customMessage, "error");
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
         }
@@ -178,6 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
                 `;
             } else if (club.estado === 'activo') {
+                // Nota: Podrías cambiar a bg-success para activo, el original usaba bg-danger
                 badgeEstado = '<span class="badge bg-danger">ACTIVO</span>';
             } else {
                 badgeEstado = '<span class="badge bg-secondary">DESCONOCIDO</span>';
@@ -237,6 +254,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const res = await fetch(`/api/clubs?id=${id}`, { headers });
+
+            // Manejo de error de fetch
+            if (!res.ok) {
+                const errorText = await res.text();
+                mostrarAlerta(`Error ${res.status} al obtener club para edición: ${errorText.substring(0, 100)}...`, "error");
+                return;
+            }
+
             const r = await res.json();
 
             // ✅ CORRECCIÓN: El backend devuelve r.club o r.pending_club
@@ -304,6 +329,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: headers,
                 body: formData
             });
+
+            // Manejar errores HTTP antes de leer JSON
+            if (!res.ok) {
+                const errorText = await res.text();
+                mostrarAlerta(`Error ${res.status} al guardar: ${errorText.substring(0, 100)}...`, "error");
+                return;
+            }
+
             const r = await res.json();
 
             if (!r.success) {
@@ -360,6 +393,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+
+                // Manejar errores HTTP antes de leer JSON
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    mostrarAlerta(`Error ${res.status} al eliminar: ${errorText.substring(0, 100)}...`, "error");
+                    deleteConfirmModal.hide();
+                    return;
+                }
+
 
                 const r = await res.json();
 
@@ -449,9 +491,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                r = await res.json();
+                // 🚨 CORRECCIÓN: Manejar fallos de HTTP (401, 403, 500, etc.) antes de leer JSON
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    mostrarAlerta(`Error ${res.status} al ${action} el club: ${errorText.substring(0, 100)}...`, "error");
+                    statusConfirmModal.hide();
+                    return;
+                }
 
-                if (res.status === 403) throw new Error("Acceso denegado (403).");
+                r = await res.json();
 
                 if (!r.success) {
                     mostrarAlerta(r.message || `Error al ${action} el club.`, "error");
