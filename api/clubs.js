@@ -349,14 +349,19 @@ async function clubsHandler(req, res) {
                     idPresidente = userId;
                 }
 
+                // 🚨 CORRECCIÓN CLAVE APLICADA AQUÍ 🚨
+                console.log("Tabla de inserción determinada:", tabla);
+                if (!tabla || (tabla !== 'clubs' && tabla !== 'clubs_pendientes')) {
+                    // Este error se activará si la lógica de rol falla y 'tabla' no se define correctamente.
+                    return res.status(500).json({ success: false, message: "Error interno: La tabla de destino SQL es inválida. Revise la lógica de rol y autenticación." });
+                }
+
                 // Obtenemos el nombre del presidente (corregido para usar userDetails si es posible)
                 let nombrePresidente;
-                if (isAdmin) {
-                    nombrePresidente = 'Admin';
-                } else {
-                    const presidenteNameRes = await pool.query("SELECT name FROM users WHERE id = $1", [idPresidente]);
-                    nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
-                }
+                // Si la tabla fue clubs, y el usuario era admin, idPresidente es userId del admin, si no, se usa el idPresidente del usuario logeado.
+                const presidenteNameRes = await pool.query("SELECT name FROM users WHERE id = $1", [idPresidente]);
+                nombrePresidente = presidenteNameRes.rows[0]?.name || (isAdmin ? 'Admin' : 'Usuario desconocido');
+
 
                 const insertQuery = `
                     INSERT INTO ${tabla} (nombre_evento, descripcion, imagen_club, fecha_creacion, estado, id_presidente, nombre_presidente) 
@@ -395,11 +400,11 @@ async function clubsHandler(req, res) {
                 }
                 // Si el error es de DB
                 if (uploadError.code && uploadError.code.startsWith('23')) {
-                    return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. Revise campos NOT NULL. (${uploadError.code})` });
+                    return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. Revise campos NOT NULL en la tabla ${tabla || 'clubs_pendientes'}. (${uploadError.code})` });
                 }
 
 
-                throw uploadError; // Lanzar para el catch global si no se maneja aquí
+                return res.status(500).json({ success: false, message: `Error interno del servidor. Consulte la consola para más detalles. (${uploadError.message})` });
             }
         }
 
