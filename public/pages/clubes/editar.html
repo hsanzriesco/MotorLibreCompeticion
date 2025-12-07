@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Mi Club</title>
+</head>
+<body>
+
+    <h2>✏️ Edición de Club</h2>
+    <form id="club-edit-form" enctype="multipart/form-data">
+        <input type="hidden" id="club-id" name="id">
+        
+        <label for="nombre_evento">Nombre:</label>
+        <input type="text" id="nombre_evento" name="nombre_evento" required><br><br>
+
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" required></textarea><br><br>
+        
+        <label>Imagen Actual:</label>
+        <img id="current-image" src="" alt="Imagen actual del club" style="max-width: 200px;"><br><br>
+
+        <label for="imagen_club">Cambiar Imagen (Max 5MB):</label>
+        <input type="file" id="imagen_club" name="imagen_club" accept="image/*"><br><br>
+
+        <button type="submit">Guardar Cambios</button>
+    </form>
+
+    <script src="/js/clubEdit.js"></script> 
+</body>
+</html>
