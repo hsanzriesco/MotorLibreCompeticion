@@ -117,6 +117,9 @@
         Clubes
       </a>
 
+      <a href="./pages/clubes/editar.html" id="mi-club-link" class="d-block text-warning mb-2" style="display:none;">
+        Mi Club (Editar)
+      </a>
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
         Mi perfil
       </a>
@@ -217,7 +220,7 @@
 
     </div>
   </section>
-  
+
 
   <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
     aria-hidden="true">
@@ -295,13 +298,16 @@
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
       const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+      const clubIdInSession = sessionStorage.getItem("clubId"); // <-- Obtener el clubId de sessionStorage
       const usuario = storedUser ? JSON.parse(storedUser) : null;
 
       const bienvenida = document.getElementById("bienvenida");
       const userName = document.getElementById("user-name");
       const loginIcon = document.getElementById("login-icon");
       const logoutBtn = document.getElementById("logout-btn");
+      const miClubLink = document.getElementById("mi-club-link"); // <-- Obtener el nuevo enlace
 
+      // ⭐⭐ LÓGICA DE VISIBILIDAD DE ELEMENTOS ⭐⭐
       if (usuario) {
         bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
         userName.textContent = usuario.name;
@@ -314,11 +320,26 @@
           document.getElementById("logo-link").href = "./pages/dashboard/admin/admin.html";
         }
 
+        // Lógica específica para el Presidente del Club
+        // Se comprueba si el usuario tiene un clubId en su objeto de sesión
+        // O si lo guardaste por separado en sessionStorage
+        const hasClub = !!usuario.clubId || !!usuario.club_id || !!clubIdInSession;
+
+        if (hasClub && miClubLink) {
+          miClubLink.style.display = "block"; // Mostrar el enlace "Mi Club"
+        }
+
       } else {
         userName.style.display = "none";
         loginIcon.style.display = "inline";
         logoutBtn.style.display = "none";
+
+        if (miClubLink) {
+          miClubLink.style.display = "none"; // Asegurar que esté oculto si no hay sesión
+        }
       }
+      // ⭐⭐ FIN LÓGICA DE VISIBILIDAD ⭐⭐
+
 
       if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
@@ -343,8 +364,10 @@
 
           if (logoutConfirmModal) logoutConfirmModal.hide();
 
+          // Al cerrar sesión, también borramos el Club ID.
           sessionStorage.removeItem("usuario");
           localStorage.removeItem("usuario");
+          sessionStorage.removeItem("clubId"); // <-- Limpiar el Club ID
 
           mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
