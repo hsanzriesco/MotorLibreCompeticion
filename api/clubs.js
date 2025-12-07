@@ -1,17 +1,16 @@
 // api/clubs.js
 // Maneja la gestión de clubes y solicitudes de clubes pendientes
-// 🚨 MODIFICADO PARA USAR CLOUDINARY EN VEZ DE ALMACENAMIENTO LOCAL 🚨
 
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
-import path from "path";
 import jwt from "jsonwebtoken";
-import { v2 as cloudinary } from 'cloudinary'; // Importar Cloudinary
+import { v2 as cloudinary } from 'cloudinary';
 
 // --- CONFIGURACIÓN DE BASE DE DATOS ---
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+    // Asegúrate de que esta opción esté configurada si usas servicios como Supabase o Heroku Postgres.
     ssl: { rejectUnauthorized: false },
 });
 
@@ -25,7 +24,7 @@ cloudinary.config({
 });
 
 
-// Asegúrate de que el body parser esté desactivado para manejar 'formidable'
+// Desactiva el body parser de Next.js para permitir que formidable lea el cuerpo del request
 export const config = {
     api: { bodyParser: false, },
 };
@@ -35,43 +34,39 @@ export const config = {
 // ------------------------------------------------------------------------------------------------
 
 /**
- * 1. Parsear FormData (modificado para usar /tmp en Vercel)
+ * 1. Parsear FormData (Estabilizado para Vercel/Serverless)
  */
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
-        // En Vercel/Serverless, formidable debe usar /tmp para archivos temporales
-        const tempUploadDir = '/tmp';
-
-        // Asegurar que el directorio temporal existe
-        if (!fs.existsSync(tempUploadDir)) {
-            fs.mkdirSync(tempUploadDir, { recursive: true });
-        }
-
+        // En Vercel/Serverless, formidable utiliza automáticamente '/tmp' 
+        // para archivos temporales. No es necesario crear o forzar el directorio.
         const form = formidable({
-            multitudes: false,
-            // 🚨 CAMBIO CLAVE: Usamos el directorio /tmp para el archivo temporal
-            uploadDir: tempUploadDir,
+            multiples: false,
+            // 🚨 ELIMINAMOS 'uploadDir' y 'fs.existsSync' para dejar que formidable 
+            // maneje el temporal de forma nativa en el entorno Serverless.
             keepExtensions: true,
-            maxFileSize: 5 * 1024 * 1024, // 5MB
+            maxFileSize: 5 * 1024 * 1024, // 5MB (máximo recomendado para funciones Lambda)
         });
 
         form.parse(req, (err, fields, files) => {
             if (err) {
                 console.error("Error parsing form:", err);
-                const uploadedFile = files.imagen_club ? files.imagen_club[0] : null;
-                // Limpiamos el archivo temporal en caso de error (ej: maxFileSize)
-                if (uploadedFile && uploadedFile.filepath && fs.existsSync(uploadedFile.filepath)) {
-                    fs.unlinkSync(uploadedFile.filepath);
-                }
+                // Si formidable falla al parsear, no intentamos limpiar, solo rechazamos
                 return reject(err);
             }
 
+            // Normalizar fields y files de arrays a objetos simples
             const fieldData = Object.keys(fields).reduce((acc, key) => {
                 acc[key] = fields[key][0];
                 return acc;
             }, {});
 
-            resolve({ fields: fieldData, files });
+            const fileData = Object.keys(files).reduce((acc, key) => {
+                acc[key] = files[key][0];
+                return acc;
+            }, {});
+
+            resolve({ fields: fieldData, files: fileData });
         });
     });
 };
@@ -88,12 +83,17 @@ async function uploadToCloudinary(filePath) {
         });
 
         // 🚨 Importante: Eliminar el archivo temporal de /tmp después de la subida exitosa
-        fs.unlinkSync(filePath);
+        // Esto es crucial para liberar espacio en el entorno Serverless.
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
 
         return result.secure_url; // Devuelve la URL pública
     } catch (error) {
         // Si falla Cloudinary, también intentamos limpiar el archivo temporal
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
         throw new Error(`Cloudinary upload failed: ${error.message}`);
     }
 }
@@ -102,7 +102,6 @@ async function uploadToCloudinary(filePath) {
  * 3. Verificar JWT y Rol
  */
 const verifyToken = (req) => {
-    // ... (Sin cambios, el mismo código de verificación)
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { authorized: false, message: 'Token no proporcionado.' };
@@ -120,7 +119,6 @@ const verifyToken = (req) => {
  * 4. Verificar si es Administrador
  */
 const verifyAdmin = (req) => {
-    // ... (Sin cambios)
     const verification = verifyToken(req);
     if (!verification.authorized) throw new Error(verification.message);
     if (verification.user.role !== 'admin') throw new Error('Acceso denegado: Se requiere rol de administrador.');
@@ -131,7 +129,6 @@ const verifyAdmin = (req) => {
 // ------------------------------------------------------------------------------------------------
 // 1. MANEJADOR DE CAMBIO DE ESTADO (Aprobar/Rechazar)
 // ------------------------------------------------------------------------------------------------
-// (Se mantiene igual, ya que solo maneja lógica de DB y rol)
 async function statusChangeHandler(req, res) {
     const { method, query } = req;
     const { id } = query;
@@ -144,7 +141,13 @@ async function statusChangeHandler(req, res) {
             const body = await new Promise(resolve => {
                 const chunks = [];
                 req.on('data', chunk => chunks.push(chunk));
-                req.on('end', () => resolve(JSON.parse(Buffer.concat(chunks).toString())));
+                req.on('end', () => {
+                    try {
+                        resolve(JSON.parse(Buffer.concat(chunks).toString()));
+                    } catch (e) {
+                        resolve({}); // Manejar el caso de body vacío o inválido
+                    }
+                });
             });
 
             const { estado } = body;
@@ -203,7 +206,6 @@ async function statusChangeHandler(req, res) {
             if (result.rows.length === 0) {
                 return res.status(404).json({ success: false, message: "Solicitud de club pendiente no encontrada para rechazar." });
             }
-            // TODO: Si se rechaza, habría que borrar la imagen de Cloudinary si existe (opcional)
             return res.status(200).json({ success: true, message: "Solicitud de club rechazada y eliminada." });
         }
 
@@ -236,18 +238,17 @@ async function clubsHandler(req, res) {
 
     try {
         // --- 2.1. GET: Obtener clubes ---
-        // (Código GET se mantiene igual)
+        // (El código GET se debe implementar aquí si aún no está)
 
         // --- 2.2. POST: Crear nuevo club o solicitud de club ---
         if (method === "POST") {
             const { fields, files } = await parseForm(req);
             const { nombre_evento, descripcion } = fields;
-            const imagenFile = files.imagen_club ? files.imagen_club[0] : null;
+            const imagenFile = files.imagen_club ? files.imagen_club : null; // Ya es el objeto File
 
             // Ruta temporal que creó formidable
             const imagenFilePathTemp = imagenFile ? imagenFile.filepath : null;
 
-            // 🚨 CAMBIO CLAVE: Subir a Cloudinary y obtener la URL 🚨
             let imagen_club_url = null;
 
             try {
@@ -256,13 +257,12 @@ async function clubsHandler(req, res) {
                 }
             } catch (uploadError) {
                 console.error("Cloudinary Error:", uploadError.message);
-                // Si la subida falla, Cloudinary Helper ya intentó limpiar el temporal.
                 return res.status(500).json({ success: false, message: "Error al subir la imagen. Verifica las credenciales de Cloudinary." });
             }
 
 
             if (!nombre_evento || !descripcion) {
-                // Ya no necesitamos limpiar aquí el archivo temporal porque uploadToCloudinary lo maneja.
+                // Si falta texto, ya se limpió la imagen en uploadToCloudinary si subió.
                 return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre o descripción." });
             }
 
@@ -279,9 +279,12 @@ async function clubsHandler(req, res) {
                     return res.status(401).json({ success: false, message: "Debe iniciar sesión para solicitar un club." });
                 }
 
-                // Verificar club ACTIVO y PENDIENTE
-                const checkClub = await pool.query("SELECT role FROM users WHERE id = $1", [userId]);
-                if (checkClub.rows.length === 0 || checkClub.rows[0].role === 'presidente') {
+                // Verificar si ya es presidente o si ya tiene una solicitud pendiente
+                const checkClub = await pool.query("SELECT role, club_id FROM users WHERE id = $1", [userId]);
+                if (checkClub.rows.length === 0) {
+                    return res.status(403).json({ success: false, message: "Usuario no encontrado." });
+                }
+                if (checkClub.rows[0].role === 'presidente' && checkClub.rows[0].club_id !== null) {
                     return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                 }
 
@@ -308,7 +311,7 @@ async function clubsHandler(req, res) {
             const result = await pool.query(insertQuery, [
                 nombre_evento,
                 descripcion,
-                imagen_club_url, // 🚨 Guardamos la URL de Cloudinary
+                imagen_club_url,
                 clubEstado,
                 idPresidente,
                 nombrePresidente
@@ -329,7 +332,7 @@ async function clubsHandler(req, res) {
 
             const { fields, files } = await parseForm(req);
             const { nombre_evento, descripcion } = fields;
-            const imagenFile = files.imagen_club ? files.imagen_club[0] : null;
+            const imagenFile = files.imagen_club ? files.imagen_club : null;
 
             if (!isAdmin) {
                 const checkPresidente = await pool.query("SELECT id_presidente FROM clubs WHERE id = $1", [id]);
@@ -345,7 +348,7 @@ async function clubsHandler(req, res) {
 
             try {
                 if (imagenFilePathTemp) {
-                    // 🚨 Subimos la nueva imagen a Cloudinary
+                    // Subimos la nueva imagen a Cloudinary
                     imagen_club_url = await uploadToCloudinary(imagenFilePathTemp);
                 }
             } catch (uploadError) {
@@ -367,7 +370,7 @@ async function clubsHandler(req, res) {
             }
             if (imagen_club_url) {
                 updates.push(`imagen_club = $${paramIndex++}`);
-                values.push(imagen_club_url); // 🚨 Usamos la URL
+                values.push(imagen_club_url); // Usamos la URL
             }
 
             if (updates.length === 0) {
@@ -393,7 +396,7 @@ async function clubsHandler(req, res) {
 
 
         // --- 2.4. DELETE: Eliminar club (Solo Admin) ---
-        // (Código DELETE se mantiene igual, aunque podría mejorarse para eliminar de Cloudinary)
+        // (El código DELETE debe implementarse aquí si aún no está)
 
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
@@ -404,7 +407,8 @@ async function clubsHandler(req, res) {
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
-            return res.status(500).json({ success: false, message: "Error: Tabla de base de datos no encontrada." });
+            // Este error de DB (Tabla no existe) es el que estamos buscando solucionar
+            return res.status(500).json({ success: false, message: "Error: La tabla de base de datos no fue encontrada. Revisa 'DATABASE_URL' y los nombres de las tablas." });
         }
         if (error.message.includes('maxFileSize') || error.message.includes('Cloudinary upload failed')) {
             return res.status(400).json({ success: false, message: "Error: La imagen es demasiado grande o falló la subida externa." });
