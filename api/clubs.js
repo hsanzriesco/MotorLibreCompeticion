@@ -283,19 +283,20 @@ async function clubsHandler(req, res) {
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
                     // Obtener solicitudes pendientes (requiere Admin)
-                    // CORRECCIÓN: Usando public.clubs_pendientes
+                    // ✅ CORRECCIÓN INTEGRADA: JOIN con la tabla users para obtener el nombre del solicitante.
                     queryText = `
                         SELECT 
-                            id, 
-                            nombre_evento, 
-                            descripcion, 
-                            imagen_club, 
-                            fecha_solicitud as fecha_creacion, 
-                            NULL as estado,          
-                            id_presidente, 
-                            NULL as nombre_presidente         
-                        FROM public.clubs_pendientes 
-                        ORDER BY fecha_solicitud DESC
+                            p.id, 
+                            p.nombre_evento, 
+                            p.descripcion, 
+                            p.imagen_club, 
+                            p.fecha_solicitud as fecha_creacion, 
+                            'pendiente' as estado,
+                            p.id_presidente,
+                            u.name as nombre_presidente
+                        FROM public.clubs_pendientes p
+                        JOIN public."users" u ON p.id_presidente = u.id 
+                        ORDER BY p.fecha_solicitud DESC
                     `;
                     const result = await pool.query(queryText);
                     return res.status(200).json({ success: true, pending_clubs: result.rows });
