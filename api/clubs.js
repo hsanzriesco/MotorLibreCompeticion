@@ -157,7 +157,6 @@ async function statusChangeHandler(req, res) {
                 await client.query('BEGIN');
 
                 // 1. Obtener datos del club pendiente (clubs_pendientes)
-                // ✅ CORRECCIÓN: Usar 'clubs_pendientes' sin 'public.' ni comillas dobles
                 const pendingClubRes = await client.query(
                     'SELECT nombre_evento, descripcion, imagen_club, id_presidente, (SELECT name FROM "users" WHERE id = clubs_pendientes.id_presidente) as nombre_presidente FROM clubs_pendientes WHERE id = $1',
                     [id]
@@ -177,9 +176,9 @@ async function statusChangeHandler(req, res) {
                 }
 
 
-                // 2. Mover el club a la tabla principal 'clubs'
-                // ✅ CORRECCIÓN: Usar 'clubs' sin 'public.' ni comillas dobles
+                // 2. Mover el club a la tabla principal 'clubs' (Usa fecha_creacion)
                 const insertRes = await client.query(
+                    // ✅ CORRECCIÓN 1: Usamos fecha_creacion para la tabla 'clubs'
                     'INSERT INTO clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id',
                     [club.nombre_evento, club.descripcion, club.imagen_club, club.id_presidente, club.nombre_presidente, 'activo']
                 );
@@ -192,7 +191,6 @@ async function statusChangeHandler(req, res) {
                 );
 
                 // 4. Eliminar la solicitud de la tabla de pendientes (clubs_pendientes)
-                // ✅ CORRECCIÓN: Usar 'clubs_pendientes' sin 'public.' ni comillas dobles
                 await client.query('DELETE FROM clubs_pendientes WHERE id = $1', [id]);
 
                 await client.query('COMMIT');
@@ -207,7 +205,6 @@ async function statusChangeHandler(req, res) {
 
         } else if (method === 'DELETE') {
             // RECHAZAR SOLICITUD (Eliminar de clubs_pendientes)
-            // ✅ CORRECCIÓN: Usar 'clubs_pendientes' sin 'public.' ni comillas dobles
             const result = await pool.query('DELETE FROM clubs_pendientes WHERE id = $1 RETURNING id', [id]);
 
             if (result.rows.length === 0) {
@@ -248,7 +245,7 @@ async function clubsHandler(req, res) {
         if (method === "GET") {
             const { estado, id } = query;
 
-            // ✅ CORRECCIÓN: Usar 'clubs' sin 'public.' ni comillas dobles
+            // La consulta general siempre apunta a la tabla 'clubs' (activos).
             let queryText = `
                 SELECT 
                     id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
@@ -277,8 +274,8 @@ async function clubsHandler(req, res) {
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
                     // Obtener solicitudes pendientes (requiere Admin)
-                    // ✅ CORRECCIÓN: Usar 'clubs_pendientes' sin 'public.' ni comillas dobles
-                    queryText = 'SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, estado, id_presidente, nombre_presidente FROM clubs_pendientes ORDER BY fecha_creacion DESC';
+                    // ✅ CORRECCIÓN 2: Seleccionamos fecha_solicitud y le damos el alias fecha_creacion
+                    queryText = 'SELECT id, nombre_evento, descripcion, imagen_club, fecha_solicitud as fecha_creacion, estado, id_presidente, nombre_presidente FROM clubs_pendientes ORDER BY fecha_solicitud DESC';
                     const result = await pool.query(queryText);
                     return res.status(200).json({ success: true, pending_clubs: result.rows });
                 } else if (estado === 'pendiente' && !isAdmin) {
@@ -287,7 +284,6 @@ async function clubsHandler(req, res) {
             }
 
             // Si no se especifica ID ni estado, devolver todos los clubes activos por defecto.
-            // ✅ CORRECCIÓN: Usar 'clubs' sin 'public.' ni comillas dobles
             const defaultResult = await pool.query(`
                 SELECT 
                     id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
@@ -324,17 +320,18 @@ async function clubsHandler(req, res) {
                 let tabla;
                 let clubEstado;
                 let idPresidente = userId;
+                let fechaColumna; // Variable para la columna de fecha
 
                 if (isAdmin) {
                     tabla = 'clubs';
                     clubEstado = 'activo';
+                    fechaColumna = 'fecha_creacion'; // Columna de la tabla 'clubs'
                 } else {
                     if (!authVerification.authorized || !userId) {
                         return res.status(401).json({ success: false, message: "Debe iniciar sesión para solicitar un club." });
                     }
 
                     // 🚨 VERIFICACIÓN ADICIONAL DE EXISTENCIA DE USUARIO 🚨
-                    // 🚨 CORRECCIÓN: Se usan comillas para "users" 🚨
                     const checkUser = await pool.query('SELECT role, club_id, name FROM "users" WHERE id = $1', [userId]);
                     if (checkUser.rows.length === 0) {
                         return res.status(403).json({ success: false, message: "Usuario no encontrado." });
@@ -345,7 +342,6 @@ async function clubsHandler(req, res) {
                         return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                     }
 
-                    // 🚨 CORRECCIÓN: Usar clubs_pendientes sin public. 🚨
                     const checkPending = await pool.query('SELECT id FROM clubs_pendientes WHERE id_presidente = $1', [userId]);
                     if (checkPending.rows.length > 0) {
                         return res.status(403).json({ success: false, message: "Ya tienes una solicitud de club pendiente." });
@@ -354,25 +350,23 @@ async function clubsHandler(req, res) {
                     tabla = 'clubs_pendientes';
                     clubEstado = 'pendiente';
                     idPresidente = userId;
+                    fechaColumna = 'fecha_solicitud'; // ✅ CORRECCIÓN 3: Columna de la tabla 'clubs_pendientes'
                 }
 
-                // 🚨 CORRECCIÓN CLAVE APLICADA AQUÍ 🚨
                 console.log("Tabla de inserción determinada:", tabla);
                 if (!tabla || (tabla !== 'clubs' && tabla !== 'clubs_pendientes')) {
-                    // Este error se activará si la lógica de rol falla y 'tabla' no se define correctamente.
                     return res.status(500).json({ success: false, message: "Error interno: La tabla de destino SQL es inválida. Revise la lógica de rol y autenticación." });
                 }
 
                 // Obtenemos el nombre del presidente
-                // 🚨 CORRECCIÓN: Se usan comillas para "users" 🚨
                 let nombrePresidente;
                 const presidenteNameRes = await pool.query('SELECT name FROM "users" WHERE id = $1', [idPresidente]);
                 nombrePresidente = presidenteNameRes.rows[0]?.name || (isAdmin ? 'Admin' : 'Usuario desconocido');
 
 
+                // ✅ CORRECCIÓN 4: Usamos la variable fechaColumna en la sentencia INSERT
                 const insertQuery = `
-                    -- Usar "${tabla}" para asegurar la resolución de nombres de tabla
-                    INSERT INTO "${tabla}" (nombre_evento, descripcion, imagen_club, fecha_creacion, estado, id_presidente, nombre_presidente) 
+                    INSERT INTO "${tabla}" (nombre_evento, descripcion, imagen_club, ${fechaColumna}, estado, id_presidente, nombre_presidente) 
                     VALUES ($1, $2, $3, NOW(), $4, $5, $6)
                     RETURNING id, nombre_evento, descripcion, estado
                 `;
@@ -429,7 +423,6 @@ async function clubsHandler(req, res) {
 
 
             if (!isAdmin) {
-                // ✅ CORRECCIÓN: Usar 'clubs' sin 'public.' ni comillas dobles
                 const checkPresidente = await pool.query('SELECT id_presidente FROM clubs WHERE id = $1', [id]);
                 if (checkPresidente.rows.length === 0 || checkPresidente.rows[0].id_presidente !== userId) {
                     // 🚨 Limpieza si no hay permisos 🚨
@@ -474,7 +467,6 @@ async function clubsHandler(req, res) {
             values.push(id);
             const idParam = paramIndex;
 
-            // ✅ CORRECCIÓN: Usar 'clubs' sin 'public.' ni comillas dobles
             const updateQuery = `
                 UPDATE clubs SET ${updates.join(', ')} WHERE id = $${idParam}
                 RETURNING id, nombre_evento, descripcion, imagen_club
@@ -498,7 +490,6 @@ async function clubsHandler(req, res) {
             verifyAdmin(req); // Requiere ser administrador
 
             // 1. Obtener URL de imagen para posible eliminación de Cloudinary (opcional, pero recomendado)
-            // ✅ CORRECCIÓN: Usar 'clubs' sin 'public.' ni comillas dobles
             const clubRes = await pool.query('SELECT id_presidente, imagen_club FROM clubs WHERE id = $1', [id]);
             if (clubRes.rows.length === 0) {
                 return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
@@ -506,12 +497,10 @@ async function clubsHandler(req, res) {
             const { id_presidente, imagen_club } = clubRes.rows[0];
 
             // 2. Eliminar club de la tabla principal
-            // ✅ CORRECCIÓN: Usar 'clubs' sin 'public.' ni comillas dobles
             const deleteRes = await pool.query('DELETE FROM clubs WHERE id = $1 RETURNING id', [id]);
 
             if (deleteRes.rows.length > 0) {
                 // 3. Resetear rol y club_id del presidente asociado
-                // 🚨 CORRECCIÓN: Usar comillas para "users" 🚨
                 await pool.query('UPDATE "users" SET role = $1, club_id = NULL WHERE id = $2', ['user', id_presidente]);
 
                 // 4. TODO: Implementar borrado de Cloudinary usando imagen_club (requiere parsear la URL para obtener el public_id)
