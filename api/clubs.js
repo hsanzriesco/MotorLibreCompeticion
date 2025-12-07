@@ -157,8 +157,9 @@ async function statusChangeHandler(req, res) {
                 await client.query('BEGIN');
 
                 // 1. Obtener datos del club pendiente (clubs_pendientes)
+                // NO se selecciona 'estado' ni 'nombre_presidente' de clubs_pendientes
                 const pendingClubRes = await client.query(
-                    'SELECT nombre_evento, descripcion, imagen_club, id_presidente, (SELECT name FROM "users" WHERE id = clubs_pendientes.id_presidente) as nombre_presidente FROM clubs_pendientes WHERE id = $1',
+                    'SELECT nombre_evento, descripcion, imagen_club, id_presidente FROM clubs_pendientes WHERE id = $1',
                     [id]
                 );
 
@@ -169,18 +170,21 @@ async function statusChangeHandler(req, res) {
 
                 const club = pendingClubRes.rows[0];
 
-                // 🚨 VERIFICACIÓN AÑADIDA 🚨
                 if (!club.id_presidente) {
                     await client.query('ROLLBACK');
                     return res.status(400).json({ success: false, message: "El solicitante (id_presidente) no está definido." });
                 }
 
+                // Obtener el nombre del presidente para la tabla 'clubs'
+                let nombrePresidente;
+                const presidenteNameRes = await client.query('SELECT name FROM "users" WHERE id = $1', [club.id_presidente]);
+                nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
-                // 2. Mover el club a la tabla principal 'clubs' (Usa fecha_creacion)
+
+                // 2. Mover el club a la tabla principal 'clubs' (Aquí SÍ usamos nombre_presidente y estado)
                 const insertRes = await client.query(
-                    // ✅ CORRECCIÓN 1: Usamos fecha_creacion para la tabla 'clubs'
                     'INSERT INTO clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id',
-                    [club.nombre_evento, club.descripcion, club.imagen_club, club.id_presidente, club.nombre_presidente, 'activo']
+                    [club.nombre_evento, club.descripcion, club.imagen_club, club.id_presidente, nombrePresidente, 'activo']
                 );
                 const newClubId = insertRes.rows[0].id;
 
@@ -274,8 +278,20 @@ async function clubsHandler(req, res) {
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
                     // Obtener solicitudes pendientes (requiere Admin)
-                    // ✅ CORRECCIÓN 2: Seleccionamos fecha_solicitud y le damos el alias fecha_creacion
-                    queryText = 'SELECT id, nombre_evento, descripcion, imagen_club, fecha_solicitud as fecha_creacion, estado, id_presidente, nombre_presidente FROM clubs_pendientes ORDER BY fecha_solicitud DESC';
+                    // ✅ CORRECCIÓN CLAVE: Usamos fecha_solicitud y añadimos NULLs para las columnas faltantes.
+                    queryText = `
+                        SELECT 
+                            id, 
+                            nombre_evento, 
+                            descripcion, 
+                            imagen_club, 
+                            fecha_solicitud as fecha_creacion, 
+                            NULL as estado,               -- Columna 'estado' falta en clubs_pendientes
+                            id_presidente, 
+                            NULL as nombre_presidente     -- Columna 'nombre_presidente' falta en clubs_pendientes
+                        FROM clubs_pendientes 
+                        ORDER BY fecha_solicitud DESC
+                    `;
                     const result = await pool.query(queryText);
                     return res.status(200).json({ success: true, pending_clubs: result.rows });
                 } else if (estado === 'pendiente' && !isAdmin) {
@@ -320,19 +336,41 @@ async function clubsHandler(req, res) {
                 let tabla;
                 let clubEstado;
                 let idPresidente = userId;
-                let fechaColumna; // Variable para la columna de fecha
+                let fechaColumna;
+
+                // Variables para la construcción dinámica de la consulta
+                let insertColumns;
+                let insertValues;
+                let params;
 
                 if (isAdmin) {
                     tabla = 'clubs';
                     clubEstado = 'activo';
-                    fechaColumna = 'fecha_creacion'; // Columna de la tabla 'clubs'
+                    fechaColumna = 'fecha_creacion';
+
+                    // Solo necesitamos el nombre del presidente para la tabla 'clubs'
+                    let nombrePresidente;
+                    const presidenteNameRes = await pool.query('SELECT name FROM "users" WHERE id = $1', [idPresidente]);
+                    nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
+
+                    // Consulta para tabla 'clubs' (Contiene todas las columnas)
+                    insertColumns = `nombre_evento, descripcion, imagen_club, ${fechaColumna}, estado, id_presidente, nombre_presidente`;
+                    insertValues = `($1, $2, $3, NOW(), $4, $5, $6)`;
+                    params = [
+                        nombre_evento,
+                        descripcion,
+                        imagen_club_url,
+                        clubEstado,
+                        idPresidente,
+                        nombrePresidente
+                    ];
+
                 } else {
                     if (!authVerification.authorized || !userId) {
                         return res.status(401).json({ success: false, message: "Debe iniciar sesión para solicitar un club." });
                     }
 
-                    // 🚨 VERIFICACIÓN ADICIONAL DE EXISTENCIA DE USUARIO 🚨
-                    const checkUser = await pool.query('SELECT role, club_id, name FROM "users" WHERE id = $1', [userId]);
+                    const checkUser = await pool.query('SELECT role, club_id FROM "users" WHERE id = $1', [userId]);
                     if (checkUser.rows.length === 0) {
                         return res.status(403).json({ success: false, message: "Usuario no encontrado." });
                     }
@@ -350,7 +388,17 @@ async function clubsHandler(req, res) {
                     tabla = 'clubs_pendientes';
                     clubEstado = 'pendiente';
                     idPresidente = userId;
-                    fechaColumna = 'fecha_solicitud'; // ✅ CORRECCIÓN 3: Columna de la tabla 'clubs_pendientes'
+                    fechaColumna = 'fecha_solicitud';
+
+                    // ✅ CORRECCIÓN CLAVE: Consulta para tabla 'clubs_pendientes' (Solo columnas básicas)
+                    insertColumns = `nombre_evento, descripcion, imagen_club, ${fechaColumna}, id_presidente`;
+                    insertValues = `($1, $2, $3, NOW(), $4)`;
+                    params = [
+                        nombre_evento,
+                        descripcion,
+                        imagen_club_url,
+                        idPresidente // id_presidente es $4
+                    ];
                 }
 
                 console.log("Tabla de inserción determinada:", tabla);
@@ -358,27 +406,13 @@ async function clubsHandler(req, res) {
                     return res.status(500).json({ success: false, message: "Error interno: La tabla de destino SQL es inválida. Revise la lógica de rol y autenticación." });
                 }
 
-                // Obtenemos el nombre del presidente
-                let nombrePresidente;
-                const presidenteNameRes = await pool.query('SELECT name FROM "users" WHERE id = $1', [idPresidente]);
-                nombrePresidente = presidenteNameRes.rows[0]?.name || (isAdmin ? 'Admin' : 'Usuario desconocido');
-
-
-                // ✅ CORRECCIÓN 4: Usamos la variable fechaColumna en la sentencia INSERT
                 const insertQuery = `
-                    INSERT INTO "${tabla}" (nombre_evento, descripcion, imagen_club, ${fechaColumna}, estado, id_presidente, nombre_presidente) 
-                    VALUES ($1, $2, $3, NOW(), $4, $5, $6)
-                    RETURNING id, nombre_evento, descripcion, estado
+                    INSERT INTO "${tabla}" (${insertColumns}) 
+                    VALUES ${insertValues}
+                    RETURNING id, nombre_evento, descripcion
                 `;
 
-                const result = await pool.query(insertQuery, [
-                    nombre_evento,
-                    descripcion,
-                    imagen_club_url,
-                    clubEstado,
-                    idPresidente,
-                    nombrePresidente
-                ]);
+                const result = await pool.query(insertQuery, params);
 
                 return res.status(201).json({
                     success: true,
@@ -392,15 +426,12 @@ async function clubsHandler(req, res) {
                 }
                 console.error("Error durante la subida/inserción (POST):", uploadError.message);
 
-                // Manejo de errores específicos para POST
                 if (uploadError.message.includes('Cloudinary upload failed')) {
                     return res.status(500).json({ success: false, message: "Error al subir la imagen. Verifica las credenciales de Cloudinary." });
                 }
-                // Si el error es formidable (tamaño de archivo)
                 if (uploadError.message.includes('maxFileSize')) {
                     return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
                 }
-                // Si el error es de DB
                 if (uploadError.code && uploadError.code.startsWith('23')) {
                     return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. Revise campos NOT NULL en la tabla ${tabla || 'clubs_pendientes'}. (${uploadError.code})` });
                 }
