@@ -82,21 +82,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------
     async function cargarClubes() {
         try {
-            // El API ahora retorna TODOS los clubes (activos, pendientes)
-            const res = await fetch("/api/clubs");
-            const data = await res.json();
+            // ⭐ LLAMADA 1: Obtener clubes activos
+            const resActivos = await fetch("/api/clubs?estado=activo");
+            const dataActivos = await resActivos.json();
 
-            if (!data.success) {
-                mostrarAlerta("Error cargando clubes", "error");
-                renderTabla(tablaActivos, [], 'error');
-                renderTabla(tablaPendientes, [], 'error');
-                return;
-            }
+            // ⭐ LLAMADA 2: Obtener solicitudes pendientes
+            const resPendientes = await fetch("/api/clubs?estado=pendiente");
+            const dataPendientes = await resPendientes.json();
 
-            const activos = data.data.filter(c => c.estado === 'activo');
-            const pendientes = data.data.filter(c => c.estado === 'pendiente');
+            // -------------------------------------------------------------------
+            // ✅ CORRECCIÓN CLAVE: Usamos || [] para asegurar que la variable es un array.
+            // dataActivos.clubs y dataPendientes.pending_clubs son las propiedades
+            // que devuelve la API con los clubes.
+            // -------------------------------------------------------------------
+            const activos = dataActivos.success ? (dataActivos.clubs || []) : [];
+            const pendientes = dataPendientes.success ? (dataPendientes.pending_clubs || []) : [];
 
-            // Renderizar tablas con la lista filtrada
+            // Renderizar tablas
             renderTabla(tablaActivos, activos);
             renderTabla(tablaPendientes, pendientes);
 
@@ -104,6 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (badgePendientes) {
                 badgePendientes.textContent = pendientes.length;
                 badgePendientes.style.display = pendientes.length > 0 ? 'inline-block' : 'none';
+            }
+
+            if (!dataActivos.success || !dataPendientes.success) {
+                mostrarAlerta("Advertencia: Fallo una de las llamadas a la API.", "info");
             }
 
         } catch (error) {
@@ -144,12 +150,17 @@ document.addEventListener("DOMContentLoaded", () => {
         clubes.forEach(club => {
             const fila = document.createElement("tr");
 
+            // club.fecha_creacion es en realidad fecha_solicitud en la tabla de pendientes (con alias)
             const fecha = club.fecha_creacion ? club.fecha_creacion.toString().split('T')[0] : 'N/A';
 
             let badgeEstado = '';
             let accionesEspeciales = '';
 
-            if (club.estado === 'pendiente') {
+            // El campo estado debe ser 'pendiente' o 'activo'. Si clubs_pendientes no tiene la columna,
+            // el backend devuelve 'NULL as estado', por lo que tratamos 'pendiente' si el contenedor es el correcto.
+            const esPendiente = club.estado === 'pendiente' || (contenedorTabla.id === 'tabla-clubes-pendientes' && club.estado === null);
+
+            if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
                 // Solo las acciones de Aprobación/Rechazo si está pendiente
                 accionesEspeciales = `
@@ -163,6 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Muestra quién lo creó o el ID del presidente si está asignado
+            // Nota: nombre_presidente es NULL en clubs_pendientes, el valor se obtiene al aprobar.
             const presidenteInfo = club.id_presidente
                 ? `${escapeHtml(club.nombre_presidente || 'N/A')} (ID: ${club.id_presidente})`
                 : 'Admin';
@@ -215,23 +227,26 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!id) return;
 
         try {
+            // Nota: Buscamos en la URL solo por ID. El backend lo busca en la tabla 'clubs' (activos).
             const res = await fetch(`/api/clubs?id=${id}`);
             const r = await res.json();
 
-            if (!r.success) {
+            // ✅ CORRECCIÓN: El backend devuelve r.club o r.pending_club, no r.data
+            const c = r.club || r.pending_club;
+
+            if (!r.success || !c) {
                 mostrarAlerta("No se pudo cargar el club", "error");
                 return;
             }
 
-            const c = r.data;
-
             inputId.value = c.id;
             inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
+            // El campo fecha_creacion viene del alias o de la tabla principal.
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
             if (inputImagen) inputImagen.value = ""; // Limpiar el input file
 
-            if (c.estado === 'pendiente') {
+            if (c.estado === 'pendiente' || c.estado === null) {
                 mostrarAlerta("Club pendiente cargado. Al guardar cambios manualmente, se establecerá como activo.", "info");
             } else {
                 mostrarAlerta("Club cargado para edición", "info");
@@ -260,14 +275,11 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("nombre_evento", inputNombre.value.trim());
         formData.append("descripcion", inputDescripcion.value.trim());
         // Cuando el admin guarda/edita, se asume que lo aprueba o ya está activo
-        formData.append("estado", "activo");
+        formData.append("estado", "activo"); // Es importante para la lógica del backend
 
         if (inputImagen && inputImagen.files.length > 0) {
             formData.append("imagen_club", inputImagen.files[0]);
         }
-
-        // ⚠️ Si el club no es nuevo (PUT) y no se proporciona imagen, el backend ignora el cambio de imagen
-        // Solo para nuevos clubes (POST) la imagen es relevante o si se carga una nueva.
 
         try {
             const res = await fetch(url, { method: metodo, body: formData });
@@ -389,7 +401,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const url = `/api/clubs/status/${id}`;
+            // Nota: Utilizamos la ruta general de clubs y enviamos el id y el query 'status' para que el backend 
+            // use el statusChangeHandler
+            const url = `/api/clubs?id=${id}&status=change`;
 
             try {
                 let res;
