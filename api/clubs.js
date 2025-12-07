@@ -291,9 +291,9 @@ async function clubsHandler(req, res) {
                             descripcion, 
                             imagen_club, 
                             fecha_solicitud as fecha_creacion, 
-                            NULL as estado,               
+                            NULL as estado,          
                             id_presidente, 
-                            NULL as nombre_presidente     
+                            NULL as nombre_presidente         
                         FROM public.clubs_pendientes 
                         ORDER BY fecha_solicitud DESC
                     `;
@@ -360,16 +360,17 @@ async function clubsHandler(req, res) {
                     const presidenteNameRes = await pool.query('SELECT name FROM public."users" WHERE id = $1', [idPresidente]);
                     nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
 
-                    // Consulta para tabla 'clubs' (Contiene todas las columnas)
-                    insertColumns = `nombre_evento, descripcion, imagen_club, ${fechaColumna}, estado, id_presidente, nombre_presidente`;
-                    insertValues = `($1, $2, $3, NOW(), $4, $5, $6)`;
+                    // ✅ CORRECCIÓN INTEGRADA: Se asegura que el orden de columnas y placeholders
+                    // sea claro y conciso para evitar errores de conteo.
+                    insertColumns = `nombre_evento, descripcion, imagen_club, id_presidente, nombre_presidente, estado, ${fechaColumna}`;
+                    insertValues = `($1, $2, $3, $4, $5, $6, NOW())`;
                     params = [
-                        nombre_evento,
-                        descripcion,
-                        imagen_club_url,
-                        clubEstado,
-                        idPresidente,
-                        nombrePresidente
+                        nombre_evento, // $1
+                        descripcion,   // $2
+                        imagen_club_url, // $3
+                        idPresidente, // $4
+                        nombrePresidente, // $5
+                        clubEstado // 'activo' ($6)
                     ];
 
                 } else {
@@ -399,7 +400,7 @@ async function clubsHandler(req, res) {
                     idPresidente = userId;
                     fechaColumna = 'fecha_solicitud';
 
-                    // ✅ CORRECCIÓN CLAVE: Consulta para tabla 'clubs_pendientes' (Solo columnas básicas)
+                    // ✅ Consulta para tabla 'clubs_pendientes' (Solo columnas básicas)
                     insertColumns = `nombre_evento, descripcion, imagen_club, ${fechaColumna}, id_presidente`;
                     insertValues = `($1, $2, $3, NOW(), $4)`;
                     params = [
@@ -443,7 +444,8 @@ async function clubsHandler(req, res) {
                     return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
                 }
                 if (uploadError.code && uploadError.code.startsWith('23')) {
-                    return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. Revise campos NOT NULL en la tabla ${tabla || 'clubs_pendientes'}. (${uploadError.code})` });
+                    let tablaError = tabla || 'clubs_pendientes'; // Usamos la tabla estimada en el error
+                    return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. Revise campos NOT NULL en la tabla ${tablaError}. (${uploadError.code})` });
                 }
 
                 return res.status(500).json({ success: false, message: `Error interno del servidor. Consulte la consola para más detalles. (${uploadError.message})` });
@@ -467,8 +469,10 @@ async function clubsHandler(req, res) {
                 // CORRECCIÓN: Usando public.clubs
                 const checkPresidente = await pool.query('SELECT id_presidente FROM public.clubs WHERE id = $1', [id]);
                 if (checkPresidente.rows.length === 0 || checkPresidente.rows[0].id_presidente !== userId) {
-                    // 🚨 Limpieza si no hay permisos 🚨
-                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
+                    // 🚨 Limpieza si no hay permisos 🚨 (Corrección de robustez)
+                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
+                        fs.unlinkSync(imagenFilePathTemp);
+                    }
                     return res.status(403).json({ success: false, message: "No tienes permisos para editar este club." });
                 }
             }
@@ -590,7 +594,7 @@ async function clubsHandler(req, res) {
 // 3. EXPORTACIONES DEL HANDLER PRINCIPAL (Ruteador)
 // ------------------------------------------------------------------------------------------------
 export default async function clubsCombinedHandler(req, res) {
-    const { method, query } = req;
+    const { query } = req;
 
     // Si la URL es /api/clubs?status=...&id=..., lo envía a statusChangeHandler
     if (query.status && query.id) {
