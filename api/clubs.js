@@ -15,6 +15,9 @@ const pool = new Pool({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_produccion';
 
+// Directorio de subida (Debe existir)
+const UPLOAD_DIR = path.join(process.cwd(), 'public/uploads/clubs');
+
 // Asegúrate de que el body parser esté desactivado para manejar 'formidable'
 export const config = {
     api: { bodyParser: false },
@@ -29,9 +32,14 @@ export const config = {
  */
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
+        // Asegurar que el directorio existe
+        if (!fs.existsSync(UPLOAD_DIR)) {
+            fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+        }
+
         const form = formidable({
-            multiples: false,
-            uploadDir: path.join(process.cwd(), 'public/uploads/clubs'),
+            multitudes: false,
+            uploadDir: UPLOAD_DIR,
             keepExtensions: true,
             maxFileSize: 5 * 1024 * 1024, // 5MB
         });
@@ -39,8 +47,10 @@ const parseForm = (req) => {
         form.parse(req, (err, fields, files) => {
             if (err) {
                 console.error("Error parsing form:", err);
-                if (err.code === 1009 && files && files.imagen_club && files.imagen_club[0].filepath) {
-                    fs.unlinkSync(files.imagen_club[0].filepath);
+                // Si hay error (ej: tamaño), intenta limpiar el archivo temporal que se haya podido crear
+                const uploadedFile = files.imagen_club ? files.imagen_club[0] : null;
+                if (uploadedFile && uploadedFile.filepath && fs.existsSync(uploadedFile.filepath)) {
+                    fs.unlinkSync(uploadedFile.filepath);
                 }
                 return reject(err);
             }
@@ -212,7 +222,7 @@ async function clubsHandler(req, res) {
                     }
 
                     let pendingClub = await pool.query(
-                        "SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, 'pendiente' as estado, id_presidente, (SELECT name FROM users WHERE id = id_presidente) as nombre_presidente FROM clubs_pendientes WHERE id = $1", // <--- CORREGIDO
+                        "SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, 'pendiente' as estado, id_presidente, (SELECT name FROM users WHERE id = id_presidente) as nombre_presidente FROM clubs_pendientes WHERE id = $1",
                         [id]
                     );
                     if (pendingClub.rows.length > 0) {
@@ -235,7 +245,7 @@ async function clubsHandler(req, res) {
                     );
                     const pendientesResult = await pool.query(
                         `SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, 'pendiente' as estado, id_presidente, (SELECT name FROM users WHERE id = id_presidente) as nombre_presidente
-                         FROM clubs_pendientes` // <--- CORREGIDO
+                         FROM clubs_pendientes`
                     );
 
                     const allClubs = [
@@ -266,12 +276,16 @@ async function clubsHandler(req, res) {
             const { nombre_evento, descripcion } = fields;
             const imagenFile = files.imagen_club ? files.imagen_club[0] : null;
 
+            // 🚨 CORRECCIÓN 1: La ruta del archivo en el servidor debe ser la ruta temporal de formidable
+            const imagenFilePathTemp = imagenFile ? imagenFile.filepath : null;
+            // La ruta pública a guardar en la DB (para acceder desde el frontend)
+            const imagen_club_path = imagenFile ? `/uploads/clubs/${path.basename(imagenFile.filepath)}` : null;
+
             if (!nombre_evento || !descripcion) {
-                if (imagenFile && imagenFile.filepath) fs.unlinkSync(path.join(process.cwd(), imagenFile.filepath));
+                // 🚨 CORRECCIÓN 2: Usar la ruta temporal para limpieza en caso de error
+                if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
                 return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre o descripción." });
             }
-
-            const imagen_club_path = imagenFile ? `/uploads/clubs/${path.basename(imagenFile.filepath)}` : null;
 
             // ⚠️ Lógica de estado/rol crucial ⚠️
             let tabla;
@@ -282,24 +296,25 @@ async function clubsHandler(req, res) {
                 tabla = 'clubs';
                 clubEstado = 'activo';
             } else {
-                if (!authVerification.authorized) {
-                    if (imagen_club_path) fs.unlinkSync(path.join(process.cwd(), 'public', imagen_club_path));
+                if (!authVerification.authorized || !userId) { // Asegurarse de que userId existe
+                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
                     return res.status(401).json({ success: false, message: "Debe iniciar sesión para solicitar un club." });
                 }
 
-                const checkUser = await pool.query("SELECT role, club_id FROM users WHERE id = $1", [userId]);
-                if (checkUser.rows[0]?.club_id !== null) {
-                    if (imagen_club_path) fs.unlinkSync(path.join(process.cwd(), 'public', imagen_club_path));
+                // 🚨 CORRECCIÓN 3: Verificar club ACTIVO y PENDIENTE
+                const checkClub = await pool.query("SELECT club_id, role FROM users WHERE id = $1", [userId]);
+                if (checkClub.rows.length === 0 || checkClub.rows[0].role === 'presidente') {
+                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
                     return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                 }
 
-                const checkPending = await pool.query("SELECT id FROM clubs_pendientes WHERE id_presidente = $1", [userId]); // <--- CORREGIDO
+                const checkPending = await pool.query("SELECT id FROM clubs_pendientes WHERE id_presidente = $1", [userId]);
                 if (checkPending.rows.length > 0) {
-                    if (imagen_club_path) fs.unlinkSync(path.join(process.cwd(), 'public', imagen_club_path));
+                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
                     return res.status(403).json({ success: false, message: "Ya tienes una solicitud de club pendiente." });
                 }
 
-                tabla = 'clubs_pendientes'; // <--- CORREGIDO
+                tabla = 'clubs_pendientes';
                 clubEstado = 'pendiente';
                 idPresidente = userId;
             }
@@ -341,14 +356,20 @@ async function clubsHandler(req, res) {
             const imagenFile = files.imagen_club ? files.imagen_club[0] : null;
 
             if (!isAdmin) {
+                // Verificar si el usuario logeado es el presidente de este club
                 const checkPresidente = await pool.query("SELECT id_presidente FROM clubs WHERE id = $1", [id]);
                 if (checkPresidente.rows.length === 0 || checkPresidente.rows[0].id_presidente !== userId) {
+                    // Limpieza si se subió un archivo y no tiene permisos
+                    const imagenFilePathTemp = imagenFile ? imagenFile.filepath : null;
+                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
                     return res.status(403).json({ success: false, message: "No tienes permisos para editar este club." });
                 }
             }
 
             let imagen_club_path = null;
+            let imagenFilePathTemp = null; // Ruta temporal para limpieza si falla la DB
             if (imagenFile) {
+                imagenFilePathTemp = imagenFile.filepath; // Usar la ruta completa de formidable
                 imagen_club_path = `/uploads/clubs/${path.basename(imagenFile.filepath)}`;
             }
 
@@ -370,7 +391,8 @@ async function clubsHandler(req, res) {
             }
 
             if (updates.length === 0) {
-                if (imagen_club_path) fs.unlinkSync(path.join(process.cwd(), 'public', imagen_club_path));
+                // Limpiar si no hay cambios válidos, pero se subió imagen
+                if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
                 return res.status(400).json({ success: false, message: "No hay campos válidos para actualizar." });
             }
 
@@ -385,7 +407,8 @@ async function clubsHandler(req, res) {
             const result = await pool.query(updateQuery, values);
 
             if (result.rows.length === 0) {
-                if (imagen_club_path) fs.unlinkSync(path.join(process.cwd(), 'public', imagen_club_path));
+                // Limpiar si no se encontró el club
+                if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
                 return res.status(404).json({ success: false, message: "Club no encontrado para actualizar." });
             }
 
@@ -403,7 +426,7 @@ async function clubsHandler(req, res) {
             let tabla = 'activos';
 
             if (result.rows.length === 0) {
-                result = await pool.query("DELETE FROM clubs_pendientes WHERE id = $1 RETURNING id", [id]); // <--- CORREGIDO
+                result = await pool.query("DELETE FROM clubs_pendientes WHERE id = $1 RETURNING id", [id]);
                 tabla = 'pendientes';
             }
 
@@ -412,7 +435,9 @@ async function clubsHandler(req, res) {
             }
 
             if (tabla === 'activos') {
+                // 🚨 CORRECCIÓN 4: Limpiar club_id en users
                 await pool.query("UPDATE users SET role = 'user', club_id = NULL WHERE club_id = $1", [id]);
+                // TODO: Limpiar la imagen del disco
             }
 
             return res.status(200).json({ success: true, message: "Club eliminado correctamente." });
@@ -434,7 +459,12 @@ async function clubsHandler(req, res) {
             return res.status(400).json({ success: false, message: "Error: La imagen es demasiado grande (máx. 5MB)." });
         }
 
-        return res.status(500).json({ success: false, message: "Error interno del servidor." });
+        // Error de la base de datos (Ej: NOT NULL violation)
+        if (error.code && error.code.startsWith('23')) {
+            return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. (${error.code})` });
+        }
+
+        return res.status(500).json({ success: false, message: "Error interno del servidor. Consulte la consola para más detalles." });
     }
 }
 
