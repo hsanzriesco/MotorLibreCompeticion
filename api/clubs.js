@@ -24,12 +24,15 @@ export const config = {
 // 🛠️ HELPERS
 // ------------------------------------------------------------------------------------------------
 
-// 1. Parsear FormData (para POST/PUT con imágenes)
+/**
+ * 1. Parsear FormData (para POST/PUT con imágenes)
+ */
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
         const form = formidable({
             multiples: false,
-            uploadDir: path.join(process.cwd(), 'public/uploads/clubs'),
+            // Usamos 'clubes' en lugar de 'clubs' para la carpeta si el resto de tu app usa 'clubes'
+            uploadDir: path.join(process.cwd(), 'public/uploads/clubes'),
             keepExtensions: true,
             maxFileSize: 5 * 1024 * 1024, // 5MB
         });
@@ -37,10 +40,14 @@ const parseForm = (req) => {
         form.parse(req, (err, fields, files) => {
             if (err) {
                 console.error("Error parsing form:", err);
+                // Intenta eliminar el archivo temporal si existe antes de rechazar
+                if (err.code === 1009 && files && files.imagen_club && files.imagen_club[0].filepath) {
+                    fs.unlinkSync(files.imagen_club[0].filepath);
+                }
                 return reject(err);
             }
 
-            // Convertir 'fields' a un objeto plano si es necesario (depende de la versión de formidable)
+            // Convertir 'fields' a un objeto plano (requerido por versiones recientes de formidable)
             const fieldData = Object.keys(fields).reduce((acc, key) => {
                 acc[key] = fields[key][0]; // Tomar el primer valor si son arrays
                 return acc;
@@ -51,7 +58,9 @@ const parseForm = (req) => {
     });
 };
 
-// 2. Verificar JWT y Rol
+/**
+ * 2. Verificar JWT y Rol
+ */
 const verifyToken = (req) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -66,6 +75,9 @@ const verifyToken = (req) => {
     }
 };
 
+/**
+ * 3. Verificar si es Administrador
+ */
 const verifyAdmin = (req) => {
     const verification = verifyToken(req);
     if (!verification.authorized) throw new Error(verification.message);
@@ -77,6 +89,9 @@ const verifyAdmin = (req) => {
 // ------------------------------------------------------------------------------------------------
 // 1. MANEJADOR DE CAMBIO DE ESTADO (Aprobar/Rechazar)
 // ------------------------------------------------------------------------------------------------
+/**
+ * Gestiona la aprobación (PUT) o el rechazo (DELETE) de solicitudes en clubes_pendientes.
+ */
 async function statusChangeHandler(req, res) {
     const { method, query } = req;
     const { id } = query;
@@ -115,6 +130,7 @@ async function statusChangeHandler(req, res) {
                 const club = pendingClubRes.rows[0];
 
                 // 2. Mover el club a la tabla principal 'clubes'
+                // Se usa el nombre de la tabla 'clubes' para consistencia con tu código
                 const insertRes = await client.query(
                     "INSERT INTO clubes (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id",
                     [club.nombre_evento, club.descripcion, club.imagen_club, club.id_presidente, club.nombre_presidente, 'activo']
@@ -181,7 +197,7 @@ async function clubsHandler(req, res) {
 
 
     try {
-        // --- 2.1. GET: Obtener clubes (Admin obtiene todos, Público/User obtiene activos) ---
+        // --- 2.1. GET: Obtener clubes ---
         if (method === "GET") {
             const { id } = query;
             let result;
@@ -203,7 +219,7 @@ async function clubsHandler(req, res) {
                     }
 
                     let pendingClub = await pool.query(
-                        "SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, estado, id_presidente FROM clubes_pendientes WHERE id = $1",
+                        "SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, 'pendiente' as estado, id_presidente, (SELECT name FROM users WHERE id = id_presidente) as nombre_presidente FROM clubes_pendientes WHERE id = $1",
                         [id]
                     );
                     if (pendingClub.rows.length > 0) {
@@ -215,11 +231,12 @@ async function clubsHandler(req, res) {
                 // User normal solo busca en activos
                 result = await pool.query(clubQuery, [id]);
                 if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Club no encontrado." });
+                result = { rows: result.rows }; // Normalizar el resultado para el final
 
             } else {
                 // Listar todos los clubes (Admin lista activos + pendientes, Público solo activos)
                 if (isAdmin) {
-                    // ⚠️ Admin lista todos los clubes activos + todos los pendientes
+                    // ⚠️ Admin lista todos los clubes activos + todos los pendientes (Ahora que el schema está bien)
                     const activosResult = await pool.query(
                         `SELECT c.id, c.nombre_evento, c.descripcion, c.imagen_club, c.fecha_creacion, c.estado, c.id_presidente, u.name as nombre_presidente
                          FROM clubes c
@@ -230,7 +247,10 @@ async function clubsHandler(req, res) {
                          FROM clubes_pendientes`
                     );
 
-                    const allClubs = [...activosResult.rows.map(c => ({ ...c, estado: 'activo' })), ...pendientesResult.rows.map(c => ({ ...c, estado: 'pendiente' }))];
+                    const allClubs = [
+                        ...activosResult.rows.map(c => ({ ...c, estado: 'activo' })),
+                        ...pendientesResult.rows.map(c => ({ ...c, estado: 'pendiente' }))
+                    ];
                     return res.status(200).json({ success: true, data: allClubs });
 
                 } else {
@@ -244,32 +264,37 @@ async function clubsHandler(req, res) {
                 }
             }
 
-            return res.status(200).json({ success: true, data: result.rows });
+            // Esta línea solo se ejecuta si no es Admin o si se buscó por ID (y no es Admin)
+            if (result && result.rows) {
+                return res.status(200).json({ success: true, data: result.rows });
+            }
         }
 
 
         // --- 2.2. POST: Crear nuevo club o solicitud de club ---
         if (method === "POST") {
             const { fields, files } = await parseForm(req);
-            const { nombre_evento, descripcion, estado } = fields;
+            const { nombre_evento, descripcion } = fields; // Eliminamos 'estado' de la desestructuración ya que lo definimos por rol
             const imagenFile = files.imagen_club ? files.imagen_club[0] : null;
 
             if (!nombre_evento || !descripcion) {
                 // Si la imagen se subió pero faltan campos, eliminamos el archivo subido
-                if (imagenFile && imagenFile.filepath) fs.unlinkSync(imagenFile.filepath);
+                if (imagenFile && imagenFile.filepath) fs.unlinkSync(path.join(process.cwd(), imagenFile.filepath));
                 return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre o descripción." });
             }
 
-            const imagen_club_path = imagenFile ? `/uploads/clubs/${path.basename(imagenFile.filepath)}` : null;
+            // Usamos 'clubes' en la ruta de la imagen
+            const imagen_club_path = imagenFile ? `/uploads/clubes/${path.basename(imagenFile.filepath)}` : null;
 
             // ⚠️ Lógica de estado/rol crucial ⚠️
             let tabla;
             let clubEstado;
-            let idPresidente = isAdmin ? null : userId; // Si es Admin, el presidente es nulo (creado por Admin)
+            let idPresidente = userId;
 
             if (isAdmin) {
                 // 🚀 ADMIN CREA DIRECTAMENTE (se asume activo)
-                verifyAdmin(req);
+                // Usamos el ID del Admin como presidente si no se especifica, aunque en el flujo de admin puede ser null
+                idPresidente = userId;
                 tabla = 'clubes';
                 clubEstado = 'activo';
             } else {
@@ -279,13 +304,14 @@ async function clubsHandler(req, res) {
                     return res.status(401).json({ success: false, message: "Debe iniciar sesión para solicitar un club." });
                 }
 
-                // Checkear si ya tiene un club o una solicitud pendiente
+                // 1. Checkear si ya tiene un club activo
                 const checkUser = await pool.query("SELECT role, club_id FROM users WHERE id = $1", [userId]);
-                if (checkUser.rows[0].role !== 'user' || checkUser.rows[0].club_id !== null) {
+                if (checkUser.rows[0]?.club_id !== null) {
                     if (imagen_club_path) fs.unlinkSync(path.join(process.cwd(), 'public', imagen_club_path));
-                    return res.status(403).json({ success: false, message: "Ya eres presidente de un club o tienes un rol superior." });
+                    return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                 }
 
+                // 2. Checkear si ya tiene una solicitud pendiente
                 const checkPending = await pool.query("SELECT id FROM clubes_pendientes WHERE id_presidente = $1", [userId]);
                 if (checkPending.rows.length > 0) {
                     if (imagen_club_path) fs.unlinkSync(path.join(process.cwd(), 'public', imagen_club_path));
@@ -294,11 +320,13 @@ async function clubsHandler(req, res) {
 
                 tabla = 'clubes_pendientes';
                 clubEstado = 'pendiente';
+                idPresidente = userId;
             }
 
             // Obtener el nombre del presidente para el registro
-            const presidenteName = await pool.query("SELECT name FROM users WHERE id = $1", [idPresidente || userId]);
-            const nombrePresidente = idPresidente ? presidenteName.rows[0]?.name : 'Admin';
+            const presidenteNameRes = await pool.query("SELECT name FROM users WHERE id = $1", [idPresidente]);
+            // Asignar el nombre del usuario logueado o 'Admin' si no se encuentra
+            const nombrePresidente = presidenteNameRes.rows[0]?.name || (isAdmin ? 'Admin' : 'Usuario');
 
 
             const insertQuery = `
@@ -344,7 +372,7 @@ async function clubsHandler(req, res) {
             // Si se sube una nueva imagen, la subimos y obtenemos la ruta
             let imagen_club_path = null;
             if (imagenFile) {
-                imagen_club_path = `/uploads/clubs/${path.basename(imagenFile.filepath)}`;
+                imagen_club_path = `/uploads/clubes/${path.basename(imagenFile.filepath)}`; // Usamos 'clubes'
             }
 
             // Construir dinámicamente el query de actualización
@@ -428,7 +456,7 @@ async function clubsHandler(req, res) {
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
-            return res.status(500).json({ success: false, message: "Error: Tabla de base de datos no encontrada." });
+            return res.status(500).json({ success: false, message: "Error: Tabla de base de datos no encontrada. Revise si 'clubes' o 'clubes_pendientes' existen." });
         }
         if (error.message.includes('maxFileSize')) {
             return res.status(400).json({ success: false, message: "Error: La imagen es demasiado grande (máx. 5MB)." });
