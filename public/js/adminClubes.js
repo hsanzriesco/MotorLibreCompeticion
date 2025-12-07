@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Función para obtener el Token JWT.
     // ⭐ NOTA: Si usas sessionStorage, cambia 'localStorage' por 'sessionStorage'.
     function getToken() {
-        return localStorage.getItem('jwtToken');
+        return sessionStorage.getItem('jwtToken');
     }
 
     function hoyISODate() {
