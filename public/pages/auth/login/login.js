@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionStorage.setItem("usuario", userDataString);
 
                 // Limpiar LOCALSTORAGE para evitar conflictos si no se usa persistencia
-                localStorage.clear();
+                sessionStorage.clear();
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
