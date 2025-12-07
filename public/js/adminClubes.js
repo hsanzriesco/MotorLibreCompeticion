@@ -1,7 +1,13 @@
 // public/js/adminClubes.js
 document.addEventListener("DOMContentLoaded", () => {
 
+    // Constante para el número de columnas visibles en la tabla (ID a Acciones)
+    const TOTAL_COLUMNS = 8;
+
     // ⭐ Elementos de las dos tablas y el contador ⭐
+    // Nota: Asume que las tablas están dentro de elementos con IDs para el TBODY, no solo la tabla.
+    // Si usas el ID de la tabla (ej: <table id="tabla-clubes-activos">), la función renderTabla
+    // inyectará el contenido directamente ahí.
     const tablaActivos = document.getElementById("tabla-clubes-activos");
     const tablaPendientes = document.getElementById("tabla-clubes-pendientes");
     const badgePendientes = document.getElementById("badge-pendientes");
@@ -33,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // UTIL: Token, Fecha y Limpieza
     // -----------------------------------------
 
-    // Función para obtener el Token JWT (Asume que se guarda en localStorage)
+    // Función para obtener el Token JWT (Asume que se guarda en localStorage como 'jwtToken')
     function getToken() {
         return localStorage.getItem('jwtToken');
     }
@@ -88,12 +94,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------
-    // CARGAR LISTA DE CLUBES Y DISTRIBUIR (MODIFICADA Y MEJORADA)
+    // CARGAR LISTA DE CLUBES Y DISTRIBUIR
     // -----------------------------------------
     async function cargarClubes() {
         const token = getToken();
         if (!token) {
-            // ⭐ MEJORA: Mensaje de error más específico si falta el token.
+            // ⭐ CRÍTICO: Mensaje de error si falta el token.
             mostrarAlerta("❌ **ERROR CRÍTICO:** No se encontró el token de administrador. Por favor, inicia sesión.", "error");
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
@@ -108,10 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // ⭐ LLAMADA 1: Obtener clubes activos (debe leer tabla 'clubs')
             const resActivos = await fetch("/api/clubs?estado=activo", { headers });
 
-            // 🚨 CORRECCIÓN: Manejar fallos de HTTP (401, 403, 500, etc.) antes de leer JSON
             if (!resActivos.ok) {
                 const errorText = await resActivos.text();
-                // Lanzar un error con el código de estado para manejo específico en el catch
                 throw new Error(`Fallo al cargar activos (${resActivos.status}): ${resActivos.statusText}. Detalle: ${errorText.substring(0, 100)}...`);
             }
             const dataActivos = await resActivos.json();
@@ -119,7 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // ⭐ LLAMADA 2: Obtener solicitudes pendientes (debe leer tabla 'clubs_pendientes')
             const resPendientes = await fetch("/api/clubs?estado=pendiente", { headers });
 
-            // 🚨 CORRECCIÓN: Manejar fallos de HTTP (401, 403, 500, etc.) antes de leer JSON
             if (!resPendientes.ok) {
                 const errorText = await resPendientes.text();
                 throw new Error(`Fallo al cargar pendientes (${resPendientes.status}): ${resPendientes.statusText}. Detalle: ${errorText.substring(0, 100)}...`);
@@ -141,13 +144,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (!dataActivos.success || !dataPendientes.success) {
-                mostrarAlerta("Advertencia: Fallo la estructura de respuesta de una de las APIs (pero los datos se procesaron).", "info");
+                mostrarAlerta("Advertencia: Falló la estructura de respuesta de una de las APIs (pero los datos se procesaron).", "info");
             }
 
         } catch (error) {
             console.error("Error cargarClubes:", error);
 
-            // Manejo de errores más específico basado en el código de estado
             let customMessage = "Error al conectar con el servidor.";
             if (error.message.includes('(401)') || error.message.includes('(403)')) {
                 customMessage = "❌ **Error de Permisos (401/403):** El token es inválido o expiró. Por favor, vuelve a iniciar sesión.";
@@ -173,11 +175,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Limpiamos el contenido anterior
         contenedorTabla.innerHTML = "";
 
         if (status === 'error') {
-            // Este mensaje se activa si `cargarClubes()` falla al llamar a la API
-            contenedorTabla.innerHTML = `<tr><td colspan="8" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
+            // ⭐ CRÍTICO: Usamos el TOTAL_COLUMNS (8) para el colspan en el mensaje de error
+            contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
             return;
         }
 
@@ -185,7 +188,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const mensaje = contenedorTabla.id === 'tabla-clubes-pendientes' ?
                 "No hay solicitudes de clubes pendientes." :
                 "No hay clubes activos registrados.";
-            contenedorTabla.innerHTML = `<tr><td colspan="8" class="text-secondary text-center">${mensaje}</td></tr>`;
+            // ⭐ CRÍTICO: Usamos el TOTAL_COLUMNS (8) para el colspan en el mensaje de tabla vacía
+            contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-secondary text-center">${mensaje}</td></tr>`;
             return;
         }
 
@@ -195,7 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let badgeEstado = '';
             let accionesEspeciales = '';
 
-            // Asumimos pendiente si está en la tabla de pendientes o si el estado lo indica
             const esPendiente = club.estado === 'pendiente' || (contenedorTabla.id === 'tabla-clubes-pendientes' && club.estado === null);
 
             if (esPendiente) {
@@ -205,7 +208,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
                 `;
             } else if (club.estado === 'activo') {
-                // Nota: Mantenemos el color original que tenías (bg-danger)
                 badgeEstado = '<span class="badge bg-danger">ACTIVO</span>';
             } else {
                 badgeEstado = '<span class="badge bg-secondary">DESCONOCIDO/RECHAZADO</span>';
@@ -215,6 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? `${escapeHtml(club.nombre_presidente || 'N/A')} (ID: ${club.id_presidente})`
                 : 'Admin';
 
+            // ⭐ CRÍTICO: Se renderizan las 8 columnas que coinciden con el HTML
             fila.innerHTML = `
                 <td>${club.id}</td>
                 <td>${escapeHtml(club.nombre_evento)}</td>
@@ -223,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${badgeEstado}</td>
                 <td>${presidenteInfo}</td>
                 <td>
-                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb" alt="Imagen club">` : "-"}
+                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb" alt="Imagen club" style="width: 50px; height: 50px;">` : "-"}
                 </td>
                 <td>
                     <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}"><i class="bi bi-pencil"></i> Editar</button>
@@ -261,15 +264,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const token = getToken();
         if (!id || !token) return;
 
-        // ⭐ CORRECCIÓN: Limpiar formulario antes de cargar (si ya estaba editando otro)
         clearForm();
 
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
+            // Se usa /api/clubs?id= para obtener un club específico (puede ser activo o pendiente)
             const res = await fetch(`/api/clubs?id=${id}`, { headers });
 
-            // Manejo de error de fetch
             if (!res.ok) {
                 const errorText = await res.text();
                 mostrarAlerta(`Error ${res.status} al obtener club para edición: ${errorText.substring(0, 100)}...`, "error");
@@ -278,7 +280,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const r = await res.json();
 
-            // El backend devuelve r.club (clubs) o r.pending_club (clubs_pendientes)
+            // El backend devuelve r.club (clubs) o r.pending_club (clubs_pendientes) si es que usa una ruta diferente
+            // Si el backend solo usa ?id= para activos, se debe adaptar aquí. Asumiremos que el backend devuelve 'club'.
             const c = r.club || r.pending_club;
 
             if (!r.success || !c) {
@@ -289,6 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
             inputId.value = c.id;
             inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
+            // El backend usa fecha_creacion para ambos (activos y pendientes)
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
             if (inputImagen) inputImagen.value = ""; // Limpiar el input file
 
@@ -326,17 +330,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("nombre_evento", inputNombre.value.trim());
         formData.append("descripcion", inputDescripcion.value.trim());
-        formData.append("estado", "activo"); // Estado por defecto para admin (si lo crea el admin)
+        // El estado 'activo' lo debe establecer el admin solo al CREAR un club (POST)
+        // En PUT (edición), solo se envía lo que se quiere cambiar.
+        if (metodo === 'POST') {
+            formData.append("estado", "activo");
+        }
 
         if (inputImagen && inputImagen.files.length > 0) {
-            formData.append("imagen_club", inputImagen.files[0]);
+            formData.append("imagen_club", inputImagen.imagen_club.files[0]);
         }
 
         try {
-            // Añadir el Authorization header para solicitudes con FormData
             const headers = new Headers();
             headers.append('Authorization', `Bearer ${token}`);
-            // No se añade 'Content-Type': 'multipart/form-data', el navegador lo hace automáticamente
+            // No se añade 'Content-Type': 'multipart/form-data', el navegador lo hace
 
             const res = await fetch(url, {
                 method: metodo,
@@ -344,7 +351,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: formData
             });
 
-            // Manejar errores HTTP antes de leer JSON
             if (!res.ok) {
                 const errorText = await res.text();
                 mostrarAlerta(`Error ${res.status} al guardar: ${errorText.substring(0, 100)}...`, "error");
@@ -360,8 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
-            // Limpiar formulario y recargar
-            clearForm(); // ⭐ Usar la función de limpieza
+            clearForm();
             cargarClubes();
 
         } catch (error) {
@@ -400,19 +405,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             try {
+                // DELETE en /api/clubs?id= elimina un club ACTIVO
                 const res = await fetch(`/api/clubs?id=${clubToDeleteId}`, {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                // Manejar errores HTTP antes de leer JSON
                 if (!res.ok) {
                     const errorText = await res.text();
                     mostrarAlerta(`Error ${res.status} al eliminar: ${errorText.substring(0, 100)}...`, "error");
                     deleteConfirmModal.hide();
                     return;
                 }
-
 
                 const r = await res.json();
 
@@ -474,7 +478,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const url = `/api/clubs?id=${id}&status=change`;
+            const url = `/api/clubs?id=${id}&status=change`; // URL para cambio de estado
             const headers = {
                 'Authorization': `Bearer ${token}`
             };
@@ -496,7 +500,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     // DELETE para eliminar la solicitud (de la tabla 'clubs_pendientes')
                     res = await fetch(url, {
                         method: 'DELETE',
-                        headers: headers
+                        headers: headers // No necesita Content-Type
                     });
                     successMessage = "Solicitud de club rechazada y eliminada correctamente.";
                 } else {
@@ -504,7 +508,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // 🚨 CORRECCIÓN: Manejar fallos de HTTP (401, 403, 500, etc.) antes de leer JSON
                 if (!res.ok) {
                     const errorText = await res.text();
                     mostrarAlerta(`Error ${res.status} al ${action} el club: ${errorText.substring(0, 100)}...`, "error");
@@ -537,6 +540,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------
     // Inicializar
     // -----------------------------------------
-    clearForm(); // ⭐ Inicializa el formulario limpio
+    clearForm();
     cargarClubes();
 });
