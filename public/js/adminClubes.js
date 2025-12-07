@@ -1,18 +1,17 @@
 // public/js/adminClubes.js
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // Constante para el número de columnas visibles en la tabla (ID a Acciones)
     const TOTAL_COLUMNS = 8;
 
     // ⭐ Elementos de las dos tablas y el contador ⭐
-    // Nota: Asume que las tablas están dentro de elementos con IDs para el TBODY, no solo la tabla.
-    // Si usas el ID de la tabla (ej: <table id="tabla-clubes-activos">), la función renderTabla
-    // inyectará el contenido directamente ahí.
     const tablaActivos = document.getElementById("tabla-clubes-activos");
     const tablaPendientes = document.getElementById("tabla-clubes-pendientes");
     const badgePendientes = document.getElementById("badge-pendientes");
 
     const form = document.getElementById("club-form");
+    const btnNewClub = document.getElementById("btn-new-club"); // Botón "Nuevo Club" agregado
 
     // Elementos del formulario de edición (creación manual por Admin)
     const inputId = document.getElementById("club-id");
@@ -21,13 +20,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputImagen = document.getElementById("imagen_club");
     const inputFecha = document.getElementById("fecha_creacion");
 
-    // Modal de confirmación (Eliminar)
+    // Modals de Bootstrap (se mantienen igual)
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
     const deleteConfirmModal = deleteConfirmModalEl ? new bootstrap.Modal(deleteConfirmModalEl) : null;
     const btnConfirmDelete = document.getElementById("btnConfirmDelete");
+    const deleteMessageEl = document.getElementById("deleteConfirmMessage");
     let clubToDeleteId = null;
 
-    // Modal de confirmación (Aprobar/Rechazar Solicitud)
     const statusModalEl = document.getElementById("statusConfirmModal");
     const statusConfirmModal = statusModalEl ? new bootstrap.Modal(statusModalEl) : null;
     const btnConfirmStatus = document.getElementById("btnConfirmStatus");
@@ -39,7 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // UTIL: Token, Fecha y Limpieza
     // -----------------------------------------
 
-    // Función para obtener el Token JWT (Asume que se guarda en localStorage como 'jwtToken')
+    // Función para obtener el Token JWT.
+    // ⭐ NOTA: Si usas sessionStorage, cambia 'localStorage' por 'sessionStorage'.
     function getToken() {
         return localStorage.getItem('jwtToken');
     }
@@ -57,12 +57,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (inputFecha) inputFecha.value = hoyISODate();
     }
 
-    // ⭐ NUEVA FUNCIÓN: Limpiar el formulario
+    // Función: Limpiar el formulario y prepararlo para creación
     function clearForm() {
         if (form) form.reset();
-        if (inputId) inputId.value = "";
+        if (inputId) inputId.value = ""; // Asegura que el ID oculto se borra para POST
         setFechaDefault();
         mostrarAlerta("Formulario listo para crear un nuevo club.", "info");
+    }
+
+    if (btnNewClub) {
+        btnNewClub.addEventListener('click', clearForm); // Añadir el listener
     }
 
 
@@ -99,10 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
     async function cargarClubes() {
         const token = getToken();
         if (!token) {
-            // ⭐ CRÍTICO: Mensaje de error si falta el token.
+            // ⭐ CRÍTICO: El token es nulo o no se encuentra.
             mostrarAlerta("❌ **ERROR CRÍTICO:** No se encontró el token de administrador. Por favor, inicia sesión.", "error");
+            // Muestra mensaje de error en las tablas
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
+            // Ocultar contador
+            if (badgePendientes) badgePendientes.style.display = 'none';
             return;
         }
 
@@ -111,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         try {
-            // ⭐ LLAMADA 1: Obtener clubes activos (debe leer tabla 'clubs')
+            // ⭐ LLAMADA 1: Obtener clubes activos
             const resActivos = await fetch("/api/clubs?estado=activo", { headers });
 
             if (!resActivos.ok) {
@@ -120,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             const dataActivos = await resActivos.json();
 
-            // ⭐ LLAMADA 2: Obtener solicitudes pendientes (debe leer tabla 'clubs_pendientes')
+            // ⭐ LLAMADA 2: Obtener solicitudes pendientes
             const resPendientes = await fetch("/api/clubs?estado=pendiente", { headers });
 
             if (!resPendientes.ok) {
@@ -152,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let customMessage = "Error al conectar con el servidor.";
             if (error.message.includes('(401)') || error.message.includes('(403)')) {
-                customMessage = "❌ **Error de Permisos (401/403):** El token es inválido o expiró. Por favor, vuelve a iniciar sesión.";
+                customMessage = "❌ **Error de Permisos (401/403):** El token es inválido, expiró o no tienes rol de administrador. Por favor, vuelve a iniciar sesión.";
             } else if (error.message.includes('(500)')) {
                 customMessage = `❌ **Error del Servidor (500):** Hubo un fallo interno al procesar la solicitud. Revisa los logs de tu backend.`;
             } else if (error.message.includes('Fallo al cargar')) {
@@ -199,7 +206,8 @@ document.addEventListener("DOMContentLoaded", () => {
             let badgeEstado = '';
             let accionesEspeciales = '';
 
-            const esPendiente = club.estado === 'pendiente' || (contenedorTabla.id === 'tabla-clubes-pendientes' && club.estado === null);
+            // Se asume que en el endpoint de "pendiente" todos los clubes vienen con estado 'pendiente' o null/undefined
+            const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes';
 
             if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
@@ -264,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const token = getToken();
         if (!id || !token) return;
 
-        clearForm();
+        clearForm(); // Limpia el formulario antes de cargar
 
         const headers = { 'Authorization': `Bearer ${token}` };
 
@@ -280,8 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const r = await res.json();
 
-            // El backend devuelve r.club (clubs) o r.pending_club (clubs_pendientes) si es que usa una ruta diferente
-            // Si el backend solo usa ?id= para activos, se debe adaptar aquí. Asumiremos que el backend devuelve 'club'.
+            // Asumimos que el backend devuelve un objeto 'club' o 'pending_club'
             const c = r.club || r.pending_club;
 
             if (!r.success || !c) {
@@ -289,6 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            // Llenar el formulario
             inputId.value = c.id;
             inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
@@ -330,25 +338,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("nombre_evento", inputNombre.value.trim());
         formData.append("descripcion", inputDescripcion.value.trim());
+
         // El estado 'activo' lo debe establecer el admin solo al CREAR un club (POST)
-        // En PUT (edición), solo se envía lo que se quiere cambiar.
-        if (metodo === 'POST') {
+        // En PUT (edición), el club ya es activo, a menos que el backend maneje el cambio de estado.
+        // Aquí solo establecemos el estado al crear (POST) o si es una actualización manual de un pendiente.
+        if (metodo === 'POST' || (metodo === 'PUT' && id_presidente.value === '')) {
             formData.append("estado", "activo");
         }
 
         if (inputImagen && inputImagen.files.length > 0) {
-            formData.append("imagen_club", inputImagen.imagen_club.files[0]);
+            // ⭐ CORRECCIÓN CRÍTICA: Acceso directo al files[0] del input file
+            formData.append("imagen_club", inputImagen.files[0]);
         }
 
         try {
-            const headers = new Headers();
-            headers.append('Authorization', `Bearer ${token}`);
-            // No se añade 'Content-Type': 'multipart/form-data', el navegador lo hace
-
+            // No creamos 'new Headers()' si enviamos FormData, solo pasamos el Authorization
             const res = await fetch(url, {
                 method: metodo,
-                headers: headers,
-                body: formData
+                headers: {
+                    'Authorization': `Bearer ${token}` // ⭐ CRÍTICO: Token en el header
+                },
+                body: formData // Body es el objeto FormData
             });
 
             if (!res.ok) {
@@ -366,12 +376,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
-            clearForm();
-            cargarClubes();
+            clearForm(); // Limpiar el formulario
+            cargarClubes(); // Recargar las tablas
 
         } catch (error) {
             console.error("Error submit club:", error);
-            mostrarAlerta("Error en el servidor", "error");
+            mostrarAlerta("Error en el servidor al guardar el club", "error");
         }
     });
 
@@ -387,7 +397,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const row = e.currentTarget.closest("tr");
         const clubName = row && row.children[1] ? row.children[1].textContent : "este club";
-        const deleteMessageEl = document.getElementById("deleteConfirmMessage");
 
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}"? Esta acción es irreversible.`;
@@ -400,7 +409,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const token = getToken();
             if (!clubToDeleteId || !token) {
                 mostrarAlerta("ID o token inválido", "error");
-                deleteConfirmModal.hide();
+                if (deleteConfirmModal) deleteConfirmModal.hide();
                 return;
             }
 
@@ -414,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!res.ok) {
                     const errorText = await res.text();
                     mostrarAlerta(`Error ${res.status} al eliminar: ${errorText.substring(0, 100)}...`, "error");
-                    deleteConfirmModal.hide();
+                    if (deleteConfirmModal) deleteConfirmModal.hide();
                     return;
                 }
 
@@ -422,19 +431,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (!r.success) {
                     mostrarAlerta(r.message || "Error eliminando", "error");
-                    deleteConfirmModal.hide();
+                    if (deleteConfirmModal) deleteConfirmModal.hide();
                     return;
                 }
 
                 mostrarAlerta("Club eliminado", "exito");
                 clubToDeleteId = null;
-                deleteConfirmModal.hide();
+                if (deleteConfirmModal) deleteConfirmModal.hide();
                 cargarClubes();
 
             } catch (error) {
                 console.error("Error eliminarClub:", error);
                 mostrarAlerta("Error eliminando club", "error");
-                deleteConfirmModal.hide();
+                if (deleteConfirmModal) deleteConfirmModal.hide();
             }
         });
     }
@@ -455,12 +464,12 @@ document.addEventListener("DOMContentLoaded", () => {
         let mensaje = "";
         if (action === 'aprobar') {
             mensaje = `¿Estás seguro de que deseas **APROBAR** el club "${nombre}"? El presidente obtendrá permisos de gestión y el club será movido a la lista de activos.`;
-            btnConfirmStatus.className = 'btn btn-success';
-            btnConfirmStatus.textContent = 'Confirmar Aprobación';
+            if (btnConfirmStatus) btnConfirmStatus.className = 'btn btn-success';
+            if (btnConfirmStatus) btnConfirmStatus.textContent = 'Confirmar Aprobación';
         } else if (action === 'rechazar') {
             mensaje = `¿Estás seguro de que deseas **RECHAZAR** el club "${nombre}"? Se eliminará la solicitud (de la tabla ${'`clubs_pendientes`'}).`;
-            btnConfirmStatus.className = 'btn btn-secondary';
-            btnConfirmStatus.textContent = 'Confirmar Rechazo';
+            if (btnConfirmStatus) btnConfirmStatus.className = 'btn btn-secondary';
+            if (btnConfirmStatus) btnConfirmStatus.textContent = 'Confirmar Rechazo';
         }
 
         if (statusConfirmMessage) statusConfirmMessage.innerHTML = mensaje;
@@ -474,7 +483,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!id || !action || !token) {
                 mostrarAlerta("Solicitud de cambio de estado o token inválido", "error");
-                statusConfirmModal.hide();
+                if (statusConfirmModal) statusConfirmModal.hide();
                 return;
             }
 
@@ -504,14 +513,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Solicitud de club rechazada y eliminada correctamente.";
                 } else {
-                    statusConfirmModal.hide();
+                    if (statusConfirmModal) statusConfirmModal.hide();
                     return;
                 }
 
                 if (!res.ok) {
                     const errorText = await res.text();
                     mostrarAlerta(`Error ${res.status} al ${action} el club: ${errorText.substring(0, 100)}...`, "error");
-                    statusConfirmModal.hide();
+                    if (statusConfirmModal) statusConfirmModal.hide();
                     return;
                 }
 
@@ -519,20 +528,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (!r.success) {
                     mostrarAlerta(r.message || `Error al ${action} el club.`, "error");
-                    statusConfirmModal.hide();
+                    if (statusConfirmModal) statusConfirmModal.hide();
                     return;
                 }
 
                 mostrarAlerta(successMessage, "exito");
                 clubToChangeStatus = { id: null, action: null };
-                statusConfirmModal.hide();
+                if (statusConfirmModal) statusConfirmModal.hide();
                 cargarClubes();
 
             } catch (error) {
                 const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor al ${action} club.`;
                 console.error(`Error de red al ${action} club:`, error);
                 mostrarAlerta(errorMessage, "error");
-                statusConfirmModal.hide();
+                if (statusConfirmModal) statusConfirmModal.hide();
             }
         });
     }
@@ -540,6 +549,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------
     // Inicializar
     // -----------------------------------------
-    clearForm();
-    cargarClubes();
+    setFechaDefault(); // Establece la fecha por defecto
+    cargarClubes(); // Carga las tablas
 });
