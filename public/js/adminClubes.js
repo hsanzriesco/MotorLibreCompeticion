@@ -20,6 +20,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputImagen = document.getElementById("imagen_club");
     const inputFecha = document.getElementById("fecha_creacion");
 
+    // ⭐ CORRECCIÓN: Agregar un input hidden para el ID del presidente.
+    // Aunque el admin lo crea, este campo es necesario si se carga un club pendiente
+    // y se quiere establecer el estado 'activo' con el id_presidente correcto.
+    const inputIdPresidente = document.getElementById("id_presidente");
+
+
     // Modals de Bootstrap (se mantienen igual)
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
     const deleteConfirmModal = deleteConfirmModalEl ? new bootstrap.Modal(deleteConfirmModalEl) : null;
@@ -39,8 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------
 
     // Función para obtener el Token JWT.
-    // ⭐ NOTA: Si usas sessionStorage, cambia 'localStorage' por 'sessionStorage'.
     function getToken() {
+        // Usar sessionStorage para tokens de sesión
         return sessionStorage.getItem('jwtToken');
     }
 
@@ -61,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function clearForm() {
         if (form) form.reset();
         if (inputId) inputId.value = ""; // Asegura que el ID oculto se borra para POST
+        if (inputIdPresidente) inputIdPresidente.value = ""; // ⭐ Nuevo: Asegura que el ID de presidente se borra.
         setFechaDefault();
         mostrarAlerta("Formulario listo para crear un nuevo club.", "info");
     }
@@ -122,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const resActivos = await fetch("/api/clubs?estado=activo", { headers });
 
             if (!resActivos.ok) {
+                // Si falla la autorización o es un error de servidor
                 const errorText = await resActivos.text();
                 throw new Error(`Fallo al cargar activos (${resActivos.status}): ${resActivos.statusText}. Detalle: ${errorText.substring(0, 100)}...`);
             }
@@ -131,6 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const resPendientes = await fetch("/api/clubs?estado=pendiente", { headers });
 
             if (!resPendientes.ok) {
+                // Si falla la autorización o es un error de servidor
                 const errorText = await resPendientes.text();
                 throw new Error(`Fallo al cargar pendientes (${resPendientes.status}): ${resPendientes.statusText}. Detalle: ${errorText.substring(0, 100)}...`);
             }
@@ -221,6 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 badgeEstado = '<span class="badge bg-secondary">DESCONOCIDO/RECHAZADO</span>';
             }
 
+            // Uso de id_presidente del club, o 'Admin' si no existe (creado por admin)
             const presidenteInfo = club.id_presidente
                 ? `${escapeHtml(club.nombre_presidente || 'N/A')} (ID: ${club.id_presidente})`
                 : 'Admin';
@@ -304,6 +314,9 @@ document.addEventListener("DOMContentLoaded", () => {
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
             if (inputImagen) inputImagen.value = ""; // Limpiar el input file
 
+            // ⭐ Nuevo: Cargar el id_presidente si existe
+            if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
+
             if (c.estado === 'pendiente' || c.estado === null) {
                 mostrarAlerta("Club pendiente cargado. Al guardar cambios manualmente, se establecerá como activo.", "info");
             } else {
@@ -335,28 +348,43 @@ document.addEventListener("DOMContentLoaded", () => {
         const metodo = id ? "PUT" : "POST";
         const url = "/api/clubs" + (id ? `?id=${id}` : "");
 
-        const formData = new FormData();
-        formData.append("nombre_evento", inputNombre.value.trim());
-        formData.append("descripcion", inputDescripcion.value.trim());
+        const formData = new FormData(form); // Usa el constructor de FormData con el formulario
+        // Nota: Al usar new FormData(form), ya incluye todos los inputs del formulario.
+        // No es necesario añadirlos uno por uno a menos que quieras anular valores.
 
-        // El estado 'activo' lo debe establecer el admin solo al CREAR un club (POST)
-        // En PUT (edición), el club ya es activo, a menos que el backend maneje el cambio de estado.
-        // Aquí solo establecemos el estado al crear (POST) o si es una actualización manual de un pendiente.
-        if (metodo === 'POST' || (metodo === 'PUT' && id_presidente.value === '')) {
+        // ⭐ CORRECCIÓN CRÍTICA: No establecemos el estado 'activo' en el FormData si ya existe un ID de presidente. 
+        // Esto podría ser un club pendiente. Si el admin edita y guarda un pendiente, este se activa.
+
+        // Si es un club creado manualmente por el Admin (no tiene id_presidente), o si es un PUT
+        // y se le añade un estado. Si se está editando un club pendiente, el PUT debería incluir: 
+        // 1. El ID del presidente.
+        // 2. El estado 'activo' para promoverlo.
+
+        // Si es un club pendiente cargado (id existe), añadimos estado: 'activo' al guardarlo.
+        // O si es un POST (creación de admin), también es activo.
+        if (metodo === 'POST' || (metodo === 'PUT' && inputIdPresidente && inputIdPresidente.value !== '')) {
+            // Si el admin está editando un club pendiente (PUT) o creando uno (POST), se establece como activo.
             formData.append("estado", "activo");
+
+            // Si es un PUT de un pendiente, mantenemos el id_presidente original
+            if (metodo === 'PUT' && inputIdPresidente && inputIdPresidente.value !== '') {
+                formData.append("id_presidente", inputIdPresidente.value);
+            }
         }
 
-        if (inputImagen && inputImagen.files.length > 0) {
-            // ⭐ CORRECCIÓN CRÍTICA: Acceso directo al files[0] del input file
-            formData.append("imagen_club", inputImagen.files[0]);
-        }
+        // El input file ya se incluye por 'new FormData(form)' si el input tiene un name="imagen_club"
+
 
         try {
-            // No creamos 'new Headers()' si enviamos FormData, solo pasamos el Authorization
+            // ⭐ CORRECCIÓN CLAVE: Al enviar FormData (que puede incluir un archivo), 
+            // solo se debe pasar el header 'Authorization'. El navegador establece
+            // automáticamente el 'Content-Type: multipart/form-data; boundary=...'
+            // NO DEBES establecer Content-Type: 'application/json' ni otro.
+
             const res = await fetch(url, {
                 method: metodo,
                 headers: {
-                    'Authorization': `Bearer ${token}` // ⭐ CRÍTICO: Token en el header
+                    'Authorization': `Bearer ${token}` // ⭐ Token en el header
                 },
                 body: formData // Body es el objeto FormData
             });
@@ -501,6 +529,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     // PUT para cambiar estado de pendiente a activo (y mover de tabla por backend)
                     res = await fetch(url, {
                         method: 'PUT',
+                        // El PUT para cambio de estado SÍ necesita Content-Type porque solo envía JSON
                         headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ estado: 'activo' })
                     });
