@@ -13,9 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Formulario y botón de nueva creación
     const form = document.getElementById("club-form");
     const btnNewClub = document.getElementById("btn-new-club");
-    
+
     // Asumiendo que existe un modal principal para la edición/creación
-    const clubModalEl = document.getElementById('clubModal'); 
+    const clubModalEl = document.getElementById('clubModal');
 
     // Elementos del formulario de edición/creación
     const inputId = document.getElementById("club-id");
@@ -44,17 +44,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // UTIL: Token, Fecha, Limpieza y Escape HTML
     // -----------------------------------------
 
-    /** * Obtiene el Token JWT de la sessionStorage. 
+    /** Obtiene el Token JWT de la sessionStorage. 
      * Verifica 'jwtToken' (estándar) y 'token' (posible clave de login).
      */
     function getToken() {
         const token = sessionStorage.getItem('jwtToken');
         if (token) return token;
-        
-        // ** SOLUCIÓN IMPLEMENTADA AQUÍ **
-        // Verifica la clave 'token' como fallback, por si el archivo de login 
-        // lo guardó con el mismo nombre que la clave de respuesta del backend.
-        return sessionStorage.getItem('token'); 
+
+        // Fallback: Busca la clave 'token'
+        return sessionStorage.getItem('token');
     }
 
     /** Obtiene la fecha de hoy en formato 'YYYY-MM-DD'. */
@@ -81,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnNewClub.addEventListener('click', () => {
             clearForm();
             // Mostrar modal de creación (si existe)
-            if(clubModalEl) new bootstrap.Modal(clubModalEl).show();
+            if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
         });
     }
 
@@ -123,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
     async function cargarClubes() {
         const token = getToken();
         if (!token) {
-            // ** MENSAJE DE ERROR MEJORADO **
             mostrarAlerta("❌ **ERROR CRÍTICO:** No se encontró el token de administrador. Por favor, asegúrate de haber **iniciado sesión correctamente** y que el token se haya guardado como **'jwtToken'** o **'token'** en la Session Storage.", "error");
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
@@ -191,7 +188,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderTabla(contenedorTabla, clubes, status = 'ok') {
         if (!contenedorTabla) return;
 
-        contenedorTabla.innerHTML = ""; 
+        contenedorTabla.innerHTML = "";
+
+        // ** FIX: Definir la variable aquí para usarla en el mensaje de tabla vacía **
+        const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes'; // ** Solución de ReferenceError **
 
         if (status === 'error') {
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!Array.isArray(clubes) || clubes.length === 0) {
-            const mensaje = contenedorTabla.id === 'tabla-clubes-pendientes' ?
+            const mensaje = esPendiente ? // Usamos la variable definida arriba
                 "No hay solicitudes de clubes pendientes." :
                 "No hay clubes activos registrados.";
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-secondary text-center">${mensaje}</td></tr>`;
@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let badgeEstado = '';
             let accionesEspeciales = '';
 
-            const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes';
+            // const esPendiente fue movida arriba y reutilizada aquí
 
             if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
@@ -231,8 +231,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 : 'Admin';
 
             // Recorte de descripción para mejor visualización
-            const descripcionCorta = club.descripcion 
-                ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : '')) 
+            const descripcionCorta = club.descripcion
+                ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
                 : "Sin descripción";
 
             fila.innerHTML = `
@@ -297,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const r = await res.json();
-            const c = r.club || r.pending_club; 
+            const c = r.club || r.pending_club;
 
             if (!r.success || !c) {
                 mostrarAlerta(r.message || "No se pudo cargar el club", "error");
@@ -309,10 +309,10 @@ document.addEventListener("DOMContentLoaded", () => {
             inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
-            if (inputImagen) inputImagen.value = ""; 
-            
+            if (inputImagen) inputImagen.value = "";
+
             // Cargar ID del presidente
-            if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || ""; 
+            if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
 
             // Mostrar el modal de edición
             if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
@@ -363,9 +363,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(url, {
                 method: metodo,
                 headers: {
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
-                body: formData 
+                body: formData
             });
 
             if (!res.ok) {
@@ -383,10 +383,10 @@ document.addEventListener("DOMContentLoaded", () => {
             mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
             // Cerrar modal
-            if(clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
-            
-            clearForm(); 
-            cargarClubes(); 
+            if (clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
+
+            clearForm();
+            cargarClubes();
 
         } catch (error) {
             console.error("Error submit club:", error);
@@ -425,8 +425,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (deleteConfirmModal) deleteConfirmModal.hide();
                 return;
             }
-            
-            if (deleteConfirmModal) deleteConfirmModal.hide(); 
+
+            if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
                 const res = await fetch(`/api/clubs?id=${id}`, {
@@ -478,7 +478,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (btnConfirmStatus) btnConfirmStatus.textContent = 'Confirmar Aprobación';
         } else if (action === 'rechazar') {
             mensaje = `¿Estás seguro de que deseas **RECHAZAR** el club "${nombre}" (ID: ${id})? Se eliminará la solicitud.`;
-            if (btnConfirmStatus) btnConfirmStatus.className = 'btn btn-danger'; 
+            if (btnConfirmStatus) btnConfirmStatus.className = 'btn btn-danger';
             if (btnConfirmStatus) btnConfirmStatus.textContent = 'Confirmar Rechazo';
         }
 
@@ -496,10 +496,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (statusConfirmModal) statusConfirmModal.hide();
                 return;
             }
-            
-            if (statusConfirmModal) statusConfirmModal.hide(); 
 
-            const url = `/api/clubs?id=${id}&status=change`; 
+            if (statusConfirmModal) statusConfirmModal.hide();
+
+            const url = `/api/clubs?id=${id}&status=change`;
             const headers = { 'Authorization': `Bearer ${token}` };
 
             try {
@@ -511,7 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     res = await fetch(url, {
                         method: 'PUT',
                         headers: { ...headers, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ estado: 'activo' }) 
+                        body: JSON.stringify({ estado: 'activo' })
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
@@ -552,6 +552,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------
     // Inicializar
     // -----------------------------------------
-    setFechaDefault(); 
-    cargarClubes(); 
+    setFechaDefault();
+    cargarClubes();
 });
