@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
     // 1. CARGA DE USUARIO Y VALIDACIÓN DE SESIÓN
-    const storedUser = sessionStorage.getItem("usuario") || sessionStorage.getItem("usuario");
+    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
     let user = null;
 
     if (storedUser) {
@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error parseando usuario:", e);
             // Si el JSON es inválido, forzamos el cierre de sesión
             sessionStorage.removeItem("usuario");
-            sessionStorage.removeItem("usuario");
+            localStorage.removeItem("usuario");
         }
     }
 
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function logoutUserAndRedirect(isAutoLogout = false) {
         // Limpiar ambos almacenamientos para asegurar el cierre de sesión
         sessionStorage.removeItem("usuario");
-        sessionStorage.removeItem("usuario");
+        localStorage.removeItem("usuario");
 
         // Ocultar el modal si está visible
         if (logoutConfirmModal) {
@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.location.href = "/index.html"; // Redirigir a Index o a Login si prefieres
             }, 1500); // 1.5 segundos para que se vea la alerta.
 
-            sessionStorage.removeItem("usuario");
+            localStorage.removeItem("usuario");
             sessionStorage.removeItem("usuario");
         }
     }

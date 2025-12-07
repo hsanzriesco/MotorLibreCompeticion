@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 🛑 LÓGICA DE AUTENTICACIÓN CORREGIDA 🛑
     // 1. INTENTAR RECUPERAR DE sessionStorage O localStorage
-    const stored = sessionStorage.getItem('usuario') || sessionStorage.getItem('usuario');
+    const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let user = null;
 
     if (!stored) {
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
         // Sesión corrupta, limpiar ambas por seguridad y redirigir
         sessionStorage.removeItem('usuario');
-        sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
         mostrarAlerta("Sesión corrupta. Vuelve a iniciar sesión.", 'error');
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
         return;
@@ -515,8 +515,8 @@ document.addEventListener('DOMContentLoaded', () => {
             user.email = newEmail;
 
             // Si la sesión original viene de localStorage, actualiza ambos.
-            if (sessionStorage.getItem('usuario')) {
-                sessionStorage.setItem('usuario', JSON.stringify(user));
+            if (localStorage.getItem('usuario')) {
+                localStorage.setItem('usuario', JSON.stringify(user));
             }
             sessionStorage.setItem('usuario', JSON.stringify(user));
 

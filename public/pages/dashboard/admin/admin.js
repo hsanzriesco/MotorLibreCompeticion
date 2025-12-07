@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Comprobación de Usuario y Redirección ---
     // Busca la sesión en sessionStorage O localStorage. 
-    const storedUser = sessionStorage.getItem("usuario") || sessionStorage.getItem("usuario");
+    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
 
     let usuario = null;
     if (storedUser) {

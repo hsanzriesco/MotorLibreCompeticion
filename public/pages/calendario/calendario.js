@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     // --- GESTIÓN DE USUARIO ---
-    const stored = sessionStorage.getItem('usuario') || sessionStorage.getItem('usuario');
+    const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let usuario = null;
 
     try {
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (e) {
         console.error("Error al parsear usuario:", e);
         sessionStorage.removeItem('usuario');
-        sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
         usuario = null;
     }
 
