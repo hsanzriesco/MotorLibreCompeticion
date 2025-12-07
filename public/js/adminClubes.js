@@ -14,17 +14,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("club-form");
     const btnNewClub = document.getElementById("btn-new-club");
 
+    // Asumiendo que existe un modal principal para la edición/creación
+    const clubModalEl = document.getElementById('clubModal');
+
     // Elementos del formulario de edición/creación
     const inputId = document.getElementById("club-id");
     const inputNombre = document.getElementById("nombre_evento");
     const inputDescripcion = document.getElementById("descripcion");
     const inputImagen = document.getElementById("imagen_club"); // Input de tipo file
     const inputFecha = document.getElementById("fecha_creacion");
-    // ⭐ MEJORA: Se añade el input oculto para el ID del presidente.
+    // ID del presidente (oculto, para gestionar pendientes)
     const inputIdPresidente = document.getElementById("id_presidente");
 
-    // Modals de Bootstrap (Se recomienda usar data-bs-toggle/target directamente en HTML,
-    // pero se mantiene la inicialización de JS para consistencia)
+    // Modals de Bootstrap
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
     const deleteConfirmModal = deleteConfirmModalEl ? new bootstrap.Modal(deleteConfirmModalEl) : null;
     const btnConfirmDelete = document.getElementById("btnConfirmDelete");
@@ -50,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Obtiene la fecha de hoy en formato 'YYYY-MM-DD'. */
     function hoyISODate() {
         const d = new Date();
-        // MEJORA: Usar toISOString para un manejo más limpio de la fecha
         return d.toISOString().split('T')[0];
     }
 
@@ -62,7 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Limpia el formulario y lo prepara para la creación. */
     function clearForm() {
         if (form) form.reset();
-        // Asegura que los IDs ocultos se borran para la creación (POST)
         if (inputId) inputId.value = "";
         if (inputIdPresidente) inputIdPresidente.value = "";
         setFechaDefault();
@@ -70,7 +70,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (btnNewClub) {
-        btnNewClub.addEventListener('click', clearForm); // Añadir el listener
+        btnNewClub.addEventListener('click', () => {
+            clearForm();
+            // Mostrar modal de creación (si existe)
+            if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
+        });
     }
 
     /** Escapa caracteres HTML para prevenir XSS. */
@@ -92,7 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
         const alertPlaceholder = document.getElementById('alert-placeholder');
         if (alertPlaceholder) {
-            // MEJORA: Definir las clases de Bootstrap en base al tipo
             const bsType = type === 'exito' ? 'success' : type === 'error' ? 'danger' : 'info';
             alertPlaceholder.innerHTML = `
                 <div class="alert alert-${bsType} alert-dismissible fade show" role="alert">
@@ -122,17 +125,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
-            // Solicitudes concurrentes para cargar datos de forma más rápida
+            // Solicitudes concurrentes (Activos y Pendientes)
             const [resActivos, resPendientes] = await Promise.all([
                 fetch("/api/clubs?estado=activo", { headers }),
                 fetch("/api/clubs?estado=pendiente", { headers })
             ]);
 
-            // Función de manejo de errores de respuesta
+            // Función de manejo de errores de respuesta interna
             const checkResponse = async (res, type) => {
                 if (!res.ok) {
                     const errorText = await res.text();
-                    // Lanza un error con detalles para capturarlo en el catch principal
                     throw new Error(`Fallo al cargar ${type} (${res.status}): ${res.statusText}. Detalle: ${errorText.substring(0, 100)}...`);
                 }
                 return res.json();
@@ -141,7 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const dataActivos = await checkResponse(resActivos, 'activos');
             const dataPendientes = await checkResponse(resPendientes, 'pendientes');
 
-            // ✅ Garantizar que la variable es un array o vacío
             const activos = dataActivos.success ? (dataActivos.clubs || []) : [];
             const pendientes = dataPendientes.success ? (dataPendientes.pending_clubs || []) : [];
 
@@ -160,16 +161,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let customMessage = "Error al conectar con el servidor.";
             if (error.message.includes('(401)') || error.message.includes('(403)')) {
-                customMessage = "❌ **Error de Permisos (401/403):** El token es inválido, expiró o no tienes rol de administrador. Por favor, vuelve a iniciar sesión.";
+                customMessage = "❌ **Error de Permisos (401/403):** Token inválido o expirado. Vuelve a iniciar sesión.";
             } else if (error.message.includes('(500)')) {
-                customMessage = `❌ **Error del Servidor (500):** Hubo un fallo interno. Revisa los logs.`;
+                customMessage = `❌ **Error del Servidor (500):** Hubo un fallo interno.`;
             } else if (error.message.includes('Fallo al cargar')) {
-                // Muestra un mensaje más amigable para errores de red/API detallados
                 customMessage = `Error de red/API: ${error.message.split('Detalle:')[0]}`;
             }
 
             mostrarAlerta(customMessage, "error");
-            // Renderiza la tabla con el mensaje de error general
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
         }
@@ -179,14 +178,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // RENDERIZAR TABLA
     // -----------------------------------------
 
-    /** Renderiza la tabla de clubes (Generalizada para activos y pendientes). */
+    /** Renderiza la tabla de clubes. */
     function renderTabla(contenedorTabla, clubes, status = 'ok') {
-        if (!contenedorTabla) {
-            console.error(`Contenedor de tabla con ID '${contenedorTabla ? contenedorTabla.id : 'NULO'}' no encontrado en el DOM.`);
-            return;
-        }
+        if (!contenedorTabla) return;
 
-        contenedorTabla.innerHTML = ""; // Limpiamos el contenido anterior
+        contenedorTabla.innerHTML = "";
 
         if (status === 'error') {
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
@@ -203,7 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         clubes.forEach(club => {
             const fila = document.createElement("tr");
-            // Limpieza de fecha
             const fecha = club.fecha_creacion ? club.fecha_creacion.toString().split('T')[0] : 'N/A';
             let badgeEstado = '';
             let accionesEspeciales = '';
@@ -212,27 +207,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
-                // Acciones de gestión de estado para pendientes
                 accionesEspeciales = `
                     <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
                     <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
                 `;
             } else if (club.estado === 'activo') {
-                badgeEstado = '<span class="badge bg-primary">ACTIVO</span>'; // MEJORA: Se cambia a bg-primary (más visible que danger para "activo")
+                badgeEstado = '<span class="badge bg-primary">ACTIVO</span>';
             } else {
                 badgeEstado = '<span class="badge bg-secondary">DESCONOCIDO/RECHAZADO</span>';
             }
 
-            // Uso de id_presidente del club
             const presidenteInfo = club.id_presidente
                 ? `${escapeHtml(club.nombre_presidente || 'N/A')} (ID: ${club.id_presidente})`
-                : 'Admin'; // Si no tiene id_presidente, se asume creado por Admin
+                : 'Admin';
 
-            // Renderizado de la fila
+            // Recorte de descripción para mejor visualización
+            const descripcionCorta = club.descripcion
+                ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
+                : "Sin descripción";
+
             fila.innerHTML = `
                 <td>${club.id}</td>
                 <td>${escapeHtml(club.nombre_evento)}</td>
-                <td>${escapeHtml(club.descripcion ? club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : '') : "Sin descripción")}</td>
+                <td>${descripcionCorta}</td>
                 <td>${fecha}</td>
                 <td>${badgeEstado}</td>
                 <td>${presidenteInfo}</td>
@@ -272,13 +269,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // CARGAR CLUB EN FORMULARIO (EDITAR)
     // -----------------------------------------
 
-    /** Carga los datos de un club específico en el formulario de edición. */
     async function cargarClubEnFormulario(e) {
         const id = e.currentTarget.dataset.id;
         const token = getToken();
         if (!id || !token) return;
 
-        clearForm(); // Limpia el formulario antes de cargar (importante)
+        clearForm();
 
         const headers = { 'Authorization': `Bearer ${token}` };
 
@@ -287,12 +283,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!res.ok) {
                 const errorText = await res.text();
-                mostrarAlerta(`Error ${res.status} al obtener club para edición: ${errorText.substring(0, 100)}...`, "error");
+                mostrarAlerta(`Error ${res.status} al obtener club: ${errorText.substring(0, 100)}...`, "error");
                 return;
             }
 
             const r = await res.json();
-            const c = r.club || r.pending_club; // Puede ser un club activo o pendiente
+            const c = r.club || r.pending_club;
 
             if (!r.success || !c) {
                 mostrarAlerta(r.message || "No se pudo cargar el club", "error");
@@ -304,15 +300,13 @@ document.addEventListener("DOMContentLoaded", () => {
             inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
-            if (inputImagen) inputImagen.value = ""; // Limpiar el input file por seguridad
+            if (inputImagen) inputImagen.value = "";
 
-            // ⭐ CRÍTICO: Cargar el ID del presidente. Si es un pendiente, debe ser incluido
-            // en el PUT para promoverlo a activo con el presidente correcto.
+            // Cargar ID del presidente
             if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
 
             // Mostrar el modal de edición
-            const clubModal = new bootstrap.Modal(document.getElementById('clubModal'));
-            clubModal.show();
+            if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
 
             if (c.estado === 'pendiente' || c.estado === null) {
                 mostrarAlerta("Club pendiente cargado. Al guardar, se establecerá como activo.", "info");
@@ -333,7 +327,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // GUARDAR CLUB (POST / PUT)
     // -----------------------------------------
 
-    /** Maneja el envío del formulario para crear (POST) o actualizar (PUT) un club. */
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -349,38 +342,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const formData = new FormData(form);
 
-        // ⭐ Lógica de Estado (CRÍTICO)
-        // Si el admin está creando (POST) o editando un club pendiente (PUT), 
-        // se establece explícitamente el estado a 'activo' en el FormData.
+        // Lógica de Estado: Si es creación (POST) o edición de pendiente (PUT), forzar estado 'activo'
         const isEditingPending = metodo === 'PUT' && inputIdPresidente && inputIdPresidente.value !== '';
 
         if (metodo === 'POST' || isEditingPending) {
             formData.append("estado", "activo");
-
-            // Si es un POST (creación manual del Admin), y no se ha especificado,
-            // se puede establecer 'id_presidente' a null o un valor predeterminado si es requerido por la API.
-            // Si se está editando un pendiente, el 'id_presidente' ya está en el FormData
-            // a través del input hidden, por lo que no es necesario añadirlo aquí, a menos que quieras
-            // sobreescribirlo o asegurarte de que existe un valor para el backend.
-            if (metodo === 'POST' && !formData.get('id_presidente')) {
-                // Si la API requiere un id_presidente en POST, aquí se pondría un valor por defecto o null
-                // Asumiendo que la API lo gestiona si es 'null' o 'Admin'
-                // formData.append("id_presidente", null); 
-            }
         }
 
-        // En un PUT de un club activo, no necesitamos añadir 'estado' a menos que queramos cambiarlo.
-        // Asumimos que la API lo mantiene si no se envía el campo 'estado'.
-
         try {
-            // No establecemos Content-Type, el navegador lo hará automáticamente como multipart/form-data
-            // ya que se usa FormData y podría contener un archivo.
+            // El Content-Type es manejado por el navegador (multipart/form-data)
             const res = await fetch(url, {
                 method: metodo,
                 headers: {
-                    'Authorization': `Bearer ${token}` // ⭐ Token en el header
+                    'Authorization': `Bearer ${token}`
                 },
-                body: formData // Body es el objeto FormData
+                body: formData
             });
 
             if (!res.ok) {
@@ -397,12 +373,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
-            // Cerrar modal si existe
-            const clubModalEl = document.getElementById('clubModal');
+            // Cerrar modal
             if (clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
 
-            clearForm(); // Limpiar el formulario para la próxima creación
-            cargarClubes(); // Recargar las tablas
+            clearForm();
+            cargarClubes();
 
         } catch (error) {
             console.error("Error submit club:", error);
@@ -416,7 +391,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // ELIMINAR CLUB
     // -----------------------------------------
 
-    /** Muestra el modal de confirmación para eliminar. */
     function preguntarEliminarClub(e) {
         const id = e.currentTarget.dataset.id;
         if (!id) return;
@@ -432,7 +406,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (deleteConfirmModal) deleteConfirmModal.show();
     }
 
-    /** Maneja la confirmación de la eliminación. */
     if (btnConfirmDelete) {
         btnConfirmDelete.addEventListener("click", async () => {
             const token = getToken();
@@ -444,10 +417,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            if (deleteConfirmModal) deleteConfirmModal.hide(); // Ocultar antes de la petición para feedback rápido
+            if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
-                // DELETE en /api/clubs?id= elimina un club (activo o pendiente)
                 const res = await fetch(`/api/clubs?id=${id}`, {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -482,7 +454,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // GESTIÓN DE ESTADO (APROBAR / RECHAZAR SOLICITUD)
     // -------------------------------------------------------------------
 
-    /** Muestra el modal de confirmación para el cambio de estado. */
     function preguntarCambioEstado(e, action) {
         const id = e.currentTarget.dataset.id;
         const nombre = e.currentTarget.dataset.nombre;
@@ -497,8 +468,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (btnConfirmStatus) btnConfirmStatus.className = 'btn btn-success';
             if (btnConfirmStatus) btnConfirmStatus.textContent = 'Confirmar Aprobación';
         } else if (action === 'rechazar') {
-            mensaje = `¿Estás seguro de que deseas **RECHAZAR** el club "${nombre}" (ID: ${id})? Se eliminará la solicitud (de la tabla ${'`clubs_pendientes`'}).`;
-            if (btnConfirmStatus) btnConfirmStatus.className = 'btn btn-danger'; // MEJORA: Botón rojo para 'rechazar'
+            mensaje = `¿Estás seguro de que deseas **RECHAZAR** el club "${nombre}" (ID: ${id})? Se eliminará la solicitud.`;
+            if (btnConfirmStatus) btnConfirmStatus.className = 'btn btn-danger';
             if (btnConfirmStatus) btnConfirmStatus.textContent = 'Confirmar Rechazo';
         }
 
@@ -506,7 +477,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (statusConfirmModal) statusConfirmModal.show();
     }
 
-    /** Maneja la confirmación para cambiar el estado (Aprobar/Rechazar). */
     if (btnConfirmStatus) {
         btnConfirmStatus.addEventListener('click', async () => {
             const { id, action } = clubToChangeStatus;
@@ -518,9 +488,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            if (statusConfirmModal) statusConfirmModal.hide(); // Ocultar antes de la petición
+            if (statusConfirmModal) statusConfirmModal.hide();
 
-            const url = `/api/clubs?id=${id}&status=change`; // Endpoint específico para cambio de estado
+            const url = `/api/clubs?id=${id}&status=change`;
             const headers = { 'Authorization': `Bearer ${token}` };
 
             try {
@@ -528,10 +498,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 let successMessage;
 
                 if (action === 'aprobar') {
-                    // PUT: Cambia estado a activo
+                    // PUT: Cambia estado a activo (asumiendo que el backend maneja la promoción)
                     res = await fetch(url, {
                         method: 'PUT',
-                        // El PUT de estado debe ir con JSON para enviar el cambio de estado
                         headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ estado: 'activo' })
                     });
@@ -574,6 +543,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------
     // Inicializar
     // -----------------------------------------
-    setFechaDefault(); // Establece la fecha por defecto en el formulario
-    cargarClubes(); // Carga las tablas al iniciar la página
+    setFechaDefault();
+    cargarClubes();
 });
