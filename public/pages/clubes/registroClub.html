@@ -127,7 +127,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('clubRegistrationForm');
 
-            // Función para mostrar alertas usando el alert nativo (Puedes modificarla para usar un modal de Bootstrap)
+            // Función para mostrar alertas usando el alert nativo
             function mostrarAlerta(message, type) {
                 console.log(`[${type.toUpperCase()}] ${message}`);
                 alert(`[${type}] ${message}`);
@@ -136,12 +136,14 @@
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
-                // 1. OBTENER EL TOKEN (Asume que el token está en localStorage)
-                const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+                // 1. OBTENER EL TOKEN DESDE sessionStorage (¡CORREGIDO!)
+                // Lee de 'userToken' o 'token', según la clave que uses al iniciar sesión.
+                const token = sessionStorage.getItem('userToken') || sessionStorage.getItem('token');
 
                 if (!token) {
                     mostrarAlerta("Error: Debes iniciar sesión para registrar un club.", "error");
-                    // Aquí podrías redirigir al login
+                    // Opcional: Redirigir al login
+                    // window.location.href = '/login.html'; 
                     return;
                 }
 
@@ -182,7 +184,8 @@
                     const r = await res.json();
 
                     if (!res.ok || !r.success) {
-                        mostrarAlerta(r.message || "Error al enviar la solicitud. El servidor ha fallado.", "error");
+                        // Si el backend te da un error de validación o un 403, lo mostramos aquí.
+                        mostrarAlerta(r.message || "Error al enviar la solicitud. El servidor ha fallado o ya tienes una solicitud pendiente.", "error");
                         return;
                     }
 
