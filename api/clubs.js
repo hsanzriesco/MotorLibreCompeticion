@@ -1,5 +1,6 @@
 // api/clubs.js
 // Maneja la gestión de clubes y solicitudes de clubes pendientes
+// 🚨 MODIFICADO: Implementado el método GET y un DELETE básico para evitar el error 405. 🚨
 
 import { Pool } from "pg";
 import formidable from "formidable";
@@ -38,20 +39,15 @@ export const config = {
  */
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
-        // En Vercel/Serverless, formidable utiliza automáticamente '/tmp' 
-        // para archivos temporales. No es necesario crear o forzar el directorio.
         const form = formidable({
             multiples: false,
-            // 🚨 ELIMINAMOS 'uploadDir' y 'fs.existsSync' para dejar que formidable 
-            // maneje el temporal de forma nativa en el entorno Serverless.
             keepExtensions: true,
-            maxFileSize: 5 * 1024 * 1024, // 5MB (máximo recomendado para funciones Lambda)
+            maxFileSize: 5 * 1024 * 1024, // 5MB 
         });
 
         form.parse(req, (err, fields, files) => {
             if (err) {
                 console.error("Error parsing form:", err);
-                // Si formidable falla al parsear, no intentamos limpiar, solo rechazamos
                 return reject(err);
             }
 
@@ -82,15 +78,14 @@ async function uploadToCloudinary(filePath) {
             folder: 'motor-libre-clubs', // Carpeta específica en tu Cloudinary
         });
 
-        // 🚨 Importante: Eliminar el archivo temporal de /tmp después de la subida exitosa
-        // Esto es crucial para liberar espacio en el entorno Serverless.
+        // Importante: Eliminar el archivo temporal de /tmp
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
 
         return result.secure_url; // Devuelve la URL pública
     } catch (error) {
-        // Si falla Cloudinary, también intentamos limpiar el archivo temporal
+        // Intentamos limpiar incluso si la subida falla
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
@@ -145,7 +140,7 @@ async function statusChangeHandler(req, res) {
                     try {
                         resolve(JSON.parse(Buffer.concat(chunks).toString()));
                     } catch (e) {
-                        resolve({}); // Manejar el caso de body vacío o inválido
+                        resolve({});
                     }
                 });
             });
@@ -237,16 +232,50 @@ async function clubsHandler(req, res) {
 
 
     try {
-        // --- 2.1. GET: Obtener clubes ---
-        // (El código GET se debe implementar aquí si aún no está)
+        // --- 2.1. GET: Obtener clubes (Implementado para evitar 405) ---
+        if (method === "GET") {
+            const { estado, id } = query;
+            let queryText = "SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, estado, id_presidente, nombre_presidente FROM clubs";
+            const values = [];
+
+            if (id) {
+                // Obtener un club activo específico por ID
+                queryText += " WHERE id = $1 AND estado = 'activo'";
+                values.push(id);
+                const result = await pool.query(queryText, values);
+                if (result.rows.length === 0) {
+                    return res.status(404).json({ success: false, message: "Club activo no encontrado." });
+                }
+                return res.status(200).json({ success: true, club: result.rows[0] });
+
+            } else if (estado) {
+                if (estado === 'activo') {
+                    // Obtener todos los clubes activos
+                    queryText += " WHERE estado = $1 ORDER BY fecha_creacion DESC";
+                    values.push('activo');
+                    const result = await pool.query(queryText, values);
+                    return res.status(200).json({ success: true, clubs: result.rows });
+                } else if (estado === 'pendiente' && isAdmin) {
+                    // Obtener solicitudes pendientes (requiere Admin)
+                    queryText = "SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, estado, id_presidente, nombre_presidente FROM clubs_pendientes ORDER BY fecha_creacion DESC";
+                    const result = await pool.query(queryText);
+                    return res.status(200).json({ success: true, pending_clubs: result.rows });
+                } else if (estado === 'pendiente' && !isAdmin) {
+                    return res.status(403).json({ success: false, message: "Acceso denegado a solicitudes pendientes." });
+                }
+            }
+
+            // Si no se especifica ID ni estado, devolver todos los clubes activos por defecto.
+            const defaultResult = await pool.query("SELECT id, nombre_evento, descripcion, imagen_club, fecha_creacion, estado, id_presidente, nombre_presidente FROM clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC");
+            return res.status(200).json({ success: true, clubs: defaultResult.rows });
+        }
 
         // --- 2.2. POST: Crear nuevo club o solicitud de club ---
         if (method === "POST") {
             const { fields, files } = await parseForm(req);
             const { nombre_evento, descripcion } = fields;
-            const imagenFile = files.imagen_club ? files.imagen_club : null; // Ya es el objeto File
+            const imagenFile = files.imagen_club ? files.imagen_club : null;
 
-            // Ruta temporal que creó formidable
             const imagenFilePathTemp = imagenFile ? imagenFile.filepath : null;
 
             let imagen_club_url = null;
@@ -262,7 +291,6 @@ async function clubsHandler(req, res) {
 
 
             if (!nombre_evento || !descripcion) {
-                // Si falta texto, ya se limpió la imagen en uploadToCloudinary si subió.
                 return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre o descripción." });
             }
 
@@ -396,7 +424,34 @@ async function clubsHandler(req, res) {
 
 
         // --- 2.4. DELETE: Eliminar club (Solo Admin) ---
-        // (El código DELETE debe implementarse aquí si aún no está)
+        if (method === "DELETE") {
+            const { id } = query;
+            if (!id) return res.status(400).json({ success: false, message: "ID del club es requerido para eliminar." });
+
+            verifyAdmin(req); // Requiere ser administrador
+
+            // 1. Obtener URL de imagen para posible eliminación de Cloudinary (opcional, pero recomendado)
+            const clubRes = await pool.query("SELECT id_presidente, imagen_club FROM clubs WHERE id = $1", [id]);
+            if (clubRes.rows.length === 0) {
+                return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
+            }
+            const { id_presidente, imagen_club } = clubRes.rows[0];
+
+            // 2. Eliminar club de la tabla principal
+            const deleteRes = await pool.query("DELETE FROM clubs WHERE id = $1 RETURNING id", [id]);
+
+            if (deleteRes.rows.length > 0) {
+                // 3. Resetear rol y club_id del presidente asociado
+                await pool.query("UPDATE users SET role = 'user', club_id = NULL WHERE id = $1", [id_presidente]);
+
+                // 4. TODO: Implementar borrado de Cloudinary usando imagen_club (requiere parsear la URL para obtener el public_id)
+                console.log(`Club eliminado. Imagen URL para Cloudinary (borrado manual pendiente): ${imagen_club}`);
+
+                return res.status(200).json({ success: true, message: "Club eliminado y rol de presidente restablecido." });
+            }
+
+            return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
+        }
 
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
@@ -407,7 +462,6 @@ async function clubsHandler(req, res) {
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
-            // Este error de DB (Tabla no existe) es el que estamos buscando solucionar
             return res.status(500).json({ success: false, message: "Error: La tabla de base de datos no fue encontrada. Revisa 'DATABASE_URL' y los nombres de las tablas." });
         }
         if (error.message.includes('maxFileSize') || error.message.includes('Cloudinary upload failed')) {
@@ -429,9 +483,10 @@ async function clubsHandler(req, res) {
 export default async function clubsCombinedHandler(req, res) {
     const { method, query } = req;
 
+    // Si la URL es /api/clubs?status=...&id=..., lo envía a statusChangeHandler
     if (query.status && query.id) {
         return statusChangeHandler(req, res);
     }
-
+    // Si la URL es /api/clubs o /api/clubs?estado=... o /api/clubs?id=..., lo envía a clubsHandler
     return clubsHandler(req, res);
 }
