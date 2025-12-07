@@ -157,9 +157,9 @@ async function statusChangeHandler(req, res) {
                 await client.query('BEGIN');
 
                 // 1. Obtener datos del club pendiente (clubs_pendientes)
-                // NO se selecciona 'estado' ni 'nombre_presidente' de clubs_pendientes
+                // MODIFICADO: Añadido public.
                 const pendingClubRes = await client.query(
-                    'SELECT nombre_evento, descripcion, imagen_club, id_presidente FROM clubs_pendientes WHERE id = $1',
+                    'SELECT nombre_evento, descripcion, imagen_club, id_presidente FROM public.clubs_pendientes WHERE id = $1',
                     [id]
                 );
 
@@ -177,25 +177,29 @@ async function statusChangeHandler(req, res) {
 
                 // Obtener el nombre del presidente para la tabla 'clubs'
                 let nombrePresidente;
-                const presidenteNameRes = await client.query('SELECT name FROM "users" WHERE id = $1', [club.id_presidente]);
+                // MODIFICADO: Añadido public.
+                const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
                 nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
 
                 // 2. Mover el club a la tabla principal 'clubs' (Aquí SÍ usamos nombre_presidente y estado)
+                // MODIFICADO: Añadido public.
                 const insertRes = await client.query(
-                    'INSERT INTO clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id',
+                    'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id',
                     [club.nombre_evento, club.descripcion, club.imagen_club, club.id_presidente, nombrePresidente, 'activo']
                 );
                 const newClubId = insertRes.rows[0].id;
 
                 // 3. Actualizar el usuario solicitante a presidente y asignarle el club_id
+                // MODIFICADO: Añadido public.
                 await client.query(
-                    'UPDATE "users" SET role = $1, club_id = $2 WHERE id = $3',
+                    'UPDATE public."users" SET role = $1, club_id = $2 WHERE id = $3',
                     ['presidente', newClubId, club.id_presidente]
                 );
 
                 // 4. Eliminar la solicitud de la tabla de pendientes (clubs_pendientes)
-                await client.query('DELETE FROM clubs_pendientes WHERE id = $1', [id]);
+                // MODIFICADO: Añadido public.
+                await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [id]);
 
                 await client.query('COMMIT');
                 return res.status(200).json({ success: true, message: "Club aprobado y activado correctamente." });
@@ -209,7 +213,8 @@ async function statusChangeHandler(req, res) {
 
         } else if (method === 'DELETE') {
             // RECHAZAR SOLICITUD (Eliminar de clubs_pendientes)
-            const result = await pool.query('DELETE FROM clubs_pendientes WHERE id = $1 RETURNING id', [id]);
+            // MODIFICADO: Añadido public.
+            const result = await pool.query('DELETE FROM public.clubs_pendientes WHERE id = $1 RETURNING id', [id]);
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ success: false, message: "Solicitud de club pendiente no encontrada para rechazar." });
@@ -255,7 +260,7 @@ async function clubsHandler(req, res) {
                     id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
                     estado, id_presidente, nombre_presidente, 
                     0 as miembros 
-                FROM clubs 
+                FROM public.clubs -- MODIFICADO: Añadido public.
             `;
             const values = [];
 
@@ -278,7 +283,7 @@ async function clubsHandler(req, res) {
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
                     // Obtener solicitudes pendientes (requiere Admin)
-                    // ✅ CORRECCIÓN CLAVE: Usamos fecha_solicitud y añadimos NULLs para las columnas faltantes.
+                    // MODIFICADO: Añadido public. a clubs_pendientes
                     queryText = `
                         SELECT 
                             id, 
@@ -286,10 +291,10 @@ async function clubsHandler(req, res) {
                             descripcion, 
                             imagen_club, 
                             fecha_solicitud as fecha_creacion, 
-                            NULL as estado,               -- Columna 'estado' falta en clubs_pendientes
+                            NULL as estado,               
                             id_presidente, 
-                            NULL as nombre_presidente     -- Columna 'nombre_presidente' falta en clubs_pendientes
-                        FROM clubs_pendientes 
+                            NULL as nombre_presidente     
+                        FROM public.clubs_pendientes 
                         ORDER BY fecha_solicitud DESC
                     `;
                     const result = await pool.query(queryText);
@@ -300,12 +305,13 @@ async function clubsHandler(req, res) {
             }
 
             // Si no se especifica ID ni estado, devolver todos los clubes activos por defecto.
+            // MODIFICADO: Añadido public. a clubs
             const defaultResult = await pool.query(`
                 SELECT 
                     id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
                     estado, id_presidente, nombre_presidente, 
                     0 as miembros 
-                FROM clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
+                FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
             `);
             return res.status(200).json({ success: true, clubs: defaultResult.rows });
         }
@@ -350,7 +356,8 @@ async function clubsHandler(req, res) {
 
                     // Solo necesitamos el nombre del presidente para la tabla 'clubs'
                     let nombrePresidente;
-                    const presidenteNameRes = await pool.query('SELECT name FROM "users" WHERE id = $1', [idPresidente]);
+                    // MODIFICADO: Añadido public.
+                    const presidenteNameRes = await pool.query('SELECT name FROM public."users" WHERE id = $1', [idPresidente]);
                     nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
 
                     // Consulta para tabla 'clubs' (Contiene todas las columnas)
@@ -370,7 +377,8 @@ async function clubsHandler(req, res) {
                         return res.status(401).json({ success: false, message: "Debe iniciar sesión para solicitar un club." });
                     }
 
-                    const checkUser = await pool.query('SELECT role, club_id FROM "users" WHERE id = $1', [userId]);
+                    // MODIFICADO: Añadido public.
+                    const checkUser = await pool.query('SELECT role, club_id FROM public."users" WHERE id = $1', [userId]);
                     if (checkUser.rows.length === 0) {
                         return res.status(403).json({ success: false, message: "Usuario no encontrado." });
                     }
@@ -380,7 +388,8 @@ async function clubsHandler(req, res) {
                         return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                     }
 
-                    const checkPending = await pool.query('SELECT id FROM clubs_pendientes WHERE id_presidente = $1', [userId]);
+                    // MODIFICADO: Añadido public.
+                    const checkPending = await pool.query('SELECT id FROM public.clubs_pendientes WHERE id_presidente = $1', [userId]);
                     if (checkPending.rows.length > 0) {
                         return res.status(403).json({ success: false, message: "Ya tienes una solicitud de club pendiente." });
                     }
@@ -406,8 +415,9 @@ async function clubsHandler(req, res) {
                     return res.status(500).json({ success: false, message: "Error interno: La tabla de destino SQL es inválida. Revise la lógica de rol y autenticación." });
                 }
 
+                // MODIFICADO: Añadido public.
                 const insertQuery = `
-                    INSERT INTO "${tabla}" (${insertColumns}) 
+                    INSERT INTO public."${tabla}" (${insertColumns}) 
                     VALUES ${insertValues}
                     RETURNING id, nombre_evento, descripcion
                 `;
@@ -454,7 +464,8 @@ async function clubsHandler(req, res) {
 
 
             if (!isAdmin) {
-                const checkPresidente = await pool.query('SELECT id_presidente FROM clubs WHERE id = $1', [id]);
+                // MODIFICADO: Añadido public.
+                const checkPresidente = await pool.query('SELECT id_presidente FROM public.clubs WHERE id = $1', [id]);
                 if (checkPresidente.rows.length === 0 || checkPresidente.rows[0].id_presidente !== userId) {
                     // 🚨 Limpieza si no hay permisos 🚨
                     if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) fs.unlinkSync(imagenFilePathTemp);
@@ -498,8 +509,9 @@ async function clubsHandler(req, res) {
             values.push(id);
             const idParam = paramIndex;
 
+            // MODIFICADO: Añadido public.
             const updateQuery = `
-                UPDATE clubs SET ${updates.join(', ')} WHERE id = $${idParam}
+                UPDATE public.clubs SET ${updates.join(', ')} WHERE id = $${idParam}
                 RETURNING id, nombre_evento, descripcion, imagen_club
             `;
 
@@ -521,18 +533,21 @@ async function clubsHandler(req, res) {
             verifyAdmin(req); // Requiere ser administrador
 
             // 1. Obtener URL de imagen para posible eliminación de Cloudinary (opcional, pero recomendado)
-            const clubRes = await pool.query('SELECT id_presidente, imagen_club FROM clubs WHERE id = $1', [id]);
+            // MODIFICADO: Añadido public.
+            const clubRes = await pool.query('SELECT id_presidente, imagen_club FROM public.clubs WHERE id = $1', [id]);
             if (clubRes.rows.length === 0) {
                 return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
             }
             const { id_presidente, imagen_club } = clubRes.rows[0];
 
             // 2. Eliminar club de la tabla principal
-            const deleteRes = await pool.query('DELETE FROM clubs WHERE id = $1 RETURNING id', [id]);
+            // MODIFICADO: Añadido public.
+            const deleteRes = await pool.query('DELETE FROM public.clubs WHERE id = $1 RETURNING id', [id]);
 
             if (deleteRes.rows.length > 0) {
                 // 3. Resetear rol y club_id del presidente asociado
-                await pool.query('UPDATE "users" SET role = $1, club_id = NULL WHERE id = $2', ['user', id_presidente]);
+                // MODIFICADO: Añadido public.
+                await pool.query('UPDATE public."users" SET role = $1, club_id = NULL WHERE id = $2', ['user', id_presidente]);
 
                 // 4. TODO: Implementar borrado de Cloudinary usando imagen_club (requiere parsear la URL para obtener el public_id)
                 console.log(`Club eliminado. Imagen URL para Cloudinary (borrado manual pendiente): ${imagen_club}`);
