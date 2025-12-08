@@ -26,35 +26,35 @@ async function getClubIdFromUser() {
     const token = getToken();
 
     if (!token) {
-        // clubEdit.js:33
+        // clubEdit.js:33 (Aproximadamente)
         throw new Error('No se encontró el token de autenticación.');
     }
 
     try {
         console.log("Intentando obtener perfil del usuario desde:", API_USERS_ME_URL);
-        
-        // La línea 26 original era la que fallaba al llamar a '/api/users/me'
-        // Ahora llama a '/api/users?action=me'
-        const response = await fetch(API_USERS_ME_URL, { 
+
+        // Línea 26: La URL corregida es usada aquí para evitar el 404
+        const response = await fetch(API_USERS_ME_URL, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
+                'Authorization': `Bearer ${token}`
             }
-        }); // clubEdit.js:26
+        });
 
         if (!response.ok) {
             // Maneja el error 401 que tu backend envia si el token es inválido/expirado
             if (response.status === 401) {
-                 throw new Error('Token inválido o expirado.');
+                throw new Error('Token inválido o expirado.');
             }
+            // Captura cualquier otro error, incluido el 404 (si la corrección en Vercel no se aplicó)
             throw new Error(`Fallo en la API al obtener el perfil. Código: ${response.status}`);
         }
 
         const data = await response.json();
-        
-        // La estructura de la respuesta es: { success: true, user: { id: ..., club_id: ... } }
-        const clubId = data.user ? data.user.club_id : null; 
+
+        // La estructura esperada de la respuesta es: { success: true, user: { id: ..., club_id: ... } }
+        const clubId = data.user ? data.user.club_id : null;
 
         if (!clubId) {
             throw new Error('El usuario no está asignado a un club.');
@@ -65,7 +65,7 @@ async function getClubIdFromUser() {
 
     } catch (error) {
         // clubEdit.js:49 es donde se imprime el error de fallo
-        console.error("Fallo al obtener el ID de club del usuario:", error.message); 
+        console.error("Fallo al obtener el ID de club del usuario:", error.message);
         throw error;
     }
 } // Fin de getClubIdFromUser
@@ -80,7 +80,7 @@ async function getClubIdFromUser() {
  */
 function initializeClubEditor(clubId) {
     console.log(`Editor de club inicializado para el Club ID: ${clubId}.`);
-    
+
     // Aquí iría el código para:
     // 1. Cargar los datos del club usando /api/clubs?id={clubId}
     // 2. Llenar los campos del formulario de edición.
@@ -95,24 +95,24 @@ function initializeClubEditor(clubId) {
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Obtenemos el ID del club usando la función corregida
-        const clubId = await getClubIdFromUser(); 
-        
+        const clubId = await getClubIdFromUser();
+
         // clubEdit.js:57 es el inicio de la ejecución asíncrona principal
-        
+
         // Si el clubId se obtiene exitosamente, procedemos a inicializar el editor
         initializeClubEditor(clubId);
 
     } catch (error) {
         // Si hay un error, redirigimos o mostramos un mensaje
         console.error("Error crítico durante la inicialización:", error.message);
-        
+
         // Manejo específico si el error viene de token expirado
         if (error.message.includes('Token inválido o expirado')) {
-             alert('Sesión expirada. Por favor, vuelve a iniciar sesión.');
-             // Opcional: Redirigir al login
-             // window.location.href = '/login.html'; 
+            alert('Sesión expirada. Por favor, vuelve a iniciar sesión.');
+            // Opcional: Redirigir al login
+            // window.location.href = '/login.html'; 
         } else {
-             alert(`Acceso denegado: ${error.message}`);
+            alert(`Acceso denegado: ${error.message}`);
         }
     }
 });
