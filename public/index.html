@@ -43,7 +43,7 @@
     }
 
     /* ===================================================== */
-    /* ⭐⭐⭐ CÓDIGO FINAL DE TAMAÑO UNIFORME Y RESPONSIVO DEL CARRUSEL ⭐⭐⭐ */
+    /* CÓDIGO FINAL DE TAMAÑO UNIFORME Y RESPONSIVO DEL CARRUSEL */
     /* ===================================================== */
 
     .carousel-inner {
@@ -117,9 +117,10 @@
         Clubes
       </a>
 
-      <a href="./pages/clubes/editar.html" id="mi-club-link" class="d-block text-warning mb-2" style="display:none;">
+      <a href="./pages/clubes/editar.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
         <i class="bi bi-gear-fill me-2"></i>Mi Club (Editar)
       </a>
+
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
         Mi perfil
       </a>
@@ -321,11 +322,10 @@
         }
 
         // Lógica específica para el Presidente del Club
-        // Comprueba si el usuario tiene clubId en su objeto de sesión o en sessionStorage
         const hasClub = !!usuario.clubId || !!usuario.club_id || !!clubIdInSession;
 
         if (hasClub && miClubLink) {
-          miClubLink.style.display = "block"; // Mostrar el enlace "Mi Club (Editar)"
+          miClubLink.style.display = "block";
         }
 
       } else {
@@ -334,7 +334,7 @@
         logoutBtn.style.display = "none";
 
         if (miClubLink) {
-          miClubLink.style.display = "none"; // Asegurar que esté oculto si no hay sesión
+          miClubLink.style.display = "none";
         }
       }
       // ⭐⭐ FIN LÓGICA DE VISIBILIDAD ⭐⭐
