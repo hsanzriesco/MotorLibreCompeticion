@@ -136,14 +136,11 @@
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
-                // 1. OBTENER EL TOKEN DESDE sessionStorage (¡CORREGIDO!)
-                // Lee de 'userToken' o 'token', según la clave que uses al iniciar sesión.
+                // 1. OBTENER EL TOKEN DESDE sessionStorage
                 const token = sessionStorage.getItem('userToken') || sessionStorage.getItem('token');
 
                 if (!token) {
                     mostrarAlerta("Error: Debes iniciar sesión para registrar un club.", "error");
-                    // Opcional: Redirigir al login
-                    // window.location.href = '/login.html'; 
                     return;
                 }
 
@@ -156,22 +153,29 @@
                 const clubFocus = document.getElementById('clubFocus').value;
                 const clubDescription = document.getElementById('clubDescription').value.trim();
 
-                // Los campos del backend esperan 'nombre_evento' y 'descripcion'
-                formData.append("nombre_evento", clubName);
+                // ----------------------------------------------------
+                // **CORRECCIÓN CLAVE:** ENVIAR 'nombre', 'ciudad' y 'descripcion' por separado.
+                // ----------------------------------------------------
+                formData.append("nombre", clubName);
+                formData.append("ciudad", clubCity); // <-- CAMPO REQUERIDO POR EL BACKEND
 
-                // Combinar los campos auxiliares en la descripción para el backend
-                formData.append("descripcion", `[Ciudad: ${clubCity}] [Enfoque: ${clubFocus}] ${clubDescription}`);
+                // Añadir el enfoque y la descripción principal.
+                formData.append("descripcion", `[Enfoque: ${clubFocus}] ${clubDescription}`);
+
 
                 // 3. Adjuntar la imagen
                 const imagenInput = document.getElementById('clubImage');
                 if (imagenInput && imagenInput.files.length > 0) {
-                    // El backend espera el nombre 'imagen_club'
+                    // El backend espera el nombre 'imagen_club' (asumiendo que es correcto)
                     formData.append("imagen_club", imagenInput.files[0]);
                 }
 
                 // 4. HACER EL FETCH CON EL TOKEN
                 try {
-                    const res = await fetch('/api/clubs', {
+                    // Usar la ruta completa o base si el Vercel API no es accesible directamente por /api/
+                    const apiUrl = 'https://motor-libre-competicion.vercel.app/api/clubs';
+
+                    const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             // Enviar el token en el header de autorización es VITAL
@@ -184,13 +188,11 @@
                     const r = await res.json();
 
                     if (!res.ok || !r.success) {
-                        // Si el backend te da un error de validación o un 403, lo mostramos aquí.
-                        mostrarAlerta(r.message || "Error al enviar la solicitud. El servidor ha fallado o ya tienes una solicitud pendiente.", "error");
+                        mostrarAlerta(r.message || `Error ${res.status}: Fallo al enviar la solicitud.`, "error");
                         return;
                     }
 
                     // 5. ÉXITO REAL
-                    // El mensaje r.message lo envía el backend ("Solicitud de club enviada...")
                     mostrarAlerta(r.message || "¡Solicitud enviada! Tu club está ahora Pendiente de Aprobación por la Administración.", "exito");
 
                     // Limpiar formulario y enfocar en el siguiente paso
