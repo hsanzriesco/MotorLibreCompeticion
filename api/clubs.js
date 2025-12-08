@@ -176,7 +176,6 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
         throw new Error('Acceso denegado: Solo el administrador o el presidente de este club pueden editarlo.');
     }
 
-    // También se puede verificar el rol del usuario para mayor seguridad, pero la comprobación de id_presidente es suficiente.
     return decodedUser;
 };
 
@@ -214,7 +213,8 @@ async function statusChangeHandler(req, res) {
 
                 // 1. Obtener datos del club pendiente
                 const pendingClubRes = await client.query(
-                    'SELECT nombre_evento, descripcion, imagen_club, id_presidente FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
+                    // Renombramos a imagen_url para consistencia
+                    'SELECT nombre_evento, descripcion, imagen_club as imagen_url, id_presidente FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
                     [id]
                 );
 
@@ -237,8 +237,9 @@ async function statusChangeHandler(req, res) {
 
                 // 3. Mover el club a la tabla principal 'clubs'
                 const insertRes = await client.query(
+                    // Usamos imagen_club de nuevo aquí (asumo que es el nombre de la columna en la tabla 'clubs')
                     'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id',
-                    [club.nombre_evento, club.descripcion, club.imagen_club, club.id_presidente, nombrePresidente, 'activo']
+                    [club.nombre_evento, club.descripcion, club.imagen_url, club.id_presidente, nombrePresidente, 'activo']
                 );
                 const newClubId = insertRes.rows[0].id;
 
@@ -306,48 +307,50 @@ async function clubsHandler(req, res) {
         // --- 2.1. GET: Obtener clubes ---
         if (method === "GET") {
 
-            // ⭐ MODIFICACIÓN CRÍTICA ⭐
             // Si piden 'pendiente', forzamos la verificación de administrador AQUI
             if (estado === 'pendiente') {
                 try {
-                    verifyAdmin(req); // Esto lanza un error 401/403 si falla.
+                    verifyAdmin(req);
                 } catch (error) {
                     return res.status(401).json({ success: false, message: "Acceso denegado a solicitudes pendientes. Se requiere rol de administrador." });
                 }
-                // Si pasa la verificación, isAdmin ahora es true y la ejecución continúa.
                 isAdmin = true;
             }
 
-            let queryText = `
-                SELECT 
-                    id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
-                    estado, id_presidente, nombre_presidente, 
-                    0 as miembros 
-                FROM public.clubs 
-            `;
-            const values = [];
-
+            // ⭐ LÓGICA DE GET PARA CLUB INDIVIDUAL (id) ⭐
             if (id) {
-                // Obtener un club activo específico por ID
-                queryText += " WHERE id = $1 AND estado = 'activo'";
-                values.push(id);
-                const result = await pool.query(queryText, values);
+                const clubIdNum = parseInt(id); // Asegurar que es un número
+                if (isNaN(clubIdNum)) {
+                    return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
+                }
 
-                // Si no se encuentra en clubs, buscar en clubs_pendientes si es ADMIN 
+                // --- Buscar en clubes activos ---
+                let queryText = `
+                    SELECT 
+                        id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
+                        estado, id_presidente, nombre_presidente, 
+                        0 as miembros 
+                    FROM public.clubs 
+                    WHERE id = $1 AND estado = 'activo'
+                `;
+                const result = await pool.query(queryText, [clubIdNum]);
+
+                // Si no se encuentra en clubs activos y es ADMIN, buscar en clubs_pendientes
                 if (result.rows.length === 0 && isAdmin) {
                     const pendingRes = await pool.query(
                         `SELECT 
-                            p.id, p.nombre_evento, p.descripcion, p.imagen_club, 
-                            p.fecha_solicitud as fecha_creacion, 
-                            p.id_presidente, 
-                            u.name as nombre_presidente, 
-                            'pendiente' as estado 
-                        FROM public.clubs_pendientes p
-                        JOIN public."users" u ON p.id_presidente = u.id 
-                        WHERE p.id = $1`,
-                        [id]
+                            p.id, p.nombre_evento, p.descripcion, p.imagen_club as imagen_url, 
+                            p.fecha_solicitud as fecha_creacion, 
+                            p.id_presidente, 
+                            u.name as nombre_presidente, 
+                            'pendiente' as estado 
+                        FROM public.clubs_pendientes p
+                        JOIN public."users" u ON p.id_presidente = u.id 
+                        WHERE p.id = $1`,
+                        [clubIdNum]
                     );
                     if (pendingRes.rows.length > 0) {
+                        // Devolvemos el club pendiente
                         return res.status(200).json({ success: true, club: pendingRes.rows[0], pending_club: pendingRes.rows[0] });
                     }
                 }
@@ -355,47 +358,55 @@ async function clubsHandler(req, res) {
                 if (result.rows.length === 0) {
                     return res.status(404).json({ success: false, message: "Club no encontrado." });
                 }
+                // Devolvemos el club activo
                 return res.status(200).json({ success: true, club: result.rows[0] });
 
-            } else if (estado) {
+            }
+
+            // ⭐ LÓGICA DE GET PARA LISTADO (estado) ⭐
+            else if (estado) {
                 if (estado === 'activo') {
                     // Obtener todos los clubes activos (acceso público)
-                    queryText += " WHERE estado = $1 ORDER BY fecha_creacion DESC";
-                    values.push('activo');
-                    const result = await pool.query(queryText, values);
+                    const result = await pool.query(`
+                        SELECT 
+                            id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
+                            estado, id_presidente, nombre_presidente, 
+                            0 as miembros 
+                        FROM public.clubs WHERE estado = $1 ORDER BY fecha_creacion DESC
+                    `, ['activo']);
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
-                    // Ya verificamos el rol admin arriba
-                    // Obtener solicitudes pendientes (requiere Admin)
-                    queryText = `
-                        SELECT 
-                            p.id, 
-                            p.nombre_evento, 
-                            p.descripcion, 
-                            p.imagen_club, 
-                            p.fecha_solicitud as fecha_creacion, 
-                            'pendiente' as estado,
-                            p.id_presidente,
-                            u.name as nombre_presidente 
-                        FROM public.clubs_pendientes p
-                        JOIN public."users" u ON p.id_presidente = u.id 
-                        ORDER BY p.fecha_solicitud DESC
-                    `;
+                    // Obtener solicitudes pendientes (requiere Admin, ya verificado arriba)
+                    const queryText = `
+                        SELECT 
+                            p.id, 
+                            p.nombre_evento, 
+                            p.descripcion, 
+                            p.imagen_club as imagen_url, 
+                            p.fecha_solicitud as fecha_creacion, 
+                            'pendiente' as estado,
+                            p.id_presidente,
+                            u.name as nombre_presidente 
+                        FROM public.clubs_pendientes p
+                        JOIN public."users" u ON p.id_presidente = u.id 
+                        ORDER BY p.fecha_solicitud DESC
+                    `;
                     const result = await pool.query(queryText);
                     return res.status(200).json({ success: true, pending_clubs: result.rows });
                 }
-                // ✅ ELIMINAMOS el bloque 'else if (estado === 'pendiente' && !isAdmin)' 
-                // ya que fue reemplazado por la verificación de 'verifyAdmin' arriba.
+
+                // Si estado es inválido o pendiente sin ser Admin
+                return res.status(400).json({ success: false, message: "Estado no válido o permiso denegado." });
             }
 
-            // Default: devolver todos los clubes activos.
+            // Default: devolver todos los clubes activos si no se pasa ID ni estado
             const defaultResult = await pool.query(`
-                SELECT 
-                    id, nombre_evento, descripcion, imagen_club, fecha_creacion, 
-                    estado, id_presidente, nombre_presidente, 
-                    0 as miembros 
-                FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
-            `);
+                SELECT 
+                    id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
+                    estado, id_presidente, nombre_presidente, 
+                    0 as miembros 
+                FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
+            `);
             return res.status(200).json({ success: true, clubs: defaultResult.rows });
         }
 
@@ -491,10 +502,10 @@ async function clubsHandler(req, res) {
 
                 // Ejecutar la inserción
                 const insertQuery = `
-                    INSERT INTO public."${tabla}" (${insertColumns}) 
-                    VALUES ${insertValues}
-                    RETURNING id, nombre_evento, descripcion
-                `;
+                    INSERT INTO public."${tabla}" (${insertColumns}) 
+                    VALUES ${insertValues}
+                    RETURNING id, nombre_evento, descripcion
+                `;
 
                 const result = await pool.query(insertQuery, params);
 
@@ -563,7 +574,7 @@ async function clubsHandler(req, res) {
                     values.push(descripcion);
                 }
                 if (imagen_club_url) {
-                    updates.push(`imagen_club = $${paramIndex++}`);
+                    updates.push(`imagen_club = $${paramIndex++}`); // Usamos el nombre de la columna DB
                     values.push(imagen_club_url); // Usamos la URL
                 }
 
@@ -589,9 +600,9 @@ async function clubsHandler(req, res) {
                 const idParam = paramIndex;
 
                 const updateQuery = `
-                    UPDATE public.clubs SET ${updates.join(', ')} WHERE id = $${idParam}
-                    RETURNING id, nombre_evento, descripcion, imagen_club
-                `;
+                    UPDATE public.clubs SET ${updates.join(', ')} WHERE id = $${idParam}
+                    RETURNING id, nombre_evento, descripcion, imagen_club as imagen_url
+                `;
 
                 const result = await pool.query(updateQuery, values);
 
@@ -612,6 +623,11 @@ async function clubsHandler(req, res) {
                 }
                 if (uploadError.message.includes('maxFileSize')) {
                     return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
+                }
+
+                // Captura de errores de autorización/propiedad
+                if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token')) {
+                    return res.status(401).json({ success: false, message: uploadError.message });
                 }
 
                 throw uploadError;
@@ -670,7 +686,6 @@ async function clubsHandler(req, res) {
         console.error("Error en clubsHandler:", error);
 
         if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token')) {
-            // Si la verificación falla (401/403), devolvemos el error apropiado
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
