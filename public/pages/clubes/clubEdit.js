@@ -89,7 +89,7 @@ async function loadClubData(clubId) {
             }
         }
 
-        // ⭐⭐⭐ CORRECCIÓN: Lógica para extraer Enfoque de la descripción para compatibilidad ⭐⭐⭐
+        // Lógica para extraer Enfoque de la descripción para compatibilidad
         let enfoque = clubData.enfoque || '';
 
         // Si 'enfoque' no viene directamente de la BD, lo buscamos en la descripción.
@@ -103,16 +103,13 @@ async function loadClubData(clubId) {
                 descripcion = descripcion.replace(/\[Enfoque:\s*[^\]]+\]\s*/i, '').trim();
             }
         }
-        // ⭐⭐⭐ FIN CORRECCIÓN ⭐⭐⭐
 
         // Asignar los valores extraídos/cargados a los campos del formulario
         const enfoqueInput = document.getElementById('enfoque');
         if (enfoqueInput) {
-            // Usamos la variable 'enfoque' extraída o cargada de la BD
             enfoqueInput.value = enfoque;
         }
 
-        // La descripción ya está limpia si se extrajo el enfoque
         document.getElementById('descripcion').value = descripcion;
 
         const ciudadInput = document.getElementById('ciudad');
@@ -120,7 +117,7 @@ async function loadClubData(clubId) {
             ciudadInput.value = ciudad;
         }
 
-        document.getElementById('presidente_id').value = clubData.presidente_id || 'Desconocido';
+        // ⭐⭐⭐ ELIMINADO: Se removió la línea que buscaba 'presidente_id' ya que se eliminó del HTML
 
         const fechaCreacionInput = document.getElementById('fecha_creacion');
         if (fechaCreacionInput && clubData.fecha_creacion) {
@@ -146,6 +143,7 @@ async function loadClubData(clubId) {
 
     } catch (error) {
         console.error("Error al cargar los datos del club:", error.message);
+        // ⭐⭐⭐ CORRECCIÓN DE ERROR: Añadida la verificación antes de mostrar alerta
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta(`Error al cargar: ${error.message}`, 'error');
         } else {
