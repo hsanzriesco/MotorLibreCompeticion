@@ -14,7 +14,7 @@ function getToken() {
 }
 
 // -----------------------------------------------------------------------------
-// 1. Obtener ID del Club del Usuario Logueado (Lógica ya funcional)
+// 1. Obtener ID del Club del Usuario Logueado
 // -----------------------------------------------------------------------------
 
 /**
@@ -49,7 +49,6 @@ async function getClubIdFromUser() {
         const clubId = data.user ? data.user.club_id : null;
 
         if (!clubId) {
-            // Un usuario presidente sin club aún puede ser un caso a manejar
             throw new Error('El usuario no está asignado a un club.');
         }
 
@@ -89,34 +88,53 @@ async function loadClubData(clubId) {
         }
 
         const data = await response.json();
-        // Acceder a 'data.club' o al primer elemento del array si la respuesta es un array
         const clubData = data.club || (Array.isArray(data) && data.length > 0 ? data[0] : null);
 
         if (!clubData) {
             throw new Error('No se encontraron datos para este club ID.');
         }
 
-        // ⭐ CORRECCIÓN DE IDS Y RELLENO DEL FORMULARIO ⭐
+        // ⭐ Rellenar los campos del formulario ⭐
         document.getElementById('club-id').value = clubData.id || '';
 
-        // 🎯 CORRECCIÓN NOMBRE: Intentar obtener 'nombre', luego 'name', o dejar vacío
-        const clubName = clubData.nombre || clubData.name || '';
+        // 🎯 CORRECCIÓN NOMBRE: Comprobar diferentes propiedades para el nombre
+        const clubName = clubData.nombre || clubData.name || clubData.titulo || '';
         document.getElementById('nombre_club').value = clubName;
 
-        document.getElementById('descripcion').value = clubData.descripcion || '';
-        document.getElementById('presidente_id').value = clubData.presidente_id || 'Desconocido';
+        let descripcion = clubData.descripcion || '';
 
-        // 🎯 NUEVO CAMPO CIUDAD: Usar la propiedad 'ciudad' de la API
-        const ciudadInput = document.getElementById('ciudad');
-        if (ciudadInput) {
-            ciudadInput.value = clubData.ciudad || '';
+        // ---------------------------------------------------------------------
+        // 🎯 EXTRACCIÓN DE CIUDAD DE LA DESCRIPCIÓN (CORRECCIÓN CLAVE)
+        // ---------------------------------------------------------------------
+
+        let ciudad = clubData.ciudad || ''; // Intenta obtener el campo 'ciudad' si existe
+
+        // Si la ciudad NO viene como campo separado, intentamos extraerla de la descripción
+        if (!ciudad && descripcion) {
+            // Expresión Regular para buscar "[Ciudad: XXXXX]"
+            const cityMatch = descripcion.match(/\[Ciudad:\s*([^\]]+)\]/i);
+
+            if (cityMatch && cityMatch[1]) {
+                ciudad = cityMatch[1].trim();
+
+                // Limpiar la descripción: remover la parte "[Ciudad: XXXXX]"
+                descripcion = descripcion.replace(/\[Ciudad:\s*[^\]]+\]\s*/i, '').trim();
+            }
         }
 
-        // Rellenar la fecha de creación (Formateado a YYYY-MM-DD para input[type="date"])
+        document.getElementById('descripcion').value = descripcion; // Usamos la descripción LIMPIA
+        const ciudadInput = document.getElementById('ciudad');
+        if (ciudadInput) {
+            ciudadInput.value = ciudad; // Rellenamos el campo Ciudad con el valor extraído
+        }
+        // ---------------------------------------------------------------------
+
+        document.getElementById('presidente_id').value = clubData.presidente_id || 'Desconocido';
+
+        // Rellenar la fecha de creación
         const fechaCreacionInput = document.getElementById('fecha_creacion');
         if (fechaCreacionInput && clubData.fecha_creacion) {
             const date = new Date(clubData.fecha_creacion);
-            // El componente date en HTML solo acepta el formato YYYY-MM-DD
             fechaCreacionInput.value = date.toISOString().split('T')[0];
         }
 
@@ -164,7 +182,6 @@ async function handleFormSubmit(event) {
     const token = getToken();
 
     if (!token || !clubId) {
-        // Usamos showAlert directamente, asumiendo que alertas.js está cargado
         if (typeof showAlert === 'function') {
             showAlert('Falta el token de autenticación o el ID del club.', 'error');
         } else {
@@ -176,22 +193,25 @@ async function handleFormSubmit(event) {
     // Recolección de datos
     const newName = document.getElementById('nombre_club').value;
     const newDescription = document.getElementById('descripcion').value;
-    const newCity = document.getElementById('ciudad')?.value || ''; // Obtener la Ciudad
+    const newCity = document.getElementById('ciudad')?.value || '';
     const newImageFile = document.getElementById('imagen_club_nueva').files[0];
 
-    // Creación de FormData para manejar archivos y otros campos
+    // 🎯 RECONSTRUCCIÓN DE LA DESCRIPCIÓN para incluir la ciudad si la API lo requiere
+    // Si la API espera el formato "[Ciudad: XXXXX] [..." en la descripción, debemos rearmarlo.
+    // Asumiendo que ahora la API espera la ciudad como campo independiente (updateData.append('ciudad', newCity);)
+    // usaremos la descripción sin el prefijo de la ciudad. 
+
     const updateData = new FormData();
     updateData.append('id', clubId);
     updateData.append('nombre', newName);
     updateData.append('descripcion', newDescription);
-    updateData.append('ciudad', newCity); // Añadir la Ciudad
+    updateData.append('ciudad', newCity); // Campo Ciudad añadido
 
-    // Añadir la imagen si existe
     if (newImageFile) {
         updateData.append('imagen', newImageFile);
     }
 
-    // Deshabilitar el botón para evitar envíos dobles
+    // Deshabilitar el botón
     const submitBtn = event.submitter;
     if (submitBtn) {
         submitBtn.disabled = true;
@@ -201,7 +221,7 @@ async function handleFormSubmit(event) {
 
     try {
         const response = await fetch(`${API_CLUBS_URL}?id=${clubId}`, {
-            method: 'PUT', // Usamos PUT para la edición de recursos
+            method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`
             },
@@ -216,14 +236,12 @@ async function handleFormSubmit(event) {
 
         showAlert('Club actualizado exitosamente!', 'success');
 
-        // Recargar los datos para mostrar posibles cambios de imagen
         loadClubData(clubId);
 
     } catch (error) {
         console.error("Error al actualizar el club:", error.message);
         showAlert(`Fallo al actualizar el club: ${error.message}`, 'error');
     } finally {
-        // Habilitar el botón al finalizar
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Actualizar Club';
