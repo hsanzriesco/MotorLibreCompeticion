@@ -2,347 +2,212 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Mi Club | Motor Libre Competición</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Editar Club - Panel de Administrador</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <link rel="stylesheet" href="../../css/style.css">
-    <link rel="stylesheet" href="../../css/alertas.css">
-    <link rel="icon" type="image/png" href="../../img/imagen-tfg.png">
+    <link rel="stylesheet" href="../../../css/navbar.css" />
+    <link rel="stylesheet" href="../../../css/style.css" />
+    <link rel="stylesheet" href="../../../css/alertas.css" />
+    <link rel="icon" href="../../../img/imagen-tfg.png" type="image/png" />
 
     <style>
-        /* Estilos base (tomados de tu index.html) */
+        /* Estilos copiados de admin.html para mantener el diseño */
         body {
             background-color: #111;
-            color: white;
-            padding-top: 80px;
-            /* Espacio para el navbar fijo */
+            color: #fff;
         }
 
-        /* Contenedor Principal para el Formulario (simula el marco de la captura) */
-        .container-gestion {
-            max-width: 900px;
-            margin: 50px auto;
-            padding: 40px;
-            background-color: #111;
-            /* Fondo principal */
-            border: 2px solid #e50914;
-            /* Borde rojo exterior (Clave del estilo) */
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
+        main {
+            margin-top: 80px;
+            padding: 20px;
+            min-height: 100vh;
         }
 
-        /* Títulos Grandes (Gestión de Clubes / Formulario de Club) */
-        h1.main-title {
-            color: white;
-            font-size: 2.5em;
-            text-align: center;
-            margin-bottom: 5px;
+        .admin-section {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(229, 9, 20, 0.5);
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.25);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem auto;
+            width: 95%;
+            max-width: 800px; /* Ajuste el max-width si lo desea */
         }
 
-        h2.subtitle {
-            color: #e50914;
-            font-size: 1.8em;
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-            /* Separador sutil */
-        }
-
-        /* Estilo para los campos del formulario */
-        .form-group-custom {
-            margin-bottom: 20px;
-        }
-
-        /* Estilo para los Labels */
-        .form-group-custom label {
-            color: #e50914;
-            /* Labels rojos */
-            font-weight: 600;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        /* Estilo de Inputs (fondo negro, borde rojo) */
-        .input-mlc {
-            background-color: #000;
-            color: white;
+        .input-dark {
+            background: #222;
             border: 1px solid #e50914;
-            /* Borde rojo del input */
-            border-radius: 0;
-            /* Bordes rectos */
-            padding: 10px;
+            color: #fff;
+        }
+
+        .input-dark,
+        .input-dark:hover,
+        .input-dark:focus {
+            background: #222 !important;
+            border-color: #e50914 !important;
+            color: #fff !important;
             box-shadow: none !important;
         }
 
-        /* Estilo de Textarea (fondo negro, borde rojo) */
-        textarea.input-mlc {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        /* Estilo del input de archivo */
-        .file-input-wrapper {
-            display: flex;
-            align-items: center;
-            border: 1px solid #e50914;
-            background-color: #000;
-            padding: 0;
-            /* Quitar padding del contenedor */
-            border-radius: 0;
-        }
-
-        .file-input-button {
-            background-color: #333;
-            color: white;
+        .btn-danger {
+            background-color: #e50914 !important;
             border: none;
-            padding: 10px 15px;
-            cursor: pointer;
-            flex-shrink: 0;
-            border-right: 1px solid #e50914;
+        }
+        
+        /* ========================== */
+        /* MODALES ESTILO NETFLIX   */
+        /* ========================== */
+
+        .modal-content {
+            background: #111 !important;
+            color: white !important;
+            border: 1px solid #e50914 !important;
+            box-shadow: 0 8px 30px rgba(229, 9, 20, 0.25) !important;
         }
 
-        .file-input-text {
-            color: #ccc;
-            padding: 10px;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            flex-grow: 1;
+        .modal-header,
+        .modal-footer {
+            border-color: #e50914 !important;
         }
 
-        /* Ocultar el input[type=file] real y usar el wrapper */
-        .input-hidden {
-            display: none;
+        .modal-title {
+            color: #e50914 !important;
+            font-weight: 600;
         }
 
-        /* Botón Guardar Club (estilo rojo de la captura) */
-        .btn-guardar-club {
-            width: 100%;
-            padding: 15px;
-            background-color: #e50914;
-            color: white;
-            border: none;
-            font-size: 1.2em;
-            font-weight: 700;
-            margin-top: 30px;
-            border-radius: 0;
-            /* Bordes rectos */
-            transition: background-color 0.2s;
+        .btn-secondary {
+            background: #666 !important;
+            border: none !important;
         }
 
-        .btn-guardar-club:hover {
-            background-color: #cc0812;
+        .btn-danger {
+            background: #e50914 !important;
+            border: none !important;
         }
 
-        /* Imagen actual */
-        #current-image {
-            display: block;
-            max-width: 150px;
-            height: auto;
-            border: 3px solid #e50914;
-            border-radius: 4px;
-            margin-top: 10px;
-            margin-bottom: 20px;
-        }
-
-        /* Estilo para el botón de cierre del modal/offcanvas */
         .btn-close-white {
-            filter: invert(1) grayscale(100%) brightness(200%);
+            filter: invert(1);
         }
     </style>
 </head>
 
 <body>
 
+    <div id="alertas-container" class="alerta-container"></div>
+
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
-        <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
-            <img src="../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+        <a id="logo-link" href="../admin.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
         </a>
-        <div class="d-flex align-items-center">
-            <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
-                <i class="bi bi-person-circle fs-4"></i>
-            </a>
-            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
-            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                <i class="bi bi-list fs-4"></i>
-            </button>
-        </div>
+
+        <button class="btn btn-dark border border-secondary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
+            <i class="bi bi-list"></i>
+        </button>
     </nav>
 
-    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+    <div class="offcanvas offcanvas-end bg-dark text-light" id="offcanvasMenu">
         <div class="offcanvas-header border-bottom border-secondary">
-            <h5 class="offcanvas-title">Menú</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            <h5>Menú Administrador</h5>
+            <button class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
+
         <div class="offcanvas-body">
-            <a href="../calendario/calendario.html" class="d-block text-light mb-2">Calendario</a>
-            <a href="./clubes.html" class="d-block text-light mb-2">Clubes</a>
-            <a href="./editar.html" id="mi-club-link" class="d-block text-warning mb-2" style="display:none;">Mi Club
-                (Editar)</a>
-            <a href="../perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
-            <hr class="border-secondary">
-            <a href="#" id="logout-btn" class="d-block text-danger">Cerrar sesión</a>
+            <a href="../adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de Eventos</a>
+            <a href="../lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de Lugares</a>
+            <a href="../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
+
+            <hr class="border-secondary" />
+
+            <a href="#" id="logout-btn" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
+                class="d-block text-danger">Cerrar sesión</a>
         </div>
     </div>
 
+    <main>
+        <section class="admin-section">
+            <h2 class="text-center mb-4">Edición de Club</h2>
 
-    <main class="container-gestion">
-        <h1 class="main-title">Gestión de Clubes</h1>
-        <h2 class="subtitle">Formulario de Club</h2>
+            <form id="club-edit-form" class="mb-4" enctype="multipart/form-data">
+                <input type="hidden" id="club-id" name="club-id">
 
-        <form id="club-edit-form" enctype="multipart/form-data">
-
-            <input type="hidden" id="club-id" name="id">
-
-            <div class="row">
-                <div class="col-md-6 form-group-custom">
-                    <label for="nombre_evento">Nombre del Club *</label>
-                    <input type="text" id="nombre_evento" name="nombre_evento" class="form-control input-mlc" required>
-                </div>
-
-                <div class="col-md-6 form-group-custom">
-                    <label for="imagen_club_input">Imagen (Archivo)</label>
-
-                    <div class="file-input-wrapper">
-                        <button type="button" class="file-input-button"
-                            onclick="document.getElementById('imagen_club_input').click()">
-                            Seleccionar archivo
-                        </button>
-                        <span id="file-name-display" class="file-input-text">Ningún archivo seleccionado</span>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del Club *</label>
+                        <input type="text" class="form-control input-dark" id="nombre_club" name="nombre_club"
+                            placeholder="Introduce el nombre del club" required />
                     </div>
 
-                    <input type="file" id="imagen_club_input" name="imagen_club" accept="image/*" class="input-hidden">
+                    <div class="col-md-6">
+                        <label class="form-label">Nueva Imagen (Opcional)</label>
+                        <input type="file" class="form-control input-dark" id="imagen_club_nueva" name="imagen_club_nueva" accept="image/*" />
+                        <small class="form-text text-secondary">La imagen actual se conservará si no se sube una nueva.</small>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label class="form-label">Imagen Actual</label>
+                        <div id="imagen_actual_preview">
+                             <img id="current-club-thumb" src="" alt="Imagen actual del Club" class="club-thumb me-2" style="width: 100px; height: auto; object-fit: cover; border-radius: 6px;" />
+                             <span id="no-image-text" class="text-secondary small" style="display:none;">(No hay imagen)</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control input-dark" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha de Creación</label>
+                        <input type="date" class="form-control input-dark" id="fecha_creacion" name="fecha_creacion" readonly />
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Presidente (ID)</label>
+                        <input type="text" class="form-control input-dark" id="presidente_id" name="presidente_id" readonly />
+                        <small class="form-text text-secondary">El ID del usuario Presidente no es editable directamente aquí.</small>
+                    </div>
+                    
                 </div>
+
+                <button type="submit" class="btn btn-danger mt-4 w-100">Actualizar Club</button>
+            </form>
+
+            <div class="text-center mt-4">
+                <a href="../admin.html" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver a Gestión de Clubes</a>
             </div>
 
-            <div class="form-group-custom">
-                <label for="descripcion">Descripción</label>
-                <textarea id="descripcion" name="descripcion" class="form-control input-mlc" required></textarea>
-            </div>
-
-            <div class="form-group-custom" style="max-width: 250px;">
-                <label for="fecha_creacion">Fecha de Creación</label>
-                <input type="text" id="fecha_creacion" name="fecha_creacion" class="form-control input-mlc"
-                    value="08/12/2025" disabled>
-            </div>
-
-            <button type="submit" class="btn-guardar-club">Guardar Club</button>
-        </form>
-
-        <div class="mt-4">
-            <label class="d-block mb-3" style="color:#e50914; font-weight:600;">Imagen Actual:</label>
-            <img id="current-image" src="../../img/placeholder-club.png" alt="Imagen actual del club">
-        </div>
-
+        </section>
     </main>
 
-    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
-        aria-hidden="true">
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
+
                 <div class="modal-header border-danger">
-                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <h5 class="modal-title">Confirmar Cierre de Sesión</h5>
+                    <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
+
                 <div class="modal-body">
-                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+                    <p>¿Estás seguro de que deseas cerrar tu sesión de administrador?</p>
                 </div>
+
                 <div class="modal-footer border-danger">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
                 </div>
+
             </div>
         </div>
     </div>
-
+    <script src="../../../js/alertas.js"></script>
+    <script src="../../../js/navbar.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../../js/alertas.js"></script>
-
-    <script src="./clubEdit.js"></script>
-
-    <script>
-        // Función auxiliar para actualizar el nombre del archivo visible
-        document.addEventListener("DOMContentLoaded", () => {
-            const fileInput = document.getElementById('imagen_club_input');
-            const fileNameDisplay = document.getElementById('file-name-display');
-
-            if (fileInput) {
-                fileInput.addEventListener('change', function () {
-                    if (this.files.length > 0) {
-                        fileNameDisplay.textContent = this.files[0].name;
-                    } else {
-                        fileNameDisplay.textContent = 'Ningún archivo seleccionado';
-                    }
-                });
-            }
-
-            // Lógica de la Sesión y Logout (Mismo código que en la respuesta anterior)
-            const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-            const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
-            const btnConfirmLogout = document.getElementById("btnConfirmLogout");
-
-            const storedUser = sessionStorage.getItem("usuario");
-            const clubIdInSession = sessionStorage.getItem("clubId");
-            const usuario = storedUser ? JSON.parse(storedUser) : null;
-
-            const userName = document.getElementById("user-name");
-            const loginIcon = document.getElementById("login-icon");
-            const logoutBtn = document.getElementById("logout-btn");
-            const miClubLink = document.getElementById("mi-club-link");
-
-            if (usuario) {
-                userName.textContent = usuario.name;
-                userName.style.display = "inline";
-                loginIcon.style.display = "none";
-                logoutBtn.style.display = "block";
-
-                if (miClubLink) miClubLink.style.display = "block";
-
-            } else {
-                alert("Acceso denegado. Por favor, inicia sesión.");
-                window.location.href = '../auth/login/login.html';
-
-                userName.style.display = "none";
-                loginIcon.style.display = "inline";
-                if (logoutBtn) logoutBtn.style.display = "none";
-                if (miClubLink) miClubLink.style.display = "none";
-                return;
-            }
-
-            if (logoutBtn) {
-                logoutBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    if (logoutConfirmModal) logoutConfirmModal.show();
-                    const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-                    if (offcanvasMenu) offcanvasMenu.hide();
-                });
-            }
-
-            if (btnConfirmLogout) {
-                btnConfirmLogout.addEventListener("click", () => {
-                    if (logoutConfirmModal) logoutConfirmModal.hide();
-                    sessionStorage.removeItem("usuario");
-                    sessionStorage.removeItem("clubId");
-                    sessionStorage.removeItem("token");
-
-                    if (typeof mostrarAlerta === 'function') {
-                        mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
-                    }
-
-                    setTimeout(() => {
-                        window.location.href = '../auth/login/login.html';
-                    }, 1500);
-                });
-            }
-        });
-    </script>
+    <script src="../../../js/editClub.js"></script> 
 </body>
 
 </html>
