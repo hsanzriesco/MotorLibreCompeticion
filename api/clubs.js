@@ -18,7 +18,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 
 // --- CONFIGURACIÓN DE CLOUDINARY ---
 cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
+    // ⭐ Nota: Tu variable CLOUD_NAME debe llamarse CLOUDINARY_CLOUD_NAME si usas la variable estándar de Cloudinary
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
@@ -41,13 +42,26 @@ export const config = {
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
         const form = formidable({
-            multibles: false,
+            multiples: false, // Corregido 'multibles' a 'multiples'
             keepExtensions: true,
             maxFileSize: 5 * 1024 * 1024, // 5MB 
         });
 
         form.parse(req, async (err, fields, files) => {
-            let imagenFilePathTemp = files.imagen_club && files.imagen_club[0] ? files.imagen_club[0].filepath : null;
+
+            // ⭐ CORRECCIÓN CRÍTICA: Buscar el archivo de imagen bajo diferentes nombres de campo ⭐
+            let imagenFilePathTemp = null;
+
+            // Buscar por los nombres comunes que vienen del cliente
+            if (files.imagen && files.imagen[0]) {
+                imagenFilePathTemp = files.imagen[0].filepath;
+            } else if (files.imagen_club_nueva && files.imagen_club_nueva[0]) {
+                imagenFilePathTemp = files.imagen_club_nueva[0].filepath;
+            } else if (files.imagen_club && files.imagen_club[0]) {
+                // Este nombre asumo que viene del formulario de registro original
+                imagenFilePathTemp = files.imagen_club[0].filepath;
+            }
+            // -------------------------------------------------------------------------------------
 
             if (err) {
                 console.error("Error parsing form:", err);
@@ -83,15 +97,19 @@ async function uploadToCloudinary(filePath) {
             folder: 'motor-libre-clubs', // Carpeta específica en tu Cloudinary
         });
 
+        // La subida fue exitosa, limpiamos el archivo temporal
         if (fs.existsSync(filePath)) {
             await unlinkAsync(filePath);
         }
 
         return result.secure_url;
     } catch (error) {
+        // En caso de error, intentamos limpiar el archivo temporal
         if (fs.existsSync(filePath)) {
             await unlinkAsync(filePath);
         }
+        // Registramos el error de Cloudinary para el log
+        console.error("Cloudinary Error Detallado:", error);
         throw new Error(`Cloudinary upload failed: ${error.message}`);
     }
 }
@@ -165,7 +183,7 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
     );
 
     if (checkPresidente.rows.length === 0) {
-        // Club no encontrado, ni siquiera si el usuario es el dueño.
+        // Club no encontrado o no activo
         throw new Error('Club no encontrado o no activo.');
     }
 
@@ -328,7 +346,7 @@ async function clubsHandler(req, res) {
                 let queryText = `
                     SELECT 
                         id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                        estado, id_presidente, nombre_presidente, 
+                        estado, id_presidente, nombre_presidente, ciudad, 
                         0 as miembros 
                     FROM public.clubs 
                     WHERE id = $1 AND estado = 'activo'
@@ -340,7 +358,7 @@ async function clubsHandler(req, res) {
                     const pendingRes = await pool.query(
                         `SELECT 
                             p.id, p.nombre_evento, p.descripcion, p.imagen_club as imagen_url, 
-                            p.fecha_solicitud as fecha_creacion, 
+                            p.fecha_solicitud as fecha_creacion, p.ciudad,
                             p.id_presidente, 
                             u.name as nombre_presidente, 
                             'pendiente' as estado 
@@ -370,7 +388,7 @@ async function clubsHandler(req, res) {
                     const result = await pool.query(`
                         SELECT 
                             id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                            estado, id_presidente, nombre_presidente, 
+                            estado, id_presidente, nombre_presidente, ciudad,
                             0 as miembros 
                         FROM public.clubs WHERE estado = $1 ORDER BY fecha_creacion DESC
                     `, ['activo']);
@@ -384,6 +402,7 @@ async function clubsHandler(req, res) {
                             p.descripcion, 
                             p.imagen_club as imagen_url, 
                             p.fecha_solicitud as fecha_creacion, 
+                            p.ciudad,
                             'pendiente' as estado,
                             p.id_presidente,
                             u.name as nombre_presidente 
@@ -403,7 +422,7 @@ async function clubsHandler(req, res) {
             const defaultResult = await pool.query(`
                 SELECT 
                     id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                    estado, id_presidente, nombre_presidente, 
+                    estado, id_presidente, nombre_presidente, ciudad,
                     0 as miembros 
                 FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
             `);
@@ -419,10 +438,10 @@ async function clubsHandler(req, res) {
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
 
-                const { nombre_evento, descripcion } = fields;
+                const { nombre_evento, descripcion, ciudad } = fields; // ✅ Añadido 'ciudad'
 
-                if (!nombre_evento || !descripcion) {
-                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre o descripción." });
+                if (!nombre_evento || !descripcion || !ciudad) {
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre, descripción o ciudad." });
                 }
 
                 if (!authVerification.authorized || !userId) {
@@ -452,15 +471,16 @@ async function clubsHandler(req, res) {
                     nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
 
                     // ✅ Consulta para tabla 'clubs'
-                    insertColumns = `nombre_evento, descripcion, imagen_club, id_presidente, nombre_presidente, estado, fecha_creacion`;
-                    insertValues = `($1, $2, $3, $4, $5, $6, NOW())`;
+                    insertColumns = `nombre_evento, descripcion, imagen_club, id_presidente, nombre_presidente, estado, fecha_creacion, ciudad`;
+                    insertValues = `($1, $2, $3, $4, $5, $6, NOW(), $7)`; // $7 para ciudad
                     params = [
                         nombre_evento,
                         descripcion,
                         imagen_club_url,
                         idPresidente,
                         nombrePresidente,
-                        clubEstado // 'activo' ($6)
+                        clubEstado, // 'activo' ($6)
+                        ciudad // Ciudad ($7)
                     ];
 
                 } else {
@@ -486,13 +506,14 @@ async function clubsHandler(req, res) {
                     idPresidente = userId;
 
                     // ✅ Consulta para tabla 'clubs_pendientes'
-                    insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente`;
-                    insertValues = `($1, $2, $3, NOW(), $4)`;
+                    insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente, ciudad`;
+                    insertValues = `($1, $2, $3, NOW(), $4, $5)`; // $5 para ciudad
                     params = [
                         nombre_evento,
                         descripcion,
                         imagen_club_url,
-                        idPresidente // id_presidente es $4
+                        idPresidente, // id_presidente es $4
+                        ciudad // Ciudad ($5)
                     ];
                 }
 
@@ -515,18 +536,21 @@ async function clubsHandler(req, res) {
                     club: result.rows[0]
                 });
             } catch (uploadError) {
+                // Limpieza de archivo temporal en caso de fallo
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
                     await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
                 }
                 console.error("Error durante la subida/inserción (POST):", uploadError.message);
 
                 if (uploadError.message.includes('Cloudinary upload failed')) {
+                    // Este es el error que tú viste en el cliente
                     return res.status(500).json({ success: false, message: "Error al subir la imagen. Verifica las credenciales de Cloudinary." });
                 }
                 if (uploadError.message.includes('maxFileSize')) {
                     return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
                 }
 
+                // Lanza otros errores internos para ser capturados por el catch principal
                 throw uploadError;
             }
         }
@@ -547,6 +571,7 @@ async function clubsHandler(req, res) {
                 const {
                     nombre_evento,
                     descripcion,
+                    ciudad: newCiudad, // ✅ Añadido
                     // 🛑 Ignoramos campos sensibles que solo el Admin puede modificar si vienen en el payload
                     estado: newEstado,
                     id_presidente: newIdPresidente
@@ -573,6 +598,10 @@ async function clubsHandler(req, res) {
                     updates.push(`descripcion = $${paramIndex++}`);
                     values.push(descripcion);
                 }
+                if (newCiudad) { // ✅ Añadido
+                    updates.push(`ciudad = $${paramIndex++}`);
+                    values.push(newCiudad);
+                }
                 if (imagen_club_url) {
                     updates.push(`imagen_club = $${paramIndex++}`); // Usamos el nombre de la columna DB
                     values.push(imagen_club_url); // Usamos la URL
@@ -590,7 +619,6 @@ async function clubsHandler(req, res) {
                         values.push(newIdPresidente);
                     }
                 }
-                // Si es solo Presidente, cualquier intento de enviar 'estado' o 'id_presidente' es ignorado por diseño.
 
                 if (updates.length === 0) {
                     return res.status(400).json({ success: false, message: "No hay campos válidos para actualizar." });
@@ -601,7 +629,7 @@ async function clubsHandler(req, res) {
 
                 const updateQuery = `
                     UPDATE public.clubs SET ${updates.join(', ')} WHERE id = $${idParam}
-                    RETURNING id, nombre_evento, descripcion, imagen_club as imagen_url
+                    RETURNING id, nombre_evento, descripcion, imagen_club as imagen_url, ciudad
                 `;
 
                 const result = await pool.query(updateQuery, values);
@@ -666,9 +694,16 @@ async function clubsHandler(req, res) {
                 // 4. Implementar borrado de Cloudinary
                 if (imagen_club) {
                     try {
-                        const publicId = imagen_club.split('/').pop().split('.')[0];
-                        await cloudinary.uploader.destroy(`motor-libre-clubs/${publicId}`);
-                        console.log(`Imagen ${publicId} eliminada de Cloudinary.`);
+                        // Extraer el Public ID de la URL
+                        // Ejemplo: https://res.cloudinary.com/mi-cloud/image/upload/v123456/motor-libre-clubs/qwerty1234.png
+                        // El public ID sería motor-libre-clubs/qwerty1234
+                        const parts = imagen_club.split('/');
+                        const folder = 'motor-libre-clubs';
+                        const filenameWithExt = parts[parts.length - 1];
+                        const publicIdWithoutFolder = filenameWithExt.split('.')[0];
+
+                        await cloudinary.uploader.destroy(`${folder}/${publicIdWithoutFolder}`);
+                        console.log(`Imagen ${publicIdWithoutFolder} eliminada de Cloudinary.`);
                     } catch (e) {
                         console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary.", e.message);
                     }
@@ -694,6 +729,12 @@ async function clubsHandler(req, res) {
         if (error.code && error.code.startsWith('23')) {
             return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. (${error.code})` });
         }
+
+        // Error de subida general
+        if (error.message.includes('Cloudinary')) {
+            return res.status(500).json({ success: false, message: "Error en Cloudinary. Revise los logs del servidor para detalles." });
+        }
+
 
         return res.status(500).json({ success: false, message: "Error interno del servidor. Consulte la consola para más detalles." });
     }
