@@ -10,7 +10,8 @@ const API_USERS_ME_URL = '/api/users?action=me';
 
 // Función para obtener el token JWT del almacenamiento local
 function getToken() {
-    return localStorage.getItem('token');
+    // 🔑 CORRECCIÓN: Leer de sessionStorage, ya que login.js guarda ahí.
+    return sessionStorage.getItem('token');
 }
 
 // -----------------------------------------------------------------------------
