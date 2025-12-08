@@ -7,23 +7,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
-    // 🛑 BANDERA DE CONTROL CRÍTICA AÑADIDA
-    // Se usará para evitar que la Guardia de Ruta de este script se active 
-    // si otro script (como perfil.js) ya ha tomado el control.
+    // 🛑 BANDERA DE CONTROL CRÍTICA
     let redireccionExternaEnCurso = false;
-
-    // Busca la bandera de control de perfil.js si está presente en la ventana
-    // Esto es un patrón común para coordinación. 
-    // Aunque la implementación más segura es la que se realiza más abajo.
-    // Usaremos la comprobación del 'user' para el guardrail.
 
     // 🟢 RUTAS CENTRALIZADAS DEL DASHBOARD
     const ADMIN_DASHBOARD_HOME = "/pages/dashboard/admin/admin.html";
-    const LOGIN_PAGE_PATH = "/auth/login/login.html"; // Asegúrate de que esta ruta es correcta
+    const LOGIN_PAGE_PATH = "/auth/login/login.html";
     const REGISTER_PAGE_PATH = "/auth/register.html";
     const CALENDARIO_PAGE_PATH = "/pages/calendario/calendario.html";
     const CLUBES_PAGE_PATH = "/pages/clubes/clubes.html";
-
 
     // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
@@ -52,15 +44,16 @@ document.addEventListener("DOMContentLoaded", () => {
             // Si el JSON es inválido, forzamos el cierre de sesión
             sessionStorage.removeItem("usuario");
             localStorage.removeItem("usuario");
+            user = null; // Reajustamos la variable user
         }
     }
 
     // 💥 MODIFICACIÓN CRÍTICA PARA DESHABILITAR Y OCULTAR SI NO HAY SESIÓN 💥
     if (!user) { // Si no hay usuario:
-        if (userName) userName.style.display = "none"; // Asegurar que el nombre está oculto
+        if (userName) userName.style.display = "none";
 
         // Asegurar que el login link está visible
-        if (loginLink) loginLink.style.display = "block"; // o 'inline-block' si prefieres
+        if (loginLink) loginLink.style.display = "block";
 
         if (logoutBtn) {
             logoutBtn.classList.add('disabled-link');
@@ -86,17 +79,14 @@ document.addEventListener("DOMContentLoaded", () => {
         // Limpiar ambos almacenamientos para asegurar el cierre de sesión
         sessionStorage.removeItem("usuario");
         localStorage.removeItem("usuario");
-        // Asegurar que también se limpian los tokens si existen
         sessionStorage.removeItem("token");
         localStorage.removeItem("token");
-
 
         // Ocultar el modal si está visible
         if (logoutConfirmModal) {
             logoutConfirmModal.hide();
         }
 
-        // Establecer la bandera para evitar que otros scripts actúen (aunque solo afecta a la guardia)
         redireccionExternaEnCurso = true;
 
         // Muestra alerta (requiere alertas.js)
@@ -123,10 +113,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let inactivityTimeout;
 
     function resetTimer() {
-        // Detiene el temporizador existente
         clearTimeout(inactivityTimeout);
 
-        // Inicia uno nuevo si el usuario está logueado
         if (user) {
             inactivityTimeout = setTimeout(autoLogout, INACTIVITY_TIMEOUT);
             // console.log("Temporizador reiniciado.");
@@ -134,7 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function autoLogout() {
-        // Llama a la función central con el indicador de auto-logout
         if (user) {
             console.warn("Cierre de sesión automático por inactividad.");
             logoutUserAndRedirect(true);
@@ -154,9 +141,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener('scroll', resetTimer);
 
     } else {
-        // 🛑 LÓGICA DE DETECCIÓN DE REDIRECCIÓN EXTERNA (NUEVO) 🛑
-        // Si hay una alerta roja (error) visible, asumimos que perfil.js o similar 
-        // ya está manejando la redirección, por lo que salimos para evitar duplicar alertas.
+
+        // 🛑 LÓGICA CLAVE: DETECCIÓN DE ALERTA ROJA (PARA QUITAR LA AMARILLA DUPLICADA) 🛑
+        // Si otro script ya generó una alerta de tipo 'error' (roja), significa que
+        // la página específica ya está manejando la redirección. Salimos.
+        // ASUMIMOS QUE LA CLASE DE ERROR ES '.mlc-alert-box.error'
         if (document.querySelector('.mlc-alert-box.error')) {
             console.warn("navbar.js: Detectada alerta de error externa. Guardrail de navbar deshabilitado.");
             redireccionExternaEnCurso = true;
@@ -175,12 +164,12 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPath.includes(CLUBES_PAGE_PATH);
 
 
-        // ⭐ MODIFICACIÓN CLAVE: Solo ejecuta la guardia si no hay otra redirección en curso
+        // ⭐ EJECUCIÓN DE LA GUARDIA PREDETERMINADA (Muestra la ALERTA AMARILLA)
         if (!isPublicPage && !redireccionExternaEnCurso) {
 
             redireccionExternaEnCurso = true; // Activar la bandera de control
 
-            // Mostrar alerta de inicio de sesión antes de redirigir
+            // Mostrar alerta de inicio de sesión (ALERTA AMARILLA)
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "advertencia");
             }
@@ -194,15 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
             sessionStorage.removeItem("usuario");
         }
     }
-
-
-    // -----------------------------------------------------------------------------------
-    // 8. CIERRE DE SESIÓN AL CERRAR LA PESTAÑA (BLOQUEADO)
-    // -----------------------------------------------------------------------------------
-
-    /*
-    // 🛑 BLOQUE DESACTIVADO...
-    */
 
 
     // -----------------------------------------------------------------------------------
