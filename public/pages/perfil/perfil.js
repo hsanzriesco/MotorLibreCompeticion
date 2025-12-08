@@ -508,9 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(json.message || 'Error al actualizar perfil.');
             }
 
-            // CORRECCIÓN: Si la actualización fue exitosa, también actualiza localStorage
-            // si el usuario fue originalmente cargado desde allí (aunque aquí no se diferencia, 
-            // al menos actualizamos la sessionStorage que es la que se usa prioritariamente).
+            // CORRECCIÓN: Si la actualización fue exitosa, también actualiza el objeto de sesión.
             user.name = newName;
             user.email = newEmail;
 
