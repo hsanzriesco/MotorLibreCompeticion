@@ -72,13 +72,14 @@ async function loadClubData(clubId) {
 
         document.getElementById('club-id').value = clubData.id || '';
 
-        const clubName = clubData.nombre || clubData.name || clubData.titulo || '';
+        const clubName = clubData.nombre || clubData.name || clubData.titulo || clubData.nombre_evento || '';
         document.getElementById('nombre_club').value = clubName;
 
         let descripcion = clubData.descripcion || '';
 
         let ciudad = clubData.ciudad || '';
 
+        // Lógica de compatibilidad para extraer ciudad si aún está incrustada
         if (!ciudad && descripcion) {
             const cityMatch = descripcion.match(/\[Ciudad:\s*([^\]]+)\]/i);
 
@@ -87,6 +88,12 @@ async function loadClubData(clubId) {
 
                 descripcion = descripcion.replace(/\[Ciudad:\s*[^\]]+\]\s*/i, '').trim();
             }
+        }
+
+        // ⭐⭐⭐ NUEVO: Asignar Enfoque del Club ⭐⭐⭐
+        const enfoqueInput = document.getElementById('enfoque');
+        if (enfoqueInput) {
+            enfoqueInput.value = clubData.enfoque || '';
         }
 
         document.getElementById('descripcion').value = descripcion;
@@ -147,13 +154,23 @@ async function handleFormSubmit(event) {
     const newName = document.getElementById('nombre_club').value;
     const newDescription = document.getElementById('descripcion').value;
     const newCity = document.getElementById('ciudad')?.value || '';
+
+    // ⭐⭐⭐ NUEVO: Capturar el valor de enfoque ⭐⭐⭐
+    const newEnfoque = document.getElementById('enfoque')?.value || '';
+
     const newImageFile = document.getElementById('imagen_club_nueva').files[0];
 
     const updateData = new FormData();
     updateData.append('id', clubId);
-    updateData.append('nombre', newName);
+
+    // CORRECCIÓN: Usar 'nombre_evento' que es la clave esperada por el backend clubs.js
+    updateData.append('nombre_evento', newName);
+
     updateData.append('descripcion', newDescription);
     updateData.append('ciudad', newCity);
+
+    // ⭐⭐⭐ NUEVO: Añadir enfoque al FormData ⭐⭐⭐
+    updateData.append('enfoque', newEnfoque);
 
     if (newImageFile) {
         updateData.append('imagen', newImageFile);

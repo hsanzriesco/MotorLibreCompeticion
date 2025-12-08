@@ -149,6 +149,13 @@
                         </div>
 
                         <div class="mb-4">
+                            <label class="form-label text-light fw-bold">Enfoque del Club *</label>
+                            <input type="text" class="form-control input-dark" id="enfoque" name="enfoque"
+                                placeholder="Ej: Drift, Drag Race, Rally, etc." required />
+                            <small class="form-text text-secondary">El tipo de actividad principal a la que se
+                                dedica el club.</small>
+                        </div>
+                        <div class="mb-4">
                             <label class="form-label text-light fw-bold">Descripción</label>
                             <textarea class="form-control input-dark" id="descripcion" name="descripcion"
                                 rows="5"></textarea>
@@ -181,7 +188,8 @@
                             <label class="form-label text-light fw-bold">Imagen Actual</label>
                             <div id="imagen_actual_preview" class="text-center bg-dark p-2 rounded">
                                 <img id="current-club-thumb" src="" alt="Imagen actual del Club" class="img-fluid" />
-                                <span id="no-image-text" class="text-secondary small mt-2" style="display:none;">(No hay
+                                <span id="no-image-text" class="text-secondary small mt-2" style="display:none;">(No
+                                    hay
                                     imagen)</span>
                             </div>
                         </div>
@@ -197,12 +205,14 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-danger btn-lg mt-5 w-100"><i class="bi bi-save"></i> Actualizar
+                <button type="submit" class="btn btn-danger btn-lg mt-5 w-100"><i class="bi bi-save"></i>
+                    Actualizar
                     Club</button>
             </form>
 
             <div class="text-center mt-4">
-                <a href="../admin.html" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver a Gestión de
+                <a href="../admin.html" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver a Gestión
+                    de
                     Clubes</a>
             </div>
 
