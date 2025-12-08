@@ -15,7 +15,7 @@
     <link rel="icon" href="../../../img/imagen-tfg.png" type="image/png" />
 
     <style>
-        /* Estilos copiados de admin.html para mantener el diseño */
+        /* Estilos generales y del panel */
         body {
             background-color: #111;
             color: #fff;
@@ -35,33 +35,45 @@
             padding: 1.5rem;
             margin: 1rem auto;
             width: 95%;
-            max-width: 800px;
+            max-width: 900px;
+            /* Aumento el ancho máximo para mejor distribución */
         }
 
-        .input-dark {
-            background: #222;
-            border: 1px solid #e50914;
-            color: #fff;
-        }
-
+        /* Estilo para los inputs */
         .input-dark,
         .input-dark:hover,
         .input-dark:focus {
             background: #222 !important;
             border-color: #e50914 !important;
             color: #fff !important;
-            box-shadow: none !important;
+            box-shadow: 0 0 5px rgba(229, 9, 20, 0.5) !important;
         }
 
+        /* Estilo para el botón principal de acción */
         .btn-danger {
             background-color: #e50914 !important;
             border: none;
+            transition: background-color 0.2s;
         }
 
-        /* ========================== */
-        /* MODALES ESTILO NETFLIX   */
-        /* ========================== */
+        .btn-danger:hover {
+            background-color: #ff0a1e !important;
+        }
 
+        /* Estilos para la previsualización de la imagen */
+        #current-club-thumb {
+            width: 150px;
+            /* Tamaño de imagen más grande para que sea visible */
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e50914;
+            /* Borde rojo para destacar */
+            display: block;
+            margin-top: 10px;
+        }
+
+        /* Estilos del modal (Mantenidos) */
         .modal-content {
             background: #111 !important;
             color: white !important;
@@ -81,11 +93,6 @@
 
         .btn-secondary {
             background: #666 !important;
-            border: none !important;
-        }
-
-        .btn-danger {
-            background: #e50914 !important;
             border: none !important;
         }
 
@@ -129,65 +136,69 @@
 
     <main>
         <section class="admin-section">
-            <h2 class="text-center mb-4">Edición de Club</h2>
-
+            <h2 class="text-center mb-5 text-danger">📝 Editar Club</h2>
             <form id="club-edit-form" class="mb-4" enctype="multipart/form-data">
                 <input type="hidden" id="club-id" name="club-id">
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Nombre del Club *</label>
-                        <input type="text" class="form-control input-dark" id="nombre_club" name="nombre_club"
-                            placeholder="Introduce el nombre del club" required />
-                    </div>
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold">Nombre del Club *</label>
+                            <input type="text" class="form-control input-dark" id="nombre_club" name="nombre_club"
+                                placeholder="Introduce el nombre del club" required />
+                        </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Nueva Imagen (Opcional)</label>
-                        <input type="file" class="form-control input-dark" id="imagen_club_nueva"
-                            name="imagen_club_nueva" accept="image/*" />
-                        <small class="form-text text-secondary">La imagen actual se conservará si no se sube una
-                            nueva.</small>
-                    </div>
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold">Descripción</label>
+                            <textarea class="form-control input-dark" id="descripcion" name="descripcion"
+                                rows="5"></textarea>
+                        </div>
 
-                    <div class="col-md-12">
-                        <label class="form-label">Imagen Actual</label>
-                        <div id="imagen_actual_preview">
-                            <img id="current-club-thumb" src="" alt="Imagen actual del Club" class="club-thumb me-2"
-                                style="width: 100px; height: auto; object-fit: cover; border-radius: 6px;" />
-                            <span id="no-image-text" class="text-secondary small" style="display:none;">(No hay
-                                imagen)</span>
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <label class="form-label text-light fw-bold">Ciudad</label>
+                                <input type="text" class="form-control input-dark" id="ciudad" name="ciudad"
+                                    placeholder="Introduce la ciudad del club" required />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-light fw-bold">Fecha de Creación</label>
+                                <input type="text" class="form-control input-dark" id="fecha_creacion"
+                                    name="fecha_creacion" readonly />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold">Presidente (ID)</label>
+                            <input type="text" class="form-control input-dark" id="presidente_id" name="presidente_id"
+                                readonly />
+                            <small class="form-text text-secondary">El ID del usuario Presidente no es editable
+                                directamente aquí.</small>
                         </div>
                     </div>
 
-                    <div class="col-md-12">
-                        <label class="form-label">Descripción</label>
-                        <textarea class="form-control input-dark" id="descripcion" name="descripcion"
-                            rows="3"></textarea>
-                    </div>
+                    <div class="col-md-5 border-start border-secondary ps-4">
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold">Imagen Actual</label>
+                            <div id="imagen_actual_preview" class="text-center bg-dark p-2 rounded">
+                                <img id="current-club-thumb" src="" alt="Imagen actual del Club" class="img-fluid" />
+                                <span id="no-image-text" class="text-secondary small mt-2" style="display:none;">(No hay
+                                    imagen)</span>
+                            </div>
+                        </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Ciudad</label>
-                        <input type="text" class="form-control input-dark" id="ciudad" name="ciudad"
-                            placeholder="Introduce la ciudad del club" required />
-                    </div>
+                        <hr class="border-secondary" />
 
-                    <div class="col-md-6">
-                        <label class="form-label">Fecha de Creación</label>
-                        <input type="date" class="form-control input-dark" id="fecha_creacion" name="fecha_creacion"
-                            readonly />
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold">Nueva Imagen (Opcional)</label>
+                            <input type="file" class="form-control input-dark" id="imagen_club_nueva"
+                                name="imagen_club_nueva" accept="image/*" />
+                            <small class="form-text text-secondary">Sube un nuevo logo o imagen. Máx. 5MB.</small>
+                        </div>
                     </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Presidente (ID)</label>
-                        <input type="text" class="form-control input-dark" id="presidente_id" name="presidente_id"
-                            readonly />
-                        <small class="form-text text-secondary">El ID del usuario Presidente no es editable directamente
-                            aquí.</small>
-                    </div>
-
                 </div>
 
-                <button type="submit" class="btn btn-danger mt-4 w-100">Actualizar Club</button>
+                <button type="submit" class="btn btn-danger btn-lg mt-5 w-100"><i class="bi bi-save"></i> Actualizar
+                    Club</button>
             </form>
 
             <div class="text-center mt-4">
