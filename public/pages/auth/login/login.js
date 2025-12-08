@@ -76,22 +76,37 @@ document.addEventListener("DOMContentLoaded", () => {
                     name: user.name,
                     email: user.email,
                     role: user.role,
+                    // Asegura que club_id se incluya, o sea null si no existe
                     club_id: user.club_id || null,
                 };
 
                 const userDataString = JSON.stringify(userData);
 
-                // Guardar la sesión en SESSIONSTORAGE (usado por users.js)
+                // ==========================================================
+                // 🛠️ CORRECCIÓN CLAVE: Guardar clubId de forma independiente
+                // ==========================================================
                 sessionStorage.setItem("token", token);
                 sessionStorage.setItem("role", user.role);
                 sessionStorage.setItem("usuario", userDataString);
+
+                if (userData.club_id) {
+                    // ✅ ESTA LÍNEA RESUELVE EL ERROR "No se encontró un ID de club asociado"
+                    sessionStorage.setItem("clubId", userData.club_id);
+                } else {
+                    // Si el usuario no tiene club (ej. es admin o usuario normal), se asegura de que la clave no exista
+                    sessionStorage.removeItem("clubId");
+                }
+
+                // ==========================================================
+                // FIN DE LA CORRECCIÓN
+                // ==========================================================
 
                 // Limpiar LOCALSTORAGE para evitar conflictos si no se usa persistencia
                 localStorage.clear();
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 
-                // 🟢 CORRECCIÓN DE LA RUTA DE REDIRECCIÓN (Usando la ruta absoluta correcta)
+                // 🟢 Redirección
                 setTimeout(() => {
                     if (user.role === "admin") {
                         // ✅ Redirigir a la página principal del administrador (admin.html)
