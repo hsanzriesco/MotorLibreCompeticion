@@ -1,6 +1,52 @@
-// public/js/adminClubes.js
-
+// public/js/adminClubes.js - CORREGIDO
 document.addEventListener("DOMContentLoaded", () => {
+
+    // -----------------------------------------
+    // UTIL: Token, Rol y Seguridad
+    // -----------------------------------------
+
+    /** Obtiene el Token JWT de la sessionStorage. 
+     * Verifica 'jwtToken' (estándar) y 'token' (posible clave de login).
+     */
+    function getToken() {
+        // Tu función existente para obtener el token
+        const token = sessionStorage.getItem('jwtToken');
+        if (token) return token;
+        return sessionStorage.getItem('token');
+    }
+
+    /** Obtiene el rol del usuario de la sessionStorage. */
+    function getRole() {
+        return sessionStorage.getItem('role');
+    }
+
+    /** REDIRECCIÓN DE SEGURIDAD. Verifica token y rol de administrador. */
+    function checkAdminAccess() {
+        const token = getToken();
+        const role = getRole();
+
+        if (!token) {
+            alert("Acceso no autorizado. Debes iniciar sesión.");
+            // Redirige al login si no hay token
+            window.location.href = '/pages/auth/login.html';
+            return false;
+        }
+
+        if (role !== 'admin') {
+            alert("Permisos insuficientes. Solo los administradores pueden acceder a esta página.");
+            // Redirige a la página principal si el rol no es 'admin'
+            window.location.href = '/index.html';
+            return false;
+        }
+        return true;
+    }
+
+    // 🚨 ¡VERIFICACIÓN DE ACCESO CRÍTICA AL INICIO DEL SCRIPT! 🚨
+    if (!checkAdminAccess()) {
+        return; // Detiene la ejecución si la verificación falla
+    }
+    // FIN DE VERIFICACIÓN
+
 
     // --- ⭐ CONFIGURACIÓN Y REFERENCIAS DEL DOM ⭐ ---
     const TOTAL_COLUMNS = 8; // Constante para el número de columnas visibles en la tabla (ID a Acciones)
@@ -41,19 +87,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------
-    // UTIL: Token, Fecha, Limpieza y Escape HTML
+    // UTIL: Fecha, Limpieza y Escape HTML
     // -----------------------------------------
 
-    /** Obtiene el Token JWT de la sessionStorage. 
-     * Verifica 'jwtToken' (estándar) y 'token' (posible clave de login).
-     */
-    function getToken() {
-        const token = sessionStorage.getItem('jwtToken');
-        if (token) return token;
-
-        // Fallback: Busca la clave 'token'
-        return sessionStorage.getItem('token');
-    }
+    // ... (El resto de funciones auxiliares como hoyISODate, setFechaDefault, clearForm, escapeHtml, mostrarAlerta se mantienen igual)
+    // ... (Mantener las funciones auxiliares aquí)
 
     /** Obtiene la fecha de hoy en formato 'YYYY-MM-DD'. */
     function hoyISODate() {
@@ -120,8 +158,10 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Carga los clubes activos y pendientes de la API y renderiza las tablas. */
     async function cargarClubes() {
         const token = getToken();
+        // Ya se verificó el token en checkAdminAccess, pero lo mantenemos para la alerta específica
         if (!token) {
-            mostrarAlerta("❌ **ERROR CRÍTICO:** No se encontró el token de administrador. Por favor, asegúrate de haber **iniciado sesión correctamente** y que el token se haya guardado como **'jwtToken'** o **'token'** en la Session Storage.", "error");
+            // El usuario ya fue redirigido por checkAdminAccess, pero mostramos una alerta de respaldo
+            mostrarAlerta("❌ **ERROR CRÍTICO:** Token de administrador no disponible. Se requiere re-login.", "error");
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
             if (badgePendientes) badgePendientes.style.display = 'none';
@@ -180,9 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // -----------------------------------------
-    // RENDERIZAR TABLA
-    // -----------------------------------------
+    // ... (El resto del script: renderTabla, cargarClubEnFormulario, form submit, etc. se mantienen igual)
 
     /** Renderiza la tabla de clubes. */
     function renderTabla(contenedorTabla, clubes, status = 'ok') {
