@@ -211,7 +211,8 @@ async function statusChangeHandler(req, res) {
                 await client.query('BEGIN');
 
                 const pendingClubRes = await client.query(
-                    'SELECT nombre_evento, descripcion, imagen_club as imagen_url, id_presidente, ciudad FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
+                    // ⭐ MODIFICACIÓN GET: Añadir campo 'enfoque'
+                    'SELECT nombre_evento, descripcion, imagen_club as imagen_url, id_presidente, ciudad, enfoque FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
                     [id]
                 );
 
@@ -232,9 +233,10 @@ async function statusChangeHandler(req, res) {
                 nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
                 // Usamos la URL de la imagen que ya está guardada en clubs_pendientes
+                // ⭐ MODIFICACIÓN INSERT: Añadir campo 'enfoque'
                 const insertRes = await client.query(
-                    'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7) RETURNING id',
-                    [club.nombre_evento, club.descripcion, club.imagen_url, club.id_presidente, nombrePresidente, 'activo', club.ciudad]
+                    'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) RETURNING id',
+                    [club.nombre_evento, club.descripcion, club.imagen_url, club.id_presidente, nombrePresidente, 'activo', club.ciudad, club.enfoque]
                 );
                 const newClubId = insertRes.rows[0].id;
 
@@ -301,7 +303,7 @@ async function clubsHandler(req, res) {
 
     try {
         if (method === "GET") {
-            // Lógica GET sin cambios...
+
             if (estado === 'pendiente') {
                 try {
                     verifyAdmin(req);
@@ -312,26 +314,28 @@ async function clubsHandler(req, res) {
             }
 
             if (id) {
-                const clubIdNum = parseInt(id); // Asegurar que es un número
+                const clubIdNum = parseInt(id);
                 if (isNaN(clubIdNum)) {
                     return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
                 }
 
-                // CORRECCIÓN 1: Unificar la última línea del SELECT para evitar errores de sintaxis
+                // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs
                 let queryText = `
                     SELECT 
                         id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                        estado, id_presidente, nombre_presidente, ciudad, 0 as miembros 
+                        estado, id_presidente, nombre_presidente, ciudad, enfoque, 
+                        0 as miembros 
                     FROM public.clubs 
                     WHERE id = $1 AND estado = 'activo'
                 `;
                 const result = await pool.query(queryText, [clubIdNum]);
 
                 if (result.rows.length === 0 && isAdmin) {
+                    // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs_pendientes
                     const pendingRes = await pool.query(
                         `SELECT 
                             p.id, p.nombre_evento, p.descripcion, p.imagen_club as imagen_url, 
-                            p.fecha_solicitud as fecha_creacion, p.ciudad,
+                            p.fecha_solicitud as fecha_creacion, p.ciudad, p.enfoque,
                             p.id_presidente, 
                             u.name as nombre_presidente, 
                             'pendiente' as estado 
@@ -354,15 +358,17 @@ async function clubsHandler(req, res) {
 
             else if (estado) {
                 if (estado === 'activo') {
-                    // CORRECCIÓN 2: Unificar la última línea del SELECT para evitar errores de sintaxis
+                    // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
                     const result = await pool.query(`
                         SELECT 
                             id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                            estado, id_presidente, nombre_presidente, ciudad, 0 as miembros 
+                            estado, id_presidente, nombre_presidente, ciudad, enfoque,
+                            0 as miembros 
                         FROM public.clubs WHERE estado = $1 ORDER BY fecha_creacion DESC
                     `, ['activo']);
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
+                    // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
                     const queryText = `
                         SELECT 
                             p.id, 
@@ -371,6 +377,7 @@ async function clubsHandler(req, res) {
                             p.imagen_club as imagen_url, 
                             p.fecha_solicitud as fecha_creacion, 
                             p.ciudad,
+                            p.enfoque,
                             'pendiente' as estado,
                             p.id_presidente,
                             u.name as nombre_presidente 
@@ -385,11 +392,12 @@ async function clubsHandler(req, res) {
                 return res.status(400).json({ success: false, message: "Estado no válido o permiso denegado." });
             }
 
-            // CORRECCIÓN 3: Unificar la última línea del SELECT para evitar errores de sintaxis
+            // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
             const defaultResult = await pool.query(`
                 SELECT 
                     id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                    estado, id_presidente, nombre_presidente, ciudad, 0 as miembros 
+                    estado, id_presidente, nombre_presidente, ciudad, enfoque,
+                    0 as miembros 
                 FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
             `);
             return res.status(200).json({ success: true, clubs: defaultResult.rows });
@@ -404,10 +412,12 @@ async function clubsHandler(req, res) {
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
 
-                const { nombre_evento, descripcion, ciudad } = fields;
+                // ⭐ MODIFICACIÓN POST: Obtener 'enfoque' de los campos
+                const { nombre_evento, descripcion, ciudad, enfoque } = fields;
 
-                if (!nombre_evento || !descripcion || !ciudad) {
-                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre, descripción o ciudad." });
+                // ⭐ MODIFICACIÓN POST: 'enfoque' también es obligatorio
+                if (!nombre_evento || !descripcion || !ciudad || !enfoque) {
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre, descripción, ciudad o enfoque." });
                 }
 
                 if (!authVerification.authorized || !userId) {
@@ -440,8 +450,9 @@ async function clubsHandler(req, res) {
                         nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
 
                         // 1. Inserción del Club
-                        insertColumns = `nombre_evento, descripcion, imagen_club, id_presidente, nombre_presidente, estado, fecha_creacion, ciudad`;
-                        insertValues = `($1, $2, $3, $4, $5, $6, NOW(), $7)`;
+                        // ⭐ MODIFICACIÓN INSERT: Añadir 'enfoque'
+                        insertColumns = `nombre_evento, descripcion, imagen_club, id_presidente, nombre_presidente, estado, fecha_creacion, ciudad, enfoque`;
+                        insertValues = `($1, $2, $3, $4, $5, $6, NOW(), $7, $8)`;
                         params = [
                             nombre_evento,
                             descripcion,
@@ -449,7 +460,8 @@ async function clubsHandler(req, res) {
                             idPresidente,
                             nombrePresidente,
                             clubEstado, // 'activo' ($6)
-                            ciudad // Ciudad ($7)
+                            ciudad, // Ciudad ($7)
+                            enfoque // Enfoque ($8)
                         ];
 
                         const insertQuery = `
@@ -503,14 +515,16 @@ async function clubsHandler(req, res) {
                     tabla = 'clubs_pendientes';
                     idPresidente = userId;
 
-                    insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente, ciudad`;
-                    insertValues = `($1, $2, $3, NOW(), $4, $5)`;
+                    // ⭐ MODIFICACIÓN INSERT: Añadir 'enfoque'
+                    insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente, ciudad, enfoque`;
+                    insertValues = `($1, $2, $3, NOW(), $4, $5, $6)`;
                     params = [
                         nombre_evento,
                         descripcion,
                         imagen_club_url,
                         idPresidente, // id_presidente es $4
-                        ciudad // Ciudad ($5)
+                        ciudad, // Ciudad ($5)
+                        enfoque // Enfoque ($6)
                     ];
 
                     const insertQuery = `
@@ -528,14 +542,13 @@ async function clubsHandler(req, res) {
                     });
                 }
             } catch (uploadError) {
-                // --- MODIFICACIÓN CLAVE: Limpiar Cloudinary si la subida fue exitosa pero la DB falló ---
+                // ... (El manejo de errores sigue igual)
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
                     await deleteFromCloudinary(imagen_club_url);
                 }
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
                     await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
                 }
-                // --- FIN MODIFICACIÓN CLAVE ---
 
                 console.error("Error durante la subida/inserción (POST):", uploadError.message);
 
@@ -567,10 +580,12 @@ async function clubsHandler(req, res) {
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
 
+                // ⭐ MODIFICACIÓN PUT: Obtener 'enfoque' de los campos
                 const {
                     nombre_evento,
                     descripcion,
                     ciudad: newCiudad,
+                    enfoque: newEnfoque, // Nuevo campo
                     estado: newEstado,
                     id_presidente: newIdPresidente
                 } = fields;
@@ -606,6 +621,11 @@ async function clubsHandler(req, res) {
                     updates.push(`ciudad = $${paramIndex++}`);
                     values.push(newCiudad);
                 }
+                // ⭐ MODIFICACIÓN PUT: Incluir 'enfoque' en las actualizaciones
+                if (newEnfoque) {
+                    updates.push(`enfoque = $${paramIndex++}`);
+                    values.push(newEnfoque);
+                }
                 if (imagen_club_url) {
                     updates.push(`imagen_club = $${paramIndex++}`);
                     values.push(imagen_club_url);
@@ -629,9 +649,10 @@ async function clubsHandler(req, res) {
                 values.push(id);
                 const idParam = paramIndex;
 
+                // ⭐ MODIFICACIÓN PUT: Añadir 'enfoque' a la respuesta RETURNING
                 const updateQuery = `
                     UPDATE public.clubs SET ${updates.join(', ')} WHERE id = $${idParam}
-                    RETURNING id, nombre_evento, descripcion, imagen_club as imagen_url, ciudad
+                    RETURNING id, nombre_evento, descripcion, imagen_club as imagen_url, ciudad, enfoque
                 `;
 
                 const result = await pool.query(updateQuery, values);
@@ -649,14 +670,13 @@ async function clubsHandler(req, res) {
                 return res.status(200).json({ success: true, message: "Club actualizado.", club: result.rows[0] });
 
             } catch (uploadError) {
-                // --- MODIFICACIÓN CLAVE: Limpiar Cloudinary si la subida fue exitosa pero la DB falló ---
+                // ... (El manejo de errores sigue igual)
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
                     await deleteFromCloudinary(imagen_club_url);
                 }
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
                     await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
                 }
-                // --- FIN MODIFICACIÓN CLAVE ---
 
                 console.error("Error durante la subida/actualización (PUT):", uploadError.message);
 
