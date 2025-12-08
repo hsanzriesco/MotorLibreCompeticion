@@ -1,16 +1,41 @@
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
 
+// 🛑 BANDERA DE CONTROL Y FUNCIÓN CENTRALIZADA
+let redireccionEnCurso = false;
+
+function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
+    if (redireccionEnCurso) return;
+
+    redireccionEnCurso = true;
+
+    // Limpiar cualquier sesión corrupta o residual
+    sessionStorage.removeItem('usuario');
+    localStorage.removeItem('usuario');
+    sessionStorage.removeItem('token'); // Limpiar el token también
+
+    // Muestra la alerta DESEADA UNA SOLA VEZ
+    mostrarAlerta(mensaje, tipo);
+
+    // Redirige
+    setTimeout(() => {
+        // Asegúrate de que la ruta sea correcta
+        window.location.href = '/pages/auth/login/login.html';
+    }, 1200);
+}
+// ---------------------------------------------
+
+
 function getToken() {
+    // Aquí solo necesitamos verificar si existe el token.
     return sessionStorage.getItem('token');
 }
 
 async function getClubIdFromUser() {
     const token = getToken();
 
-    if (!token) {
-        throw new Error('No se encontró el token de autenticación.');
-    }
+    // Ya no necesitamos la comprobación 'if (!token)' aquí, ya se hace en DOMContentLoaded.
+    // Si llegamos aquí, se asume que 'token' tiene un valor.
 
     try {
         console.log("Intentando obtener perfil del usuario desde:", API_USERS_ME_URL);
@@ -23,8 +48,9 @@ async function getClubIdFromUser() {
         });
 
         if (!response.ok) {
+            // Si la API devuelve 401, lanzamos un error que será manejado abajo
             if (response.status === 401) {
-                throw new Error('Token inválido o expirado.');
+                throw new Error('Token inválido o expirado. Unauthorized');
             }
             throw new Error(`Fallo en la API al obtener el perfil. Código: ${response.status}`);
         }
@@ -60,6 +86,10 @@ async function loadClubData(clubId) {
         });
 
         if (!response.ok) {
+            // Manejo de 401 en loadClubData por si acaso
+            if (response.status === 401) {
+                throw new Error('Unauthorized');
+            }
             throw new Error(`Fallo al cargar los datos del club. Código: ${response.status}`);
         }
 
@@ -143,7 +173,14 @@ async function loadClubData(clubId) {
 
     } catch (error) {
         console.error("Error al cargar los datos del club:", error.message);
-        // ⭐⭐⭐ CORRECCIÓN DE ERROR: Añadida la verificación antes de mostrar alerta
+
+        // Si hay un error de token, redirigir
+        if (error.message.includes('Unauthorized')) {
+            manejarFaltaAutenticacion('Acceso denegado. Tienes que iniciar sesión para acceder a esta página', 'error');
+            return;
+        }
+
+        // Manejo de otros errores
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta(`Error al cargar: ${error.message}`, 'error');
         } else {
@@ -159,11 +196,8 @@ async function handleFormSubmit(event) {
     const token = getToken();
 
     if (!token || !clubId) {
-        if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta('Falta el token de autenticación o el ID del club.', 'error');
-        } else {
-            alert('Falta el token de autenticación o el ID del club.');
-        }
+        // Usar función centralizada para garantizar una única alerta
+        manejarFaltaAutenticacion('Falta el token de autenticación. Tienes que iniciar sesión.', 'error');
         return;
     }
 
@@ -210,6 +244,10 @@ async function handleFormSubmit(event) {
         const result = await response.json();
 
         if (!response.ok) {
+            // Manejo de 401 en la actualización
+            if (response.status === 401) {
+                throw new Error('Unauthorized');
+            }
             throw new Error(result.message || 'Error desconocido al actualizar el club.');
         }
 
@@ -220,6 +258,12 @@ async function handleFormSubmit(event) {
 
     } catch (error) {
         console.error("Error al actualizar el club:", error.message);
+
+        if (error.message.includes('Unauthorized')) {
+            manejarFaltaAutenticacion('La sesión ha expirado. Vuelve a iniciar sesión.', 'error');
+            return;
+        }
+
         mostrarAlerta(`Fallo al actualizar el club: ${error.message}`, 'error');
     } finally {
         if (submitBtn) {
@@ -243,6 +287,16 @@ function initializeClubEditor(clubId) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // 🛑 PRIMERA COMPROBACIÓN CRÍTICA: Impedir la llamada a la API si no hay token.
+    const localToken = getToken();
+
+    if (!localToken) {
+        // Muestra la ÚNICA alerta y detiene la ejecución del script.
+        manejarFaltaAutenticacion('Tienes que iniciar sesión para acceder a esta página', 'error');
+        return;
+    }
+    // ----------------------------------------------------------------------
+
     try {
         const clubId = await getClubIdFromUser();
 
@@ -251,15 +305,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error("Error crítico durante la inicialización:", error.message);
 
-        if (error.message.includes('token') || error.message.includes('asignado')) {
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('Acceso denegado. Redirigiendo al inicio de sesión...', 'warning');
-            }
-
-            setTimeout(() => {
-                window.location.href = '../../index.html';
-            }, 3000);
+        // 🛑 SEGUNDA COMPROBACIÓN CRÍTICA: Error devuelto por la API (Token inválido o club no asignado)
+        if (error.message.includes('Token') || error.message.includes('asignado') || error.message.includes('Unauthorized')) {
+            // Usamos la función centralizada para garantizar una sola alerta/redirección.
+            manejarFaltaAutenticacion('Acceso denegado. Tienes que iniciar sesión para acceder a esta página', 'error');
         } else {
+            // Manejar otros errores que no son de autenticación.
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta(`Error al iniciar la edición: ${error.message}`, 'error');
             }
