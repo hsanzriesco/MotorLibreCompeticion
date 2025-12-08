@@ -83,23 +83,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 const userDataString = JSON.stringify(userData);
 
                 // ==========================================================
-                // 🛠️ CORRECCIÓN CLAVE: Guardar clubId de forma independiente
+                // Guardar datos de sesión
                 // ==========================================================
                 sessionStorage.setItem("token", token);
                 sessionStorage.setItem("role", user.role);
                 sessionStorage.setItem("usuario", userDataString);
 
                 if (userData.club_id) {
-                    // ✅ ESTA LÍNEA RESUELVE EL ERROR "No se encontró un ID de club asociado"
                     sessionStorage.setItem("clubId", userData.club_id);
                 } else {
-                    // Si el usuario no tiene club (ej. es admin o usuario normal), se asegura de que la clave no exista
                     sessionStorage.removeItem("clubId");
                 }
-
-                // ==========================================================
-                // FIN DE LA CORRECCIÓN
-                // ==========================================================
 
                 // Limpiar LOCALSTORAGE para evitar conflictos si no se usa persistencia
                 localStorage.clear();
@@ -108,13 +102,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // 🟢 Redirección
                 setTimeout(() => {
+                    // ⭐⭐⭐ MODIFICACIÓN CLAVE AQUÍ ⭐⭐⭐
+                    // Solo redirigir a /admin/ si el rol es ESTRÍCTAMENTE 'admin'.
+                    // 'presidente' ahora se trata como usuario normal.
                     if (user.role === "admin") {
-                        // ✅ Redirigir a la página principal del administrador (admin.html)
+                        // Redirigir a la página principal del administrador (admin.html)
                         window.location.href = "/pages/dashboard/admin/admin.html";
                     } else {
-                        // Redirigir al índice para usuarios normales
+                        // Redirigir al índice para usuarios 'presidente' y 'usuario'
                         window.location.href = "/index.html";
                     }
+                    // ⭐⭐⭐ FIN MODIFICACIÓN CLAVE ⭐⭐⭐
                 }, 1200);
 
             } catch (err) {
