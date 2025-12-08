@@ -76,7 +76,6 @@ async function loadClubData(clubId) {
         document.getElementById('nombre_club').value = clubName;
 
         let descripcion = clubData.descripcion || '';
-
         let ciudad = clubData.ciudad || '';
 
         // Lógica de compatibilidad para extraer ciudad si aún está incrustada
@@ -90,13 +89,32 @@ async function loadClubData(clubId) {
             }
         }
 
-        // ⭐⭐⭐ NUEVO: Asignar Enfoque del Club ⭐⭐⭐
+        // ⭐⭐⭐ CORRECCIÓN: Lógica para extraer Enfoque de la descripción para compatibilidad ⭐⭐⭐
+        let enfoque = clubData.enfoque || '';
+
+        // Si 'enfoque' no viene directamente de la BD, lo buscamos en la descripción.
+        if (!enfoque && descripcion) {
+            // Patrón para buscar [Enfoque: Valor]
+            const enfoqueMatch = descripcion.match(/\[Enfoque:\s*([^\]]+)\]/i);
+
+            if (enfoqueMatch && enfoqueMatch[1]) {
+                enfoque = enfoqueMatch[1].trim();
+                // Eliminar el marcador [Enfoque: Valor] de la descripción original
+                descripcion = descripcion.replace(/\[Enfoque:\s*[^\]]+\]\s*/i, '').trim();
+            }
+        }
+        // ⭐⭐⭐ FIN CORRECCIÓN ⭐⭐⭐
+
+        // Asignar los valores extraídos/cargados a los campos del formulario
         const enfoqueInput = document.getElementById('enfoque');
         if (enfoqueInput) {
-            enfoqueInput.value = clubData.enfoque || '';
+            // Usamos la variable 'enfoque' extraída o cargada de la BD
+            enfoqueInput.value = enfoque;
         }
 
+        // La descripción ya está limpia si se extrajo el enfoque
         document.getElementById('descripcion').value = descripcion;
+
         const ciudadInput = document.getElementById('ciudad');
         if (ciudadInput) {
             ciudadInput.value = ciudad;
@@ -155,7 +173,7 @@ async function handleFormSubmit(event) {
     const newDescription = document.getElementById('descripcion').value;
     const newCity = document.getElementById('ciudad')?.value || '';
 
-    // ⭐⭐⭐ NUEVO: Capturar el valor de enfoque ⭐⭐⭐
+    // Capturar el valor de enfoque
     const newEnfoque = document.getElementById('enfoque')?.value || '';
 
     const newImageFile = document.getElementById('imagen_club_nueva').files[0];
@@ -169,7 +187,7 @@ async function handleFormSubmit(event) {
     updateData.append('descripcion', newDescription);
     updateData.append('ciudad', newCity);
 
-    // ⭐⭐⭐ NUEVO: Añadir enfoque al FormData ⭐⭐⭐
+    // Añadir enfoque al FormData
     updateData.append('enfoque', newEnfoque);
 
     if (newImageFile) {
@@ -199,6 +217,7 @@ async function handleFormSubmit(event) {
 
         mostrarAlerta('Club actualizado exitosamente!', 'success');
 
+        // Recargar los datos después de una actualización exitosa para reflejar los cambios (descripción limpia)
         loadClubData(clubId);
 
     } catch (error) {
