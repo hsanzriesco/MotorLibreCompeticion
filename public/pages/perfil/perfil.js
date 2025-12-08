@@ -2,25 +2,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 🛑 BANDERA DE CONTROL CRÍTICA PARA EVITAR MÚLTIPLES ALERTAS/REDIRECCIONES
     let redireccionEnCurso = false;
-    
+
     // Función centralizada para manejar la falta de autenticación
     function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
         if (redireccionEnCurso) return;
-        
+
         redireccionEnCurso = true; // Activa la bandera
-        
+
         // Limpiar cualquier sesión corrupta o residual
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
-        
+
         // Muestra la alerta UNA SOLA VEZ
         mostrarAlerta(mensaje, tipo);
-        
+
         // Redirige
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
     }
-    
-    // --- Variables del DOM (el resto de tu código sin cambios) ---
+
+    // --- Variables del DOM ---
     const profileForm = document.getElementById('profile-form');
     const carForm = document.getElementById('car-form');
     const carList = document.getElementById('car-list');
@@ -43,10 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const carPhotoPreview = document.getElementById('carPhotoPreview');
     const carPhotoContainer = document.getElementById('carPhotoContainer');
     const clearCarPhotoBtn = document.getElementById('clearCarPhotoBtn');
+    // Variable para el botón de Cerrar Sesión
+    const btnConfirmLogout = document.getElementById('btnConfirmLogout');
 
     let currentVehicle = null;
 
-    // 🛑 LÓGICA DE AUTENTICACIÓN CORREGIDA 🛑
+    // 🛑 LÓGICA DE AUTENTICACIÓN CENTRALIZADA 🛑
     const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let user = null;
 
@@ -64,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     // ----------------------------------------
-    
+
     // Si llegamos aquí, 'user' es válido.
 
     userNameElement.textContent = user.name || 'Usuario';
@@ -74,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('profile-name').value = user.name || '';
     document.getElementById('profile-email').value = user.email || '';
 
-    // ... (El resto de tus funciones como escapeHtml, renderVehicle, loadVehicles, etc., siguen aquí sin cambios) ...
+    // --- FUNCIONES DE VEHÍCULOS Y UTILIDADES ---
 
     function escapeHtml(s) {
         return String(s || '').replace(/[&<>"']/g, c => ({
@@ -102,9 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="car-card" role="button" tabindex="0">
                 <div class="car-image-container">
                     <img src="${imgSrc}" 
-                             alt="Foto de ${escapeHtml(name)}" 
-                             loading="lazy"
-                             onerror="this.onerror=null;this.src='${defaultImg}';" />
+                                alt="Foto de ${escapeHtml(name)}" 
+                                loading="lazy"
+                                onerror="this.onerror=null;this.src='${defaultImg}';" />
                 </div>
                 <div class="car-details-content">
                     <div class="car-name-group">
@@ -123,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadVehicles() {
         if (redireccionEnCurso) return; // Si la redirección está en curso, no intenta cargar
-        
+
         const allVehicles = [];
         const userId = encodeURIComponent(user.id);
 
@@ -190,7 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (vehicle) {
                     openCarModal(vehicle);
-                    new bootstrap.Modal(carModal).show();
+                    // Asegurar que el modal se abre usando la clase de Bootstrap
+                    const carModalInstance = bootstrap.Modal.getOrCreateInstance(carModal);
+                    carModalInstance.show();
                 }
             });
         });
@@ -249,9 +253,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCarModalUI(type, isEdit);
     }
 
+    // --- MANEJO DE EVENTOS ---
+
     openAddCarBtn.addEventListener('click', () => {
         openCarModal(null);
-        new bootstrap.Modal(carModal).show();
+        // Asegurar que el modal se abre usando la clase de Bootstrap
+        const carModalInstance = bootstrap.Modal.getOrCreateInstance(carModal);
+        carModalInstance.show();
     });
 
     vehicleTypeSelect.addEventListener('change', (e) => {
@@ -298,13 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const vehicleYear = parseInt(carYearInput.value.trim());
         const currentYear = new Date().getFullYear();
 
-        if (isNaN(vehicleYear) || vehicleYear < 1900) {
+        // Validación de Año
+        if (carYearInput.value.trim() && (isNaN(vehicleYear) || vehicleYear < 1900 || vehicleYear > currentYear)) {
             mostrarAlerta(`El año del vehículo no es válido. Debe ser entre 1900 y ${currentYear}.`, 'error');
-            return;
-        }
-
-        if (vehicleYear > currentYear) {
-            mostrarAlerta(`El año del vehículo (${vehicleYear}) no puede ser mayor que el año actual (${currentYear}).`, 'error');
             return;
         }
 
@@ -394,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ... (Tu función mostrarConfirmacion sigue aquí sin cambios) ...
+    // --- FUNCIÓN DE CONFIRMACIÓN CUSTOM (SIN CAMBIOS) ---
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             if (document.getElementById('mlc-confirm-overlay')) {
@@ -487,6 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- MANEJO DE FORMULARIO DE PERFIL ---
+
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -507,6 +513,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // Nota: Este endpoint puede requerir un cambio si el email es la clave única y se está modificando.
+            // Asumo que el backend maneja la validación de la contraseña si se cambia el email.
             const resp = await fetch('/api/users?action=updateName', {
                 method: 'PUT',
                 headers: {
@@ -524,6 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(json.message || 'Error al actualizar perfil.');
             }
 
+            // Actualizar el objeto de usuario y almacenamiento local/sesión
             user.name = newName;
             user.email = newEmail;
 
@@ -541,5 +550,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- LÓGICA DE CIERRE DE SESIÓN AGREGADA ---
+
+    function cerrarSesion() {
+        // Limpia toda la información de la sesión
+        sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
+
+        mostrarAlerta('Has cerrado la sesión', 'info');
+        // Redirigir al inicio después de un breve retraso
+        setTimeout(() => window.location.href = '/index.html', 800);
+    }
+
+    if (btnConfirmLogout) {
+        btnConfirmLogout.addEventListener('click', () => {
+            // Cerrar el modal antes de cerrar la sesión
+            const modalElement = document.getElementById('logoutConfirmModal');
+            // Usar getOrCreateInstance para ser más robusto
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+            cerrarSesion();
+        });
+    }
+    // ---------------------------------------------
+
+
+    // Iniciar la carga de vehículos
     loadVehicles();
 });
