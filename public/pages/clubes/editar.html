@@ -7,13 +7,14 @@
     <title>Editar Mi Club | Motor Libre Competición</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/navbar.css">
+
     <style>
-        /* Estilos Globales: Fondo Oscuro, Tipografía Clara */
+        /* Estilos específicos para la página de edición, siguiendo la paleta MLC/Netflix */
         :root {
             --color-primary: #e50914;
-            /* Rojo Netflix */
-            --color-secondary: #f4f4f4;
-            /* Blanco/Gris Claro */
+            /* Rojo principal */
             --color-background: #141414;
             /* Negro Oscuro */
             --color-card: #222222;
@@ -22,6 +23,8 @@
             --color-text-subtle: #808080;
         }
 
+        /* Si no usas los CSS globales, descomenta y usa esta base: */
+        /*
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             background-color: var(--color-background);
@@ -30,51 +33,19 @@
             padding: 0;
             line-height: 1.6;
         }
-
-        /* --- Estilo Navbar --- */
-        .navbar {
-            background-color: var(--color-card);
-            padding: 15px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--color-primary);
-        }
-
-        .logo {
-            color: var(--color-primary);
-            font-size: 28px;
-            font-weight: 700;
-            text-decoration: none;
-            letter-spacing: 1px;
-        }
-
-        .nav-links a {
-            color: var(--color-text-light);
-            text-decoration: none;
-            margin-left: 20px;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: var(--color-primary);
-        }
-
-        .nav-links .active {
-            color: var(--color-primary);
-            border-bottom: 2px solid var(--color-primary);
-            padding-bottom: 5px;
-        }
+        */
 
         /* --- Contenedor Principal y Formulario --- */
         .container {
             max-width: 700px;
-            margin: 50px auto;
+            margin: 100px auto 50px auto;
+            /* Más margen arriba para el navbar fijo/sticky */
             padding: 40px;
             background-color: var(--color-card);
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-primary);
+            /* Borde rojo sutil */
         }
 
         h2 {
@@ -166,16 +137,16 @@
 
 <body>
 
-    <div class="navbar">
-        <a href="/" class="logo">MOTOR LIBRE</a>
+    <header class="navbar">
+        <a href="../../index.html" class="logo">MOTOR LIBRE COMPETICIÓN</a>
         <div class="nav-links">
-            <a href="/index.html">Inicio</a>
-            <a href="/pages/clubs.html">Clubes</a>
-            <a href="/pages/dashboard/user/profile.html">Mi Perfil</a>
-            <a href="/pages/dashboard/club/editar.html" class="active">Editar Club</a>
+            <a href="../../index.html">Inicio</a>
+            <a href="../clubs/clubs.html">Clubes</a>
+            <a href="../perfil/perfil.html">Mi Perfil</a>
+            <a href="#" class="active">Editar Club</a>
             <a href="#" id="logout-button">Cerrar Sesión</a>
         </div>
-    </div>
+    </header>
 
     <div class="container">
         <h2><i class="bi bi-pencil-square"></i> Editar Mi Club</h2>
@@ -205,11 +176,11 @@
     <script>
         document.getElementById('logout-button').addEventListener('click', (e) => {
             e.preventDefault();
-            // Limpia toda la data de sesión
+            // Limpia toda la data de sesión (localStorage y sessionStorage)
             localStorage.clear();
             sessionStorage.clear();
-            // Redirigir al inicio o login
-            window.location.href = '/login.html';
+            // Redirigir al login o a la página principal
+            window.location.href = '../../index.html';
         });
     </script>
 </body>
