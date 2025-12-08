@@ -1,30 +1,217 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Editar Mi Club</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Mi Club | Motor Libre Competición</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* Estilos Globales: Fondo Oscuro, Tipografía Clara */
+        :root {
+            --color-primary: #e50914;
+            /* Rojo Netflix */
+            --color-secondary: #f4f4f4;
+            /* Blanco/Gris Claro */
+            --color-background: #141414;
+            /* Negro Oscuro */
+            --color-card: #222222;
+            /* Gris de la Tarjeta */
+            --color-text-light: #ffffff;
+            --color-text-subtle: #808080;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text-light);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* --- Estilo Navbar --- */
+        .navbar {
+            background-color: var(--color-card);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .logo {
+            color: var(--color-primary);
+            font-size: 28px;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .nav-links a {
+            color: var(--color-text-light);
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-primary);
+        }
+
+        .nav-links .active {
+            color: var(--color-primary);
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 5px;
+        }
+
+        /* --- Contenedor Principal y Formulario --- */
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 40px;
+            background-color: var(--color-card);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            color: var(--color-primary);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+            border-bottom: 1px solid var(--color-text-subtle);
+            padding-bottom: 15px;
+        }
+
+        /* Estilo de Formulario */
+        #club-edit-form label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--color-text-subtle);
+            font-weight: 500;
+        }
+
+        #club-edit-form input[type="text"],
+        #club-edit-form textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: var(--color-text-light);
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        #club-edit-form input[type="file"] {
+            width: 100%;
+            padding: 12px 0;
+            margin-bottom: 20px;
+            color: var(--color-text-subtle);
+        }
+
+        #club-edit-form input[type="text"]:focus,
+        #club-edit-form textarea:focus {
+            border-color: var(--color-primary);
+            outline: none;
+        }
+
+        #club-edit-form textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Estilo para la imagen actual */
+        #current-image {
+            display: block;
+            width: 100%;
+            max-width: 250px;
+            height: auto;
+            border: 3px solid var(--color-primary);
+            border-radius: 4px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            object-fit: cover;
+        }
+
+        /* Botón de Guardar */
+        button[type="submit"] {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, opacity 0.3s;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #f00;
+            /* Rojo más brillante */
+        }
+
+        button[type="submit"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
+
 <body>
 
-    <h2>✏️ Edición de Club</h2>
-    <form id="club-edit-form" enctype="multipart/form-data">
-        <input type="hidden" id="club-id" name="id">
-        
-        <label for="nombre_evento">Nombre:</label>
-        <input type="text" id="nombre_evento" name="nombre_evento" required><br><br>
+    <div class="navbar">
+        <a href="/" class="logo">MOTOR LIBRE</a>
+        <div class="nav-links">
+            <a href="/index.html">Inicio</a>
+            <a href="/pages/clubs.html">Clubes</a>
+            <a href="/pages/dashboard/user/profile.html">Mi Perfil</a>
+            <a href="/pages/dashboard/club/editar.html" class="active">Editar Club</a>
+            <a href="#" id="logout-button">Cerrar Sesión</a>
+        </div>
+    </div>
 
-        <label for="descripcion">Descripción:</label>
-        <textarea id="descripcion" name="descripcion" required></textarea><br><br>
-        
-        <label>Imagen Actual:</label>
-        <img id="current-image" src="" alt="Imagen actual del club" style="max-width: 200px;"><br><br>
+    <div class="container">
+        <h2><i class="bi bi-pencil-square"></i> Editar Mi Club</h2>
 
-        <label for="imagen_club">Cambiar Imagen (Max 5MB):</label>
-        <input type="file" id="imagen_club" name="imagen_club" accept="image/*"><br><br>
+        <form id="club-edit-form" enctype="multipart/form-data">
 
-        <button type="submit">Guardar Cambios</button>
-    </form>
+            <input type="hidden" id="club-id" name="id">
 
-    <script src="./clubEdit.js"></script> 
+            <label for="nombre_evento">Nombre del Club:</label>
+            <input type="text" id="nombre_evento" name="nombre_evento" required>
+
+            <label for="descripcion">Descripción del Club:</label>
+            <textarea id="descripcion" name="descripcion" required></textarea>
+
+            <label>Imagen Actual:</label>
+            <img id="current-image" src="/assets/placeholder-club.png" alt="Imagen actual del club">
+
+            <label for="imagen_club">Cambiar Imagen (Max 5MB):</label>
+            <input type="file" id="imagen_club" name="imagen_club" accept="image/*">
+
+            <button type="submit">Guardar Cambios</button>
+        </form>
+    </div>
+
+    <script src="./clubEdit.js"></script>
+
+    <script>
+        document.getElementById('logout-button').addEventListener('click', (e) => {
+            e.preventDefault();
+            // Limpia toda la data de sesión
+            localStorage.clear();
+            sessionStorage.clear();
+            // Redirigir al inicio o login
+            window.location.href = '/login.html';
+        });
+    </script>
 </body>
+
 </html>
