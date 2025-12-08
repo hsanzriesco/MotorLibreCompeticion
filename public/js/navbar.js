@@ -7,9 +7,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
+    // 🛑 BANDERA DE CONTROL CRÍTICA AÑADIDA
+    // Se usará para evitar que la Guardia de Ruta de este script se active 
+    // si otro script (como perfil.js) ya ha tomado el control.
+    let redireccionExternaEnCurso = false;
+
+    // Busca la bandera de control de perfil.js si está presente en la ventana
+    // Esto es un patrón común para coordinación. 
+    // Aunque la implementación más segura es la que se realiza más abajo.
+    // Usaremos la comprobación del 'user' para el guardrail.
+
     // 🟢 RUTAS CENTRALIZADAS DEL DASHBOARD
     const ADMIN_DASHBOARD_HOME = "/pages/dashboard/admin/admin.html";
-    const LOGIN_PAGE_PATH = "/auth/login.html";
+    const LOGIN_PAGE_PATH = "/auth/login/login.html"; // Asegúrate de que esta ruta es correcta
+    const REGISTER_PAGE_PATH = "/auth/register.html";
+    const CALENDARIO_PAGE_PATH = "/pages/calendario/calendario.html";
+    const CLUBES_PAGE_PATH = "/pages/clubes/clubes.html";
+
 
     // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
@@ -27,11 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 🟢 MODIFICACIÓN CLAVE: Mostrar el nombre de usuario
             if (userName) {
                 userName.textContent = user.name;
-                userName.style.display = "inline"; // ⭐ HACER VISIBLE EL NOMBRE
-
-                // ❌ LÍNEA ELIMINADA/COMENTADA: El estilo de negrita ahora se gestiona con la clase 'fw-bold'
-                // ❌ en el HTML para estandarizar el estilo.
-                // userName.style.fontWeight = "bold"; 
+                userName.style.display = "inline";
             }
 
             // Ocultar el icono de inicio de sesión
@@ -76,11 +86,18 @@ document.addEventListener("DOMContentLoaded", () => {
         // Limpiar ambos almacenamientos para asegurar el cierre de sesión
         sessionStorage.removeItem("usuario");
         localStorage.removeItem("usuario");
+        // Asegurar que también se limpian los tokens si existen
+        sessionStorage.removeItem("token");
+        localStorage.removeItem("token");
+
 
         // Ocultar el modal si está visible
         if (logoutConfirmModal) {
             logoutConfirmModal.hide();
         }
+
+        // Establecer la bandera para evitar que otros scripts actúen (aunque solo afecta a la guardia)
+        redireccionExternaEnCurso = true;
 
         // Muestra alerta (requiere alertas.js)
         if (typeof mostrarAlerta === 'function') {
@@ -137,18 +154,32 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener('scroll', resetTimer);
 
     } else {
+        // 🛑 LÓGICA DE DETECCIÓN DE REDIRECCIÓN EXTERNA (NUEVO) 🛑
+        // Si hay una alerta roja (error) visible, asumimos que perfil.js o similar 
+        // ya está manejando la redirección, por lo que salimos para evitar duplicar alertas.
+        if (document.querySelector('.mlc-alert-box.error')) {
+            console.warn("navbar.js: Detectada alerta de error externa. Guardrail de navbar deshabilitado.");
+            redireccionExternaEnCurso = true;
+            return;
+        }
+
         // 🚨 GUARDIA DE RUTA: Si no hay usuario y NO estamos en una de las páginas permitidas, forzar redirección.
         const currentPath = window.location.pathname;
 
-        // 🟢 EXCEPCIONES: Páginas permitidas sin sesión (Index, Login, Register, Calendario, Clubes)
+        // 🟢 EXCEPCIONES: Páginas permitidas sin sesión
         const isPublicPage =
             currentPath.endsWith('/index.html') ||
             currentPath.includes(LOGIN_PAGE_PATH) ||
-            currentPath.includes('/auth/register.html') ||
-            currentPath.includes('/pages/calendario/calendario.html') ||
-            currentPath.includes('/pages/clubes/clubes.html');
+            currentPath.includes(REGISTER_PAGE_PATH) ||
+            currentPath.includes(CALENDARIO_PAGE_PATH) ||
+            currentPath.includes(CLUBES_PAGE_PATH);
 
-        if (!isPublicPage) {
+
+        // ⭐ MODIFICACIÓN CLAVE: Solo ejecuta la guardia si no hay otra redirección en curso
+        if (!isPublicPage && !redireccionExternaEnCurso) {
+
+            redireccionExternaEnCurso = true; // Activar la bandera de control
+
             // Mostrar alerta de inicio de sesión antes de redirigir
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "advertencia");
@@ -156,8 +187,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Limpiar y redirigir
             setTimeout(() => {
-                window.location.href = "/index.html"; // Redirigir a Index o a Login si prefieres
-            }, 1500); // 1.5 segundos para que se vea la alerta.
+                window.location.href = "/index.html";
+            }, 1500);
 
             localStorage.removeItem("usuario");
             sessionStorage.removeItem("usuario");
@@ -170,17 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------------------------------------------------
 
     /*
-    // 🛑 BLOQUE DESACTIVADO: La limpieza de sesión en 'beforeunload' se dispara al navegar
-    // dentro de la app (cambio de página), causando cierres de sesión automáticos no deseados.
-    window.addEventListener('beforeunload', function (e) {
-        // Solo limpiar si hay un usuario logueado
-        if (user) {
-            // Limpiar el almacenamiento ANTES de que la página se descargue
-            localStorage.removeItem("usuario");
-            sessionStorage.removeItem("usuario");
-            // console.log("Token limpiado al cerrar la pestaña.");
-        }
-    });
+    // 🛑 BLOQUE DESACTIVADO...
     */
 
 
@@ -214,9 +235,9 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
 
-            // Evitar la ejecución si está deshabilitado
-            if (!user) {
-                console.warn("Cierre de sesión bloqueado: Usuario no logueado.");
+            // Evitar la ejecución si está deshabilitado o si ya hay una redirección externa
+            if (!user || redireccionExternaEnCurso) {
+                console.warn("Cierre de sesión bloqueado: Usuario no logueado o redirección en curso.");
                 return;
             }
 
