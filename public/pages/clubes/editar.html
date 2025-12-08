@@ -5,184 +5,286 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Mi Club | Motor Libre Competición</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
     <link rel="stylesheet" href="../../css/style.css">
-    <link rel="stylesheet" href="../../css/navbar.css">
+    <link rel="stylesheet" href="../../css/alertas.css">
+    <link rel="icon" type="image/png" href="../../img/imagen-tfg.png">
 
     <style>
-        /* Estilos específicos para la página de edición, siguiendo la paleta MLC/Netflix */
-        :root {
-            --color-primary: #e50914;
-            /* Rojo principal */
-            --color-background: #141414;
-            /* Negro Oscuro */
-            --color-card: #222222;
-            /* Gris de la Tarjeta */
-            --color-text-light: #ffffff;
-            --color-text-subtle: #808080;
-        }
-
-        /* Si no usas los CSS globales, descomenta y usa esta base: */
-        /*
+        /* Estilos base (tomados de tu index.html) */
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: var(--color-background);
-            color: var(--color-text-light);
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
+            background-color: #111;
+            color: white;
+            padding-top: 80px;
+            /* Espacio para el navbar fijo */
         }
-        */
 
-        /* --- Contenedor Principal y Formulario --- */
-        .container {
+        /* Estilos generales del formulario para el tema oscuro/rojo */
+        .container-form {
             max-width: 700px;
-            margin: 100px auto 50px auto;
-            /* Más margen arriba para el navbar fijo/sticky */
-            padding: 40px;
-            background-color: var(--color-card);
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #222;
+            /* Fondo de la tarjeta más oscuro */
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--color-primary);
-            /* Borde rojo sutil */
+            box-shadow: 0 0 15px rgba(229, 9, 20, 0.2);
+            border: 1px solid #e50914;
+            /* Borde rojo */
         }
 
-        h2 {
-            color: var(--color-primary);
+        h2.form-title {
+            color: #e50914;
+            /* Título rojo */
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             font-size: 2em;
-            border-bottom: 1px solid var(--color-text-subtle);
-            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
         }
 
-        /* Estilo de Formulario */
-        #club-edit-form label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--color-text-subtle);
+        label {
+            color: #ccc;
             font-weight: 500;
+            margin-bottom: 5px;
+            display: block;
         }
 
-        #club-edit-form input[type="text"],
-        #club-edit-form textarea {
+        input[type="text"],
+        textarea,
+        input[type="file"] {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
+            padding: 10px;
+            margin-bottom: 15px;
             border: 1px solid #444;
             background-color: #333;
-            color: var(--color-text-light);
+            color: white;
             border-radius: 4px;
             box-sizing: border-box;
             transition: border-color 0.3s;
         }
 
-        #club-edit-form input[type="file"] {
-            width: 100%;
-            padding: 12px 0;
-            margin-bottom: 20px;
-            color: var(--color-text-subtle);
-        }
-
-        #club-edit-form input[type="text"]:focus,
-        #club-edit-form textarea:focus {
-            border-color: var(--color-primary);
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: #e50914;
+            box-shadow: 0 0 5px rgba(229, 9, 20, 0.5);
             outline: none;
         }
 
-        #club-edit-form textarea {
+        textarea {
             resize: vertical;
             min-height: 120px;
         }
 
-        /* Estilo para la imagen actual */
+        /* Imagen de previsualización */
         #current-image {
             display: block;
             width: 100%;
-            max-width: 250px;
+            max-width: 200px;
             height: auto;
-            border: 3px solid var(--color-primary);
+            border: 3px solid #e50914;
             border-radius: 4px;
-            margin-top: 10px;
-            margin-bottom: 20px;
+            margin: 10px auto 20px 0;
+            /* Centrado visualmente si el contenedor es estrecho */
             object-fit: cover;
         }
 
-        /* Botón de Guardar */
-        button[type="submit"] {
+        /* Botón de Guardar: Usamos el estilo del botón btn-danger de Bootstrap */
+        .btn-guardar {
             width: 100%;
-            padding: 15px;
-            background-color: var(--color-primary);
-            color: var(--color-text-light);
-            border: none;
-            border-radius: 4px;
+            padding: 12px;
             font-size: 1.1em;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 0.3s, opacity 0.3s;
+            font-weight: bold;
+            background-color: #e50914;
+            border-color: #e50914;
         }
 
-        button[type="submit"]:hover {
-            background-color: #f00;
-            /* Rojo más brillante */
+        .btn-guardar:hover {
+            background-color: #cc0812;
+            border-color: #cc0812;
         }
 
-        button[type="submit"]:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+        /* Estilo para el botón de cierre del modal/offcanvas */
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
         }
     </style>
 </head>
 
 <body>
 
-    <header class="navbar">
-        <a href="../../index.html" class="logo">MOTOR LIBRE COMPETICIÓN</a>
-        <div class="nav-links">
-            <a href="../../index.html">Inicio</a>
-            <a href="../clubs/clubs.html">Clubes</a>
-            <a href="../perfil/perfil.html">Mi Perfil</a>
-            <a href="#" class="active">Editar Club</a>
-            <a href="#" id="logout-button">Cerrar Sesión</a>
-        </div>
-    </header>
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
 
-    <div class="container">
-        <h2><i class="bi bi-pencil-square"></i> Editar Mi Club</h2>
+        <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+        </a>
+
+        <div class="d-flex align-items-center">
+
+            <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
+                <i class="bi bi-person-circle fs-4"></i>
+            </a>
+
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+
+        </div>
+    </nav>
+
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body">
+            <a href="../calendario/calendario.html" class="d-block text-light mb-2">
+                Calendario
+            </a>
+
+            <a href="./clubes.html" class="d-block text-light mb-2">
+                Clubes
+            </a>
+
+            <a href="./editar.html" id="mi-club-link" class="d-block text-warning mb-2" style="display:none;">
+                Mi Club (Editar)
+            </a>
+            <a href="../perfil/perfil.html" class="d-block text-light mb-2">
+                Mi perfil
+            </a>
+
+            <hr class="border-secondary">
+
+            <a href="#" id="logout-btn" class="d-block text-danger">
+                Cerrar sesión
+            </a>
+        </div>
+    </div>
+
+
+    <main class="container-form mt-5">
+        <h2 class="form-title">✏️ Edición de Club</h2>
 
         <form id="club-edit-form" enctype="multipart/form-data">
-
             <input type="hidden" id="club-id" name="id">
 
             <label for="nombre_evento">Nombre del Club:</label>
             <input type="text" id="nombre_evento" name="nombre_evento" required>
 
-            <label for="descripcion">Descripción del Club:</label>
+            <label for="descripcion">Descripción:</label>
             <textarea id="descripcion" name="descripcion" required></textarea>
 
             <label>Imagen Actual:</label>
-            <img id="current-image" src="/assets/placeholder-club.png" alt="Imagen actual del club">
+            <img id="current-image" src="../../img/placeholder-club.png" alt="Imagen actual del club">
 
             <label for="imagen_club">Cambiar Imagen (Max 5MB):</label>
             <input type="file" id="imagen_club" name="imagen_club" accept="image/*">
 
-            <button type="submit">Guardar Cambios</button>
+            <button type="submit" class="btn btn-danger btn-guardar">Guardar Cambios</button>
         </form>
+    </main>
+
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+                </div>
+                <div class="modal-footer border-danger">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="./clubEdit.js"></script>
-    <script src="../../js/navbar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/alertas.js"></script>
 
+    <script src="./clubEdit.js"></script>
 
     <script>
-        document.getElementById('logout-button').addEventListener('click', (e) => {
-            e.preventDefault();
-            // Limpia toda la data de sesión (localStorage y sessionStorage)
-            localStorage.clear();
-            sessionStorage.clear();
-            // Redirigir al login o a la página principal
-            window.location.href = '../../index.html';
+        document.addEventListener("DOMContentLoaded", () => {
+            const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
+            const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
+            const btnConfirmLogout = document.getElementById("btnConfirmLogout");
+
+            // Usamos sessionStorage, que es donde el login.js guarda los datos
+            const storedUser = sessionStorage.getItem("usuario");
+            const clubIdInSession = sessionStorage.getItem("clubId");
+            const usuario = storedUser ? JSON.parse(storedUser) : null;
+
+            const userName = document.getElementById("user-name");
+            const loginIcon = document.getElementById("login-icon");
+            const logoutBtn = document.getElementById("logout-btn");
+            const miClubLink = document.getElementById("mi-club-link");
+
+            // ⭐⭐ LÓGICA DE VISIBILIDAD DE ELEMENTOS (Adaptada) ⭐⭐
+            if (usuario) {
+                userName.textContent = usuario.name;
+                userName.style.display = "inline";
+                loginIcon.style.display = "none";
+                logoutBtn.style.display = "block";
+
+                // Mostrar el enlace "Mi Club (Editar)" ya que estamos en la página
+                if (miClubLink) miClubLink.style.display = "block";
+
+            } else {
+                // Si no hay sesión, redirigir al login (Acceso Denegado)
+                alert("Acceso denegado. Por favor, inicia sesión.");
+                window.location.href = '../auth/login/login.html';
+
+                userName.style.display = "none";
+                loginIcon.style.display = "inline";
+                if (logoutBtn) logoutBtn.style.display = "none";
+                if (miClubLink) miClubLink.style.display = "none";
+                return;
+            }
+            // ⭐⭐ FIN LÓGICA DE VISIBILIDAD ⭐⭐
+
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (logoutConfirmModal) logoutConfirmModal.show();
+
+                    const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                    if (offcanvasMenu) offcanvasMenu.hide();
+                });
+            }
+
+            if (btnConfirmLogout) {
+                btnConfirmLogout.addEventListener("click", () => {
+                    if (logoutConfirmModal) logoutConfirmModal.hide();
+
+                    // Limpieza de sesión
+                    sessionStorage.removeItem("usuario");
+                    sessionStorage.removeItem("clubId");
+                    sessionStorage.removeItem("token"); // Asegura que el token también se borre
+
+                    // Usar la función de alerta si existe
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
+                    }
+
+                    setTimeout(() => {
+                        // Redirigir al login
+                        window.location.href = '../auth/login/login.html';
+                    }, 1500);
+                });
+            }
         });
     </script>
 </body>
