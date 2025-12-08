@@ -154,10 +154,12 @@
                 const clubDescription = document.getElementById('clubDescription').value.trim();
 
                 // ----------------------------------------------------
-                // **CORRECCIÓN CLAVE:** ENVIAR 'nombre', 'ciudad' y 'descripcion' por separado.
+                // **CORRECCIÓN APLICADA**
+                // Se cambió 'nombre' a 'nombre_evento' para coincidir con el backend clubs.js
                 // ----------------------------------------------------
-                formData.append("nombre", clubName);
-                formData.append("ciudad", clubCity); // <-- CAMPO REQUERIDO POR EL BACKEND
+                formData.append("nombre_evento", clubName);
+
+                formData.append("ciudad", clubCity);
 
                 // Añadir el enfoque y la descripción principal.
                 formData.append("descripcion", `[Enfoque: ${clubFocus}] ${clubDescription}`);
@@ -166,7 +168,7 @@
                 // 3. Adjuntar la imagen
                 const imagenInput = document.getElementById('clubImage');
                 if (imagenInput && imagenInput.files.length > 0) {
-                    // El backend espera el nombre 'imagen_club' (asumiendo que es correcto)
+                    // El backend espera el nombre 'imagen_club' (asumiendo que es correcto según clubs.js)
                     formData.append("imagen_club", imagenInput.files[0]);
                 }
 
@@ -181,7 +183,7 @@
                             // Enviar el token en el header de autorización es VITAL
                             'Authorization': `Bearer ${token}`
                         },
-                        // Importante: No establecer Content-Type, FormData se encarga de esto.
+                        // Importante: No establecer Content-Type, FormData se encarga de esto (multipart/form-data).
                         body: formData,
                     });
 
