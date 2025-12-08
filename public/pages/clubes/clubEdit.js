@@ -89,8 +89,8 @@ async function loadClubData(clubId) {
         }
 
         const data = await response.json();
-        // Aseguramos que estamos accediendo al objeto club, no al array si lo devuelve
-        const clubData = data.club || (Array.isArray(data) ? data[0] : null);
+        // Acceder a 'data.club' o al primer elemento del array si la respuesta es un array
+        const clubData = data.club || (Array.isArray(data) && data.length > 0 ? data[0] : null);
 
         if (!clubData) {
             throw new Error('No se encontraron datos para este club ID.');
@@ -98,21 +98,30 @@ async function loadClubData(clubId) {
 
         // ⭐ CORRECCIÓN DE IDS Y RELLENO DEL FORMULARIO ⭐
         document.getElementById('club-id').value = clubData.id || '';
-        document.getElementById('nombre_club').value = clubData.nombre || ''; // 🎯 CORREGIDO: Usar 'nombre_club' en lugar de 'nombre_evento'
+
+        // 🎯 CORRECCIÓN NOMBRE: Intentar obtener 'nombre', luego 'name', o dejar vacío
+        const clubName = clubData.nombre || clubData.name || '';
+        document.getElementById('nombre_club').value = clubName;
+
         document.getElementById('descripcion').value = clubData.descripcion || '';
         document.getElementById('presidente_id').value = clubData.presidente_id || 'Desconocido';
 
+        // 🎯 NUEVO CAMPO CIUDAD: Usar la propiedad 'ciudad' de la API
+        const ciudadInput = document.getElementById('ciudad');
+        if (ciudadInput) {
+            ciudadInput.value = clubData.ciudad || '';
+        }
 
         // Rellenar la fecha de creación (Formateado a YYYY-MM-DD para input[type="date"])
         const fechaCreacionInput = document.getElementById('fecha_creacion');
         if (fechaCreacionInput && clubData.fecha_creacion) {
-            // Creamos un objeto Date y lo formateamos a ISO string (YYYY-MM-DD)
             const date = new Date(clubData.fecha_creacion);
+            // El componente date en HTML solo acepta el formato YYYY-MM-DD
             fechaCreacionInput.value = date.toISOString().split('T')[0];
         }
 
         // Rellenar la imagen actual
-        const currentImage = document.getElementById('current-club-thumb'); // 🎯 CORREGIDO: Usar el ID del HTML
+        const currentImage = document.getElementById('current-club-thumb');
         const noImageText = document.getElementById('no-image-text');
 
         if (currentImage) {
@@ -121,8 +130,8 @@ async function loadClubData(clubId) {
                 currentImage.style.display = 'inline';
                 if (noImageText) noImageText.style.display = 'none';
             } else {
-                currentImage.style.display = 'none'; // Ocultar si no hay imagen
-                if (noImageText) noImageText.style.display = 'inline'; // Mostrar texto de "No hay imagen"
+                currentImage.style.display = 'none';
+                if (noImageText) noImageText.style.display = 'inline';
             }
         }
 
@@ -130,7 +139,6 @@ async function loadClubData(clubId) {
 
     } catch (error) {
         console.error("Error al cargar los datos del club:", error.message);
-        // Si no se pudo cargar, alertamos.
         // Asumiendo que showAlert es global de alertas.js
         if (typeof showAlert === 'function') {
             showAlert(`Error al cargar: ${error.message}`, 'error');
@@ -156,36 +164,44 @@ async function handleFormSubmit(event) {
     const token = getToken();
 
     if (!token || !clubId) {
-        showAlert('Falta el token de autenticación o el ID del club.', 'error');
+        // Usamos showAlert directamente, asumiendo que alertas.js está cargado
+        if (typeof showAlert === 'function') {
+            showAlert('Falta el token de autenticación o el ID del club.', 'error');
+        } else {
+            alert('Falta el token de autenticación o el ID del club.');
+        }
         return;
     }
 
-    // 1. Recolección de datos
-    const formData = new FormData(event.target);
-
-    // La API RESTful generalmente espera un método PUT, pero FormData debe enviarse
-    // usando POST si incluye archivos. Muchos backends usan un campo oculto
-    // o un encabezado para simular el PUT con FormData/archivos.
-    // Usaremos FormData directamente, el backend debe manejarlo.
-
-    const newName = formData.get('nombre_club');
-    const newDescription = formData.get('descripcion');
+    // Recolección de datos
+    const newName = document.getElementById('nombre_club').value;
+    const newDescription = document.getElementById('descripcion').value;
+    const newCity = document.getElementById('ciudad')?.value || ''; // Obtener la Ciudad
     const newImageFile = document.getElementById('imagen_club_nueva').files[0];
 
-    // Creamos un nuevo objeto FormData para el envío, solo con los campos actualizados
+    // Creación de FormData para manejar archivos y otros campos
     const updateData = new FormData();
     updateData.append('id', clubId);
-    updateData.append('nombre', newName); // Usamos 'nombre' para consistencia con la API
+    updateData.append('nombre', newName);
     updateData.append('descripcion', newDescription);
-    // Solo añadimos la imagen si se seleccionó un nuevo archivo
+    updateData.append('ciudad', newCity); // Añadir la Ciudad
+
+    // Añadir la imagen si existe
     if (newImageFile) {
         updateData.append('imagen', newImageFile);
     }
 
+    // Deshabilitar el botón para evitar envíos dobles
+    const submitBtn = event.submitter;
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Actualizando...';
+    }
+
+
     try {
         const response = await fetch(`${API_CLUBS_URL}?id=${clubId}`, {
             method: 'PUT', // Usamos PUT para la edición de recursos
-            // NO se establece Content-Type si se usa FormData, el navegador lo hace por nosotros
             headers: {
                 'Authorization': `Bearer ${token}`
             },
@@ -198,15 +214,20 @@ async function handleFormSubmit(event) {
             throw new Error(result.message || 'Error desconocido al actualizar el club.');
         }
 
-        // Asumiendo que showAlert es global de alertas.js
         showAlert('Club actualizado exitosamente!', 'success');
 
-        // Opcional: Recargar los datos después de la actualización (útil si la URL de la imagen cambia)
+        // Recargar los datos para mostrar posibles cambios de imagen
         loadClubData(clubId);
 
     } catch (error) {
         console.error("Error al actualizar el club:", error.message);
         showAlert(`Fallo al actualizar el club: ${error.message}`, 'error');
+    } finally {
+        // Habilitar el botón al finalizar
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Actualizar Club';
+        }
     }
 }
 
@@ -225,7 +246,7 @@ function initializeClubEditor(clubId) {
     loadClubData(clubId);
 
     // 2. Adjuntar el listener para el envío del formulario
-    const form = document.getElementById('club-edit-form'); // Usar el ID del formulario en editar.html
+    const form = document.getElementById('club-edit-form');
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
     } else {
@@ -250,15 +271,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Si hay un error de token o club no asignado, forzamos la redirección
         if (error.message.includes('token') || error.message.includes('asignado')) {
-            // Usamos una alerta temporal antes de redirigir
             if (typeof showAlert === 'function') {
                 showAlert('Acceso denegado. Redirigiendo al inicio de sesión...', 'warning');
-            } else {
-                alert('Acceso denegado. No tienes un club asignado o tu sesión expiró.');
             }
 
             setTimeout(() => {
-                window.location.href = '../../index.html'; // Ajusta esta ruta si es necesario
+                window.location.href = '../../index.html';
             }, 3000);
         } else {
             if (typeof showAlert === 'function') {
