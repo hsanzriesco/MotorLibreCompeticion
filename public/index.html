@@ -118,7 +118,7 @@
       </a>
 
       <a href="./pages/clubes/editar.html" id="mi-club-link" class="d-block text-warning mb-2" style="display:none;">
-        Mi Club (Editar)
+        <i class="bi bi-gear-fill me-2"></i>Mi Club (Editar)
       </a>
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
         Mi perfil
@@ -298,14 +298,14 @@
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
       const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-      const clubIdInSession = sessionStorage.getItem("clubId"); // <-- Obtener el clubId de sessionStorage
+      const clubIdInSession = sessionStorage.getItem("clubId");
       const usuario = storedUser ? JSON.parse(storedUser) : null;
 
       const bienvenida = document.getElementById("bienvenida");
       const userName = document.getElementById("user-name");
       const loginIcon = document.getElementById("login-icon");
       const logoutBtn = document.getElementById("logout-btn");
-      const miClubLink = document.getElementById("mi-club-link"); // <-- Obtener el nuevo enlace
+      const miClubLink = document.getElementById("mi-club-link");
 
       // ⭐⭐ LÓGICA DE VISIBILIDAD DE ELEMENTOS ⭐⭐
       if (usuario) {
@@ -321,12 +321,11 @@
         }
 
         // Lógica específica para el Presidente del Club
-        // Se comprueba si el usuario tiene un clubId en su objeto de sesión
-        // O si lo guardaste por separado en sessionStorage
+        // Comprueba si el usuario tiene clubId en su objeto de sesión o en sessionStorage
         const hasClub = !!usuario.clubId || !!usuario.club_id || !!clubIdInSession;
 
         if (hasClub && miClubLink) {
-          miClubLink.style.display = "block"; // Mostrar el enlace "Mi Club"
+          miClubLink.style.display = "block"; // Mostrar el enlace "Mi Club (Editar)"
         }
 
       } else {
@@ -364,10 +363,10 @@
 
           if (logoutConfirmModal) logoutConfirmModal.hide();
 
-          // Al cerrar sesión, también borramos el Club ID.
+          // Limpiar datos de sesión y almacenamiento local
           sessionStorage.removeItem("usuario");
           localStorage.removeItem("usuario");
-          sessionStorage.removeItem("clubId"); // <-- Limpiar el Club ID
+          sessionStorage.removeItem("clubId");
 
           mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
