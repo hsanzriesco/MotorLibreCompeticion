@@ -1,6 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- Variables del DOM ---
+    // 🛑 BANDERA DE CONTROL CRÍTICA PARA EVITAR MÚLTIPLES ALERTAS/REDIRECCIONES
+    let redireccionEnCurso = false;
+    
+    // Función centralizada para manejar la falta de autenticación
+    function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
+        if (redireccionEnCurso) return;
+        
+        redireccionEnCurso = true; // Activa la bandera
+        
+        // Limpiar cualquier sesión corrupta o residual
+        sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
+        
+        // Muestra la alerta UNA SOLA VEZ
+        mostrarAlerta(mensaje, tipo);
+        
+        // Redirige
+        setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
+    }
+    
+    // --- Variables del DOM (el resto de tu código sin cambios) ---
     const profileForm = document.getElementById('profile-form');
     const carForm = document.getElementById('car-form');
     const carList = document.getElementById('car-list');
@@ -27,31 +47,24 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentVehicle = null;
 
     // 🛑 LÓGICA DE AUTENTICACIÓN CORREGIDA 🛑
-    // 1. INTENTAR RECUPERAR DE sessionStorage O localStorage
     const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let user = null;
 
     if (!stored) {
-        // No hay sesión en ningún lado
-        mostrarAlerta("Tienes que iniciar sesión para entrar a tu perfil", 'error');
-        // Redirigir usando la ruta relativa correcta
-        setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
+        // Si no hay sesión, llama a la función centralizada y sale.
+        manejarFaltaAutenticacion("Tienes que iniciar sesión para entrar a tu perfil", 'error');
         return; // Detiene la ejecución del script
     }
 
-    // 2. PARSEAR Y VERIFICAR INTEGRIDAD DE LA SESIÓN
     try {
         user = JSON.parse(stored);
     } catch (err) {
-        // Sesión corrupta, limpiar ambas por seguridad y redirigir
-        sessionStorage.removeItem('usuario');
-        localStorage.removeItem('usuario');
-        mostrarAlerta("Sesión corrupta. Vuelve a iniciar sesión.", 'error');
-        setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
+        // Si el JSON está mal, llama a la función centralizada y sale.
+        manejarFaltaAutenticacion("Sesión corrupta. Vuelve a iniciar sesión.", 'error');
         return;
     }
     // ----------------------------------------
-
+    
     // Si llegamos aquí, 'user' es válido.
 
     userNameElement.textContent = user.name || 'Usuario';
@@ -60,6 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('user-id').value = user.id || '';
     document.getElementById('profile-name').value = user.name || '';
     document.getElementById('profile-email').value = user.email || '';
+
+    // ... (El resto de tus funciones como escapeHtml, renderVehicle, loadVehicles, etc., siguen aquí sin cambios) ...
 
     function escapeHtml(s) {
         return String(s || '').replace(/[&<>"']/g, c => ({
@@ -76,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const nameKey = isCar ? 'car_name' : 'motorcycle_name';
         const name = vehicle[nameKey];
 
-        // 🖼️ CORRECCIÓN: Usamos placehold.co para evitar ERR_NAME_NOT_RESOLVED
         const defaultImg = isCar
             ? 'https://placehold.co/400x225/343a40/ffffff?text=Coche+Sin+Foto'
             : 'https://placehold.co/400x225/343a40/ffffff?text=Moto+Sin+Foto';
@@ -108,6 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadVehicles() {
+        if (redireccionEnCurso) return; // Si la redirección está en curso, no intenta cargar
+        
         const allVehicles = [];
         const userId = encodeURIComponent(user.id);
 
@@ -275,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const id = carIdInput.value;
-        // 🛠️ CORRECCIÓN: Obtener el tipo del SELECT, no del input eliminado
         const type = vehicleTypeSelect.value;
         const isCar = type === 'car';
         const nameInput = carNameInput.value.trim();
@@ -379,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ... (Tu función mostrarConfirmacion sigue aquí sin cambios) ...
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             if (document.getElementById('mlc-confirm-overlay')) {
@@ -508,11 +524,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(json.message || 'Error al actualizar perfil.');
             }
 
-            // CORRECCIÓN: Si la actualización fue exitosa, también actualiza el objeto de sesión.
             user.name = newName;
             user.email = newEmail;
 
-            // Si la sesión original viene de localStorage, actualiza ambos.
             if (localStorage.getItem('usuario')) {
                 localStorage.setItem('usuario', JSON.stringify(user));
             }

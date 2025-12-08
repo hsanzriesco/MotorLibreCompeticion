@@ -322,6 +322,9 @@
             // Muestra una ÚNICA alerta con el estilo de alertas.js
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta('Tienes que iniciar sesión para acceder a esta página.', 'error', 1500);
+            } else {
+                // Fallback si por alguna razón alertas.js no se cargó a tiempo
+                console.error('Error: Tienes que iniciar sesión para acceder a esta página.');
             }
 
             // Redirección al login después de la alerta
