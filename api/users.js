@@ -33,6 +33,26 @@ const getBody = async (req) => {
     }
 };
 
+// 🔒 MIDDLEWARE DE SEGURIDAD: Verifica el JWT y extrae la carga útil (payload)
+// ⭐⭐ NUEVA FUNCIÓN: ESENCIAL PARA ARREGLAR /api/users/me ⭐⭐
+const verifyToken = (req) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return { authorized: false, message: 'No autorizado: Token de autenticación requerido.' };
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        return { authorized: true, user: decoded };
+    } catch (e) {
+        console.error("Fallo al verificar el token JWT:", e.message);
+        return { authorized: false, message: 'No autorizado: Token inválido o expirado.' };
+    }
+};
+
 // 🔒 MIDDLEWARE DE SEGURIDAD: Verifica el JWT y el Rol de Administrador
 const verifyAdmin = (req) => {
     const authHeader = req.headers.authorization;
@@ -204,7 +224,54 @@ async function loginUserHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 3. ACCIONES DE USUARIO (UPDATE de Perfil/Contraseña - Manejo de PUT /api/users?action=...)
+// 3. OBTENER PERFIL DEL USUARIO LOGUEADO (Manejo de GET /api/users?action=me)
+// ⭐⭐ NUEVO HANDLER PARA ARREGLAR EL 404 DE clubEdit.js ⭐⭐
+// ------------------------------------------------------------------------------------------------
+async function getMeHandler(req, res) {
+    if (req.method !== "GET") {
+        return res.status(405).json({ success: false, message: "Método no permitido" });
+    }
+
+    try {
+        console.log("--- PERFIL DE USUARIO (/me) INICIADO ---");
+
+        // 1. Verificar el token y extraer la información del usuario logueado
+        const verification = verifyToken(req);
+
+        if (!verification.authorized) {
+            return res.status(401).json({ success: false, message: verification.message });
+        }
+
+        const decodedUser = verification.user;
+
+        // 2. Obtener datos frescos, incluyendo el club_id, de la base de datos
+        // Usamos la ID del usuario extraída del token
+        const { rows } = await pool.query(
+            "SELECT id, name, email, role, club_id FROM users WHERE id = $1",
+            [decodedUser.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Usuario no encontrado en la base de datos." });
+        }
+
+        const userProfile = rows[0];
+
+        // 3. Devolver los datos del perfil
+        return res.status(200).json({
+            success: true,
+            user: userProfile
+        });
+
+    } catch (error) {
+        console.error("Error en getMeHandler:", error);
+        return res.status(500).json({ success: false, message: "Error interno del servidor al obtener perfil." });
+    }
+}
+
+
+// ------------------------------------------------------------------------------------------------
+// 4. ACCIONES DE USUARIO (UPDATE de Perfil/Contraseña - Manejo de PUT /api/users?action=...)
 // ------------------------------------------------------------------------------------------------
 async function userActionHandler(req, res) {
     const { method, query } = req;
@@ -215,7 +282,7 @@ async function userActionHandler(req, res) {
             const body = await getBody(req);
             if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
-            // 3.1. ACTUALIZACIÓN DE CONTRASEÑA
+            // 4.1. ACTUALIZACIÓN DE CONTRASEÑA
             if (action === "updatePassword") {
                 const { id, newPassword } = body;
 
@@ -229,7 +296,7 @@ async function userActionHandler(req, res) {
                 return res.status(200).json({ success: true, message: "Contraseña actualizada correctamente." });
             }
 
-            // 3.2. ACTUALIZACIÓN DE NOMBRE/EMAIL
+            // 4.2. ACTUALIZACIÓN DE NOMBRE/EMAIL
             if (action === "updateName") {
                 const { id, newName, newEmail } = body;
 
@@ -275,7 +342,7 @@ async function userActionHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 4. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role) - MODIFICADO
+// 5. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role) - MODIFICADO
 // ------------------------------------------------------------------------------------------------
 async function userListCrudHandler(req, res) {
     const { method, query } = req;
@@ -502,7 +569,7 @@ async function userListCrudHandler(req, res) {
 
 
 // ------------------------------------------------------------------------------------------------
-// 5. EXPORTACIONES DEL HANDLER PRINCIPAL (Ruteador)
+// 6. EXPORTACIONES DEL HANDLER PRINCIPAL (Ruteador)
 // ------------------------------------------------------------------------------------------------
 export default async function usersCombinedHandler(req, res) {
     const { method, query } = req;
@@ -513,17 +580,24 @@ export default async function usersCombinedHandler(req, res) {
         return createUserHandler(req, res);
     }
 
+    // ⭐⭐ NUEVO: OBTENER PERFIL LOGUEADO (GET con ?action=me) ⭐⭐
+    // Esto resuelve el error 404 que originó el problema.
+    if (method === "GET" && action === "me") {
+        return getMeHandler(req, res);
+    }
+    // ⭐⭐ FIN NUEVO ⭐⭐
+
     // 2. LOGIN (POST con ?action=login)
     if (method === "POST" && action === "login") {
         return loginUserHandler(req, res);
     }
 
-    // 3. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
+    // 4. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
     if (method === "PUT" && (action === "updatePassword" || action === "updateName")) {
         return userActionHandler(req, res);
     }
 
-    // 4. CRUD DE ADMINISTRACIÓN Y VISTA PÚBLICA POR ID
+    // 5. CRUD DE ADMINISTRACIÓN Y VISTA PÚBLICA POR ID
     if (method === "GET" || method === "DELETE" || method === "PUT" || method === "POST") {
         return userListCrudHandler(req, res);
     }
