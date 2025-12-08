@@ -12,9 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Limpiar cualquier sesión corrupta o residual
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
+        // También limpia el token para mayor seguridad
+        sessionStorage.removeItem('token');
+        localStorage.removeItem('token');
 
-        // Muestra la alerta UNA SOLA VEZ
-        mostrarAlerta(mensaje, tipo);
+
+        // ⭐ MODIFICACIÓN CLAVE: Muestra la ÚNICA alerta deseada (roja)
+        // Se fuerza el mensaje y el tipo 'error' para evitar duplicados de diferente color
+        mostrarAlerta("Tienes que iniciar sesión para acceder a tu perfil", 'error');
 
         // Redirige
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
@@ -48,14 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentVehicle = null;
 
-    // 🛑 LÓGICA DE AUTENTICACIÓN CENTRALIZADA 🛑
+    // 🛑 LÓGICA DE AUTENTICACIÓN CENTRALIZADA (INICIO) 🛑
     const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let user = null;
 
     if (!stored) {
         // Si no hay sesión, llama a la función centralizada y sale.
-        manejarFaltaAutenticacion("Tienes que iniciar sesión para entrar a tu perfil", 'error');
-        return; // Detiene la ejecución del script
+        manejarFaltaAutenticacion("Mensaje irrelevante, la función lo reemplaza", 'error');
+        return; // ⬅️ CRÍTICO: Detiene la ejecución del script y evita llamadas a la API
     }
 
     try {
@@ -100,31 +105,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
-        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
-            <div class="car-card" role="button" tabindex="0">
-                <div class="car-image-container">
-                    <img src="${imgSrc}" 
-                                alt="Foto de ${escapeHtml(name)}" 
-                                loading="lazy"
-                                onerror="this.onerror=null;this.src='${defaultImg}';" />
-                </div>
-                <div class="car-details-content">
-                    <div class="car-name-group">
-                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
-                        <p class="car-model-year">
-                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
-                        </p>
-                    </div>
-                    <button class="btn btn-edit-car">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
+            <div class="car-card" role="button" tabindex="0">
+                <div class="car-image-container">
+                    <img src="${imgSrc}" 
+                                alt="Foto de ${escapeHtml(name)}" 
+                                loading="lazy"
+                                onerror="this.onerror=null;this.src='${defaultImg}';" />
+                </div>
+                <div class="car-details-content">
+                    <div class="car-name-group">
+                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
+                        <p class="car-model-year">
+                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
+                        </p>
+                    </div>
+                    <button class="btn btn-edit-car">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     }
 
     async function loadVehicles() {
-        if (redireccionEnCurso) return; // Si la redirección está en curso, no intenta cargar
+        // ⭐ SEGUNDA MODIFICACIÓN CLAVE: Si ya se inició la redirección/alerta, sal de aquí.
+        if (redireccionEnCurso) return;
 
         const allVehicles = [];
         const userId = encodeURIComponent(user.id);
@@ -556,6 +562,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Limpia toda la información de la sesión
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
+        sessionStorage.removeItem('token');
+        localStorage.removeItem('token');
+
 
         mostrarAlerta('Has cerrado la sesión', 'info');
         // Redirigir al inicio después de un breve retraso
@@ -577,6 +586,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------
 
 
-    // Iniciar la carga de vehículos
+    // Iniciar la carga de vehículos (Solo si el script no ha salido antes)
     loadVehicles();
 });

@@ -12,10 +12,10 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
     // Limpiar cualquier sesión corrupta o residual
     sessionStorage.removeItem('usuario');
     localStorage.removeItem('usuario');
-    sessionStorage.removeItem('token'); // Limpiar el token también
+    sessionStorage.removeItem('token');
 
-    // Muestra la alerta DESEADA UNA SOLA VEZ
-    mostrarAlerta(mensaje, tipo);
+    // Muestra la ÚNICA alerta deseada (se fuerza el mensaje y el tipo 'error')
+    mostrarAlerta('Tienes que iniciar sesión para acceder a esta página', 'error');
 
     // Redirige
     setTimeout(() => {
@@ -27,15 +27,11 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
 
 function getToken() {
-    // Aquí solo necesitamos verificar si existe el token.
     return sessionStorage.getItem('token');
 }
 
 async function getClubIdFromUser() {
     const token = getToken();
-
-    // Ya no necesitamos la comprobación 'if (!token)' aquí, ya se hace en DOMContentLoaded.
-    // Si llegamos aquí, se asume que 'token' tiene un valor.
 
     try {
         console.log("Intentando obtener perfil del usuario desde:", API_USERS_ME_URL);
@@ -48,7 +44,6 @@ async function getClubIdFromUser() {
         });
 
         if (!response.ok) {
-            // Si la API devuelve 401, lanzamos un error que será manejado abajo
             if (response.status === 401) {
                 throw new Error('Token inválido o expirado. Unauthorized');
             }
@@ -176,7 +171,7 @@ async function loadClubData(clubId) {
 
         // Si hay un error de token, redirigir
         if (error.message.includes('Unauthorized')) {
-            manejarFaltaAutenticacion('Acceso denegado. Tienes que iniciar sesión para acceder a esta página', 'error');
+            manejarFaltaAutenticacion('Mensaje irrelevante, la función lo reemplaza', 'error');
             return;
         }
 
@@ -197,7 +192,7 @@ async function handleFormSubmit(event) {
 
     if (!token || !clubId) {
         // Usar función centralizada para garantizar una única alerta
-        manejarFaltaAutenticacion('Falta el token de autenticación. Tienes que iniciar sesión.', 'error');
+        manejarFaltaAutenticacion('Mensaje irrelevante, la función lo reemplaza', 'error');
         return;
     }
 
@@ -260,7 +255,7 @@ async function handleFormSubmit(event) {
         console.error("Error al actualizar el club:", error.message);
 
         if (error.message.includes('Unauthorized')) {
-            manejarFaltaAutenticacion('La sesión ha expirado. Vuelve a iniciar sesión.', 'error');
+            manejarFaltaAutenticacion('Mensaje irrelevante, la función lo reemplaza', 'error');
             return;
         }
 
@@ -291,8 +286,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const localToken = getToken();
 
     if (!localToken) {
-        // Muestra la ÚNICA alerta y detiene la ejecución del script.
-        manejarFaltaAutenticacion('Tienes que iniciar sesión para acceder a esta página', 'error');
+        // Muestra la ÚNICA alerta roja y detiene la ejecución del script.
+        manejarFaltaAutenticacion('Mensaje irrelevante, la función lo reemplaza', 'error');
         return;
     }
     // ----------------------------------------------------------------------
@@ -308,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 🛑 SEGUNDA COMPROBACIÓN CRÍTICA: Error devuelto por la API (Token inválido o club no asignado)
         if (error.message.includes('Token') || error.message.includes('asignado') || error.message.includes('Unauthorized')) {
             // Usamos la función centralizada para garantizar una sola alerta/redirección.
-            manejarFaltaAutenticacion('Acceso denegado. Tienes que iniciar sesión para acceder a esta página', 'error');
+            manejarFaltaAutenticacion('Mensaje irrelevante, la función lo reemplaza', 'error');
         } else {
             // Manejar otros errores que no son de autenticación.
             if (typeof mostrarAlerta === 'function') {
