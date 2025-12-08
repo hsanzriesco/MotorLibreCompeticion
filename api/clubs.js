@@ -317,11 +317,11 @@ async function clubsHandler(req, res) {
                     return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
                 }
 
+                // CORRECCIÓN 1: Unificar la última línea del SELECT para evitar errores de sintaxis
                 let queryText = `
                     SELECT 
                         id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                        estado, id_presidente, nombre_presidente, ciudad, 
-                        0 as miembros 
+                        estado, id_presidente, nombre_presidente, ciudad, 0 as miembros 
                     FROM public.clubs 
                     WHERE id = $1 AND estado = 'activo'
                 `;
@@ -354,11 +354,11 @@ async function clubsHandler(req, res) {
 
             else if (estado) {
                 if (estado === 'activo') {
+                    // CORRECCIÓN 2: Unificar la última línea del SELECT para evitar errores de sintaxis
                     const result = await pool.query(`
                         SELECT 
                             id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                            estado, id_presidente, nombre_presidente, ciudad,
-                            0 as miembros 
+                            estado, id_presidente, nombre_presidente, ciudad, 0 as miembros 
                         FROM public.clubs WHERE estado = $1 ORDER BY fecha_creacion DESC
                     `, ['activo']);
                     return res.status(200).json({ success: true, clubs: result.rows });
@@ -385,11 +385,11 @@ async function clubsHandler(req, res) {
                 return res.status(400).json({ success: false, message: "Estado no válido o permiso denegado." });
             }
 
+            // CORRECCIÓN 3: Unificar la última línea del SELECT para evitar errores de sintaxis
             const defaultResult = await pool.query(`
                 SELECT 
                     id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                    estado, id_presidente, nombre_presidente, ciudad,
-                    0 as miembros 
+                    estado, id_presidente, nombre_presidente, ciudad, 0 as miembros 
                 FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
             `);
             return res.status(200).json({ success: true, clubs: defaultResult.rows });
