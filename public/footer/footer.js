@@ -25,20 +25,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </div>
                 
-                <div class="col-md-4 mb-3 text-center text-md-start">
-                    <h6 class="text-danger fw-bold mb-2">INFORMACIÓN</h6>
+                <div class="col-md-9 mb-3 text-center text-md-start">
+                    <h6 class="text-danger fw-bold mb-2">CONTACTO</h6>
                     <ul class="list-unstyled small">
-                        <li><a href="#" class="text-light text-decoration-none">Prensa</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">Media</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">Contacto</a></li>
-                        <li class="mt-1"><a href="./pages/calendario/calendario.html" class="text-light text-decoration-none">Calendario</a></li>
-                        <li><a href="./pages/clubes/clubes.html" class="text-light text-decoration-none">Clubes</a></li>
-                    </ul>
-                </div>
-
-                <div class="col-md-5 mb-3 text-center text-md-start">
-                    <h6 class="text-danger fw-bold mb-2">SOBRE</h6>
-                    <ul class="list-unstyled small">
+                        <li><a href="mailto:infmotorlibrecompeticion@gmail.com" class="text-light text-decoration-none"><i class="bi bi-envelope-fill me-1"></i> infmotorlibrecompeticion@gmail.com</a></li>
+                        <li><a href="tel:+34629XXXXXXX" class="text-light text-decoration-none"><i class="bi bi-phone-fill me-1"></i> +34 629 XXX XXX</a></li>
                         <li><a href="#" class="text-light text-decoration-none">Aviso Legal</a></li>
                         <li><a href="#" class="text-light text-decoration-none">Aviso de Cookies</a></li>
                         <li><a href="#" class="text-light text-decoration-none">Política de Privacidad</a></li>
