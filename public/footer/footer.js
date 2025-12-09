@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
         </div>
     `;
+    
 
     // 3. Añadir el footer al final del body
     document.body.appendChild(footerElement);
