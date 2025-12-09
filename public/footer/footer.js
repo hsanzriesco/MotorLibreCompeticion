@@ -1,6 +1,3 @@
-// /footer/footer.js
-// Este script crea el elemento <footer> y lo añade al documento.
-
 document.addEventListener("DOMContentLoaded", () => {
     // 1. Crear el elemento 'footer' principal
     const footerElement = document.createElement('footer');
@@ -21,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="mt-2">
                         <a href="#" class="text-light me-2"><i class="bi bi-facebook fs-6"></i></a>
                         <a href="#" class="text-light me-2"><i class="bi bi-twitter fs-6"></i></a>
-                        <a href="#" class="text-light"><i class="bi bi-instagram fs-6"></i></a>
+                        <a href="https://www.instagram.com/motorlibrecompeticion.mlc/" class="text-light"><i class="bi bi-instagram fs-6"></i></a>
                     </div>
                 </div>
                 
