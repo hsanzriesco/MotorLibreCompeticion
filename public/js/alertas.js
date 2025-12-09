@@ -1,12 +1,22 @@
-function mostrarAlerta(mensaje, tipo, duracion = 4000) {
-    // CORRECCIÓN: Usar 'alertas-container' para coincidir con admin.html
+function mostrarAlerta(mensaje, tipo, duracion = 4000, limpiarPrevias = true) {
     let container = document.getElementById('alertas-container');
     if (!container) {
         container = document.createElement('div');
-        container.id = 'alertas-container'; // ID corregido
-        container.classList.add('alerta-container');
+        container.id = 'alertas-container';
+        // Usamos el ID como clase por consistencia, asumiendo que el CSS usa esta clase.
+        container.classList.add('alerta-container'); 
         document.body.appendChild(container);
     }
+    
+    // === MODIFICACIÓN CLAVE: Cerrar alertas existentes para prevenir duplicación visible ===
+    if (limpiarPrevias) {
+        const alertasExistentes = container.querySelectorAll('.alerta');
+        alertasExistentes.forEach(alerta => {
+            // Aseguramos que se inicie el proceso de remoción, incluso si la transición no ha terminado
+            alerta.remove(); 
+        });
+    }
+    // ===================================================================================
 
     const alerta = document.createElement('div');
     alerta.classList.add('alerta', tipo);
@@ -17,8 +27,7 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000) {
             iconoClase = 'bi-check-circle-fill';
             break;
         case 'error':
-            // Si quieres el icono hexagonal customizado: USA 'icono-error-custom'
-            // Si quieres el icono estándar de Bootstrap: USA 'bi-x-octagon-fill'
+            // Se mantiene el icono estándar de Bootstrap
             iconoClase = 'bi-x-octagon-fill'; 
             break;
         case 'advertencia':
@@ -34,13 +43,17 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000) {
 
     container.appendChild(alerta);
 
-    alerta.offsetWidth;
+    // Forzar reflow para aplicar la transición de entrada
+    alerta.offsetWidth; 
     alerta.classList.add('mostrar');
 
     const remover = () => {
         alerta.classList.remove('mostrar');
+        // Usar transitionend para asegurar que se remueve DESPUÉS de la animación de salida
         alerta.addEventListener('transitionend', () => {
-            alerta.remove();
+            if (alerta.parentNode) {
+                alerta.remove();
+            }
         }, { once: true });
     };
 
@@ -54,6 +67,11 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000) {
     };
 }
 
+/**
+ * Muestra una caja de confirmación modal.
+ * @param {string} mensaje - El mensaje de confirmación a mostrar.
+ * @returns {Promise<boolean>} Resuelve a true si el usuario presiona "Sí", false si presiona "No" o Escape.
+ */
 function mostrarConfirmacion(mensaje) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -71,9 +89,12 @@ function mostrarConfirmacion(mensaje) {
         `;
 
         document.body.appendChild(overlay);
-        setTimeout(() => overlay.classList.add('mostrar'), 10);
+        // Pequeño timeout para permitir que el CSS aplique la transición de entrada
+        setTimeout(() => overlay.classList.add('mostrar'), 10); 
+        
         const yesBtn = overlay.querySelector('.confirm-yes');
         const noBtn = overlay.querySelector('.confirm-no');
+        
         const keyHandler = (ev) => {
             if (ev.key === 'Escape') {
                 cleanup(false);
@@ -82,12 +103,16 @@ function mostrarConfirmacion(mensaje) {
 
         function cleanup(result) {
             document.removeEventListener('keydown', keyHandler);
-            if (!overlay) return;
+            if (!overlay || !overlay.parentNode) return resolve(result);
+
             overlay.classList.remove('mostrar');
-            setTimeout(() => {
-                if (overlay && overlay.parentNode) overlay.remove();
+            // Timeout para esperar la animación de salida (180ms)
+            overlay.addEventListener('transitionend', () => {
+                if (overlay.parentNode) {
+                    overlay.remove();
+                }
                 resolve(result);
-            }, 180);
+            }, { once: true });
         }
 
         yesBtn.addEventListener('click', () => cleanup(true), { once: true });
