@@ -30,11 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <ul class="list-unstyled small">
                         <li><a href="mailto:infmotorlibrecompeticion@gmail.com" class="text-light text-decoration-none"><i class="bi bi-envelope-fill me-1"></i> infmotorlibrecompeticion@gmail.com</a></li>
                         <li><a href="tel:+34629XXXXXXX" class="text-light text-decoration-none"><i class="bi bi-phone-fill me-1"></i> +34 629 XXX XXX</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">Aviso Legal</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">Aviso de Cookies</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">Política de Privacidad</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">Términos y Condiciones</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">Venta Online</a></li>
                     </ul>
                 </div>
             </div>
@@ -43,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
         </div>
     `;
-    
+
 
     // 3. Añadir el footer al final del body
     document.body.appendChild(footerElement);
