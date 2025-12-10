@@ -95,8 +95,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     sessionStorage.removeItem("clubId");
                 }
 
-                // Limpiar sessionStorage para evitar conflictos si no se usa persistencia
-                sessionStorage.clear();
+                // Limpiar LOCALSTORAGE para evitar conflictos si no se usa persistencia
+                localStorage.clear();
 
                 mostrarAlerta(`Bienvenido, ${user.name}!`, "exito");
 

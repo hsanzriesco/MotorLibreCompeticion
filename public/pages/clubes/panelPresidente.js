@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // -----------------------------------------
     // 1. VERIFICAR AUTENTICACIÓN Y ROL
     // -----------------------------------------
-    const storedUser = sessionStorage.getItem("usuario") || sessionStorage.getItem("usuario");
+    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
     const usuario = storedUser ? JSON.parse(storedUser) : null;
     const clubNombreEl = document.getElementById('club-nombre');
 

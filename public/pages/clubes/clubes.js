@@ -1,7 +1,7 @@
 // public/js/clubes.js - VERSIÓN CORREGIDA PARA NOMBRES Y ESTILO ORIGINAL
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
-    let storedUser = sessionStorage.getItem("usuario") || sessionStorage.getItem("usuario");
+    let storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
     let usuario = storedUser ? JSON.parse(storedUser) : null;
 
     function escapeHtml(s = "") {
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         try {
-            const token = sessionStorage.getItem('token') || sessionStorage.getItem('token');
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const res = await fetch("/api/clubs?action=join", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             usuario = { ...usuario, club_id: Number(club_id) };
             sessionStorage.setItem("usuario", JSON.stringify(usuario));
-            sessionStorage.setItem("usuario", JSON.stringify(usuario));
+            localStorage.setItem("usuario", JSON.stringify(usuario));
 
             mostrarAlerta("Te has unido al club", "exito");
             cargarClubes();
@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.hide();
 
         try {
-            const token = sessionStorage.getItem('token') || sessionStorage.getItem('token');
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const res = await fetch("/api/clubs?action=leave", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -184,7 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             usuario = { ...usuario, club_id: null };
             sessionStorage.setItem("usuario", JSON.stringify(usuario));
-            sessionStorage.setItem("usuario", JSON.stringify(usuario));
+            localStorage.setItem("usuario", JSON.stringify(usuario));
 
             mostrarAlerta("Te has salido del club", "exito");
             cargarClubes();

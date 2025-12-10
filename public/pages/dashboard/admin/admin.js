@@ -4,8 +4,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ====================================================================
 
     // --- Comprobación de Usuario y Redirección ---
-    // Busca la sesión en sessionStorage O sessionStorage. 
-    const storedUser = sessionStorage.getItem("usuario") || sessionStorage.getItem("usuario");
+    // Busca la sesión en sessionStorage O localStorage. 
+    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
 
     let usuario = null;
     if (storedUser) {
@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!usuario || usuario.role?.toLowerCase() !== "admin") {
         // Limpiar ambas sesiones para evitar bucles si la información es corrupta/inválida
         sessionStorage.removeItem("usuario");
-        sessionStorage.removeItem("usuario");
+        localStorage.removeItem("usuario");
 
         // Asegúrate de que 'mostrarAlerta' esté disponible globalmente o importada
         if (typeof mostrarAlerta === 'function') {
