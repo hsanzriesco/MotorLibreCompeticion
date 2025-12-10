@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON RESTRICCIÓN DE PRESIDENTE PARA UNIRSE
+// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -839,13 +839,11 @@ async function clubsHandler(req, res) {
                 return res.status(401).json({ success: false, message: error.message });
             }
 
-            // ... (El resto de la lógica DELETE sigue igual)
-
             const clubRes = await pool.query('SELECT id_presidente, imagen_club FROM public.clubs WHERE id = $1', [id]);
             if (clubRes.rows.length === 0) {
                 return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
             }
-            const { id_presidente, imagen_club } = clubRes.rows[0];
+            const { imagen_club } = clubRes.rows[0];
 
             const client = await pool.connect();
             try {
@@ -854,17 +852,13 @@ async function clubsHandler(req, res) {
                 const deleteRes = await client.query('DELETE FROM public.clubs WHERE id = $1 RETURNING id', [id]);
 
                 if (deleteRes.rows.length > 0) {
-                    if (id_presidente) {
-                        // 🚨 FIX DE ROL: Eliminado el cambio de rol a 'user'. 
-                        // Solo se restablecen club_id a NULL y is_presidente a FALSE.
-                        await client.query(
-                            'UPDATE public."users" SET club_id = NULL, is_presidente = FALSE WHERE id = $1',
-                            [id_presidente]
-                        );
-                    }
 
-                    // Eliminación de Cloudinary fuera de la transacción para evitar fallos de commit, 
-                    // ya que la transacción se centra en la integridad de la DB.
+                    // ✅ CORRECCIÓN CLAVE: Restablecer club_id y is_presidente para TODOS los miembros del club eliminado (incluido el presidente)
+                    await client.query(
+                        'UPDATE public."users" SET club_id = NULL, is_presidente = FALSE WHERE club_id = $1',
+                        [id]
+                    );
+
                     await client.query('COMMIT');
 
                     if (imagen_club) {
@@ -872,7 +866,7 @@ async function clubsHandler(req, res) {
                     }
 
 
-                    return res.status(200).json({ success: true, message: "Club eliminado y rol de presidente restablecido." });
+                    return res.status(200).json({ success: true, message: "Club eliminado y miembros desvinculados correctamente." });
                 }
 
                 await client.query('ROLLBACK');
