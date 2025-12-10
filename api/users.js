@@ -1,5 +1,5 @@
 // =========================================================================
-// api/users.js (MODIFICADO)
+// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA)
 // =========================================================================
 
 import { Pool } from "pg";
@@ -172,12 +172,11 @@ async function loginUserHandler(req, res) {
         const user = rows[0];
         const hashedPassword = user.password;
 
-        // ⭐ MODIFICACIÓN: Verificar is_banned (Eliminada la consulta a 'usuarios_baneados')
+        // Verificar is_banned
         if (user.is_banned) {
             console.log(`Login bloqueado: Usuario baneado (${username}).`);
             return res.status(403).json({
                 success: false,
-                // Mensaje genérico, ya que no podemos obtener la razón sin la tabla
                 message: `Tu cuenta ha sido suspendida.`
             });
         }
@@ -239,19 +238,17 @@ async function getMeHandler(req, res) {
         const decodedUser = verification.user;
 
         // 2. Obtener datos frescos de la base de datos
-        // ⭐ MODIFICACIÓN CRÍTICA: Añadir LEFT JOIN para obtener club_id e is_presidente.
+        // ⭐ CONSULTA FINAL: Se asume que club_id e is_presidente están directamente en la tabla 'users'
         const query = `
             SELECT 
                 u.id, 
                 u.name, 
                 u.email, 
                 u.role, 
-                uc.club_id,          /* 👈 ¡AÑADIDO! ID del club */
-                uc.is_presidente     /* 👈 ¡AÑADIDO! Estado de presidencia */
+                u.club_id,             
+                u.is_presidente       
             FROM 
                 users u
-            LEFT JOIN 
-                users uc ON u.id = uc.user_id /* 👈 ¡AÑADIDO! Asumiendo tabla users_clubs */
             WHERE 
                 u.id = $1
         `;
@@ -262,12 +259,12 @@ async function getMeHandler(req, res) {
             return res.status(404).json({ success: false, message: "Usuario no encontrado en la base de datos." });
         }
 
-        // 3. Formatear la respuesta
         const userProfile = rows[0];
 
-        // Asegurarse de que club_id sea null (no 'null' string) si no hay asignación
-        // Y que is_presidente sea un booleano o 0/1 (el frontend lo espera)
+        // Manejo de valores nulos y tipos
         const clubId = userProfile.club_id ? parseInt(userProfile.club_id) : null;
+
+        // Conversión robusta a booleano/numérico para is_presidente
         const isPresidente = userProfile.is_presidente === true || userProfile.is_presidente === 1 || userProfile.is_presidente === '1';
 
 
@@ -279,13 +276,21 @@ async function getMeHandler(req, res) {
                 name: userProfile.name,
                 email: userProfile.email,
                 role: userProfile.role,
-                club_id: clubId, // <-- ¡CORREGIDO!
-                is_presidente: isPresidente // <-- ¡CORREGIDO!
+                club_id: clubId,
+                is_presidente: isPresidente
             }
         });
 
     } catch (error) {
-        console.error("Error en getMeHandler:", error);
+        console.error("### FALLO CRÍTICO EN getMeHandler (BD/SQL) ###");
+        console.error("Detalle del error:", error.message);
+
+        // Si la columna club_id no existe, el error de la BD lo reportará.
+        if (error.message.includes('column "club_id" does not exist')) {
+            // Esto es útil para el log de Vercel.
+            console.error("ACCIÓN REQUERIDA: La tabla 'users' necesita la columna 'club_id'.");
+        }
+
         return res.status(500).json({ success: false, message: "Error interno del servidor al obtener perfil." });
     }
 }
@@ -372,7 +377,6 @@ async function userListCrudHandler(req, res) {
     try {
         // --- VISTA PÚBLICA (GET con ID) ---
         if (method === "GET" && query.id) {
-            // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id'
             const userResult = await pool.query(
                 "SELECT id, name, role, created_at, is_banned FROM users WHERE id = $1",
                 [query.id]
@@ -403,7 +407,6 @@ async function userListCrudHandler(req, res) {
 
         // GET: LISTAR TODOS LOS USUARIOS (Protegido por Admin)
         if (method === "GET") {
-            // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id'
             const result = await pool.query(
                 "SELECT id, name, email, role, created_at, is_banned FROM users ORDER BY id DESC"
             );
@@ -435,7 +438,6 @@ async function userListCrudHandler(req, res) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id' del RETURNING
             const result = await pool.query(
                 "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, is_banned",
                 [name, email, hashedPassword, role]
@@ -448,7 +450,6 @@ async function userListCrudHandler(req, res) {
         // PUT: ACTUALIZAR USUARIO (Admin)
         if (method === "PUT") {
             const { id } = query;
-            // ⭐ MODIFICACIÓN: Eliminada la desestructuración de 'club_id' y 'ban_reason'
             const { name, email, password, role, is_banned } = body;
 
             if (!id) {
@@ -456,7 +457,6 @@ async function userListCrudHandler(req, res) {
             }
 
             // --- Lógica de Baneo/Desbaneo (Simplificada) ---
-            // ⭐ MODIFICACIÓN: Uso solo de is_banned de la tabla users.
             if (is_banned !== undefined) {
                 await pool.query('UPDATE users SET is_banned = $1 WHERE id = $2', [is_banned, id]);
                 const status = is_banned ? 'baneado' : 'desbaneado';
@@ -478,8 +478,6 @@ async function userListCrudHandler(req, res) {
                     return res.status(409).json({ success: false, message: "El nuevo nombre o correo ya están registrados." });
                 }
             }
-
-            // ⭐ MODIFICACIÓN: Eliminada la lógica de validación de 'club_id'
 
             let hashedPassword = undefined;
             if (password) {
@@ -517,9 +515,6 @@ async function userListCrudHandler(req, res) {
         if (method === "DELETE") {
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
-
-            // ⭐ MODIFICACIÓN: ELIMINADA la consulta a usuarios_baneados
-            // await pool.query("DELETE FROM usuarios_baneados WHERE user_id = $1", [id]); 
 
             const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
 

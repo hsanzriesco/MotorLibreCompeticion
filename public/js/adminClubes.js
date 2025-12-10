@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - CORREGIDO (Rutas DELETE unificadas y optimizadas)
+// public/js/adminClubes.js - VERSIÓN FINAL CORREGIDA (9 COLUMNAS VISIBLES)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -48,8 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // --- ⭐ CONFIGURACIÓN Y REFERENCIAS DEL DOM ⭐ ---
-    // Modificado de 8 a 7 para ajustarse al HTML (Nombre -> Acciones) sin el ID.
-    const TOTAL_COLUMNS = 7;
+    // Modificado a 9: Nombre, Descripción, Ciudad, Enfoque, Fecha, Estado, Presidente, Imagen, Acciones.
+    const TOTAL_COLUMNS = 9;
 
     // Elementos de las dos tablas y el contador
     const tablaActivos = document.getElementById("tabla-clubes-activos");
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (statusModalEl) {
         statusConfirmModal = new bootstrap.Modal(statusModalEl);
     }
-    // FIN DE CORRECCIÓN DE ERROR
+    // FIN DE INSTANCIAS DE MODAL
 
 
     // -----------------------------------------
@@ -141,25 +141,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------
-    // ALERTA (CORREGIDA para evitar recursión)
+    // ALERTA
     // -----------------------------------------
 
-    /** * Muestra una alerta, usando la implementación global (alertas.js) si está disponible.
-     * Renombrada localmente a emitirAlerta para evitar conflicto de scope con la función global.
-     */
+    /** * Muestra una alerta, usando la implementación global (alertas.js) si está disponible. */
     function emitirAlerta(message, type) {
-        // Log siempre
         console.log(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
 
-        // 💡 CORRECCIÓN: Llamar a la función global 'mostrarAlerta' si existe
         if (typeof window.mostrarAlerta === 'function') {
             window.mostrarAlerta(message, type);
         } else {
-            // Fallback simple si alertas.js no se cargó
+            // Fallback simple
             alert(`[${type.toUpperCase()}] ${message}`);
         }
     }
-    // 💡 CAMBIO CRÍTICO: Reemplazar todas las llamadas a mostrarAlerta con emitirAlerta
 
     // -----------------------------------------
     // CARGAR LISTA DE CLUBES Y DISTRIBUIR
@@ -233,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes';
 
         if (status === 'error') {
-            // Usa TOTAL_COLUMNS (7) para asegurar que el mensaje ocupe todo el ancho.
+            // Usa TOTAL_COLUMNS (9) para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
             return;
         }
@@ -242,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const mensaje = esPendiente ?
                 "No hay solicitudes de clubes pendientes." :
                 "No hay clubes activos registrados.";
-            // Usa TOTAL_COLUMNS (7) para asegurar que el mensaje ocupe todo el ancho.
+            // Usa TOTAL_COLUMNS (9) para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-secondary text-center">${mensaje}</td></tr>`;
             return;
         }
@@ -273,10 +268,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
                 : "Sin descripción";
 
+            // 🛑 ESTRUCTURA DE 9 COLUMNAS (Sin ID) 🛑
             fila.innerHTML = `
-                
                 <td>${escapeHtml(club.nombre_evento)}</td>
                 <td>${descripcionCorta}</td>
+                <td>${escapeHtml(club.ciudad || 'N/A')}</td>
+                <td>${escapeHtml(club.enfoque || 'N/A')}</td>
                 <td>${fecha}</td>
                 <td>${badgeEstado}</td>
                 <td>${presidenteInfo}</td>
@@ -387,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = inputId.value;
         const metodo = id ? "PUT" : "POST";
 
-        // 💡 CAMBIO: Usar la ruta estándar RESTful /api/clubs/ID para PUT
+        // Usar la ruta estándar RESTful /api/clubs/ID para PUT
         const url = id ? `/api/clubs/${id}` : "/api/clubs";
 
         // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE
@@ -462,7 +459,7 @@ document.addEventListener("DOMContentLoaded", () => {
         clubToDeleteId = id;
 
         const row = e.currentTarget.closest("tr");
-        // Dado que eliminamos el ID, el nombre ahora es el primer hijo (índice 0) en lugar del segundo (índice 1)
+        // El nombre es el primer hijo (índice 0)
         const clubName = row && row.children[0] ? row.children[0].textContent : "este club";
 
         if (deleteMessageEl)
@@ -486,7 +483,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
-                // 💡 CAMBIO CRÍTICO: Usar la ruta RESTful /api/clubs/ID
+                // Usar la ruta RESTful /api/clubs/ID
                 const res = await fetch(`/api/clubs/${id}`, {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -558,7 +555,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (statusConfirmModal) statusConfirmModal.hide();
 
-            // 💡 Se mantiene la URL con query string para PUT (Aprobar) ya que modifica el estado.
             const urlAprobar = `/api/clubs?id=${id}&status=change`;
             const headers = { 'Authorization': `Bearer ${token}` };
 
@@ -574,7 +570,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    // 💡 CAMBIO CRÍTICO: Usar la ruta RESTful /api/clubs/ID para la eliminación/rechazo.
+                    // Usar la ruta RESTful /api/clubs/ID para la eliminación/rechazo.
                     res = await fetch(`/api/clubs/${id}`, {
                         method: 'DELETE',
                         headers: headers
