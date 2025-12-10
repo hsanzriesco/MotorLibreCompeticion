@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - CORREGIDO (Error de recursión en mostrarAlerta resuelto)
+// public/js/adminClubes.js - CORREGIDO (Rutas DELETE unificadas y optimizadas)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
      * Verifica 'jwtToken' (estándar) y 'token' (posible clave de login).
      */
     function getToken() {
-        // Tu función existente para obtener el token
         const token = sessionStorage.getItem('jwtToken');
         if (token) return token;
         return sessionStorage.getItem('token');
@@ -149,7 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function emitirAlerta(message, type) {
         // Log siempre
-        // Línea 152: La función String.replace() era la primera llamada en la pila de recursión.
         console.log(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
 
         // 💡 CORRECCIÓN: Llamar a la función global 'mostrarAlerta' si existe
@@ -324,6 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
+            // Se mantiene la query string para la obtención, ya que el endpoint puede estar optimizado para GET /api/clubs?id=
             const res = await fetch(`/api/clubs?id=${id}`, { headers });
 
             if (!res.ok) {
@@ -384,8 +383,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const id = inputId.value;
         const metodo = id ? "PUT" : "POST";
-        // Si es PUT, el ID ya está en la URL
-        const url = "/api/clubs" + (id ? `?id=${id}` : "");
+
+        // 💡 CAMBIO: Usar la ruta estándar RESTful /api/clubs/ID para PUT
+        const url = id ? `/api/clubs/${id}` : "/api/clubs";
 
         // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE
         if (!inputNombre.value || !inputDescripcion.value || !inputCiudad.value || !inputEnfoque.value) {
@@ -482,7 +482,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
-                const res = await fetch(`/api/clubs?id=${id}`, {
+                // 💡 CAMBIO CRÍTICO: Usar la ruta RESTful /api/clubs/ID
+                const res = await fetch(`/api/clubs/${id}`, {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -492,7 +493,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     throw new Error(`Error ${res.status} al eliminar: ${errorText.substring(0, 100)}...`);
                 }
 
-                const r = await res.json();
+                // Si la respuesta es 204 No Content (DELETE exitoso), r es { success: true }
+                const r = res.status === 204 ? { success: true } : await res.json();
 
                 if (!r.success) {
                     emitirAlerta(r.message || "Error eliminando", "error");
@@ -552,7 +554,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (statusConfirmModal) statusConfirmModal.hide();
 
-            const url = `/api/clubs?id=${id}&status=change`;
+            // 💡 Se mantiene la URL con query string para PUT (Aprobar) ya que modifica el estado.
+            const urlAprobar = `/api/clubs?id=${id}&status=change`;
             const headers = { 'Authorization': `Bearer ${token}` };
 
             try {
@@ -560,15 +563,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 let successMessage;
 
                 if (action === 'aprobar') {
-                    res = await fetch(url, {
+                    res = await fetch(urlAprobar, {
                         method: 'PUT',
                         headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ estado: 'activo' })
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    // Rechazar un club pendiente es una eliminación de la solicitud
-                    res = await fetch(`/api/clubs?id=${id}`, {
+                    // 💡 CAMBIO CRÍTICO: Usar la ruta RESTful /api/clubs/ID para la eliminación/rechazo.
+                    res = await fetch(`/api/clubs/${id}`, {
                         method: 'DELETE',
                         headers: headers
                     });

@@ -241,8 +241,11 @@ async function statusChangeHandler(req, res) {
                 );
                 const newClubId = insertRes.rows[0].id;
 
+                // 🚨 IMPORTANTE: CORRECCIÓN EN statusChangeHandler 
+                // Al aprobar un club pendiente, el usuario debe cambiar a rol 'presidente' y establecerse is_presidente = TRUE.
+                // Asumo que un club pendiente siempre lo solicita un 'user' regular.
                 await client.query(
-                    'UPDATE public."users" SET role = $1, club_id = $2 WHERE id = $3',
+                    'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
                     ['presidente', newClubId, club.id_presidente]
                 );
 
@@ -478,9 +481,11 @@ async function clubsHandler(req, res) {
                         const newClubId = result.rows[0].id;
 
                         // 2. Actualización del Rol de Usuario
+                        // 🚨 FIX DE ROL: El administrador CONSERVA su rol 'admin'. 
+                        // Solo actualizamos club_id y establecemos is_presidente a TRUE.
                         await client.query(
-                            'UPDATE public."users" SET role = $1, club_id = $2 WHERE id = $3',
-                            ['presidente', newClubId, idPresidente]
+                            'UPDATE public."users" SET club_id = $1, is_presidente = TRUE WHERE id = $2',
+                            [newClubId, idPresidente]
                         );
 
                         await client.query('COMMIT');
@@ -730,7 +735,12 @@ async function clubsHandler(req, res) {
 
                 if (deleteRes.rows.length > 0) {
                     if (id_presidente) {
-                        await client.query('UPDATE public."users" SET role = $1, club_id = NULL WHERE id = $2', ['user', id_presidente]);
+                        // 🚨 FIX DE ROL: Eliminado el cambio de rol a 'user'. 
+                        // Solo se restablecen club_id a NULL y is_presidente a FALSE.
+                        await client.query(
+                            'UPDATE public."users" SET club_id = NULL, is_presidente = FALSE WHERE id = $1',
+                            [id_presidente]
+                        );
                     }
 
                     // Eliminación de Cloudinary fuera de la transacción para evitar fallos de commit, 
