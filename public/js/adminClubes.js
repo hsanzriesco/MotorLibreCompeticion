@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - MODIFICADO (Pequeñas mejoras de lógica y debugging)
+// public/js/adminClubes.js - MODIFICADO (Errores de inicialización de Modal corregidos)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -72,18 +72,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputFecha = document.getElementById("fecha_creacion");
     const inputIdPresidente = document.getElementById("id_presidente");
 
-    // Modals de Bootstrap
+    // Modals de Bootstrap: Declaración de elementos del DOM
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
-    const deleteConfirmModal = deleteConfirmModalEl ? new bootstrap.Modal(deleteConfirmModalEl) : null;
     const btnConfirmDelete = document.getElementById("btnConfirmDelete");
     const deleteMessageEl = document.getElementById("deleteConfirmMessage");
     let clubToDeleteId = null;
 
     const statusModalEl = document.getElementById("statusConfirmModal");
-    const statusConfirmModal = statusModalEl ? new bootstrap.Modal(statusConfirmModal) : null;
     const btnConfirmStatus = document.getElementById("btnConfirmStatus");
     const statusConfirmMessage = document.getElementById("statusConfirmMessage");
     let clubToChangeStatus = { id: null, action: null };
+
+    // 💡 CORRECCIÓN DE ERROR: Inicializar las variables de instancia de Bootstrap Modal con 'let'
+    let deleteConfirmModal = null;
+    let statusConfirmModal = null;
+
+    // 💡 CORRECCIÓN DE ERROR: Asignar las instancias de Bootstrap solo después de que todas las variables estén declaradas
+    if (deleteConfirmModalEl) {
+        // La biblioteca bootstrap debe estar disponible globalmente (cargada con <script>)
+        deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl);
+    }
+    if (statusModalEl) {
+        statusConfirmModal = new bootstrap.Modal(statusModalEl);
+    }
+    // FIN DE CORRECCIÓN DE ERROR
 
 
     // -----------------------------------------
@@ -114,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnNewClub) {
         btnNewClub.addEventListener('click', () => {
             clearForm();
+            // Creamos una nueva instancia si no existe el modal previamente cargado
             if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
         });
     }
@@ -387,16 +400,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData(form);
 
         // 💡 MODIFICACIÓN: Limpiar FormData de campos vacíos, excepto el archivo.
-        // Esto previene que claves vacías como 'id_presidente' causen problemas en el backend
-        // (aunque el error 500 es probablemente otra cosa, es buena práctica)
         for (const [key, value] of formData.entries()) {
-            if (typeof value === 'string' && value.trim() === '') {
-                // Conservamos el campo en el formData, pero podríamos haberlo eliminado si el backend es estricto
-                // Sin embargo, si es un campo de texto simple y está vacío, lo dejamos
-            } else if (key === 'imagen_club' && value.name === '') {
-                // Si el input file está vacío (no se ha seleccionado archivo), la clave 'imagen_club'
-                // tiene un valor de File con nombre vacío. Lo eliminamos para que el backend 
-                // no intente procesar una imagen vacía en una edición si no se cambió.
+            if (key === 'imagen_club' && value.name === '') {
+                // Si el input file está vacío (no se ha seleccionado archivo), lo eliminamos
                 formData.delete('imagen_club');
             }
         }
@@ -434,6 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
+            // Ocultar el modal si está abierto
             if (clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
 
             clearForm();
@@ -566,7 +573,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    res = await fetch(url, {
+                    // La eliminación de la solicitud de club pendiente debe ir al DELETE
+                    res = await fetch(`/api/clubs?id=${id}`, {
                         method: 'DELETE',
                         headers: headers
                     });
@@ -580,7 +588,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     throw new Error(`Error ${res.status} al ${action} el club: ${errorText.substring(0, 100)}...`);
                 }
 
-                const r = await res.json();
+                // Intentar leer la respuesta JSON, incluso si fue un DELETE (que a veces devuelve solo 204 No Content)
+                const r = res.status === 204 ? { success: true } : await res.json();
 
                 if (!r.success) {
                     mostrarAlerta(r.message || `Error al ${action} el club.`, "error");
@@ -592,7 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 cargarClubes();
 
             } catch (error) {
-                const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor al ${action} club.`;
+                const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor al ${action} club: ${error.message}`;
                 console.error(`Error de red al ${action} club:`, error);
                 mostrarAlerta(errorMessage, "error");
             }
