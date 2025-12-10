@@ -28,6 +28,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
     // Redirige
     setTimeout(() => {
+        // Asumiendo que la ruta de login es correcta
         window.location.href = '/pages/auth/login/login.html';
     }, 1200);
 }
@@ -96,11 +97,6 @@ async function getClubIdAndUser() {
         // 💡 NOTA: Asumimos que la API YA devuelve 'is_presidente'
         const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.rol === 'presidente';
 
-        // Si solo el presidente debe editar, podríamos añadir una comprobación aquí:
-        // if (!isPresidente) {
-        //     throw new Error('Solo el presidente del club puede acceder a esta página.');
-        // }
-
         console.log("ID de club del usuario obtenido:", clubId);
         console.log("Es presidente:", isPresidente);
 
@@ -135,7 +131,6 @@ async function loadClubData(clubId) {
         }
 
         const data = await response.json();
-        // Ajuste para manejar diferentes estructuras de respuesta
         const clubData = data.club || (Array.isArray(data.clubs) ? data.clubs[0] : null) || (Array.isArray(data) ? data[0] : null);
 
         if (!clubData) {
@@ -149,8 +144,9 @@ async function loadClubData(clubId) {
 
         let descripcion = clubData.descripcion || '';
         let ciudad = clubData.ciudad || '';
+        let enfoque = clubData.enfoque || '';
 
-        // Lógica de compatibilidad para extraer ciudad si aún está incrustada
+        // --- Lógica de compatibilidad (dejamos la tuya para evitar regresiones) ---
         if (!ciudad && descripcion) {
             const cityMatch = descripcion.match(/\[Ciudad:\s*([^\]]+)\]/i);
             if (cityMatch && cityMatch[1]) {
@@ -158,9 +154,6 @@ async function loadClubData(clubId) {
                 descripcion = descripcion.replace(/\[Ciudad:\s*[^\]]+\]\s*/i, '').trim();
             }
         }
-
-        // Lógica para extraer Enfoque de la descripción para compatibilidad
-        let enfoque = clubData.enfoque || '';
         if (!enfoque && descripcion) {
             const enfoqueMatch = descripcion.match(/\[Enfoque:\s*([^\]]+)\]/i);
             if (enfoqueMatch && enfoqueMatch[1]) {
@@ -168,8 +161,8 @@ async function loadClubData(clubId) {
                 descripcion = descripcion.replace(/\[Enfoque:\s*[^\]]+\]\s*/i, '').trim();
             }
         }
+        // --- Fin Lógica de compatibilidad ---
 
-        // Asignar los valores extraídos/cargados a los campos del formulario
         const enfoqueInput = document.getElementById('enfoque');
         if (enfoqueInput) {
             enfoqueInput.value = enfoque;
@@ -185,6 +178,7 @@ async function loadClubData(clubId) {
         const fechaCreacionInput = document.getElementById('fecha_creacion');
         if (fechaCreacionInput && clubData.fecha_creacion) {
             const date = new Date(clubData.fecha_creacion);
+            // Formatear a YYYY-MM-DD para input[type="date"] o mostrar correctamente
             fechaCreacionInput.value = date.toISOString().split('T')[0];
         }
 
@@ -192,7 +186,6 @@ async function loadClubData(clubId) {
         const noImageText = document.getElementById('no-image-text');
 
         if (currentImage) {
-            // Manejar tanto imagen_url como imagen_club
             const imgUrl = clubData.imagen_url || clubData.imagen_club;
             if (imgUrl) {
                 currentImage.src = imgUrl;
@@ -237,6 +230,7 @@ async function handleFormSubmit(event) {
     const newDescription = document.getElementById('descripcion').value;
     const newCity = document.getElementById('ciudad')?.value || '';
     const newEnfoque = document.getElementById('enfoque')?.value || '';
+    // Asegurarse de usar la clave del input file correcta (imagen_club_nueva es una convención común)
     const newImageFile = document.getElementById('imagen_club_nueva').files[0];
 
     const updateData = new FormData();
@@ -247,7 +241,7 @@ async function handleFormSubmit(event) {
     updateData.append('enfoque', newEnfoque);
 
     if (newImageFile) {
-        updateData.append('imagen', newImageFile);
+        updateData.append('imagen', newImageFile); // El backend debe esperar 'imagen' o 'imagen_club_nueva'
     }
 
     const submitBtn = event.submitter;
@@ -261,7 +255,6 @@ async function handleFormSubmit(event) {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`
-                // No poner Content-Type cuando es FormData, el navegador lo pone
             },
             body: updateData
         });
@@ -281,7 +274,7 @@ async function handleFormSubmit(event) {
             alert('Club actualizado exitosamente!');
         }
 
-        // Recargar los datos
+        // Recargar los datos para mostrar la nueva imagen/datos
         loadClubData(clubId);
 
     } catch (error) {
@@ -305,6 +298,99 @@ async function handleFormSubmit(event) {
     }
 }
 
+/**
+ * 💡 NUEVA FUNCIÓN CLAVE: Maneja el evento de clic en el botón de confirmación de eliminación.
+ * @param {string} clubId El ID del club a eliminar.
+ */
+async function handleClubDeletion(clubId) {
+    const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+    const deleteConfirmModalEl = document.getElementById('deleteConfirmModal');
+
+    // El modal de Bootstrap debe estar disponible globalmente
+    if (!deleteConfirmModalEl || typeof bootstrap === 'undefined') {
+        console.warn("ADVERTENCIA: No se encontró el elemento del modal o Bootstrap no está cargado. La eliminación NO funcionará.");
+        return;
+    }
+
+    // Inicializar el modal de Bootstrap
+    const deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl);
+
+    if (btnConfirmDelete) {
+        btnConfirmDelete.addEventListener('click', async () => {
+            const clubToDeleteId = document.getElementById('club-id').value;
+            const token = getToken();
+
+            if (!clubToDeleteId || !token) {
+                deleteConfirmModal.hide();
+                manejarFaltaAutenticacion('Sesión inválida o ID de club faltante.');
+                return;
+            }
+
+            // Deshabilitar botón
+            btnConfirmDelete.disabled = true;
+            btnConfirmDelete.textContent = 'Eliminando...';
+
+            try {
+                // Llamada a la API con método DELETE
+                const response = await fetch(`${API_CLUBS_URL}?id=${clubToDeleteId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                deleteConfirmModal.hide(); // Ocultar el modal
+
+                if (response.ok) {
+
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta(result.message || 'Club eliminado. Redirigiendo...', 'exito', 3000);
+                    } else {
+                        alert(result.message || 'Club eliminado. Redirigiendo...');
+                    }
+
+                    // Limpiar datos de sesión relevantes
+                    sessionStorage.removeItem('club_id');
+                    sessionStorage.removeItem('role');
+
+                    // Redirigir a la lista de clubes
+                    setTimeout(() => {
+                        // AJUSTA ESTA RUTA A DONDE DEBA IR EL USUARIO DESPUÉS DE ELIMINAR SU CLUB
+                        window.location.href = '/pages/clubes/clubes.html';
+                    }, 1500);
+
+                } else {
+                    if (response.status === 401) {
+                        manejarFaltaAutenticacion(result.message || 'Acceso no autorizado para eliminar club.');
+                        return;
+                    }
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta(result.message || 'Error al eliminar el club.', 'error');
+                    } else {
+                        alert(result.message || 'Error al eliminar el club.');
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error al intentar eliminar el club:', error);
+                deleteConfirmModal.hide();
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta('Error de conexión con el servidor al eliminar el club.', 'error');
+                } else {
+                    alert('Error de conexión con el servidor al eliminar el club.');
+                }
+            } finally {
+                // Volver a habilitar el botón
+                btnConfirmDelete.disabled = false;
+                btnConfirmDelete.textContent = 'Sí, Eliminar Club';
+            }
+        });
+    }
+}
+
 function initializeClubEditor(clubId) {
     console.log(`Editor de club inicializado para el Club ID: ${clubId}.`);
     loadClubData(clubId);
@@ -315,6 +401,9 @@ function initializeClubEditor(clubId) {
     } else {
         console.error("No se encontró el formulario con ID 'club-edit-form'.");
     }
+
+    // 💡 MODIFICACIÓN CLAVE: Inicializar el manejo de la eliminación
+    handleClubDeletion(clubId);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -335,11 +424,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta('Acceso denegado: Solo el presidente del club puede editar.', 'error');
             }
-            // Opcional: Redirigir si no es presidente
-            // setTimeout(() => { window.location.href = '/ruta/a/clubes.html'; }, 1500);
+            // Redirigir si no es presidente (opcional, pero buena práctica)
+            setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
             return;
         }
 
+        // Llamamos a initializeClubEditor CON el clubId que obtuvimos
         initializeClubEditor(clubId);
 
     } catch (error) {
@@ -351,6 +441,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta('No tienes un club asignado para editar.', 'error');
             }
+            // Redirigir a la lista de clubes
+            setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
         } else {
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta(`Error al iniciar la edición: ${error.message}`, 'error');
