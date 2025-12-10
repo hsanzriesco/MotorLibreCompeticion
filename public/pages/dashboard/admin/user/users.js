@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- HELPERS ---
 
-    // 🔑 FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA AÑADIDA 🔑
+    // 🔑 FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA (Confirmado el uso de mostrarAlerta) 🔑
     function validatePassword(password) {
         // Requisito 1: Longitud entre 8 y 12
         const lengthOK = password.length >= 8 && password.length <= 12;
@@ -93,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchUsers() {
         // 🛑 NUEVA VERIFICACIÓN DE TOKEN EN FETCH 🛑
-        // Si no hay token (porque la guardia inicial fue eliminada), NO intentamos el fetch
         if (!token) {
             usersTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Error: Debe iniciar sesión para ver esta tabla.</td></tr>';
             return;
@@ -111,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 🚀 NUEVA VERIFICACIÓN DE AUTORIZACIÓN (401/403)
             if (response.status === 401 || response.status === 403) {
                 console.error("Token no válido. Redirigiendo a login.");
+                // Usando mostrarAlerta
                 mostrarAlerta("Sesión expirada o no autorizada. Por favor, inicia sesión de nuevo.", "danger");
                 sessionStorage.clear();
                 window.location.href = ROOT_REDIRECT;
@@ -120,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Usando mostrarAlerta
                 mostrarAlerta("Error al cargar usuarios: " + data.message, "danger");
                 return;
             }
@@ -133,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderUsersTable(data.data);
         } catch (error) {
             console.error("Error fetching users:", error);
+            // Usando mostrarAlerta
             mostrarAlerta("Error de conexión al cargar usuarios.", "danger");
         }
     }
@@ -240,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 const data = await response.json();
                 if (!response.ok || !data.data || data.data.length === 0) {
+                    // Usando mostrarAlerta
                     mostrarAlerta("Error al cargar usuario para edición.", "danger");
                     return;
                 }
@@ -262,6 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userModal.show();
         } catch (error) {
             console.error("Error loading user:", error);
+            // Usando mostrarAlerta
             mostrarAlerta("Error de conexión al cargar usuario.", "danger");
         }
     }
@@ -278,11 +282,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // 1. VALIDACIÓN DE COINCIDENCIA DE CONTRASEÑAS (para creación o cambio de contraseña)
         if (newPassword) {
             if (newPassword !== confirmPassword) {
+                // Usando mostrarAlerta
                 mostrarAlerta("Las contraseñas no coinciden.", "warning");
                 return;
             }
         } else if (isCreation) {
-            // Esto debería ser manejado por el required=true, pero es una buena defensa
+            // Usando mostrarAlerta
             mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
             return;
         }
@@ -292,6 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (newPassword) {
             const passwordError = validatePassword(newPassword);
             if (passwordError) {
+                // Usando mostrarAlerta
                 mostrarAlerta(passwordError, "warning");
                 return;
             }
@@ -324,15 +330,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Usando mostrarAlerta
                 mostrarAlerta(`Error al ${id ? 'actualizar' : 'crear'} usuario: ${data.message}`, "danger");
                 return;
             }
 
+            // Usando mostrarAlerta
             mostrarAlerta(`Usuario ${id ? 'actualizado' : 'creado'} correctamente.`, "success");
             userModal.hide();
             fetchUsers();
         } catch (error) {
             console.error("Error submitting form:", error);
+            // Usando mostrarAlerta
             mostrarAlerta("Error de conexión al guardar usuario.", "danger");
         }
     });
@@ -354,16 +363,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Usando mostrarAlerta
                 mostrarAlerta(`Error al eliminar usuario: ${data.message}`, "danger");
                 return;
             }
 
+            // Usando mostrarAlerta
             mostrarAlerta("Usuario eliminado correctamente.", "success");
             deleteConfirmModal.hide();
             fetchUsers();
             userIdToDelete = null;
         } catch (error) {
             console.error("Error deleting user:", error);
+            // Usando mostrarAlerta
             mostrarAlerta("Error de conexión al eliminar usuario.", "danger");
         }
     });
@@ -417,6 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const reason = banReason.value.trim();
 
         if (shouldBan && reason.length < 5) {
+            // Usando mostrarAlerta
             mostrarAlerta("La razón del baneo debe tener al menos 5 caracteres.", "warning");
             return;
         }
@@ -440,15 +453,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Usando mostrarAlerta
                 mostrarAlerta(`Error al ${shouldBan ? 'banear' : 'desbanear'} usuario: ${data.message}`, "danger");
                 return;
             }
 
+            // Usando mostrarAlerta
             mostrarAlerta(`Usuario ${shouldBan ? 'baneado' : 'desbaneado'} correctamente.`, "success");
             banUserModal.hide();
             fetchUsers(); // Recargar la tabla
         } catch (error) {
             console.error("Error confirming ban action:", error);
+            // Usando mostrarAlerta
             mostrarAlerta("Error de conexión al procesar la acción de baneo.", "danger");
         }
     }
