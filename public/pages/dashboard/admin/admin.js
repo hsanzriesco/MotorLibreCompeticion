@@ -1,44 +1,60 @@
 document.addEventListener("DOMContentLoaded", async () => {
     // ====================================================================
-    // 🛡️ LÓGICA DE SEGURIDAD Y ACCESO (MODIFICADO: DESACTIVADO PARA DEPURACIÓN)
+    // 🛡️ LÓGICA DE SEGURIDAD Y ACCESO (JWT Authentication)
     // ====================================================================
 
-    // --- Comprobación de Usuario y Redirección ---
-    // Busca la sesión en sessionStorage O localStorage. 
-    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+    const JWT_TOKEN = localStorage.getItem('userToken');
 
-    let usuario = null;
-    if (storedUser) {
-        try {
-            usuario = JSON.parse(storedUser);
-        } catch (e) {
-            console.error("Error al parsear usuario:", e);
-        }
-    }
-
-    /* 🛑 INICIO BLOQUE DE SEGURIDAD COMENTADO 🛑 */
-    /*
-    // Comprobación de rol de administrador (se verifica que el rol exista y sea 'admin')
-    if (!usuario || usuario.role?.toLowerCase() !== "admin") {
-        // Limpiar ambas sesiones para evitar bucles si la información es corrupta/inválida
-        sessionStorage.removeItem("usuario");
-        localStorage.removeItem("usuario");
-
-        // Asegúrate de que 'mostrarAlerta' esté disponible globalmente o importada
+    // 1. Bloqueo de Acceso si no hay Token
+    if (!JWT_TOKEN) {
         if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000); // 👈 ESTA ES LA ALERTA ROJA
+            mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000); 
         }
 
-        // Redirigir al login
         setTimeout(() => {
-            // 🟢 CORRECCIÓN DE RUTA: Se utiliza la ruta absoluta asumida: /auth/login.html
-            // Si el login está en /public/auth/login.html, su ruta web es /auth/login.html
             window.location.href = "/auth/login.html"; 
         }, 1500);
         return; // Detiene la ejecución del script si no hay acceso
     }
-    */
-    /* 🛑 FIN BLOQUE DE SEGURIDAD COMENTADO 🛑 */
+    
+    // Función centralizada para manejar errores de autenticación (401/403)
+    function handleAuthError(errorMessage) {
+        console.error("Error de Autenticación:", errorMessage);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Sesión Inválida', 'Tu sesión ha expirado o no tienes permisos. Por favor, vuelve a iniciar sesión.', 'error');
+        }
+        // Limpia el token y redirige
+        localStorage.removeItem('userToken');
+        sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
+
+        setTimeout(() => {
+            window.location.href = "/auth/login.html"; 
+        }, 2000); 
+    }
+    
+    /**
+     * Obtiene los headers de autenticación JWT.
+     * @param {string|null} contentType Define el Content-Type. Usar null para FormData.
+     * @returns {Headers} Los headers de autenticación.
+     */
+    function getAuthHeaders(contentType = 'application/json') {
+        const currentToken = localStorage.getItem('userToken');
+        if (!currentToken) {
+            handleAuthError("Token perdido durante la sesión.");
+            throw new Error("Token no encontrado.");
+        }
+
+        const headers = {
+            'Authorization': `Bearer ${currentToken}`
+        };
+
+        if (contentType) {
+            headers['Content-Type'] = contentType;
+        }
+        
+        return headers;
+    }
 
 
     // ====================================================================
@@ -64,10 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const form = document.getElementById("eventForm");
         const titleInput = document.getElementById("title");
         const descriptionInput = document.getElementById("description");
-
-        // 🟢 CORRECCIÓN 1: Variable para el campo SELECT de Ubicación
-        const locationIdSelect = document.getElementById("locationId");
-
+        const locationIdSelect = document.getElementById("locationId"); // 🟢 CORRECCIÓN 1: Variable para el campo SELECT de Ubicación
         const capacityInput = document.getElementById("capacity");
         const startDateInput = document.getElementById("start-date");
         const startTimeInput = document.getElementById("start-time");
@@ -127,6 +140,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             return fieldsChanged || fileChanged;
         }
 
+        /**
+         * Carga el conteo de inscripciones para un evento específico.
+         * 🔑 CORRECCIÓN CRÍTICA: Se añade el header de autenticación.
+         */
         async function loadEventRegistrationCount(eventId) {
             if (!eventId) {
                 registrationsBtnContainer.style.display = 'none';
@@ -135,7 +152,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             try {
-                const response = await fetch(`/api/events?action=getRegistrationCount&event_id=${eventId}`);
+                const headers = getAuthHeaders(); // 🔒 OBTENER HEADERS DE AUTENTICACIÓN
+
+                const response = await fetch(`/api/events?action=getRegistrationCount&event_id=${eventId}`, {
+                    method: 'GET',
+                    headers: headers // 🔑 AÑADIR HEADERS
+                });
+                
+                // 🔑 Manejo de errores de autenticación
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("Acceso denegado (401/403). Token inválido o permisos insuficientes.");
+                }
+
                 const result = await response.json();
 
                 if (result.success) {
@@ -154,16 +182,36 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.error("Error de red al obtener el conteo de inscritos:", error);
                 currentRegisteredCount.textContent = '0';
                 registrationsBtnContainer.style.display = 'none';
+                
+                // 🔑 Manejo de error de autenticación
+                if (error.message.includes('Token') || error.message.includes('Acceso denegado')) {
+                    handleAuthError(error.message);
+                }
                 return 0;
             }
         }
 
         // --- FUNCIONES DEL CALENDARIO ---
+        /**
+         * 🔑 MODIFICADO: Se añade el header de autenticación.
+         */
         async function fetchEvents() {
             try {
-                const res = await fetch("/api/events");
+                const headers = getAuthHeaders(); // 🔒 OBTENER HEADERS DE AUTENTICACIÓN
+                
+                const res = await fetch("/api/events", {
+                    method: 'GET',
+                    headers: headers // 🔑 AÑADIR HEADERS
+                });
+                
+                if (res.status === 401 || res.status === 403) {
+                    throw new Error("Acceso denegado (401/403). Token inválido o permisos insuficientes.");
+                }
+                
                 const json = await res.json();
+                
                 if (!json.success || !Array.isArray(json.data)) throw new Error(json.message || "Error desconocido al obtener eventos.");
+                
                 return json.data.map((e) => ({
                     id: e.id,
                     title: e.title,
@@ -180,6 +228,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.error("Error al obtener eventos:", e);
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("Error al cargar los eventos: " + e.message, "error");
+                }
+                if (e.message.includes('Token') || e.message.includes('Acceso denegado')) {
+                    handleAuthError(e.message);
                 }
                 return [];
             }
@@ -304,7 +355,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 🔑 NUEVA VALIDACIÓN DE CAPACIDAD 🔑
+            // 🔑 VALIDACIÓN DE CAPACIDAD 🔑
             const parsedCapacity = parseInt(capacity);
 
             if (capacity.length > 0 && (isNaN(parsedCapacity) || parsedCapacity < 0)) {
@@ -369,10 +420,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             try {
+                // 🔑 OBTENER EL HEADER DE AUTORIZACIÓN (Sin Content-Type para FormData)
+                const token = localStorage.getItem('userToken');
+                if (!token) { handleAuthError("Token no encontrado."); return; }
+                const headers = { 'Authorization': `Bearer ${token}` };
+                
                 const res = await fetch(id ? `/api/events?id=${id}` : "/api/events", {
                     method: id ? "PUT" : "POST",
+                    headers: headers, // 🔑 AÑADIR EL HEADER DE AUTORIZACIÓN
                     body: formData
                 });
+                
+                if (res.status === 401 || res.status === 403) {
+                    throw new Error("Acceso denegado (401/403). Token inválido o permisos insuficientes.");
+                }
 
                 const data = await res.json();
                 if (!data.success) throw new Error(data.message || "Fallo en la respuesta del servidor.");
@@ -386,6 +447,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.error("Error al guardar:", e);
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("Error al guardar evento: " + e.message, "error");
+                }
+                if (e.message.includes('Token') || e.message.includes('Acceso denegado')) {
+                    handleAuthError(e.message);
                 }
             }
         });
@@ -407,7 +471,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (confirmado) {
                 try {
-                    const res = await fetch(`/api/events?id=${selectedEvent.id}`, { method: "DELETE" });
+                    const headers = getAuthHeaders(); // 🔒 OBTENER HEADERS
+                    
+                    const res = await fetch(`/api/events?id=${selectedEvent.id}`, { 
+                        method: "DELETE",
+                        headers: headers // 🔑 AÑADIR HEADERS
+                    });
+                    
+                    if (res.status === 401 || res.status === 403) {
+                        throw new Error("Acceso denegado (401/403). Token inválido o permisos insuficientes.");
+                    }
+                    
                     const data = await res.json();
                     if (!data.success) throw new Error(data.message || "Fallo al eliminar.");
 
@@ -421,6 +495,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     if (typeof mostrarAlerta === 'function') {
                         mostrarAlerta("Error al eliminar evento", "error");
                     }
+                    if (e.message.includes('Token') || e.message.includes('Acceso denegado')) {
+                        handleAuthError(e.message);
+                    }
                 }
             }
         });
@@ -429,6 +506,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ====================================================================
     // 🚗 LÓGICA DE COCHE (SIN CAMBIOS)
     // ====================================================================
+
+    // ... (El resto de la lógica de Car Garage se mantiene igual)
 
     const carGarageForm = document.getElementById("carGarageForm");
     const carModalEl = document.getElementById("carGarageModal");
@@ -445,7 +524,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const carPhotoContainer = document.getElementById("carPhotoContainer");
     const clearCarPhotoBtn = document.getElementById("clearCarPhotoBtn");
 
-    if (carGarageForm && usuario) {
+    // Asumimos que 'usuario' ya no se usa, pero la lógica de la existencia de 'carGarageForm' es suficiente
+    if (carGarageForm) { 
 
         if (carPhotoFileInput) {
             carPhotoFileInput.addEventListener('change', function () {
@@ -475,7 +555,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // ====================================================================
-    // 👥 NUEVA LÓGICA: GESTIÓN DE USUARIOS (CRUD ADMIN) - CORREGIDO
+    // 👥 LÓGICA: GESTIÓN DE USUARIOS (CRUD ADMIN) - CORREGIDO con JWT
     // ====================================================================
 
     const userTableBody = document.getElementById("userTableBody");
@@ -495,6 +575,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // ----------------------------------------------------
         // 🚀 FUNCIÓN 1: CARGAR Y MOSTRAR USUARIOS
+        // 🔑 MODIFICADO: Se añade el header de autenticación.
         // ----------------------------------------------------
         async function loadUsers() {
             if (!userTableBody) return;
@@ -502,10 +583,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             userTableBody.innerHTML = '<tr><td colspan="6">Cargando usuarios...</td></tr>';
 
             try {
-                const res = await fetch("/api/users");
+                const headers = getAuthHeaders(); // 🔒 OBTENER HEADERS
+                
+                const res = await fetch("/api/users", {
+                    method: 'GET',
+                    headers: headers // 🔑 AÑADIR HEADERS
+                });
+                
+                if (res.status === 401 || res.status === 403) {
+                    throw new Error("Acceso denegado (401/403). Token inválido o permisos insuficientes.");
+                }
+
                 const data = await res.json();
 
-                if (!data.success || !Array.isArray(data.data)) throw new Error(data.message || "Fallo al obtener la lista de usuarios.");
+                if (!data.success || !Array.isArray(data.data)) throw new new Error(data.message || "Fallo al obtener la lista de usuarios.");
 
                 userTableBody.innerHTML = ''; // Limpiar el mensaje de carga
 
@@ -536,11 +627,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             } catch (e) {
                 console.error("Error al cargar usuarios:", e);
                 userTableBody.innerHTML = `<tr><td colspan="6">Error al cargar usuarios: ${e.message}</td></tr>`;
+                if (e.message.includes('Token') || e.message.includes('Acceso denegado')) {
+                    handleAuthError(e.message);
+                }
             }
         }
 
         // ----------------------------------------------------
-        // 🚀 FUNCIÓN 2: ABRIR MODAL DE EDICIÓN
+        // 🚀 FUNCIÓN 2: ABRIR MODAL DE EDICIÓN (SIN CAMBIOS)
         // ----------------------------------------------------
         function openUserEditModal(user) {
             editUserId.value = user.id;
@@ -553,7 +647,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // ----------------------------------------------------
-        // 🚀 FUNCIÓN 3: GUARDAR EDICIÓN (CORREGIDO: Manejo de errores 400/500)
+        // 🚀 FUNCIÓN 3: GUARDAR EDICIÓN (PUT)
+        // 🔑 MODIFICADO: Se añade el header de autenticación.
         // ----------------------------------------------------
         saveUserBtn.addEventListener("click", async () => {
             const id = editUserId.value;
@@ -580,17 +675,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             try {
-                // 💥 CORRECCIÓN CRÍTICA: Asegurar la correcta captura de errores y el envío del ID
+                const headers = getAuthHeaders(); // 🔒 OBTENER HEADERS
+                
                 const res = await fetch(`/api/users?id=${id}`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers: headers, // 🔑 AÑADIR HEADERS
                     body: JSON.stringify(payload)
                 });
+                
+                if (res.status === 401 || res.status === 403) {
+                    throw new Error("Acceso denegado (401/403). Token inválido o permisos insuficientes.");
+                }
 
                 const data = await res.json();
 
                 if (!res.ok) {
-                    // Si el servidor devuelve 400 o 500, capturamos el mensaje del body
                     throw new Error(data.message || `Fallo al guardar (${res.status})`);
                 }
 
@@ -604,11 +703,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta(`Error al actualizar usuario: ${e.message}`, "error");
                 }
+                if (e.message.includes('Token') || e.message.includes('Acceso denegado')) {
+                    handleAuthError(e.message);
+                }
             }
         });
 
         // ----------------------------------------------------
-        // 🚀 FUNCIÓN 4: ELIMINAR USUARIO (CORREGIDO: Manejo de errores 400/500)
+        // 🚀 FUNCIÓN 4: ELIMINAR USUARIO (DELETE)
+        // 🔑 MODIFICADO: Se añade el header de autenticación.
         // ----------------------------------------------------
         deleteUserBtn.addEventListener("click", async () => {
             const id = editUserId.value;
@@ -624,8 +727,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (confirmado) {
                 try {
-                    // 💥 CORRECCIÓN CRÍTICA: Envío del ID en el query parameter para DELETE
-                    const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
+                    const headers = getAuthHeaders(); // 🔒 OBTENER HEADERS
+                    
+                    const res = await fetch(`/api/users?id=${id}`, { 
+                        method: "DELETE",
+                        headers: headers // 🔑 AÑADIR HEADERS
+                    });
+                    
+                    if (res.status === 401 || res.status === 403) {
+                        throw new Error("Acceso denegado (401/403). Token inválido o permisos insuficientes.");
+                    }
+                    
                     const data = await res.json();
 
                     if (!res.ok) {
@@ -641,6 +753,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     console.error("Error al eliminar usuario:", e);
                     if (typeof mostrarAlerta === 'function') {
                         mostrarAlerta(`Error al eliminar usuario: ${e.message}`, "error");
+                    }
+                    if (e.message.includes('Token') || e.message.includes('Acceso denegado')) {
+                        handleAuthError(e.message);
                     }
                 }
             }
