@@ -1,4 +1,4 @@
-// public/js/clubes.js - VERSIÓN FINAL PERSISTENTE (BASADA SÓLO EN JWT)
+// public/js/clubes.js - VERSIÓN MODIFICADA (SIN BOTÓN SALIR EN LA LISTA)
 
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * @returns {{club_id: number|null, role: string|null, id: number|null}}
      */
     function getAuthStatus() {
-        // 🚨 CAMBIO CLAVE: Priorizamos localStorage para la persistencia, si existe
+        // Priorizamos localStorage para la persistencia
         const currentToken = localStorage.getItem("token") || sessionStorage.getItem("token");
         const decoded = decodeJWT(currentToken);
         return {
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function cargarClubes() {
         try {
-            // 🚨 Añadir el token a la cabecera del GET para posibles validaciones
+            // Añadir el token a la cabecera del GET para posibles validaciones
             const token = localStorage.getItem("token") || sessionStorage.getItem("token");
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
@@ -130,14 +130,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (isUserLoggedIn) {
                 if (isMemberOfThisClub) {
-                    // 🟢 Botón SALIR del Club (o Gestión si es Presidente)
+                    // 🟢 CAMBIO: Muestra un estado de membresía (botón deshabilitado), no la acción de salir.
                     buttonHtml = `
-                        <button class="btn btn-outline-light w-100 leave-btn" 
-                                data-id="${club.id}" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#modalSalirClub"
-                                ${isPresidente ? 'disabled title="Como presidente, debes usar la gestión del club para disolver o transferir."' : ''}>
-                                ${isPresidente ? 'Presidente (Gestionar)' : 'Salir del club'}
+                        <button class="btn btn-success w-100" disabled
+                                title="Para gestionar o salir de tu club, usa la sección de perfil/gestión.">
+                                ${isPresidente ? 'Presidente (Gestionar fuera de aquí)' : 'Miembro Activo'}
                         </button>`;
                 } else {
                     // 🔴 Botón UNIRME AL CLUB (o deshabilitado si ya es miembro de OTRO)
@@ -182,9 +179,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         container.appendChild(row);
 
-        // Agregamos listeners solo a botones habilitados
+        // Agregamos listeners solo a los botones de UNIRSE habilitados
         document.querySelectorAll(".join-btn:not([disabled])").forEach(btn => btn.addEventListener("click", joinClub));
-        document.querySelectorAll(".leave-btn:not([disabled])").forEach(btn => btn.addEventListener("click", setupLeaveModal));
+
+        // ❌ ELIMINADO: Se quita el listener para la acción de salir del club en esta página.
+        // document.querySelectorAll(".leave-btn:not([disabled])").forEach(btn => btn.addEventListener("click", setupLeaveModal));
     }
 
     // --- MANEJADOR DE JOIN CLUB ---
@@ -213,10 +212,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // 🚨 SOLUCIÓN CLAVE: Guardar el nuevo token que contiene el club_id actualizado
+            // Guardar el nuevo token que contiene el club_id actualizado
             if (data.token) {
                 sessionStorage.setItem("token", data.token);
-                localStorage.setItem("token", data.token); // Guardar en localStorage para persistencia
+                localStorage.setItem("token", data.token);
             }
 
             mostrarAlerta("Te has unido al club", "exito");
@@ -227,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- LÓGICA DE MODAL Y LEAVE CLUB ---
+    // --- LÓGICA DE MODAL Y LEAVE CLUB (MANTENIDA EN EL SCRIPT POR SI SE USA EN OTRA PÁGINA) ---
 
     function setupLeaveModal(e) {
         const club_id = e.currentTarget.dataset.id;
@@ -272,10 +271,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // 🚨 SOLUCIÓN CLAVE: Guardar el nuevo token (club_id: null)
+            // Guardar el nuevo token (club_id: null)
             if (data.token) {
                 sessionStorage.setItem("token", data.token);
-                localStorage.setItem("token", data.token); // Guardar en localStorage para persistencia
+                localStorage.setItem("token", data.token);
             }
 
             mostrarAlerta("Te has salido del club", "exito");
