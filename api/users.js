@@ -251,7 +251,7 @@ async function getMeHandler(req, res) {
             FROM 
                 users u
             LEFT JOIN 
-                users_clubs uc ON u.id = uc.user_id /* 👈 ¡AÑADIDO! Asumiendo tabla users_clubs */
+                users uc ON u.id = uc.user_id /* 👈 ¡AÑADIDO! Asumiendo tabla users_clubs */
             WHERE 
                 u.id = $1
         `;
