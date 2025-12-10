@@ -1,8 +1,9 @@
-// public/js/clubes.js
+// public/js/clubes.js - VERSIÓN CORREGIDA PARA IMÁGENES
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
-    const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-    const usuario = storedUser ? JSON.parse(storedUser) : null;
+    // Se usa 'let' para poder actualizar 'usuario' si es necesario
+    let storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+    let usuario = storedUser ? JSON.parse(storedUser) : null;
 
     function escapeHtml(s = "") {
         return String(s)
@@ -11,6 +12,21 @@ document.addEventListener("DOMContentLoaded", () => {
             .replaceAll(">", "&gt;")
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&#39;");
+    }
+
+    // 🛠️ FUNCIÓN HELPER: Asegura que la imagen tenga el formato correcto (Base64 o URL)
+    function getImageUrl(imageData) {
+        // Fallback a una imagen por defecto
+        if (!imageData) return '../../img/placeholder.jpg';
+
+        // Si ya parece una URL o Base64 completo (con el prefijo), lo devuelve tal cual
+        if (imageData.startsWith('http') || imageData.startsWith('data:image/')) {
+            return imageData;
+        }
+
+        // Si es una cadena Base64 sin el prefijo (caso común si la subida es directa desde la DB)
+        // Asumimos un tipo común. Si tu backend sabe el tipo, es mejor usarlo.
+        return `data:image/jpeg;base64,${imageData}`;
     }
 
     async function cargarClubes() {
@@ -46,20 +62,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const isMember = userClubId && Number(club.id) === userClubId;
 
+            // ⭐ USAMOS LAS PROPIEDADES CORRECTAS Y LA FUNCIÓN HELPER
+            const clubName = club.nombre || club.name || 'Club sin nombre';
+            const clubDescription = club.descripcion || club.description || 'Sin descripción';
+            // Usamos club.imagen_url, que es el alias que tu backend devuelve
+            const clubImageSource = getImageUrl(club.imagen_url);
+
             col.innerHTML = `
-        <div class="club-card h-100 p-3" style="background:#141414;border:1px solid rgba(229,9,20,0.2);border-radius:8px">
-          ${club.imagen_club ? `<img src="${escapeHtml(club.imagen_club)}" alt="${escapeHtml(club.nombre_evento)}" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">` : `<img src="/img/placeholder.jpg" class="img-fluid rounded mb-2" style="max-height:160px;object-fit:cover;width:100%;">`}
-          <h4 class="text-danger">${escapeHtml(club.nombre_evento)}</h4>
-          <p>${escapeHtml(club.descripcion || "")}</p>
-          <div>
-            ${usuario ? (isMember
+                <div class="club-card h-100 p-3" style="background:#141414;border:1px solid rgba(229,9,20,0.2);border-radius:8px">
+                    <img src="${escapeHtml(clubImageSource)}" 
+                         alt="${escapeHtml(clubName)} Logo" 
+                         class="img-fluid rounded mb-2" 
+                         style="max-height:160px;object-fit:cover;width:100%;">
+                    <h4 class="text-danger">${escapeHtml(clubName)}</h4>
+                    <p>${escapeHtml(clubDescription)}</p>
+                    <div>
+                        ${usuario ? (isMember
                     ? `<button class="btn btn-outline-light w-100 leave-btn" data-id="${club.id}">Salir del club</button>`
                     : `<button class="btn btn-netflix w-100 join-btn" data-id="${club.id}">Unirme al club</button>`
                 ) : `<a href="/pages/auth/login/login.html" class="btn btn-netflix w-100">Inicia sesión para unirte</a>`
                 }
-          </div>
-        </div>
-      `;
+                    </div>
+                </div>
+            `;
             row.appendChild(col);
         });
 
@@ -76,9 +101,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const res = await fetch("/api/clubs?action=join", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify({ user_id: usuario.id, club_id: Number(club_id) })
             });
             const data = await res.json();
@@ -87,7 +113,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            usuario.club_id = Number(club_id);
+            // Actualizar la variable 'usuario' y el almacenamiento
+            usuario = { ...usuario, club_id: Number(club_id) };
             sessionStorage.setItem("usuario", JSON.stringify(usuario));
             localStorage.setItem("usuario", JSON.stringify(usuario));
 
@@ -112,15 +139,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const confirmarBtn = document.getElementById("confirmarSalirClub");
 
-        // Limpia eventos previos
         confirmarBtn.onclick = async () => {
             modal.hide();
 
             try {
+                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
                 const res = await fetch("/api/clubs?action=leave", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user_id: usuario.id })
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                    body: JSON.stringify({ user_id: usuario.id }) // El club_id se infiere del user.club_id
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -128,7 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                usuario.club_id = null;
+                // Actualizar la variable 'usuario' y el almacenamiento
+                usuario = { ...usuario, club_id: null };
                 sessionStorage.setItem("usuario", JSON.stringify(usuario));
                 localStorage.setItem("usuario", JSON.stringify(usuario));
 
