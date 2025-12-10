@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - MODIFICADO (Errores de inicialización de Modal corregidos y Alertas personalizadas implementadas)
+// public/js/adminClubes.js - CORREGIDO (Error de recursión en mostrarAlerta resuelto)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -83,11 +83,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusConfirmMessage = document.getElementById("statusConfirmMessage");
     let clubToChangeStatus = { id: null, action: null };
 
-    // 💡 CORRECCIÓN DE ERROR (1/2): Declarar las variables de instancia de Bootstrap Modal con 'let'
+    // Declarar las variables de instancia de Bootstrap Modal con 'let'
     let deleteConfirmModal = null;
     let statusConfirmModal = null;
 
-    // 💡 CORRECCIÓN DE ERROR (2/2): Asignar las instancias de Bootstrap
+    // Asignar las instancias de Bootstrap
     if (deleteConfirmModalEl) {
         deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl);
     }
@@ -141,25 +141,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------
-    // ALERTA (Ahora usando la función de alertas.js)
+    // ALERTA (CORREGIDA para evitar recursión)
     // -----------------------------------------
 
-    /** * Muestra una alerta, usando la implementación global (alertas.js) si está disponible, 
-     * o un console.log como fallback.
+    /** * Muestra una alerta, usando la implementación global (alertas.js) si está disponible.
+     * Renombrada localmente a emitirAlerta para evitar conflicto de scope con la función global.
      */
-    function mostrarAlerta(message, type) {
+    function emitirAlerta(message, type) {
         // Log siempre
+        // Línea 152: La función String.replace() era la primera llamada en la pila de recursión.
         console.log(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
 
-        // 💡 MODIFICACIÓN CLAVE: Llamar directamente a la función global mostrarAlerta() de alertas.js
-        if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta(message, type);
+        // 💡 CORRECCIÓN: Llamar a la función global 'mostrarAlerta' si existe
+        if (typeof window.mostrarAlerta === 'function') {
+            window.mostrarAlerta(message, type);
         } else {
             // Fallback simple si alertas.js no se cargó
             alert(`[${type.toUpperCase()}] ${message}`);
         }
     }
-
+    // 💡 CAMBIO CRÍTICO: Reemplazar todas las llamadas a mostrarAlerta con emitirAlerta
 
     // -----------------------------------------
     // CARGAR LISTA DE CLUBES Y DISTRIBUIR
@@ -169,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function cargarClubes() {
         const token = getToken();
         if (!token) {
-            mostrarAlerta("❌ **ERROR CRÍTICO:** Token de administrador no disponible. Se requiere re-login.", "error");
+            emitirAlerta("❌ **ERROR CRÍTICO:** Token de administrador no disponible. Se requiere re-login.", "error");
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
             if (badgePendientes) badgePendientes.style.display = 'none';
@@ -218,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 customMessage = `Error de red/API: ${error.message.split('Detalle:')[0]}`;
             }
 
-            mostrarAlerta(customMessage, "error");
+            emitirAlerta(customMessage, "error");
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
         }
@@ -327,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!res.ok) {
                 const errorText = await res.text();
-                mostrarAlerta(`Error ${res.status} al obtener club: ${errorText.substring(0, 100)}...`, "error");
+                emitirAlerta(`Error ${res.status} al obtener club: ${errorText.substring(0, 100)}...`, "error");
                 return;
             }
 
@@ -335,7 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const c = r.club || r.pending_club;
 
             if (!r.success || !c) {
-                mostrarAlerta(r.message || "No se pudo cargar el club", "error");
+                emitirAlerta(r.message || "No se pudo cargar el club", "error");
                 return;
             }
 
@@ -354,16 +355,16 @@ document.addEventListener("DOMContentLoaded", () => {
             if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
 
             if (c.estado === 'pendiente' || c.estado === null) {
-                mostrarAlerta("Club pendiente cargado. Al guardar, se establecerá como activo.", "info");
+                emitirAlerta("Club pendiente cargado. Al guardar, se establecerá como activo.", "info");
             } else {
-                mostrarAlerta("Club cargado para edición", "info");
+                emitirAlerta("Club cargado para edición", "info");
             }
 
             inputNombre.focus();
 
         } catch (error) {
             console.error("Error cargarClubEnFormulario:", error);
-            mostrarAlerta("Error cargando club: " + error.message, "error");
+            emitirAlerta("Error cargando club: " + error.message, "error");
         }
     }
 
@@ -377,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const token = getToken();
         if (!token) {
-            mostrarAlerta("❌ Error: No se encontró el token de administrador.", "error");
+            emitirAlerta("❌ Error: No se encontró el token de administrador.", "error");
             return;
         }
 
@@ -388,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE
         if (!inputNombre.value || !inputDescripcion.value || !inputCiudad.value || !inputEnfoque.value) {
-            mostrarAlerta("❌ Faltan campos obligatorios: Nombre, Descripción, Ciudad o Enfoque.", "error");
+            emitirAlerta("❌ Faltan campos obligatorios: Nombre, Descripción, Ciudad o Enfoque.", "error");
             return;
         }
 
@@ -426,11 +427,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const r = await res.json();
 
             if (!r.success) {
-                mostrarAlerta(r.message || "Error guardando club", "error");
+                emitirAlerta(r.message || "Error guardando club", "error");
                 return;
             }
 
-            mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
+            emitirAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
             // Ocultar el modal si está abierto
             if (clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
@@ -442,7 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error submit club:", error);
             // Mostrar el mensaje capturado de errorText
             const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor: ${error.message}`;
-            mostrarAlerta(errorMessage, "error");
+            emitirAlerta(errorMessage, "error");
         }
     });
 
@@ -473,7 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const id = clubToDeleteId;
 
             if (!id || !token) {
-                mostrarAlerta("ID o token inválido", "error");
+                emitirAlerta("ID o token inválido", "error");
                 if (deleteConfirmModal) deleteConfirmModal.hide();
                 return;
             }
@@ -494,18 +495,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 const r = await res.json();
 
                 if (!r.success) {
-                    mostrarAlerta(r.message || "Error eliminando", "error");
+                    emitirAlerta(r.message || "Error eliminando", "error");
                     return;
                 }
 
-                mostrarAlerta("Club eliminado correctamente", "exito");
+                emitirAlerta("Club eliminado correctamente", "exito");
                 clubToDeleteId = null;
                 cargarClubes();
 
             } catch (error) {
                 console.error("Error eliminarClub:", error);
                 const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error eliminando club: ${error.message}`;
-                mostrarAlerta(errorMessage, "error");
+                emitirAlerta(errorMessage, "error");
             }
         });
     }
@@ -544,7 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const token = getToken();
 
             if (!id || !action || !token) {
-                mostrarAlerta("Solicitud de cambio de estado o token inválido", "error");
+                emitirAlerta("Solicitud de cambio de estado o token inválido", "error");
                 if (statusConfirmModal) statusConfirmModal.hide();
                 return;
             }
@@ -585,18 +586,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 const r = res.status === 204 ? { success: true } : await res.json();
 
                 if (!r.success) {
-                    mostrarAlerta(r.message || `Error al ${action} el club.`, "error");
+                    emitirAlerta(r.message || `Error al ${action} el club.`, "error");
                     return;
                 }
 
-                mostrarAlerta(successMessage, "exito");
+                emitirAlerta(successMessage, "exito");
                 clubToChangeStatus = { id: null, action: null };
                 cargarClubes();
 
             } catch (error) {
                 const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor al ${action} club: ${error.message}`;
                 console.error(`Error de red al ${action} club:`, error);
-                mostrarAlerta(errorMessage, "error");
+                emitirAlerta(errorMessage, "error");
             }
         });
     }
