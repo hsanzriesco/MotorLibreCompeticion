@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - CORREGIDO
+// public/js/adminClubes.js - NO MODIFICADO (CÓDIGO ANTERIOR VÁLIDO)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------

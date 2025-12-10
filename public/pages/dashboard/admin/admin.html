@@ -161,34 +161,37 @@
             <h3 class="text-center mb-3">Formulario de Club</h3>
 
             <form id="club-form" class="mb-4" enctype="multipart/form-data">
-                <input type="hidden" id="club-id">
-                <input type="hidden" id="id_presidente">
+                <input type="hidden" id="club-id" name="id">
+                <input type="hidden" id="id_presidente" name="id_presidente">
+
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Nombre del Club *</label>
-                        <input type="text" class="form-control input-dark" id="nombre_evento"
+                        <input type="text" class="form-control input-dark" id="nombre_evento" name="nombre_evento"
                             placeholder="Introduce el nombre del club" required />
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label">Imagen (Archivo)</label>
-                        <input type="file" class="form-control input-dark" id="imagen_club" accept="image/*" />
+                        <input type="file" class="form-control input-dark" id="imagen_club" name="imagen_club"
+                            accept="image/*" />
                     </div>
 
                     <div class="col-md-12">
                         <label class="form-label">Descripción</label>
-                        <textarea class="form-control input-dark" id="descripcion" rows="2"></textarea>
+                        <textarea class="form-control input-dark" id="descripcion" name="descripcion"
+                            rows="2"></textarea>
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label">Ciudad *</label>
-                        <input type="text" class="form-control input-dark" id="ciudad" placeholder="Ej: Barcelona"
-                            required />
+                        <input type="text" class="form-control input-dark" id="ciudad" name="ciudad"
+                            placeholder="Ej: Barcelona" required />
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label">Enfoque Principal *</label>
-                        <select class="form-select input-dark" id="enfoque" required>
+                        <select class="form-select input-dark" id="enfoque" name="enfoque" required>
                             <option value="" selected disabled>Selecciona el enfoque</option>
                             <option value="Drifting">Drifting / Derrape</option>
                             <option value="DragRace">Drag Race / Aceleración</option>
@@ -201,7 +204,8 @@
 
                     <div class="col-md-6">
                         <label class="form-label">Fecha de Creación</label>
-                        <input type="date" class="form-control input-dark" id="fecha_creacion" readonly />
+                        <input type="date" class="form-control input-dark" id="fecha_creacion" name="fecha_creacion"
+                            readonly />
                     </div>
                 </div>
 
