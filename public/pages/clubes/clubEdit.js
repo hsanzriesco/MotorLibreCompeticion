@@ -1,4 +1,5 @@
 // public/js/clubEdit.js
+
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
 
@@ -53,7 +54,11 @@ function getToken() {
     return localStorage.getItem('token');
 }
 
-async function getClubIdFromUser() {
+/**
+ * MODIFICADO: Ahora devuelve el objeto de usuario completo.
+ * Lanza error si no tiene club_id.
+ */
+async function getClubIdAndUser() {
     const token = getToken();
 
     try {
@@ -76,15 +81,31 @@ async function getClubIdFromUser() {
         const data = await response.json();
         // Ajuste: A veces la API devuelve data.data.user o data.user
         const user = data.user || data.data?.user;
-        const clubId = user ? user.club_id : null;
+
+        if (!user) {
+            throw new Error('No se encontró el objeto de usuario en la respuesta.');
+        }
+
+        const clubId = user.club_id || null;
 
         if (!clubId) {
-            // Si el usuario es presidente pero no tiene club_id, algo está mal en la BD
+            // Este es el error original que salta.
             throw new Error('El usuario no está asignado a un club.');
         }
 
+        // 💡 NOTA: Asumimos que la API YA devuelve 'is_presidente'
+        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.rol === 'presidente';
+
+        // Si solo el presidente debe editar, podríamos añadir una comprobación aquí:
+        // if (!isPresidente) {
+        //     throw new Error('Solo el presidente del club puede acceder a esta página.');
+        // }
+
         console.log("ID de club del usuario obtenido:", clubId);
-        return clubId;
+        console.log("Es presidente:", isPresidente);
+
+        // Devolvemos el objeto completo para usar más adelante si es necesario
+        return { clubId, user, isPresidente };
 
     } catch (error) {
         console.error("Fallo al obtener el ID de club del usuario:", error.message);
@@ -306,7 +327,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        const clubId = await getClubIdFromUser();
+        // MODIFICADO: Llamamos a la nueva función que devuelve el objeto
+        const { clubId, isPresidente } = await getClubIdAndUser();
+
+        // 💡 NUEVA COMPROBACIÓN ADICIONAL
+        if (!isPresidente) {
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Acceso denegado: Solo el presidente del club puede editar.', 'error');
+            }
+            // Opcional: Redirigir si no es presidente
+            // setTimeout(() => { window.location.href = '/ruta/a/clubes.html'; }, 1500);
+            return;
+        }
+
         initializeClubEditor(clubId);
 
     } catch (error) {
