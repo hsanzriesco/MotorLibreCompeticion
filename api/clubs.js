@@ -462,8 +462,24 @@ async function clubsHandler(req, res) {
                         // 2. Unir al usuario al club (Actualizar tabla users)
                         await client.query('UPDATE public."users" SET club_id = $1 WHERE id = $2', [club_id, requestingUserId]);
 
+                        // --- [MODIFICACIÓN CLAVE] SINCRONIZACIÓN DE TOKEN (JOIN) ---
+                        // 3. Obtener los datos del usuario actualizados (con el nuevo club_id)
+                        const updatedUserRes = await client.query(
+                            'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
+                            [requestingUserId]
+                        );
+                        const updatedUser = updatedUserRes.rows[0];
+
+                        // 4. Generar un nuevo token con los datos frescos
+                        const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
+                        // --- [FIN MODIFICACIÓN CLAVE] ---
+
                         await client.query('COMMIT');
-                        return res.status(200).json({ success: true, message: "Te has unido al club." });
+                        return res.status(200).json({
+                            success: true,
+                            message: "Te has unido al club.",
+                            token: newToken // <-- Devolver el nuevo token
+                        });
 
                     } else if (query.action === 'leave') {
                         // 1. Verificar si es presidente (si lo es, no puede irse, debe disolver o transferir)
@@ -482,8 +498,24 @@ async function clubsHandler(req, res) {
                         // 2. Abandonar el club (Actualizar tabla users)
                         await client.query('UPDATE public."users" SET club_id = NULL WHERE id = $1', [requestingUserId]);
 
+                        // --- [MODIFICACIÓN CLAVE] SINCRONIZACIÓN DE TOKEN (LEAVE) ---
+                        // 3. Obtener los datos del usuario actualizados (club_id = NULL)
+                        const updatedUserRes = await client.query(
+                            'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
+                            [requestingUserId]
+                        );
+                        const updatedUser = updatedUserRes.rows[0];
+
+                        // 4. Generar un nuevo token con los datos frescos
+                        const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
+                        // --- [FIN MODIFICACIÓN CLAVE] ---
+
                         await client.query('COMMIT');
-                        return res.status(200).json({ success: true, message: "Has abandonado el club." });
+                        return res.status(200).json({
+                            success: true,
+                            message: "Has abandonado el club.",
+                            token: newToken // <-- Devolver el nuevo token
+                        });
                     }
 
                     // Si la acción existe pero no fue 'join' ni 'leave' (e.g. action=unknown)
