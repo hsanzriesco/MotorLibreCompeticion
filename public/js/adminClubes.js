@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - MODIFICADO (Errores de inicialización de Modal corregidos)
+// public/js/adminClubes.js - MODIFICADO (Errores de inicialización de Modal corregidos y Alertas personalizadas implementadas)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -83,13 +83,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusConfirmMessage = document.getElementById("statusConfirmMessage");
     let clubToChangeStatus = { id: null, action: null };
 
-    // 💡 CORRECCIÓN DE ERROR: Inicializar las variables de instancia de Bootstrap Modal con 'let'
+    // 💡 CORRECCIÓN DE ERROR (1/2): Declarar las variables de instancia de Bootstrap Modal con 'let'
     let deleteConfirmModal = null;
     let statusConfirmModal = null;
 
-    // 💡 CORRECCIÓN DE ERROR: Asignar las instancias de Bootstrap solo después de que todas las variables estén declaradas
+    // 💡 CORRECCIÓN DE ERROR (2/2): Asignar las instancias de Bootstrap
     if (deleteConfirmModalEl) {
-        // La biblioteca bootstrap debe estar disponible globalmente (cargada con <script>)
         deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl);
     }
     if (statusModalEl) {
@@ -142,26 +141,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -----------------------------------------
-    // ALERTA
+    // ALERTA (Ahora usando la función de alertas.js)
     // -----------------------------------------
 
-    /** Muestra una alerta en el placeholder. */
+    /** * Muestra una alerta, usando la implementación global (alertas.js) si está disponible, 
+     * o un console.log como fallback.
+     */
     function mostrarAlerta(message, type) {
+        // Log siempre
         console.log(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
-        const alertPlaceholder = document.getElementById('alertas-container');
-        if (alertPlaceholder) {
-            const bsType = type === 'exito' ? 'success' : type === 'error' ? 'danger' : 'info';
-            // Utiliza la función de alertas.js si está disponible, sino, fallback
-            if (typeof mostrarAlertaDesdeJS === 'function') {
-                mostrarAlertaDesdeJS(message, type);
-            } else {
-                alertPlaceholder.innerHTML = `
-                    <div class="alert alert-${bsType} alert-dismissible fade show" role="alert">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
+
+        // 💡 MODIFICACIÓN CLAVE: Llamar directamente a la función global mostrarAlerta() de alertas.js
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta(message, type);
+        } else {
+            // Fallback simple si alertas.js no se cargó
+            alert(`[${type.toUpperCase()}] ${message}`);
         }
     }
 
@@ -399,7 +394,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const formData = new FormData(form);
 
-        // 💡 MODIFICACIÓN: Limpiar FormData de campos vacíos, excepto el archivo.
+        // Limpiar FormData de campos vacíos
         for (const [key, value] of formData.entries()) {
             if (key === 'imagen_club' && value.name === '') {
                 // Si el input file está vacío (no se ha seleccionado archivo), lo eliminamos
@@ -414,7 +409,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            // Línea 416
             const res = await fetch(url, {
                 method: metodo,
                 headers: {
@@ -425,9 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!res.ok) {
-                // 💡 MEJORA: Obtener el mensaje de error del backend incluso si es 500
                 const errorText = await res.text();
-                // El error 500 se capturará aquí y se lanzará con el mensaje del servidor
                 throw new Error(`Error ${res.status} al guardar: ${errorText.substring(0, 200)}...`);
             }
 
@@ -471,6 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}" (ID: ${id})? Esta acción es irreversible.`;
 
+        // Utilizar la confirmación de Bootstrap
         if (deleteConfirmModal) deleteConfirmModal.show();
     }
 
@@ -573,7 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    // La eliminación de la solicitud de club pendiente debe ir al DELETE
+                    // Rechazar un club pendiente es una eliminación de la solicitud
                     res = await fetch(`/api/clubs?id=${id}`, {
                         method: 'DELETE',
                         headers: headers
@@ -588,7 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     throw new Error(`Error ${res.status} al ${action} el club: ${errorText.substring(0, 100)}...`);
                 }
 
-                // Intentar leer la respuesta JSON, incluso si fue un DELETE (que a veces devuelve solo 204 No Content)
+                // Intenta leer el JSON. Si es DELETE y no hay contenido (204), asume éxito.
                 const r = res.status === 204 ? { success: true } : await res.json();
 
                 if (!r.success) {
