@@ -1,4 +1,4 @@
-// public/js/clubes.js - VERSIÓN CORREGIDA PARA MOSTRAR NOMBRES Y DESCRIPCIONES (Estilo Original)
+// public/js/clubes.js - VERSIÓN CORREGIDA PARA NOMBRES Y ESTILO ORIGINAL
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
     let storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return imageData;
         }
 
+        // Asumimos un tipo común si es Base64 sin prefijo
         return `data:image/jpeg;base64,${imageData}`;
     }
 
@@ -51,22 +52,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const userClubId = usuario?.club_id ? Number(usuario.club_id) : null;
 
         const row = document.createElement("div");
-        row.className = "row gy-3"; // Usamos row y gy-3 para espaciado
+        row.className = "row gy-3";
 
         clubes.forEach(club => {
             const col = document.createElement("div");
-            // Estructura de columna para 3 tarjetas por fila (como en tu imagen)
-            col.className = "col-12 col-sm-6 col-lg-4";
+            // Mantener el tamaño de la columna para tres por fila (col-md-4)
+            col.className = "col-md-4";
 
             const isMember = userClubId && Number(club.id) === userClubId;
 
-            // 🚨 PUNTO CLAVE: Lógica robusta para el nombre y la descripción
-            // Usamos un fallback a club.club_name por si es la convención del API
-            const clubName = club.nombre || club.name || club.club_name || 'Club sin nombre (Revisar API)';
-            const clubDescription = club.descripcion || club.description || club.club_description || 'Sin descripción';
-
-            // Usamos la imagen destacada/banner, ya que tu estilo es centrado en la imagen.
-            const clubImageSource = getImageUrl(club.imagen_url || club.banner_url || null);
+            // ⭐ CORRECCIÓN CLAVE: Usamos 'nombre_evento' para el nombre y 'descripcion' para la descripción.
+            const clubName = club.nombre_evento || club.nombre || club.name || 'Club sin nombre (ERROR API)';
+            // Si el texto de 'fsofsofsdf' está en descripcion, se mostrará. Si está en enfoque, cámbialo a club.enfoque.
+            const clubDescription = club.descripcion || club.description || 'Sin descripción';
+            const clubImageSource = getImageUrl(club.imagen_url);
 
             // Determinamos el contenido del botón
             const buttonHtml = usuario ? (isMember
@@ -80,26 +79,22 @@ document.addEventListener("DOMContentLoaded", () => {
             ) : `<a href="/pages/auth/login/login.html" class="btn btn-netflix w-100">Inicia sesión para unirte</a>`;
 
 
-            // --- ESTRUCTURA HTML SIMPLIFICADA PARA REFLEJAR EL ESTILO ORIGINAL ---
+            // --- RESTAURACIÓN DEL HTML ORIGINAL ---
             col.innerHTML = `
-                <div class="club-card h-100 p-3 d-flex flex-column" data-club-id="${club.id}" 
-                    style="background:#1a1a1a; border:1px solid #e50914; border-radius:10px; text-align: center;">
-                    
-                    <div class="card-image-wrapper mb-3" style="min-height: 180px; overflow: hidden; border-radius: 8px;">
-                        <img src="${escapeHtml(clubImageSource)}" 
-                            alt="${escapeHtml(clubName)} Banner" 
-                            class="card-img-top w-100 h-100" 
-                            style="object-fit: cover;">
-                    </div>
+                <div class="club-card h-100 p-3 d-flex flex-column" data-club-id="${club.id}"
+                    style="background:#141414;border:1px solid rgba(229,9,20,0.2);border-radius:8px">
 
-                    <div class="flex-grow-1 text-center">
-                        <h4 class="text-danger m-0">${escapeHtml(clubName)}</h4>
-                        <p style="min-height: 40px; font-size: 0.9rem; margin-top: 5px;">
-                            ¡Enfoque: ${escapeHtml(clubDescription)}
-                        </p>
+                    <img src="${escapeHtml(clubImageSource)}" 
+                        alt="${escapeHtml(clubName)} Logo" 
+                        class="img-fluid rounded mb-2" 
+                        style="max-height:160px;object-fit:cover;width:100%;">
+                    
+                    <div class="flex-grow-1">
+                         <h4 class="text-danger">${escapeHtml(clubName)}</h4>
+                        <p>${escapeHtml(clubDescription)}</p>
                     </div>
                     
-                    <div class="mt-auto pt-3">
+                    <div class="mt-auto">
                         ${buttonHtml}
                     </div>
                 </div>
@@ -147,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- LÓGICA DE MODAL Y LEAVE CLUB (De la versión anterior) ---
+    // --- LÓGICA DE MODAL Y LEAVE CLUB (Para confirmar salida) ---
 
     function setupLeaveModal(e) {
         const club_id = e.currentTarget.dataset.id;
@@ -171,7 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function leaveClubAction(club_id) {
         const modalElement = document.getElementById("modalSalirClub");
-        // Aseguramos que el modal se inicialice si no lo está y lo ocultamos
         const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
         modal.hide();
 
