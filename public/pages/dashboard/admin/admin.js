@@ -11,8 +11,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000);
         }
 
+        // 🚨 CORRECCIÓN DE RUTA 404
         setTimeout(() => {
-            window.location.href = "/auth/login.html";
+            // Se utiliza una ruta relativa común, ajusta si es necesario (ej: ../../login.html o /login.html)
+            window.location.href = "../../../login.html";
         }, 1500);
         return; // Detiene la ejecución del script si no hay acceso
     }
@@ -29,7 +31,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.removeItem('usuario');
 
         setTimeout(() => {
-            window.location.href = "/auth/login.html";
+            // 🚨 CORRECCIÓN DE RUTA 404
+            window.location.href = "../../../login.html";
         }, 2000);
     }
 
@@ -596,7 +599,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 const data = await res.json();
 
-                if (!data.success || !Array.isArray(data.data)) throw new new Error(data.message || "Fallo al obtener la lista de usuarios.");
+                if (!data.success || !Array.isArray(data.data)) throw new Error(data.message || "Fallo al obtener la lista de usuarios.");
 
                 userTableBody.innerHTML = ''; // Limpiar el mensaje de carga
 
