@@ -1,7 +1,6 @@
-// public/js/clubes.js - VERSIÓN CORREGIDA PARA IMÁGENES
+// public/js/clubes.js - VERSIÓN CORREGIDA Y ROBUSTA
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
-    // Se usa 'let' para poder actualizar 'usuario' si es necesario
     let storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
     let usuario = storedUser ? JSON.parse(storedUser) : null;
 
@@ -19,13 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // Fallback a una imagen por defecto
         if (!imageData) return '../../img/placeholder.jpg';
 
-        // Si ya parece una URL o Base64 completo (con el prefijo), lo devuelve tal cual
         if (imageData.startsWith('http') || imageData.startsWith('data:image/')) {
             return imageData;
         }
 
-        // Si es una cadena Base64 sin el prefijo (caso común si la subida es directa desde la DB)
-        // Asumimos un tipo común. Si tu backend sabe el tipo, es mejor usarlo.
         return `data:image/jpeg;base64,${imageData}`;
     }
 
@@ -48,53 +44,96 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderClubes(clubes) {
         container.innerHTML = "";
         if (!Array.isArray(clubes) || clubes.length === 0) {
-            container.innerHTML = `<h4 class="text-danger mt-4">Aún no hay clubes creados.</h4>`;
+            // El contenedor padre está en clubes.html, no lo borramos
+            // Solo actualizamos el contenido dentro del contenedor principal
+            container.innerHTML = `<div class="col-12 mt-5"><p class="text-danger fw-bold">Aún no hay clubes creados.</p></div>`;
             return;
         }
 
         const userClubId = usuario?.club_id ? Number(usuario.club_id) : null;
 
-        const row = document.createElement("div");
-        row.className = "row gy-3";
         clubes.forEach(club => {
             const col = document.createElement("div");
-            col.className = "col-md-4";
+            // Usamos col-lg-4 para 3 columnas en escritorio y col-sm-6 para 2 en tablet
+            col.className = "col-12 col-sm-6 col-lg-4";
 
             const isMember = userClubId && Number(club.id) === userClubId;
 
-            // ⭐ USAMOS LAS PROPIEDADES CORRECTAS Y LA FUNCIÓN HELPER
-            const clubName = club.nombre || club.name || 'Club sin nombre';
-            const clubDescription = club.descripcion || club.description || 'Sin descripción';
-            // Usamos club.imagen_url, que es el alias que tu backend devuelve
-            const clubImageSource = getImageUrl(club.imagen_url);
+            // 🚨 PUNTO CLAVE CORREGIDO: Usamos un fallback más robusto, incluyendo 'club_name'
+            // Si el nombre no viene en 'nombre' ni 'name', asegúrate de que esté en este fallback.
+            const clubName = club.nombre || club.name || club.club_name || 'Club sin nombre';
 
+            const clubDescription = club.descripcion || club.description || 'Sin descripción';
+            // Usamos club.imagen_url (o el campo que tenga el banner/imagen destacada)
+            const clubImageSource = getImageUrl(club.imagen_url || club.banner_url || null);
+
+            // Usamos club.logo_url para el icono pequeño. Si no tienes este campo, usa clubImageSource como fallback.
+            const clubLogoSource = getImageUrl(club.logo_url || clubImageSource);
+
+            // Determinar si mostrar el banner (club-card con imagen destacada) o solo el texto/logo
+            // Esto replica la diferencia de estilo que se ve en tu captura de pantalla
+            const hasBanner = clubImageSource !== '../../img/placeholder.jpg' && clubImageSource !== clubLogoSource;
+
+
+            let cardContent = '';
+
+            // --- Plantilla para Club con Banner o Imagen Destacada (como las dos primeras de tu captura) ---
+            if (hasBanner) {
+                cardContent = `
+                    <div class="card-image-wrapper mb-3" style="height: 180px; overflow: hidden; border-radius: 8px;">
+                        <img src="${escapeHtml(clubImageSource)}" 
+                            alt="${escapeHtml(clubName)} Banner" 
+                            class="card-img-top w-100 h-100" 
+                            style="object-fit: cover;">
+                    </div>
+                    <div class="card-body-content text-start">
+                        <h4 class="text-danger">${escapeHtml(clubName)}</h4>
+                        <p style="min-height: 40px; font-size: 0.9rem;">¡Enfoque: ${escapeHtml(clubDescription)}</p>
+                    </div>
+                `;
+            } else {
+                // --- Plantilla para Club sin Banner (solo logo y texto) ---
+                cardContent = `
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="${escapeHtml(clubLogoSource)}" 
+                            alt="${escapeHtml(clubName)} Logo" 
+                            class="me-3" 
+                            style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #e50914;">
+                        <h4 class="text-danger m-0">${escapeHtml(clubName)}</h4>
+                    </div>
+                    <p class="text-start" style="min-height: 40px; font-size: 0.9rem;">${escapeHtml(clubDescription)}</p>
+                `;
+            }
+
+            // Estructura Final de la Tarjeta
             col.innerHTML = `
-                <div class="club-card h-100 p-3" style="background:#141414;border:1px solid rgba(229,9,20,0.2);border-radius:8px">
-                    <img src="${escapeHtml(clubImageSource)}" 
-                         alt="${escapeHtml(clubName)} Logo" 
-                         class="img-fluid rounded mb-2" 
-                         style="max-height:160px;object-fit:cover;width:100%;">
-                    <h4 class="text-danger">${escapeHtml(clubName)}</h4>
-                    <p>${escapeHtml(clubDescription)}</p>
-                    <div>
+                <div class="club-card h-100 p-3 d-flex flex-column" data-club-id="${club.id}" 
+                    style="background:#1a1a1a; border:1px solid #e50914; border-radius:10px; text-align: center;">
+                    
+                    <div class="flex-grow-1">
+                        ${cardContent}
+                    </div>
+                    
+                    <div class="mt-auto pt-3">
                         ${usuario ? (isMember
-                    ? `<button class="btn btn-outline-light w-100 leave-btn" data-id="${club.id}">Salir del club</button>`
+                    ? `<button class="btn btn-outline-light w-100 leave-btn" data-id="${club.id}" data-bs-toggle="modal" data-bs-target="#modalSalirClub">Salir del club</button>`
                     : `<button class="btn btn-netflix w-100 join-btn" data-id="${club.id}">Unirme al club</button>`
                 ) : `<a href="/pages/auth/login/login.html" class="btn btn-netflix w-100">Inicia sesión para unirte</a>`
                 }
                     </div>
                 </div>
             `;
-            row.appendChild(col);
+
+            container.appendChild(col);
         });
 
-        container.appendChild(row);
-
+        // Aseguramos que los event listeners se añadan después de que el HTML esté en el DOM
         document.querySelectorAll(".join-btn").forEach(btn => btn.addEventListener("click", joinClub));
         document.querySelectorAll(".leave-btn").forEach(btn => btn.addEventListener("click", leaveClub));
     }
 
     async function joinClub(e) {
+        // Lógica de unirse al club (sin cambios)
         const club_id = e.currentTarget.dataset.id;
         if (!usuario) {
             mostrarAlerta("Debes iniciar sesión para unirte a un club", "error");
@@ -127,19 +166,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function leaveClub(e) {
+        // Lógica de salir del club (sin cambios)
         const club_id = e.currentTarget.dataset.id;
         if (!usuario) {
             mostrarAlerta("Debes iniciar sesión", "error");
             return;
         }
 
-        // ABRIR MODAL
-        const modal = new bootstrap.Modal(document.getElementById("modalSalirClub"));
-        modal.show();
-
+        // El modal ya se abre con data-bs-target en el HTML, solo necesitamos configurar el botón de confirmación.
         const confirmarBtn = document.getElementById("confirmarSalirClub");
+        // Quitamos cualquier listener anterior para evitar que se ejecute varias veces
+        confirmarBtn.replaceWith(confirmarBtn.cloneNode(true));
+        const newConfirmarBtn = document.getElementById("confirmarSalirClub");
 
-        confirmarBtn.onclick = async () => {
+        newConfirmarBtn.onclick = async () => {
+            const modalElement = document.getElementById("modalSalirClub");
+            const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
             modal.hide();
 
             try {
