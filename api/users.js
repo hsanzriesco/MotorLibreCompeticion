@@ -1,5 +1,6 @@
-// api/users.js
-// Archivo unificado para todas las acciones de usuario (CRUD y Login)
+// =========================================================================
+// api/users.js (MODIFICADO)
+// =========================================================================
 
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
@@ -238,22 +239,49 @@ async function getMeHandler(req, res) {
         const decodedUser = verification.user;
 
         // 2. Obtener datos frescos de la base de datos
-        // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id'
-        const { rows } = await pool.query(
-            "SELECT id, name, email, role FROM users WHERE id = $1",
-            [decodedUser.id]
-        );
+        // ⭐ MODIFICACIÓN CRÍTICA: Añadir LEFT JOIN para obtener club_id e is_presidente.
+        const query = `
+            SELECT 
+                u.id, 
+                u.name, 
+                u.email, 
+                u.role, 
+                uc.club_id,          /* 👈 ¡AÑADIDO! ID del club */
+                uc.is_presidente     /* 👈 ¡AÑADIDO! Estado de presidencia */
+            FROM 
+                users u
+            LEFT JOIN 
+                users_clubs uc ON u.id = uc.user_id /* 👈 ¡AÑADIDO! Asumiendo tabla users_clubs */
+            WHERE 
+                u.id = $1
+        `;
+
+        const { rows } = await pool.query(query, [decodedUser.id]);
 
         if (rows.length === 0) {
             return res.status(404).json({ success: false, message: "Usuario no encontrado en la base de datos." });
         }
 
+        // 3. Formatear la respuesta
         const userProfile = rows[0];
 
-        // 3. Devolver los datos del perfil
+        // Asegurarse de que club_id sea null (no 'null' string) si no hay asignación
+        // Y que is_presidente sea un booleano o 0/1 (el frontend lo espera)
+        const clubId = userProfile.club_id ? parseInt(userProfile.club_id) : null;
+        const isPresidente = userProfile.is_presidente === true || userProfile.is_presidente === 1 || userProfile.is_presidente === '1';
+
+
+        // 4. Devolver los datos del perfil
         return res.status(200).json({
             success: true,
-            user: userProfile
+            user: {
+                id: userProfile.id,
+                name: userProfile.name,
+                email: userProfile.email,
+                role: userProfile.role,
+                club_id: clubId, // <-- ¡CORREGIDO!
+                is_presidente: isPresidente // <-- ¡CORREGIDO!
+            }
         });
 
     } catch (error) {
@@ -461,14 +489,14 @@ async function userListCrudHandler(req, res) {
 
 
             const updateQuery = `
-                UPDATE users
-                SET name = COALESCE($1, name),
-                    email = COALESCE($2, email),
-                    role = COALESCE($3, role),
-                    password = COALESCE($4, password)
-                WHERE id = $5
-                RETURNING id, name, email, role, created_at, is_banned
-            `;
+                UPDATE users
+                SET name = COALESCE($1, name),
+                    email = COALESCE($2, email),
+                    role = COALESCE($3, role),
+                    password = COALESCE($4, password)
+                WHERE id = $5
+                RETURNING id, name, email, role, created_at, is_banned
+            `;
 
             const result = await pool.query(updateQuery, [
                 name ?? null,

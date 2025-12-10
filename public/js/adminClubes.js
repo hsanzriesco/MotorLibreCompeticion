@@ -48,7 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // --- ⭐ CONFIGURACIÓN Y REFERENCIAS DEL DOM ⭐ ---
-    const TOTAL_COLUMNS = 8; // Constante para el número de columnas visibles en la tabla (ID a Acciones)
+    // Modificado de 8 a 7 para ajustarse al HTML (Nombre -> Acciones) sin el ID.
+    const TOTAL_COLUMNS = 7;
 
     // Elementos de las dos tablas y el contador
     const tablaActivos = document.getElementById("tabla-clubes-activos");
@@ -232,6 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes';
 
         if (status === 'error') {
+            // Usa TOTAL_COLUMNS (7) para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
             return;
         }
@@ -240,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const mensaje = esPendiente ?
                 "No hay solicitudes de clubes pendientes." :
                 "No hay clubes activos registrados.";
+            // Usa TOTAL_COLUMNS (7) para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-secondary text-center">${mensaje}</td></tr>`;
             return;
         }
@@ -253,9 +256,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
                 accionesEspeciales = `
-                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
-                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
-                `;
+                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
+                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
+                `;
             } else if (club.estado === 'activo') {
                 badgeEstado = '<span class="badge bg-primary">ACTIVO</span>';
             } else {
@@ -271,21 +274,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 : "Sin descripción";
 
             fila.innerHTML = `
-                <td>${club.id}</td>
-                <td>${escapeHtml(club.nombre_evento)}</td>
-                <td>${descripcionCorta}</td>
-                <td>${fecha}</td>
-                <td>${badgeEstado}</td>
-                <td>${presidenteInfo}</td>
-                <td>
-                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb img-thumbnail" alt="Imagen club" style="width: 50px; height: 50px; object-fit: cover;">` : "-"}
-                </td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}"><i class="bi bi-pencil"></i> Editar</button>
-                    <button class="btn btn-danger btn-sm eliminar-btn" data-id="${club.id}"><i class="bi bi-trash"></i> Eliminar</button>
-                    ${accionesEspeciales ? `<hr class="my-1 border-secondary">${accionesEspeciales}` : ''}
-                </td>
-            `;
+                
+                <td>${escapeHtml(club.nombre_evento)}</td>
+                <td>${descripcionCorta}</td>
+                <td>${fecha}</td>
+                <td>${badgeEstado}</td>
+                <td>${presidenteInfo}</td>
+                <td>
+                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb img-thumbnail" alt="Imagen club" style="width: 50px; height: 50px; object-fit: cover;">` : "-"}
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}"><i class="bi bi-pencil"></i> Editar</button>
+                    <button class="btn btn-danger btn-sm eliminar-btn" data-id="${club.id}"><i class="bi bi-trash"></i> Eliminar</button>
+                    ${accionesEspeciales ? `<hr class="my-1 border-secondary">${accionesEspeciales}` : ''}
+                </td>
+            `;
 
             contenedorTabla.appendChild(fila);
         });
@@ -459,7 +462,8 @@ document.addEventListener("DOMContentLoaded", () => {
         clubToDeleteId = id;
 
         const row = e.currentTarget.closest("tr");
-        const clubName = row && row.children[1] ? row.children[1].textContent : "este club";
+        // Dado que eliminamos el ID, el nombre ahora es el primer hijo (índice 0) en lugar del segundo (índice 1)
+        const clubName = row && row.children[0] ? row.children[0].textContent : "este club";
 
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}" (ID: ${id})? Esta acción es irreversible.`;
