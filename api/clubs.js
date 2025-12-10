@@ -1,4 +1,4 @@
-// clubs.js - CORREGIDO
+// clubs.js - CORREGIDO (Implementado el nuevo campo 'is_presidente' en lugar de role='Presidente')
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -158,12 +158,12 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
         return decodedUser;
     }
 
-    // B. Permiso de Presidente
+    // B. Permiso de Presidente (Verificado por ID)
     if (!clubId) {
         throw new Error('ID de club requerido para la verificación de propiedad.');
     }
 
-    // 1. Verificar si el usuario es presidente y el club_id coincide con el solicitado
+    // 1. Verificar si el club existe y obtener el id_presidente
     const clubIdNum = parseInt(clubId);
 
     const checkPresidente = await pool.query(
@@ -183,6 +183,8 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
         throw new Error('Acceso denegado: Solo el administrador o el presidente de este club pueden editarlo.');
     }
 
+    // Nota: La verificación de si el usuario tiene is_presidente=TRUE se asume
+    // al momento de la creación del token. Aquí solo se verifica la propiedad del club.
     return decodedUser;
 };
 
@@ -241,9 +243,11 @@ async function statusChangeHandler(req, res) {
                 );
                 const newClubId = insertRes.rows[0].id;
 
+                // 🚨 CAMBIO CRÍTICO: Actualización para el nuevo esquema de usuario
+                // El rol se cambia a 'user' (rol base) y se activa la bandera is_presidente = TRUE
                 await client.query(
-                    'UPDATE public."users" SET role = $1, club_id = $2 WHERE id = $3',
-                    ['presidente', newClubId, club.id_presidente]
+                    'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
+                    ['user', newClubId, club.id_presidente]
                 );
 
                 await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [id]);
@@ -416,11 +420,7 @@ async function clubsHandler(req, res) {
                 // ⭐ MODIFICACIÓN POST: Obtener 'enfoque' de los campos
                 const { nombre_evento, descripcion, ciudad, enfoque } = fields;
 
-                // 🛠️ FIX: Se cambia el mensaje de error para que sea más explícito con los nombres de la BD/API.
-                // Aunque el cliente puede usar etiquetas amigables, el backend debería referirse a sus claves.
                 if (!nombre_evento || !descripcion || !ciudad || !enfoque) {
-                    // Originalmente: "Faltan campos obligatorios: nombre, descripción, ciudad o enfoque."
-                    // Corregido para ser más preciso y consistente con las claves que faltan:
                     return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre_evento, descripcion, ciudad o enfoque." });
                 }
 
@@ -477,10 +477,11 @@ async function clubsHandler(req, res) {
                         const result = await client.query(insertQuery, params);
                         const newClubId = result.rows[0].id;
 
-                        // 2. Actualización del Rol de Usuario
+                        // 🚨 CAMBIO CRÍTICO: Actualización para el nuevo esquema de usuario (Admin)
+                        // El rol se mantiene como 'admin' y se activa la bandera is_presidente = TRUE
                         await client.query(
-                            'UPDATE public."users" SET role = $1, club_id = $2 WHERE id = $3',
-                            ['presidente', newClubId, idPresidente]
+                            'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
+                            ['admin', newClubId, idPresidente]
                         );
 
                         await client.query('COMMIT');
@@ -501,13 +502,16 @@ async function clubsHandler(req, res) {
 
                 } else {
                     // Lógica para usuario normal (Solicitud Pendiente) - Sin transacción (solo una inserción)
-                    const checkUser = await pool.query('SELECT role, club_id FROM public."users" WHERE id = $1', [userId]);
+
+                    // 🚨 CAMBIO CRÍTICO: Seleccionar el campo is_presidente
+                    const checkUser = await pool.query('SELECT role, club_id, is_presidente FROM public."users" WHERE id = $1', [userId]);
                     if (checkUser.rows.length === 0) {
                         return res.status(403).json({ success: false, message: "Usuario no encontrado." });
                     }
                     const userDetails = checkUser.rows[0];
 
-                    if (userDetails.role === 'presidente' && userDetails.club_id !== null) {
+                    // 🚨 CAMBIO CRÍTICO: Verificar si ya es presidente usando la nueva columna
+                    if (userDetails.is_presidente === true && userDetails.club_id !== null) {
                         return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                     }
 
@@ -565,8 +569,6 @@ async function clubsHandler(req, res) {
                 if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Ya tienes')) {
                     return res.status(401).json({ success: false, message: uploadError.message });
                 }
-                // Si el error de validación es lo que está fallando (antes del fix) y el error no tiene código de estado,
-                // enviamos un 400. Esto es menos probable que sea necesario ahora.
                 if (uploadError.message.includes('nombre_evento') || uploadError.message.includes('descripcion') || uploadError.message.includes('ciudad') || uploadError.message.includes('enfoque')) {
                     return res.status(400).json({ success: false, message: uploadError.message });
                 }
@@ -730,7 +732,9 @@ async function clubsHandler(req, res) {
 
                 if (deleteRes.rows.length > 0) {
                     if (id_presidente) {
-                        await client.query('UPDATE public."users" SET role = $1, club_id = NULL WHERE id = $2', ['user', id_presidente]);
+                        // 🚨 CAMBIO CRÍTICO: Actualización para el nuevo esquema de usuario (Eliminación)
+                        // El rol se restablece a 'user' y se desactiva la bandera is_presidente = FALSE
+                        await client.query('UPDATE public."users" SET role = $1, club_id = NULL, is_presidente = FALSE WHERE id = $2', ['user', id_presidente]);
                     }
 
                     // Eliminación de Cloudinary fuera de la transacción para evitar fallos de commit, 
