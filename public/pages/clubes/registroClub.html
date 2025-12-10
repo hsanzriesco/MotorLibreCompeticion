@@ -121,7 +121,7 @@
 
     <footer id="main-footer" class="mt-5">
     </footer>
-    
+
     <script src="../../js/alertas.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -129,11 +129,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('clubRegistrationForm');
 
-            // Función para mostrar alertas usando el alert nativo
-            function mostrarAlerta(message, type) {
-                console.log(`[${type.toUpperCase()}] ${message}`);
-                alert(`[${type}] ${message}`);
-            }
+            // ❌ ELIMINAMOS la redefinición local de mostrarAlerta para usar la versión de alertas.js.
+            // La función mostrarAlerta ahora está disponible globalmente.
 
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
@@ -142,6 +139,7 @@
                 const token = sessionStorage.getItem('userToken') || sessionStorage.getItem('token');
 
                 if (!token) {
+                    // ⭐ USAREMOS LA FUNCIÓN EXTERNA CON ESTILO 'error'
                     mostrarAlerta("Error: Debes iniciar sesión para registrar un club.", "error");
                     return;
                 }
@@ -189,14 +187,17 @@
                         body: formData,
                     });
 
+                    // Intentar siempre obtener el JSON, incluso si hay error
                     const r = await res.json();
 
                     if (!res.ok || !r.success) {
+                        // ⭐ USAR FUNCIÓN EXTERNA
                         mostrarAlerta(r.message || `Error ${res.status}: Fallo al enviar la solicitud.`, "error");
                         return;
                     }
 
                     // 5. ÉXITO REAL
+                    // ⭐ USAR FUNCIÓN EXTERNA
                     mostrarAlerta(r.message || "¡Solicitud enviada! Tu club está ahora Pendiente de Aprobación por la Administración.", "exito");
 
                     // Limpiar formulario y enfocar en el siguiente paso
@@ -204,6 +205,7 @@
 
                 } catch (error) {
                     console.error("Error al registrar club (Network/Server):", error);
+                    // ⭐ USAR FUNCIÓN EXTERNA
                     mostrarAlerta("Error de conexión con el servidor. Verifica tu red.", "error");
                 }
             });
