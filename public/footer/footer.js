@@ -16,8 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </a>
 
                     <div class="mt-2">
-                        <a href="#" class="text-light me-2"><i class="bi bi-facebook fs-6"></i></a>
-                        <a href="#" class="text-light me-2"><i class="bi bi-twitter fs-6"></i></a>
+                        <a href="https://x.com/InfoMlc81196" class="text-light me-2"><i class="bi bi-twitter fs-6"></i></a>
                         <a href="https://www.instagram.com/motorlibrecompeticion.mlc/" class="text-light"><i class="bi bi-instagram fs-6"></i></a>
                     </div>
                 </div>

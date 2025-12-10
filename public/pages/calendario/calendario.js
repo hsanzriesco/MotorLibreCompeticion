@@ -53,28 +53,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // ===============================================================
     // ⭐⭐ FUNCIÓN CORREGIDA PARA EL FORMATO DE HORA (FRONTEND) ⭐⭐
+    // Se ha hecho más robusta contra valores no-string
     // ===============================================================
 
     /**
      * Convierte la cadena de fecha SQL limpia ("YYYY-MM-DD HH:MM:SS") 
-     * en una representación que JavaScript interprete correctamente como hora local,
-     * para evitar el error de +1 hora en el navegador (que es una compensación
-     * de la zona horaria).
+     * en una representación que JavaScript interprete correctamente como hora local.
      * @param {string} sqlTimeString La cadena de fecha/hora limpia recibida.
      * @returns {string} La fecha/hora formateada para el usuario.
      */
     function formatLocalTime(sqlTimeString) {
-        if (!sqlTimeString) return 'Fecha/Hora no válida';
+        // Hacemos la cláusula de guardia más estricta: debe ser una cadena y no estar vacía.
+        if (typeof sqlTimeString !== 'string' || !sqlTimeString.trim()) return 'Fecha/Hora no válida';
 
         try {
             // Dividimos la cadena en componentes para construir la fecha
+            // Si sqlTimeString no tiene el formato esperado, el split fallará y pasará al catch.
             const [datePart, timePart] = sqlTimeString.split(' ');
+
+            // Verificación adicional para asegurar que hay dos partes y que timePart existe
+            if (!datePart || !timePart) {
+                throw new Error("Formato de fecha SQL incorrecto: Falta parte de hora.");
+            }
+
             const [year, month, day] = datePart.split('-').map(Number);
+            // El tiempo puede ser opcional o no contener segundos
             const [hour, minute] = timePart.split(':').map(Number);
 
             // Creamos la fecha pasándole los componentes, forzando la interpretación como hora LOCAL.
             // Nota: El mes es 0-indexado, por eso es month - 1.
-            const date = new Date(year, month - 1, day, hour, minute);
+            const date = new Date(year, month - 1, day, hour || 0, minute || 0);
 
             // Si la conversión falla (Date.getTime() devuelve NaN), devolvemos la cadena original
             if (isNaN(date.getTime())) {
@@ -85,6 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Formateamos la fecha a la configuración regional deseada
             return date.toLocaleDateString("es-ES", DATE_OPTIONS);
         } catch (error) {
+            // Si el error original venía aquí, ahora lo manejará
             console.error("Error en formatLocalTime:", error);
             return sqlTimeString;
         }
@@ -273,12 +282,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
-            // FullCalendar devuelve e.start y e.end como objetos Date (si se usan con JSON Feed), 
-            // pero para ser extra seguros con la corrección del backend, trabajaremos con las cadenas
-            // que nos da FullCalendar para luego usar nuestra función de formato.
+            // FullCalendar devuelve e.start y e.end como objetos Date.
+            // e.startStr y e.endStr contienen la cadena limpia del servidor (YYYY-MM-DD HH:MM:SS)
 
-            // Si el backend devuelve cadenas, FullCalendar las convierte en objetos Date. 
-            // Para el chequeo de finalizado, usamos el objeto Date que da FullCalendar:
+            // Verificamos si el evento ha finalizado
             const eventEndDate = e.end ? new Date(e.end) : null;
             const now = new Date();
 
@@ -320,12 +327,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
             // ⭐⭐ APLICACIÓN DE LA CORRECCIÓN DE HORA ⭐⭐
-            // Usamos las cadenas de texto 'start' y 'end' del objeto original que FullCalendar
-            // almacena en e.startStr y e.endStr, si están disponibles, o e.start/e.end.
-
-            // FullCalendar usa 'startStr' y 'endStr' para las cadenas literales
-            const startTimeString = e.startStr || e.start;
-            const endTimeString = e.endStr || e.end;
+            // Usamos SOLO las cadenas limpias (e.startStr y e.endStr). 
+            // Si son null/undefined, formatLocalTime lo manejará con la cláusula de guardia.
+            const startTimeString = e.startStr;
+            const endTimeString = e.endStr; // Anteriormente: e.endStr || e.end (esto causaba el error si e.end era un objeto Date)
 
             const formattedStart = formatLocalTime(startTimeString);
             const formattedEnd = formatLocalTime(endTimeString);
