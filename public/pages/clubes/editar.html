@@ -17,14 +17,24 @@
     <style>
         /* Estilos generales y del panel */
         body {
+            /* === MODIFICACIONES CLAVE PARA STICKY FOOTER === */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            /* === FIN MODIFICACIONES CLAVE === */
+
             background-color: #111;
             color: #fff;
         }
 
         main {
+            /* === MODIFICACIÓN CLAVE PARA STICKY FOOTER === */
+            flex-grow: 1;
+            /* El resto de tus estilos existentes */
             margin-top: 80px;
             padding: 20px;
-            min-height: 100vh;
+            /* Eliminamos min-height: 100vh; de main para que 'body' lo controle */
         }
 
         .admin-section {
@@ -216,6 +226,9 @@
         </section>
     </main>
 
+    <footer id="footer-placeholder">
+    </footer>
+
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
@@ -242,6 +255,7 @@
     <script src="../../js/navbar.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./clubEdit.js"></script>
+    <script src="../../footer/footer.js"></script>
 
     <script>
         // Lógica de Adaptación de Navbar: 
