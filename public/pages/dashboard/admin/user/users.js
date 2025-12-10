@@ -370,12 +370,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (newPassword) {
             if (newPassword !== confirmPassword) {
                 // Usando mostrarAlerta (usa 'warning')
-                mostrarAlerta("Las contraseñas no coinciden.", "warning");
+                mostrarAlerta("Las contraseñas no coinciden.", "error");
                 return;
             }
         } else if (isCreation) {
             // Usando mostrarAlerta (usa 'warning')
-            mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
+            mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "error");
             return;
         }
 
@@ -385,7 +385,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const passwordError = validatePassword(newPassword);
             if (passwordError) {
                 // Usando mostrarAlerta (usa 'warning')
-                mostrarAlerta(passwordError, "warning");
+                mostrarAlerta(passwordError, "error");
                 return;
             }
         }
@@ -517,7 +517,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (shouldBan && reason.length < 5) {
             // Usando mostrarAlerta (usa 'warning')
-            mostrarAlerta("La razón del baneo debe tener al menos 5 caracteres.", "warning");
+            mostrarAlerta("La razón del baneo debe tener al menos 5 caracteres.", "error");
             return;
         }
 
