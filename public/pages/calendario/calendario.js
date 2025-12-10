@@ -52,14 +52,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     // ===============================================================
-    // ⭐⭐ FUNCIÓN CORREGIDA PARA EL FORMATO DE HORA (FRONTEND) ⭐⭐
-    // Ahora maneja eventos de día completo sin parte de hora.
+    // ⭐⭐⭐ FUNCIÓN CORREGIDA FINAL (Maneja SQL limpio e ISO 8601) ⭐⭐⭐
     // ===============================================================
 
     /**
-     * Convierte la cadena de fecha SQL limpia ("YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DD") 
-     * en una representación que JavaScript interprete correctamente como hora local.
-     * @param {string} sqlTimeString La cadena de fecha/hora limpia recibida.
+     * Convierte la cadena de fecha SQL limpio ("YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DD") 
+     * o la cadena ISO 8601 ("YYYY-MM-DDTHH:MM:SS+ZZ:ZZ") en una representación local.
+     * @param {string} sqlTimeString La cadena de fecha/hora recibida.
      * @returns {string} La fecha/hora formateada para el usuario.
      */
     function formatLocalTime(sqlTimeString) {
@@ -67,31 +66,36 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (typeof sqlTimeString !== 'string' || !sqlTimeString.trim()) return 'Fecha/Hora no válida';
 
         try {
-            // Dividimos la cadena en componentes para construir la fecha
-            const parts = sqlTimeString.split(' ');
-            const datePart = parts[0];
-            let timePart = parts[1]; // Puede ser undefined si es un evento de día completo
+            let date;
 
-            // Si timePart es undefined (evento de día completo), establecemos 00:00:00 como hora por defecto.
-            if (!timePart) {
-                // Si la cadena solo tiene la parte de la fecha, usamos medianoche local.
-                timePart = '00:00:00';
+            // 1. Detección de formato ISO 8601 (contiene 'T'): 
+            // Esto resuelve el error "Fallo al construir la fecha local a partir de: 2025-12-12T08:20:00+01:00"
+            if (sqlTimeString.includes('T')) {
+                // Si es formato ISO 8601, new Date() lo maneja de forma segura (como UTC/localizado).
+                date = new Date(sqlTimeString);
+
+            } else {
+                // 2. Formato SQL Limpio (YYYY-MM-DD HH:MM:SS o YYYY-MM-DD)
+
+                const parts = sqlTimeString.split(' ');
+                const datePart = parts[0];
+                let timePart = parts[1];
+
+                // Si timePart es undefined (evento de día completo), establecemos 00:00:00.
+                if (!timePart) {
+                    timePart = '00:00:00';
+                }
+
+                if (!datePart) {
+                    throw new Error("Formato de fecha SQL incorrecto: Falta parte de fecha.");
+                }
+
+                const [year, month, day] = datePart.split('-').map(Number);
+                const [hour, minute] = timePart.split(':').map(Number);
+
+                // Creamos la fecha forzando la interpretación como hora LOCAL para evitar el problema +1h/UTC.
+                date = new Date(year, month - 1, day, hour || 0, minute || 0);
             }
-
-            // Verificación para asegurar que la parte de la fecha existe
-            if (!datePart) {
-                // Esto solo ocurriría si sqlTimeString fuera un espacio vacío, pero la línea 71 lo maneja
-                throw new Error("Formato de fecha SQL incorrecto: Falta parte de fecha.");
-            }
-
-            const [year, month, day] = datePart.split('-').map(Number);
-            // El tiempo puede no contener segundos, por lo que hour/minute pueden ser 0 si falta
-            // Además, si la cadena es '00:00:00', map(Number) funcionará correctamente
-            const [hour, minute] = timePart.split(':').map(Number);
-
-            // Creamos la fecha pasándole los componentes, forzando la interpretación como hora LOCAL.
-            // Nota: El mes es 0-indexado, por eso es month - 1.
-            const date = new Date(year, month - 1, day, hour || 0, minute || 0);
 
             // Si la conversión falla (Date.getTime() devuelve NaN), devolvemos la cadena original
             if (isNaN(date.getTime())) {
@@ -100,11 +104,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             // Formateamos la fecha a la configuración regional deseada
-            // Nota: Si el evento es de día completo (00:00), esto mostrará '12:00 a. m.' o similar.
-            // Para eventos de día completo, podrías considerar mostrar solo la fecha si es necesario.
             return date.toLocaleDateString("es-ES", DATE_OPTIONS);
         } catch (error) {
-            // Si el error original venía aquí, ahora lo manejará
+            // Capturamos cualquier error de split/map que pudiera ocurrir
             console.error("Error en formatLocalTime:", error);
             return sqlTimeString;
         }
@@ -137,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // ⭐ Chequeo de hora de fin (se mantiene la lógica de seguridad)
+        // Chequeo de hora de fin (se mantiene la lógica de seguridad)
         const eventEndDateString = registerBtn.getAttribute('data-event-end-time');
 
         if (eventEndDateString) {
@@ -156,7 +158,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
         }
-        // ⭐ FIN Chequeo de hora de fin
 
         registerBtn.disabled = true;
         statusSpan.textContent = "Inscribiendo...";
@@ -333,8 +334,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
-            // ⭐⭐ CORRECCIÓN: Usamos solo las cadenas limpias (e.startStr/e.endStr)
-            // para evitar pasar objetos Date a formatLocalTime.
+            // Usamos solo las propiedades de cadena (e.startStr/e.endStr).
+            // Si son null/undefined, formatLocalTime lo gestionará con la cláusula de guardia.
+            // Si es ISO 8601 (con T), formatLocalTime también lo gestionará.
             const startTimeString = e.startStr;
             const endTimeString = e.endStr;
 
