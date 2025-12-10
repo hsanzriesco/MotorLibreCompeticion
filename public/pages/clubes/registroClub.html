@@ -19,7 +19,6 @@
             background-color: #222;
             color: white;
             border: 1px solid #e50914;
-            /* Borde rojo */
             transition: all 0.2s ease;
         }
 
@@ -129,9 +128,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('clubRegistrationForm');
 
-            // ❌ ELIMINAMOS la redefinición local de mostrarAlerta para usar la versión de alertas.js.
-            // La función mostrarAlerta ahora está disponible globalmente.
-
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
@@ -139,8 +135,7 @@
                 const token = sessionStorage.getItem('userToken') || sessionStorage.getItem('token');
 
                 if (!token) {
-                    // ⭐ USAREMOS LA FUNCIÓN EXTERNA CON ESTILO 'error'
-                    mostrarAlerta("Debes iniciar sesión para registrar un club.", "error");
+                    mostrarAlerta("Error: Debes iniciar sesión para registrar un club.", "error");
                     return;
                 }
 
@@ -154,58 +149,64 @@
                 const clubDescription = document.getElementById('clubDescription').value.trim();
 
                 // ----------------------------------------------------
-                // **CORRECCIÓN APLICADA**
-                // Se cambió 'nombre' a 'nombre_evento' para coincidir con el backend clubs.js
+                // **ATENCIÓN A LOS NOMBRES DE CAMPO**
+                // Estas claves deben coincidir exactamente con lo que el backend de Vercel espera.
+                // Si el backend espera 'name' y no 'nombre_evento', el 400 es probable.
                 // ----------------------------------------------------
-                formData.append("nombre_evento", clubName);
 
-                formData.append("ciudad", clubCity);
+                if (clubName) formData.append("nombre_evento", clubName); // Asegurar que no esté vacío
+                if (clubCity) formData.append("ciudad", clubCity);
 
-                // Añadir el enfoque y la descripción principal.
-                formData.append("descripcion", `[Enfoque: ${clubFocus}] ${clubDescription}`);
+                // Concatenamos el enfoque con la descripción. Esto es una buena práctica.
+                const fullDescription = `[Enfoque: ${clubFocus}] ${clubDescription}`;
+                if (fullDescription.length > 0) formData.append("descripcion", fullDescription);
 
 
                 // 3. Adjuntar la imagen
                 const imagenInput = document.getElementById('clubImage');
                 if (imagenInput && imagenInput.files.length > 0) {
-                    // El backend espera el nombre 'imagen_club' (asumiendo que es correcto según clubs.js)
+                    // El backend espera el nombre 'imagen_club'
                     formData.append("imagen_club", imagenInput.files[0]);
                 }
 
                 // 4. HACER EL FETCH CON EL TOKEN
                 try {
-                    // Usar la ruta completa o base si el Vercel API no es accesible directamente por /api/
                     const apiUrl = 'https://motor-libre-competicion.vercel.app/api/clubs';
 
                     const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
-                            // Enviar el token en el header de autorización es VITAL
+                            // ✅ CORRECTO: Enviar el token en el header de autorización es VITAL
                             'Authorization': `Bearer ${token}`
                         },
-                        // Importante: No establecer Content-Type, FormData se encarga de esto (multipart/form-data).
+                        // No establecer Content-Type para FormData
                         body: formData,
                     });
 
-                    // Intentar siempre obtener el JSON, incluso si hay error
-                    const r = await res.json();
+                    // Intentamos siempre obtener el mensaje JSON de la respuesta
+                    let r = {};
+                    try {
+                        r = await res.json();
+                    } catch (e) {
+                        // Si el cuerpo no es JSON (ej. si es HTML o vacío), el error es más grave.
+                        console.error("Respuesta no es JSON:", e);
+                    }
 
-                    if (!res.ok || !r.success) {
-                        // ⭐ USAR FUNCIÓN EXTERNA
-                        mostrarAlerta(r.message || `Error ${res.status}: Fallo al enviar la solicitud.`, "error");
+                    if (!res.ok) {
+                        // El código 400 caerá aquí. Intentamos mostrar el mensaje del backend.
+                        const errorMsg = r.message || r.error || `Error ${res.status}: Fallo en la solicitud. El servidor devolvió datos incompletos.`;
+                        mostrarAlerta(errorMsg, "error");
+                        console.error("Respuesta de error completa:", r);
                         return;
                     }
 
                     // 5. ÉXITO REAL
-                    // ⭐ USAR FUNCIÓN EXTERNA
                     mostrarAlerta(r.message || "¡Solicitud enviada! Tu club está ahora Pendiente de Aprobación por la Administración.", "exito");
 
-                    // Limpiar formulario y enfocar en el siguiente paso
                     form.reset();
 
                 } catch (error) {
                     console.error("Error al registrar club (Network/Server):", error);
-                    // ⭐ USAR FUNCIÓN EXTERNA
                     mostrarAlerta("Error de conexión con el servidor. Verifica tu red.", "error");
                 }
             });
