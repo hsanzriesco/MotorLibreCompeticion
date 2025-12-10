@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="col-md-3 mb-3 text-center text-md-start">
                     
                     <a href="./index.html" class="d-inline-block">
-                        <img src="./img/imagen-tfg.png" alt="MLC Logo" height="80" class="img-fluid mb-2">
+                        <img src="/img/imagen-tfg.png" alt="MLC Logo" height="80" class="img-fluid mb-2">
                     </a>
 
                     <div class="mt-2">
