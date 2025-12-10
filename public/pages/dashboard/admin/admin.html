@@ -86,7 +86,7 @@
         }
 
         /* ========================== */
-        /* MODALES ESTILO NETFLIX   */
+        /* MODALES ESTILO NETFLIX   */
         /* ========================== */
 
         .modal-content {
@@ -162,7 +162,7 @@
 
             <form id="club-form" class="mb-4" enctype="multipart/form-data">
                 <input type="hidden" id="club-id">
-
+                <input type="hidden" id="id_presidente">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Nombre del Club *</label>
@@ -178,6 +178,25 @@
                     <div class="col-md-12">
                         <label class="form-label">Descripción</label>
                         <textarea class="form-control input-dark" id="descripcion" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Ciudad *</label>
+                        <input type="text" class="form-control input-dark" id="ciudad" placeholder="Ej: Barcelona"
+                            required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Enfoque Principal *</label>
+                        <select class="form-select input-dark" id="enfoque" required>
+                            <option value="" selected disabled>Selecciona el enfoque</option>
+                            <option value="Drifting">Drifting / Derrape</option>
+                            <option value="DragRace">Drag Race / Aceleración</option>
+                            <option value="TimeAttack">Time Attack / Circuito</option>
+                            <option value="Exposicion">Exposición / Tuning</option>
+                            <option value="Multidisciplinar">Multidisciplinar</option>
+                            <option value="Otros">Otros</option>
+                        </select>
                     </div>
 
                     <div class="col-md-6">
@@ -264,7 +283,7 @@
         </section>
     </main>
 
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal fade" id="deleteConfirmModal">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
 
@@ -286,7 +305,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="statusConfirmModal" tabindex="-1">
+    <div class="modal fade" id="statusConfirmModal">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
 
@@ -309,7 +328,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="logoutConfirmModal" tabindex="-1">
+    <div class="modal fade" id="logoutConfirmModal">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
 
