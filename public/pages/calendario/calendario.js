@@ -131,10 +131,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function handleRegistration(eventId, userId) {
         if (!userId) {
-            // ⭐ MODIFICACIÓN APLICADA: Usa mostrarAlerta con estilo 'advertencia'.
-            mostrarAlerta("Debes iniciar sesión para inscribirte.", ' error');
+            // ⭐ MODIFICACIÓN CLAVE: Usamos 'error' para la alerta de inicio de sesión.
+            mostrarAlerta("Debes iniciar sesión para inscribirte.", 'error');
             // Mantiene la redirección con un breve retraso.
-            setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
+            setTimeout(() => window.location.href = '../auth/login/login.html', 1200); 
             return;
         }
 
