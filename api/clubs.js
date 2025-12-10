@@ -1,4 +1,4 @@
-// clubs.js - CORREGIDO (VERSIÓN FINAL CON JOIN/LEAVE)
+// clubs.js - VERSIÓN FINAL CON RESTRICCIÓN DE PRESIDENTE PARA UNIRSE
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -447,17 +447,28 @@ async function clubsHandler(req, res) {
                         await client.query('BEGIN');
 
                         // 1. Verificar si ya es presidente o miembro de otro club
+                        // CONSULTA: Se obtienen club_id e is_presidente
                         const userRes = await client.query('SELECT club_id, is_presidente FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
                         if (userRes.rows.length === 0) {
                             await client.query('ROLLBACK');
                             return res.status(404).json({ success: false, message: "Usuario no encontrado." });
                         }
-                        const { club_id: currentClubId } = userRes.rows[0];
+
+                        // ✅ CORRECCIÓN: Desestructuramos club_id e is_presidente
+                        const { club_id: currentClubId, is_presidente } = userRes.rows[0];
 
                         if (currentClubId !== null) {
                             await client.query('ROLLBACK');
+
+                            // ✅ LÓGICA AGREGADA: Si es presidente, rechazar con mensaje específico
+                            if (is_presidente) {
+                                return res.status(403).json({ success: false, message: "Como presidente, no puedes unirte a otro club. Debes disolver o transferir tu club actual primero." });
+                            }
+
+                            // Lógica para miembros regulares de otro club
                             return res.status(400).json({ success: false, message: "Ya eres miembro de un club. Primero debes abandonarlo." });
                         }
+
 
                         // 2. Unir al usuario al club (Actualizar tabla users)
                         await client.query('UPDATE public."users" SET club_id = $1 WHERE id = $2', [club_id, requestingUserId]);
@@ -498,6 +509,7 @@ async function clubsHandler(req, res) {
                         }
 
                         // 2. Abandonar el club (Actualizar tabla users: club_id = NULL)
+                        // NOTA: is_presidente también se mantiene en FALSE, que es su estado por defecto al no ser presidente de un club.
                         await client.query('UPDATE public."users" SET club_id = NULL WHERE id = $1', [requestingUserId]);
 
                         await client.query('COMMIT');
@@ -514,7 +526,7 @@ async function clubsHandler(req, res) {
                 // Si la acción existe pero no fue 'join' ni 'leave' (e.g. action=unknown)
                 return res.status(400).json({ success: false, message: "Acción POST no válida." });
             }
-            // 🛑 FIN FIX CLAVE (A partir de aquí, es solo creación de club con formidable)
+            // 🛑 FIN BLOQUE JOIN/LEAVE
 
 
             // --- Lógica de Creación de Club (Existente) ---
@@ -532,7 +544,6 @@ async function clubsHandler(req, res) {
                 if (!nombre_evento || !descripcion || !ciudad || !enfoque) {
                     return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre_evento, descripcion, ciudad o enfoque." });
                 }
-                // ... (El resto de la lógica de club creation con transacciones sigue igual)
 
                 if (!authVerification.authorized || !userId) {
                     return res.status(401).json({ success: false, message: "Debe iniciar sesión para crear o solicitar un club." });
