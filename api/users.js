@@ -349,7 +349,7 @@ async function userListCrudHandler(req, res) {
     let body;
 
     try {
-        // --- INICIO DE MODIFICACIÓN ---
+        // --- INICIO DE MODIFICACIÓN PÚBLICA (GET con ID) ---
         // Exclusión: Permitir GET con ID para todos los usuarios (público)
         if (method === "GET" && query.id) {
             const userResult = await pool.query(
@@ -365,7 +365,7 @@ async function userListCrudHandler(req, res) {
             // No se obtienen datos sensibles (email, password, ban_reason) para público
             return res.status(200).json({ success: true, data: userResult.rows[0] });
         }
-        // --- FIN DE MODIFICACIÓN ---
+        // --- FIN DE MODIFICACIÓN PÚBLICA ---
 
 
         // 🚨 VERIFICACIÓN DE ADMIN: Bloquea todos los demás métodos (GET sin ID, POST, PUT, DELETE)
@@ -427,6 +427,7 @@ async function userListCrudHandler(req, res) {
 
         // PUT: ACTUALIZAR USUARIO (Admin)
         if (method === "PUT") {
+            // 🛑 MODIFICADO: Extraer ID de la query (parámetro de consulta)
             const { id } = query;
             const { name, email, password, role, club_id, is_banned, ban_reason } = body;
 
@@ -443,8 +444,8 @@ async function userListCrudHandler(req, res) {
                     }
                     await pool.query(
                         `INSERT INTO usuarios_baneados (user_id, ban_reason) 
-                         VALUES ($1, $2)
-                         ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
+                         VALUES ($1, $2)
+                         ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
                         [id, ban_reason.trim()]
                     );
                     await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
@@ -503,15 +504,15 @@ async function userListCrudHandler(req, res) {
 
 
             const updateQuery = `
-                UPDATE users
-                SET name = COALESCE($1, name),
-                    email = COALESCE($2, email),
-                    role = COALESCE($3, role),
-                    password = COALESCE($4, password),
-                    club_id = $5
-                WHERE id = $6
-                RETURNING id, name, email, role, created_at, club_id, is_banned 
-            `;
+                UPDATE users
+                SET name = COALESCE($1, name),
+                    email = COALESCE($2, email),
+                    role = COALESCE($3, role),
+                    password = COALESCE($4, password),
+                    club_id = $5
+                WHERE id = $6
+                RETURNING id, name, email, role, created_at, club_id, is_banned 
+            `;
 
             const result = await pool.query(updateQuery, [
                 name ?? null,
@@ -531,6 +532,7 @@ async function userListCrudHandler(req, res) {
 
         // DELETE: ELIMINAR USUARIO (Admin)
         if (method === "DELETE") {
+            // 🛑 MODIFICADO: Extraer ID de la query (parámetro de consulta o de ruta)
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
 
