@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    api_secret: process.CLOUDINARY_API_SECRET
 });
 
 // Convertir fs.unlink en una función Promise para usar con async/await
@@ -282,7 +282,7 @@ async function statusChangeHandler(req, res) {
 
             // Eliminar imagen de Cloudinary si existe
             if (clubRes.rows.length > 0 && clubRes.rows[0].imagen_club) {
-                await deleteFromCloudinary(clubRes.rows[0].imagen_club);
+                await deleteFromCloudary(clubRes.rows[0].imagen_club);
             }
 
             return res.status(200).json({ success: true, message: "Solicitud de club rechazada y eliminada." });
@@ -462,7 +462,7 @@ async function clubsHandler(req, res) {
                         // 2. Unir al usuario al club (Actualizar tabla users)
                         await client.query('UPDATE public."users" SET club_id = $1 WHERE id = $2', [club_id, requestingUserId]);
 
-                        // --- [MODIFICACIÓN CLAVE] SINCRONIZACIÓN DE TOKEN (JOIN) ---
+                        // --- SINCRONIZACIÓN DE TOKEN (JOIN) ---
                         // 3. Obtener los datos del usuario actualizados (con el nuevo club_id)
                         const updatedUserRes = await client.query(
                             'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
@@ -472,7 +472,7 @@ async function clubsHandler(req, res) {
 
                         // 4. Generar un nuevo token con los datos frescos
                         const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                        // --- [FIN MODIFICACIÓN CLAVE] ---
+                        // --- FIN SINCRONIZACIÓN DE TOKEN ---
 
                         await client.query('COMMIT');
                         return res.status(200).json({
@@ -498,7 +498,7 @@ async function clubsHandler(req, res) {
                         // 2. Abandonar el club (Actualizar tabla users)
                         await client.query('UPDATE public."users" SET club_id = NULL WHERE id = $1', [requestingUserId]);
 
-                        // --- [MODIFICACIÓN CLAVE] SINCRONIZACIÓN DE TOKEN (LEAVE) ---
+                        // --- SINCRONIZACIÓN DE TOKEN (LEAVE) ---
                         // 3. Obtener los datos del usuario actualizados (club_id = NULL)
                         const updatedUserRes = await client.query(
                             'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
@@ -508,7 +508,7 @@ async function clubsHandler(req, res) {
 
                         // 4. Generar un nuevo token con los datos frescos
                         const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                        // --- [FIN MODIFICACIÓN CLAVE] ---
+                        // --- FIN SINCRONIZACIÓN DE TOKEN ---
 
                         await client.query('COMMIT');
                         return res.status(200).json({
@@ -769,7 +769,7 @@ async function clubsHandler(req, res) {
                 if (result.rows.length === 0) {
                     // Limpiar Cloudinary si falló la actualización pero se subió la imagen
                     if (isCloudinaryUploadSuccess && imagen_club_url) {
-                        await deleteFromCloudinary(imagen_club_url);
+                        await deleteFromCloudary(imagen_club_url);
                     }
                     return res.status(404).json({ success: false, message: "Club no encontrado para actualizar." });
                 }
@@ -777,7 +777,7 @@ async function clubsHandler(req, res) {
                 // Si se subió una nueva imagen,
                 // eliminamos la imagen antigua de Cloudinary.
                 if (imagen_club_url && old_imagen_club_url) {
-                    await deleteFromCloudinary(old_imagen_club_url);
+                    await deleteFromCloudary(old_imagen_club_url);
                 }
 
                 return res.status(200).json({ success: true, message: "Club actualizado.", club: result.rows[0] });
@@ -785,7 +785,7 @@ async function clubsHandler(req, res) {
             } catch (uploadError) {
                 // Limpiar Cloudinary si falló algo después de la subida
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
-                    await deleteFromCloudinary(imagen_club_url);
+                    await deleteFromCloudary(imagen_club_url);
                 }
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
                     await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
