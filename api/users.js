@@ -165,7 +165,7 @@ async function loginUserHandler(req, res) {
 
         if (rows.length === 0) {
             console.log(`Login fallido: Usuario o Email no encontrado (${username}).`);
-            return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+            return res.status(401).json({ success: false, message: "Nombre de usuario o contraseña incorrectos" });
         }
 
         const user = rows[0];
