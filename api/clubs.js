@@ -1,3 +1,4 @@
+// clubs.js - CORREGIDO
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -415,9 +416,12 @@ async function clubsHandler(req, res) {
                 // ⭐ MODIFICACIÓN POST: Obtener 'enfoque' de los campos
                 const { nombre_evento, descripcion, ciudad, enfoque } = fields;
 
-                // ⭐ MODIFICACIÓN POST: 'enfoque' también es obligatorio
+                // 🛠️ FIX: Se cambia el mensaje de error para que sea más explícito con los nombres de la BD/API.
+                // Aunque el cliente puede usar etiquetas amigables, el backend debería referirse a sus claves.
                 if (!nombre_evento || !descripcion || !ciudad || !enfoque) {
-                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre, descripción, ciudad o enfoque." });
+                    // Originalmente: "Faltan campos obligatorios: nombre, descripción, ciudad o enfoque."
+                    // Corregido para ser más preciso y consistente con las claves que faltan:
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre_evento, descripcion, ciudad o enfoque." });
                 }
 
                 if (!authVerification.authorized || !userId) {
@@ -560,6 +564,11 @@ async function clubsHandler(req, res) {
                 }
                 if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Ya tienes')) {
                     return res.status(401).json({ success: false, message: uploadError.message });
+                }
+                // Si el error de validación es lo que está fallando (antes del fix) y el error no tiene código de estado,
+                // enviamos un 400. Esto es menos probable que sea necesario ahora.
+                if (uploadError.message.includes('nombre_evento') || uploadError.message.includes('descripcion') || uploadError.message.includes('ciudad') || uploadError.message.includes('enfoque')) {
+                    return res.status(400).json({ success: false, message: uploadError.message });
                 }
 
                 return res.status(500).json({ success: false, message: "Error interno en la creación del club." });
