@@ -50,25 +50,10 @@ body {
   margin-right: 6px;
 }
 
-/* --- Main Content & Typography (MODIFICADO AQUÍ PARA CENTRADO) --- */
+/* --- Main Content & Typography --- */
 
 main {
-  /* *** MODIFICACIÓN 1: Quitar margen superior para permitir centrado Flexbox *** */
-  margin-top: 0;
-
-  /* *** MODIFICACIÓN 2: Reglas de Flexbox para Sticky Footer y centrado *** */
-  flex-grow: 1;
-  /* Clave para empujar el footer */
-  display: flex;
-  /* Activa centrado */
-  justify-content: center;
-  /* Centra horizontalmente */
-  align-items: center;
-  /* Centra verticalmente */
-  padding: 20px;
-  /* Añade padding de seguridad */
-
-  /* Reglas preexistentes */
+  margin-top: 8vh;
   text-align: center;
   animation: fadeIn 1.2s ease;
 }
@@ -87,7 +72,6 @@ main p {
 }
 
 /* --- Button Styles --- */
-/* (Se mantiene igual) */
 
 .btn-custom {
   background: #e50914;
@@ -143,8 +127,7 @@ main p {
   padding-top: 100px;
 }
 
-/* --- Custom Alerts --- */
-/* (Se mantiene igual) */
+/* --- Custom Alerts (Aleras.css rules moved here for completeness, though best practice is often separate) --- */
 
 .custom-alert {
   position: fixed;
@@ -251,21 +234,3 @@ main p {
 #main-footer .row {
   align-items: center;
 }
-
-/* --- REGLAS PRINCIPALES DEL STICKY FOOTER (Se mantienen igual) --- */
-
-html {
-  height: 100%;
-}
-
-body {
-  /* Clave 1: Ocupa al menos toda la altura de la ventana */
-  min-height: 100vh;
-
-  /* Clave 2: Activa Flexbox para el diseño vertical */
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-}
-
-/* Se eliminó la regla 'main { flex-grow: 1; }' repetida que estaba aquí. */
