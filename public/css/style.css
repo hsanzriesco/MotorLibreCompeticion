@@ -234,3 +234,22 @@ main p {
 #main-footer .row {
   align-items: center;
 }
+
+html {
+  height: 100%;
+}
+
+body {
+  /* Clave 1: Ocupa al menos toda la altura de la ventana */
+  min-height: 100vh;
+
+  /* Clave 2: Activa Flexbox para el diseño vertical */
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+main {
+  /* Clave 3: Hace que el contenido principal crezca para empujar el footer */
+  flex-grow: 1;
+}
