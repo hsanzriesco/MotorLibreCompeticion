@@ -34,7 +34,6 @@ const getBody = async (req) => {
 };
 
 // 🔒 MIDDLEWARE DE SEGURIDAD: Verifica el JWT y extrae la carga útil (payload)
-// ⭐⭐ NUEVA FUNCIÓN: ESENCIAL PARA ARREGLAR /api/users/me ⭐⭐
 const verifyToken = (req) => {
     const authHeader = req.headers.authorization;
 
@@ -158,7 +157,7 @@ async function loginUserHandler(req, res) {
             return res.status(400).json({ success: false, message: "Faltan datos" });
         }
 
-        // 🔑 CAMBIO CLAVE: Búsqueda por 'name' O 'email'
+        // Búsqueda por 'name' O 'email'
         const { rows } = await pool.query(
             "SELECT id, name, email, role, password, is_banned FROM users WHERE name = $1 OR email = $1",
             [username]
@@ -172,18 +171,13 @@ async function loginUserHandler(req, res) {
         const user = rows[0];
         const hashedPassword = user.password;
 
-        // Verificar is_banned
+        // ⭐ MODIFICACIÓN: Verificar is_banned (Eliminada la consulta a 'usuarios_baneados')
         if (user.is_banned) {
-            const banInfo = await pool.query(
-                'SELECT ban_reason FROM usuarios_baneados WHERE user_id = $1',
-                [user.id]
-            );
-            const banReason = banInfo.rows.length > 0 ? banInfo.rows[0].ban_reason : 'Sin especificar.';
-
             console.log(`Login bloqueado: Usuario baneado (${username}).`);
             return res.status(403).json({
                 success: false,
-                message: `Tu cuenta ha sido suspendida. Razón: ${banReason}`
+                // Mensaje genérico, ya que no podemos obtener la razón sin la tabla
+                message: `Tu cuenta ha sido suspendida.`
             });
         }
 
@@ -225,7 +219,6 @@ async function loginUserHandler(req, res) {
 
 // ------------------------------------------------------------------------------------------------
 // 3. OBTENER PERFIL DEL USUARIO LOGUEADO (Manejo de GET /api/users?action=me)
-// ⭐⭐ NUEVO HANDLER PARA ARREGLAR EL 404 DE clubEdit.js ⭐⭐
 // ------------------------------------------------------------------------------------------------
 async function getMeHandler(req, res) {
     if (req.method !== "GET") {
@@ -244,10 +237,10 @@ async function getMeHandler(req, res) {
 
         const decodedUser = verification.user;
 
-        // 2. Obtener datos frescos, incluyendo el club_id, de la base de datos
-        // Usamos la ID del usuario extraída del token
+        // 2. Obtener datos frescos de la base de datos
+        // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id'
         const { rows } = await pool.query(
-            "SELECT id, name, email, role, club_id FROM users WHERE id = $1",
+            "SELECT id, name, email, role FROM users WHERE id = $1",
             [decodedUser.id]
         );
 
@@ -349,12 +342,11 @@ async function userListCrudHandler(req, res) {
     let body;
 
     try {
-        // --- INICIO DE MODIFICACIÓN PÚBLICA (GET con ID) ---
-        // Exclusión: Permitir GET con ID para todos los usuarios (público)
+        // --- VISTA PÚBLICA (GET con ID) ---
         if (method === "GET" && query.id) {
+            // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id'
             const userResult = await pool.query(
-                // ⚠️ SOLO SELECCIONAR CAMPOS PÚBLICOS
-                "SELECT id, name, role, created_at, club_id, is_banned FROM users WHERE id = $1",
+                "SELECT id, name, role, created_at, is_banned FROM users WHERE id = $1",
                 [query.id]
             );
 
@@ -362,10 +354,9 @@ async function userListCrudHandler(req, res) {
                 return res.status(404).json({ success: false, message: "Usuario no encontrado" });
             }
 
-            // No se obtienen datos sensibles (email, password, ban_reason) para público
             return res.status(200).json({ success: true, data: userResult.rows[0] });
         }
-        // --- FIN DE MODIFICACIÓN PÚBLICA ---
+        // --- FIN VISTA PÚBLICA ---
 
 
         // 🚨 VERIFICACIÓN DE ADMIN: Bloquea todos los demás métodos (GET sin ID, POST, PUT, DELETE)
@@ -384,9 +375,9 @@ async function userListCrudHandler(req, res) {
 
         // GET: LISTAR TODOS LOS USUARIOS (Protegido por Admin)
         if (method === "GET") {
-            // LISTAR TODOS (Admin)
+            // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id'
             const result = await pool.query(
-                "SELECT id, name, email, role, created_at, club_id, is_banned FROM users ORDER BY id DESC"
+                "SELECT id, name, email, role, created_at, is_banned FROM users ORDER BY id DESC"
             );
             return res.status(200).json({ success: true, data: result.rows });
         }
@@ -416,8 +407,9 @@ async function userListCrudHandler(req, res) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
+            // ⭐ MODIFICACIÓN: Eliminada la referencia a 'club_id' del RETURNING
             const result = await pool.query(
-                "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, club_id, is_banned",
+                "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, is_banned",
                 [name, email, hashedPassword, role]
             );
 
@@ -427,45 +419,23 @@ async function userListCrudHandler(req, res) {
 
         // PUT: ACTUALIZAR USUARIO (Admin)
         if (method === "PUT") {
-            // 🛑 MODIFICADO: Extraer ID de la query (parámetro de consulta)
             const { id } = query;
-            const { name, email, password, role, club_id, is_banned, ban_reason } = body;
+            // ⭐ MODIFICACIÓN: Eliminada la desestructuración de 'club_id' y 'ban_reason'
+            const { name, email, password, role, is_banned } = body;
 
             if (!id) {
                 return res.status(400).json({ success: false, message: "ID requerido" });
             }
 
-            // 🚀 LÓGICA DE BANEO/DESBANEO CON RAZÓN 🚀 (Sin cambios)
+            // --- Lógica de Baneo/Desbaneo (Simplificada) ---
+            // ⭐ MODIFICACIÓN: Uso solo de is_banned de la tabla users.
             if (is_banned !== undefined) {
-                if (is_banned === true) {
-                    // VALIDACIÓN: La razón es obligatoria al banear
-                    if (!ban_reason || ban_reason.trim() === "") {
-                        return res.status(400).json({ success: false, message: 'La razón del baneo es obligatoria.' });
-                    }
-                    await pool.query(
-                        `INSERT INTO usuarios_baneados (user_id, ban_reason) 
-                         VALUES ($1, $2)
-                         ON CONFLICT (user_id) DO UPDATE SET ban_reason = EXCLUDED.ban_reason`,
-                        [id, ban_reason.trim()]
-                    );
-                    await pool.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [id]);
-                    console.log(`Usuario ${id} baneado. Razón: ${ban_reason.trim()}`);
-
-                    return res.status(200).json({ success: true, message: 'Usuario baneado con éxito.' });
-
-                } else if (is_banned === false) {
-                    // DESBANEAR
-                    await pool.query(
-                        'DELETE FROM usuarios_baneados WHERE user_id = $1',
-                        [id]
-                    );
-                    await pool.query('UPDATE users SET is_banned = FALSE WHERE id = $1', [id]);
-                    console.log(`Usuario ${id} desbaneado.`);
-
-                    return res.status(200).json({ success: true, message: 'Usuario desbaneado con éxito.' });
-                }
+                await pool.query('UPDATE users SET is_banned = $1 WHERE id = $2', [is_banned, id]);
+                const status = is_banned ? 'baneado' : 'desbaneado';
+                console.log(`Usuario ${id} ${status}.`);
+                return res.status(200).json({ success: true, message: `Usuario ${status} con éxito.` });
             }
-            // 🚀 FIN LÓGICA DE BANEO/DESBANEO 🚀
+            // --- Fin Lógica de Baneo/Desbaneo ---
 
 
             // --- Lógica de Actualización de Perfil (Admin) ---
@@ -481,20 +451,7 @@ async function userListCrudHandler(req, res) {
                 }
             }
 
-            // Lógica de validación de club_id
-            if (club_id !== undefined && club_id !== null) {
-                const userCheck = await pool.query(
-                    "SELECT club_id FROM users WHERE id = $1",
-                    [id]
-                );
-
-                if (userCheck.rows.length > 0 && userCheck.rows[0].club_id !== null) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "El usuario ya pertenece a un club.",
-                    });
-                }
-            }
+            // ⭐ MODIFICACIÓN: Eliminada la lógica de validación de 'club_id'
 
             let hashedPassword = undefined;
             if (password) {
@@ -508,10 +465,9 @@ async function userListCrudHandler(req, res) {
                 SET name = COALESCE($1, name),
                     email = COALESCE($2, email),
                     role = COALESCE($3, role),
-                    password = COALESCE($4, password),
-                    club_id = $5
-                WHERE id = $6
-                RETURNING id, name, email, role, created_at, club_id, is_banned 
+                    password = COALESCE($4, password)
+                WHERE id = $5
+                RETURNING id, name, email, role, created_at, is_banned
             `;
 
             const result = await pool.query(updateQuery, [
@@ -519,7 +475,6 @@ async function userListCrudHandler(req, res) {
                 email ?? null,
                 role ?? null,
                 hashedPassword ?? null,
-                club_id ?? null,
                 id
             ]);
 
@@ -532,11 +487,11 @@ async function userListCrudHandler(req, res) {
 
         // DELETE: ELIMINAR USUARIO (Admin)
         if (method === "DELETE") {
-            // 🛑 MODIFICADO: Extraer ID de la query (parámetro de consulta o de ruta)
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
 
-            await pool.query("DELETE FROM usuarios_baneados WHERE user_id = $1", [id]);
+            // ⭐ MODIFICACIÓN: ELIMINADA la consulta a usuarios_baneados
+            // await pool.query("DELETE FROM usuarios_baneados WHERE user_id = $1", [id]); 
 
             const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
 
@@ -582,12 +537,10 @@ export default async function usersCombinedHandler(req, res) {
         return createUserHandler(req, res);
     }
 
-    // ⭐⭐ NUEVO: OBTENER PERFIL LOGUEADO (GET con ?action=me) ⭐⭐
-    // Esto resuelve el error 404 que originó el problema.
+    // 3. OBTENER PERFIL LOGUEADO (GET con ?action=me)
     if (method === "GET" && action === "me") {
         return getMeHandler(req, res);
     }
-    // ⭐⭐ FIN NUEVO ⭐⭐
 
     // 2. LOGIN (POST con ?action=login)
     if (method === "POST" && action === "login") {
