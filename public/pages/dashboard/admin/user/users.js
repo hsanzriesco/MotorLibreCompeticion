@@ -3,22 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const ROOT_REDIRECT = "/"; // Define la ruta de redirección a index.html
 
-    // 🛑 BLOQUE DE VERIFICACIÓN ELIMINADO PARA PERMITIR LA CARGA DE LA PÁGINA 🛑
+    // Se mantiene la declaración de token y role porque se necesitan para los fetch.
     const token = sessionStorage.getItem("token");
     const role = sessionStorage.getItem("role");
-
-    /*
-    // Código original que causa la redirección/alerta:
-    if (!token || role !== "admin") {
-        console.error("Acceso denegado. Token no encontrado o rol no es admin.");
-        sessionStorage.clear(); // Limpia la sesión incompleta o inválida
-        // ⚠️ ESTO ES LO QUE CAUSA LA REDIRECCIÓN Y LA ALERTA ⚠️
-        // En un caso real, la alerta iría aquí, justo antes de la redirección.
-        // window.location.href = ROOT_REDIRECT; 
-        // return;
-    }
-    */
-    // Se mantiene la declaración de token y role porque se necesitan para los fetch.
     // -----------------------------------------------------------------------------------
 
 
@@ -59,6 +46,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // --- HELPERS ---
+
+    // 🔑 FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA AÑADIDA 🔑
+    function validatePassword(password) {
+        // Requisito 1: Longitud entre 8 y 12
+        const lengthOK = password.length >= 8 && password.length <= 12;
+        // Requisito 2: Al menos una letra mayúscula
+        const upperCaseOK = /[A-Z]/.test(password);
+        // Requisito 3: Al menos un número
+        const numberOK = /[0-9]/.test(password);
+        // Requisito 4: Al menos un símbolo (cualquier cosa que no sea letra o número)
+        const symbolOK = /[^A-Za-z0-9]/.test(password);
+
+        if (!lengthOK) return "La contraseña debe tener entre 8 y 12 caracteres.";
+        if (!upperCaseOK) return "Debe contener al menos una letra mayúscula.";
+        if (!numberOK) return "Debe incluir al menos un número.";
+        if (!symbolOK) return "Debe incluir al menos un símbolo.";
+        return null; // Contraseña válida
+    }
+    // ----------------------------------------------------
 
     // Toggle password visibility
     document.querySelectorAll('.togglePassword').forEach(toggle => {
@@ -267,15 +273,32 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = userId.value;
         const newPassword = userPassword.value.trim();
         const confirmPassword = userPassword2.value.trim();
+        const isCreation = !id; // Si no hay ID, es una creación
 
-        // Validación de contraseñas
-        if (newPassword && newPassword !== confirmPassword) {
-            mostrarAlerta("Las contraseñas no coinciden.", "warning");
+        // 1. VALIDACIÓN DE COINCIDENCIA DE CONTRASEÑAS (para creación o cambio de contraseña)
+        if (newPassword) {
+            if (newPassword !== confirmPassword) {
+                mostrarAlerta("Las contraseñas no coinciden.", "warning");
+                return;
+            }
+        } else if (isCreation) {
+            // Esto debería ser manejado por el required=true, pero es una buena defensa
+            mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
             return;
         }
 
-        const method = id ? "PUT" : "POST";
-        const url = id ? `/api/users?id=${id}` : "/api/users";
+        // 2. 🔑 VALIDACIÓN DE COMPLEJIDAD DE CONTRASEÑA 🔑
+        // Se ejecuta si hay una contraseña nueva (o en creación)
+        if (newPassword) {
+            const passwordError = validatePassword(newPassword);
+            if (passwordError) {
+                mostrarAlerta(passwordError, "warning");
+                return;
+            }
+        }
+
+        const method = isCreation ? "POST" : "PUT";
+        const url = isCreation ? "/api/users" : `/api/users?id=${id}`;
 
         const bodyData = {
             name: userName.value.trim(),
@@ -286,10 +309,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // Si se va a crear o si se va a cambiar la contraseña en la edición
         if (newPassword) {
             bodyData.password = newPassword;
-        } else if (!id) {
-            // Esto no debería suceder si newPassword.required=true en la creación
-            mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
-            return;
         }
 
         try {
