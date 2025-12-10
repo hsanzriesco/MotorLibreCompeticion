@@ -16,35 +16,25 @@
     <link rel="stylesheet" href="./perfil.css" />
 
     <style>
-        /* ESTILOS GLOBALES MLC */
         body {
             /* === MODIFICACIONES CLAVE PARA STICKY FOOTER === */
             display: flex;
-            /* Habilita Flexbox */
             flex-direction: column;
-            /* Organiza los hijos verticalmente */
             min-height: 100vh;
-            /* Ocupa al menos el 100% de la altura del viewport */
             margin: 0;
-            /* Asegura que no haya márgenes no deseados */
             /* === FIN MODIFICACIONES CLAVE === */
 
-            background-color: #1a1a1a;
-            /* Fondo oscuro principal */
-            color: #f8f9fa;
-            /* Texto claro */
+            background-color: #111;
+            color: #fff;
         }
 
-        .main-perfil {
+        main {
             /* === MODIFICACIÓN CLAVE PARA STICKY FOOTER === */
             flex-grow: 1;
-            /* Ocupa todo el espacio vertical sobrante, empujando el footer */
-
-            /* Tus estilos existentes */
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-            /* Utilizamos margin-top para dejar espacio al navbar fijo */
-            margin-top: 75px;
+            /* El resto de tus estilos existentes */
+            margin-top: 80px;
+            padding: 20px;
+            /* Eliminamos min-height: 100vh; de main para que 'body' lo controle */
         }
 
         h1,
