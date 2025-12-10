@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const JWT_TOKEN = localStorage.getItem('userToken');
 
-    // 1. Bloqueo de Acceso si no hay Token (Esto se activa después de un 401 del servidor)
+    // 1. Bloqueo de Acceso si no hay Token
     if (!JWT_TOKEN) {
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta("Acceso denegado. Inicia sesión como administrador.", "error", 4000);
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta('Sesión Inválida', 'Tu sesión ha expirado o no tienes permisos. Por favor, vuelve a iniciar sesión.', 'error');
         }
-        // ESTO ES LO QUE OCURRE TRAS UN 401/403 DEL SERVIDOR Y ELIMINA EL TOKEN:
+        // Limpia el token y redirige
         localStorage.removeItem('userToken');
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
@@ -59,13 +59,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
     // ====================================================================
-    // 📅 LÓGICA DE CALENDARIO (MODIFICADO: Location ID y Validaciones)
+    // 📅 LÓGICA DE CALENDARIO 
     // ====================================================================
 
     // --- VARIABLES DOM Y MODALES (CALENDARIO) ---
     const calendarEl = document.getElementById("calendar");
     const eventModalEl = document.getElementById("eventModal");
-    const registrationsModalEl = document.getElementById("registrationsModal");
+    const registrationsModalEl = document.getElementById("registrationsModal"); // Se mantiene la referencia al modal, aunque no se use la lista
 
     let calendar;
     let eventModal;
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const form = document.getElementById("eventForm");
         const titleInput = document.getElementById("title");
         const descriptionInput = document.getElementById("description");
-        const locationIdSelect = document.getElementById("locationId"); // Variable para el campo SELECT de Ubicación
+        const locationIdSelect = document.getElementById("locationId");
         const capacityInput = document.getElementById("capacity");
         const startDateInput = document.getElementById("start-date");
         const startTimeInput = document.getElementById("start-time");
@@ -98,6 +98,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const deleteEventBtn = document.getElementById("deleteEventBtn");
         const registrationsBtnContainer = document.getElementById('registrations-button-container');
         const currentRegisteredCount = document.getElementById('current-registered-count');
+
+        // Se elimina la referencia a viewRegistrationsBtn y registrationsTableBody
 
         let selectedEvent = null;
         let eventInitialState = null;
@@ -143,7 +145,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         /**
          * Carga el conteo de inscripciones para un evento específico.
-         * Se añade el header de autenticación.
          */
         async function loadEventRegistrationCount(eventId) {
             if (!eventId) {
@@ -191,6 +192,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return 0;
             }
         }
+
+        // Se elimina la función showRegistrations()
 
         // --- FUNCIONES DEL CALENDARIO ---
         /**
@@ -552,7 +555,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 e.preventDefault();
                 carPhotoUrlInput.value = "";
                 carPhotoFileInput.value = "";
-                carPhotoContainer.style.display = 'none';
+                currentImageContainer.style.display = 'none';
             });
         }
     }
