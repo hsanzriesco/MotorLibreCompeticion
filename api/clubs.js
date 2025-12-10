@@ -42,7 +42,7 @@ const getBody = async (req) => {
 };
 
 // Función de utilidad para eliminar una imagen de Cloudinary
-async function deleteFromCloudinary(imageUrl) {
+async function deleteFromCloudary(imageUrl) {
     if (!imageUrl) return;
 
     try {
