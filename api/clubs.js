@@ -249,7 +249,7 @@ async function statusChangeHandler(req, res) {
                 // en lugar de forzar a 'user'. Si era 'admin', se queda como 'admin'.
                 await client.query(
                     'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
-                    [currentPresidenteRole, newClubId, club.id_presidente]
+                    [currentPresidenteRole, newClubId, club.id_presidente] 
                 );
 
                 await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [id]);
@@ -484,7 +484,7 @@ async function clubsHandler(req, res) {
                         // El rol se mantiene como 'admin' y se activa la bandera is_presidente = TRUE
                         await client.query(
                             'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
-                            ['admin', newClubId, idPresidente]
+                            ['admin', newClubId, idPresidente] 
                         );
 
                         await client.query('COMMIT');
@@ -505,7 +505,7 @@ async function clubsHandler(req, res) {
 
                 } else {
                     // Lógica para usuario normal (Solicitud Pendiente) - Sin transacción (solo una inserción)
-
+                    
                     // 🚨 CAMBIO CRÍTICO: Seleccionar el campo is_presidente
                     const checkUser = await pool.query('SELECT role, club_id, is_presidente FROM public."users" WHERE id = $1', [userId]);
                     if (checkUser.rows.length === 0) {
@@ -736,7 +736,7 @@ async function clubsHandler(req, res) {
 
                 if (deleteRes.rows.length > 0) {
                     if (id_presidente) {
-
+                        
                         // 💡 FIX 1 (DELETION): Obtener el rol actual del usuario antes de actualizar
                         const userRoleRes = await client.query('SELECT role FROM public."users" WHERE id = $1', [id_presidente]);
                         const currentRole = userRoleRes.rows[0]?.role || 'user'; // Por si acaso

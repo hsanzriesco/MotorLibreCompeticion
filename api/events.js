@@ -58,20 +58,20 @@ function verifyAdmin(req) {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-
+        
         // Se asume que solo los administradores tienen acceso a estas rutas
         if (!decoded.isAdmin) {
-            throw new Error("No autorizado. Se requiere rol de administrador.");
+             throw new Error("No autorizado. Se requiere rol de administrador.");
         }
-
-        return decoded;
+        
+        return decoded; 
     } catch (e) {
         if (e.name === 'TokenExpiredError' || e.name === 'JsonWebTokenError') {
             throw new Error("Acceso denegado. Token inválido o expirado.");
         }
         // Lanza el error de admin si ya fue formateado, sino lanza el error general.
         if (e.message.includes("administrador")) {
-            throw e;
+             throw e;
         }
         throw new Error("Acceso denegado. Token inválido o expirado.");
     }
@@ -176,20 +176,20 @@ export default async function handler(req, res) {
         client = await pool.connect();
 
         // 2. VERIFICACIÓN DE AUTENTICACIÓN (Solo para métodos y acciones sensibles/admin)
-        const isAuthRequired = req.method === "POST" && !['register'].includes(action) ||
-            req.method === "PUT" ||
-            req.method === "DELETE" && !['cancel'].includes(action) ||
-            (req.method === "GET" && ['getAllEventsList', 'getAllUsersList', 'getRegistrationCount', 'getRegistrations'].includes(action));
+        const isAuthRequired = req.method === "POST" && !['register'].includes(action) || 
+                             req.method === "PUT" || 
+                             req.method === "DELETE" && !['cancel'].includes(action) ||
+                             (req.method === "GET" && ['getAllEventsList', 'getAllUsersList', 'getRegistrationCount', 'getRegistrations'].includes(action));
 
 
         if (isAuthRequired) {
-            try {
-                verifyAdmin(req);
-            } catch (authError) {
-                // 401: No autorizado (token faltante/inválido) | 403: Prohibido (rol incorrecto)
-                const statusCode = authError.message.includes('administrador') ? 403 : 401;
-                return res.status(statusCode).json({ success: false, message: authError.message });
-            }
+             try {
+                 verifyAdmin(req);
+             } catch (authError) {
+                 // 401: No autorizado (token faltante/inválido) | 403: Prohibido (rol incorrecto)
+                 const statusCode = authError.message.includes('administrador') ? 403 : 401;
+                 return res.status(statusCode).json({ success: false, message: authError.message });
+             }
         }
 
 
@@ -550,13 +550,13 @@ export default async function handler(req, res) {
         if (error.message.includes('Acceso denegado') || error.message.includes('Token') || error.message.includes('administrador')) {
             statusCode = error.message.includes('administrador') ? 403 : 401;
             errorMessage = error.message;
-        }
+        } 
         // Manejo de errores de PostgreSQL más específicos
         else if (error.code === '42703' && error.message.includes('user')) {
             errorMessage = 'Error de Base de Datos: Columna "user" no encontrada.';
         } else if (error.code === '22P02') {
             errorMessage = 'Error de Base de Datos: Valor de ID o dato numérico inválido.';
-            statusCode = 400;
+            statusCode = 400; 
         } else if (error.message.includes('Error al parsear el cuerpo JSON')) {
             errorMessage = 'Error de formato de datos (JSON) en la solicitud.';
             statusCode = 400;
@@ -565,7 +565,7 @@ export default async function handler(req, res) {
             statusCode = 400;
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
-            statusCode = 409;
+            statusCode = 409; 
         } else if (error.code === '42601') {
             errorMessage = 'Error de sintaxis SQL.';
         } else if (error.code === '42P01') {
