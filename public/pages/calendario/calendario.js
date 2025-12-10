@@ -62,14 +62,13 @@ document.addEventListener("DOMContentLoaded", async () => {
      * @returns {string} La fecha/hora formateada para el usuario.
      */
     function formatLocalTime(sqlTimeString) {
-        // Si no es una cadena O está vacía, devuelve el error.
+        // Cláusula de guardia: Si no es una cadena o está vacía.
         if (typeof sqlTimeString !== 'string' || !sqlTimeString.trim()) return 'Fecha/Hora no válida';
 
         try {
             let date;
 
-            // 1. Detección de formato ISO 8601 (contiene 'T'): 
-            // Esto resuelve el error "Fallo al construir la fecha local a partir de: 2025-12-12T08:20:00+01:00"
+            // 1. Detección de formato ISO 8601 (contiene 'T'):
             if (sqlTimeString.includes('T')) {
                 // Si es formato ISO 8601, new Date() lo maneja de forma segura (como UTC/localizado).
                 date = new Date(sqlTimeString);
@@ -93,7 +92,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const [year, month, day] = datePart.split('-').map(Number);
                 const [hour, minute] = timePart.split(':').map(Number);
 
-                // Creamos la fecha forzando la interpretación como hora LOCAL para evitar el problema +1h/UTC.
+                // Creamos la fecha forzando la interpretación como hora LOCAL.
                 date = new Date(year, month - 1, day, hour || 0, minute || 0);
             }
 
@@ -106,7 +105,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Formateamos la fecha a la configuración regional deseada
             return date.toLocaleDateString("es-ES", DATE_OPTIONS);
         } catch (error) {
-            // Capturamos cualquier error de split/map que pudiera ocurrir
             console.error("Error en formatLocalTime:", error);
             return sqlTimeString;
         }
@@ -133,9 +131,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function handleRegistration(eventId, userId) {
         if (!userId) {
-            // Asumiendo que 'mostrarAlerta' es una función que existe globalmente
+            // ⭐ ALERTA MODIFICADA: Usamos mostrarAlerta con estilo 'advertencia'.
             mostrarAlerta("Debes iniciar sesión para inscribirte.", 'advertencia');
-            setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
+            // Mantenemos el setTimeout para la redirección después de mostrar la alerta.
+            setTimeout(() => window.location.href = '../auth/login/login.html', 1200); 
             return;
         }
 
@@ -335,8 +334,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
             // Usamos solo las propiedades de cadena (e.startStr/e.endStr).
-            // Si son null/undefined, formatLocalTime lo gestionará con la cláusula de guardia.
-            // Si es ISO 8601 (con T), formatLocalTime también lo gestionará.
             const startTimeString = e.startStr;
             const endTimeString = e.endStr;
 
