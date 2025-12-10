@@ -11,10 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Limpiar cualquier sesión corrupta o residual
         sessionStorage.removeItem('usuario');
-        localStorage.removeItem('usuario');
+        sessionStorage.removeItem('usuario');
         // También limpia el token para mayor seguridad
         sessionStorage.removeItem('token');
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
 
 
         // ⭐ MODIFICACIÓN CLAVE: Muestra la ÚNICA alerta deseada (roja)
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentVehicle = null;
 
     // 🛑 LÓGICA DE AUTENTICACIÓN CENTRALIZADA (INICIO) 🛑
-    const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
+    const stored = sessionStorage.getItem('usuario') || sessionStorage.getItem('usuario');
     let user = null;
 
     if (!stored) {
@@ -542,8 +542,8 @@ document.addEventListener('DOMContentLoaded', () => {
             user.name = newName;
             user.email = newEmail;
 
-            if (localStorage.getItem('usuario')) {
-                localStorage.setItem('usuario', JSON.stringify(user));
+            if (sessionStorage.getItem('usuario')) {
+                sessionStorage.setItem('usuario', JSON.stringify(user));
             }
             sessionStorage.setItem('usuario', JSON.stringify(user));
 
@@ -561,9 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function cerrarSesion() {
         // Limpia toda la información de la sesión
         sessionStorage.removeItem('usuario');
-        localStorage.removeItem('usuario');
+        sessionStorage.removeItem('usuario');
         sessionStorage.removeItem('token');
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
 
 
         mostrarAlerta('Has cerrado la sesión', 'info');

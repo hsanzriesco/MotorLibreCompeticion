@@ -249,7 +249,7 @@
       const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
       const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
-      const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+      const storedUser = sessionStorage.getItem("usuario") || sessionStorage.getItem("usuario");
       const clubIdInSession = sessionStorage.getItem("clubId");
       const usuario = storedUser ? JSON.parse(storedUser) : null;
 
@@ -316,7 +316,7 @@
 
           // Limpiar datos de sesión y almacenamiento local
           sessionStorage.removeItem("usuario");
-          localStorage.removeItem("usuario");
+          sessionStorage.removeItem("usuario");
           sessionStorage.removeItem("clubId");
 
           mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);

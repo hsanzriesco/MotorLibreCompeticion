@@ -15,9 +15,9 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
     sessionStorage.removeItem('usuario');
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('jwtToken');
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
-    localStorage.removeItem('jwtToken');
+    sessionStorage.removeItem('usuario');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('jwtToken');
 
     // Muestra la ÚNICA alerta deseada
     if (typeof mostrarAlerta === 'function') {
@@ -37,7 +37,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
 /**
  * Función mejorada para obtener el token.
- * Busca en sessionStorage y localStorage, y busca 'jwtToken' o 'token'.
+ * Busca en sessionStorage y sessionStorage, y busca 'jwtToken' o 'token'.
  */
 function getToken() {
     // 1. Prioridad: sessionStorage 'jwtToken' (estándar usado en otros scripts)
@@ -48,11 +48,11 @@ function getToken() {
     token = sessionStorage.getItem('token');
     if (token) return token;
 
-    // 3. Fallback: localStorage (si implementaste "recordarme")
-    token = localStorage.getItem('jwtToken');
+    // 3. Fallback: sessionStorage (si implementaste "recordarme")
+    token = sessionStorage.getItem('jwtToken');
     if (token) return token;
 
-    return localStorage.getItem('token');
+    return sessionStorage.getItem('token');
 }
 
 /**
