@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB
+// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -776,18 +776,21 @@ async function clubsHandler(req, res) {
             }
         }
 
-        // --- LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO (NUEVA) ---
+        // --- LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO (CORREGIDA) ---
         if (method === "DELETE") {
             const clubId = parseInt(id);
             if (!clubId || isNaN(clubId)) {
                 return res.status(400).json({ success: false, message: "ID del club es requerido para eliminar." });
             }
 
-            // Verificar si es administrador
+            // Verificar si es administrador O el presidente del club
             try {
-                verifyAdmin(req);
+                // CORRECCIÓN CLAVE: Usamos la función que permite eliminar al Admin O al Presidente del club
+                await verifyClubOwnershipOrAdmin(req, clubId);
             } catch (error) {
-                return res.status(401).json({ success: false, message: 'Acceso denegado: Solo el administrador puede eliminar clubes activos.' });
+                // Si la verificación falla (no es admin ni presidente), lanzamos el error
+                // para que el catch general lo maneje y devuelva el 401 o 403 con el mensaje específico.
+                throw error;
             }
 
             const client = await pool.connect();
@@ -852,6 +855,8 @@ async function clubsHandler(req, res) {
         console.error("Error en clubsHandler:", error);
 
         if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
+            // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
+            // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
