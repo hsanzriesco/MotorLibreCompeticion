@@ -1,6 +1,52 @@
 // users.js
 document.addEventListener("DOMContentLoaded", () => {
 
+    // ------------------------------------------
+    // 🔔 LÓGICA DE ALERTA (INTEGRADA) 🔔
+    // ESTA ES LA FUNCIÓN QUE ASEGURA EL USO DE TU ESTILO.
+    // SI EL ESTILO NO FUNCIONA, DEBES REEMPLAZAR EL CONTENIDO DE ESTA FUNCIÓN
+    // CON EL CÓDIGO EXACTO DE TU FUNCIÓN mostrarAlerta() DE alertas.js
+
+    // **Asegúrate de tener un contenedor en tu HTML, por ejemplo,
+    // <div id="alert-container" class="fixed-top mt-5 p-3" style="z-index: 2000;"></div>
+    // Para que las alertas aparezcan correctamente.**
+
+    function mostrarAlerta(message, type) {
+        const alertContainer = document.getElementById('alert-container');
+        if (!alertContainer) {
+            console.error("No se encontró el contenedor de alertas (#alert-container). Usando alert() por defecto.");
+            alert(`${type.toUpperCase()}: ${message}`);
+            return;
+        }
+
+        // Limpiar alertas previas
+        alertContainer.innerHTML = '';
+
+        // Crea el elemento de alerta (utilizando clases genéricas y las clases de tu alertas.css)
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = [
+            // Usa una clase base (ej. 'alerta') y una clase de tipo (ej. 'alerta-success')
+            // Estas deben coincidir con tu alertas.css
+            `<div class="alerta alerta-${type} alert-dismissible fade show" role="alert">`,
+            `   <div>${message}</div>`,
+            '   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>',
+            '</div>'
+        ].join('');
+
+        alertContainer.append(wrapper);
+
+        // Auto-cierre después de 5 segundos
+        setTimeout(() => {
+            const alertElement = wrapper.querySelector('.alerta');
+            if (alertElement) {
+                // Si estás usando la librería de Bootstrap 5
+                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
+                bsAlert.close();
+            }
+        }, 5000);
+    }
+    // ------------------------------------------
+
     const ROOT_REDIRECT = "/"; // Define la ruta de redirección a index.html
 
     // Se mantiene la declaración de token y role porque se necesitan para los fetch.
@@ -8,8 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const role = sessionStorage.getItem("role");
     // -----------------------------------------------------------------------------------
 
-
-    // Nota: Asumimos que 'mostrarAlerta' está disponible globalmente.
 
     const usersTableBody = document.getElementById("usersTableBody");
     // Inicialización de Modales
@@ -47,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- HELPERS ---
 
-    // 🔑 FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA (Confirmado el uso de mostrarAlerta) 🔑
+    // 🔑 FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA
     function validatePassword(password) {
         // Requisito 1: Longitud entre 8 y 12
         const lengthOK = password.length >= 8 && password.length <= 12;
@@ -92,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- CARGAR DATOS ---
 
     async function fetchUsers() {
-        // 🛑 NUEVA VERIFICACIÓN DE TOKEN EN FETCH 🛑
+        // 🛑 VERIFICACIÓN DE TOKEN 🛑
         if (!token) {
             usersTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Error: Debe iniciar sesión para ver esta tabla.</td></tr>';
             return;
@@ -107,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
             });
 
-            // 🚀 NUEVA VERIFICACIÓN DE AUTORIZACIÓN (401/403)
+            // 🚀 VERIFICACIÓN DE AUTORIZACIÓN (401/403)
             if (response.status === 401 || response.status === 403) {
                 console.error("Token no válido. Redirigiendo a login.");
                 // Usando mostrarAlerta
