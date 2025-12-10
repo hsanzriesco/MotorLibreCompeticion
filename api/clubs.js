@@ -834,13 +834,15 @@ async function clubsHandler(req, res) {
             if (!id) return res.status(400).json({ success: false, message: "ID del club es requerido para eliminar." });
 
             try {
-                verifyAdmin(req);
+                // ✅ MODIFICACIÓN CLAVE: Permite a Admin o al Presidente del club
+                await verifyClubOwnershipOrAdmin(req, id);
             } catch (error) {
                 return res.status(401).json({ success: false, message: error.message });
             }
 
             const clubRes = await pool.query('SELECT id_presidente, imagen_club FROM public.clubs WHERE id = $1', [id]);
             if (clubRes.rows.length === 0) {
+                // Si verifyClubOwnershipOrAdmin pasó, esto es poco probable, pero es un buen control
                 return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
             }
             const { imagen_club } = clubRes.rows[0];
@@ -853,9 +855,11 @@ async function clubsHandler(req, res) {
 
                 if (deleteRes.rows.length > 0) {
 
-                    // ✅ CORRECCIÓN CLAVE: Restablecer club_id y is_presidente para TODOS los miembros del club eliminado (incluido el presidente)
+                    // ✅ CORRECCIÓN CLAVE: Restablecer club_id, is_presidente Y rol del presidente a 'user'
                     await client.query(
-                        'UPDATE public."users" SET club_id = NULL, is_presidente = FALSE WHERE club_id = $1',
+                        `UPDATE public."users" SET club_id = NULL, is_presidente = FALSE, 
+                         role = CASE WHEN role = 'presidente' THEN 'user' ELSE role END 
+                         WHERE club_id = $1`,
                         [id]
                     );
 
