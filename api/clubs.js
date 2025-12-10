@@ -1,4 +1,4 @@
-// clubs.js - CORREGIDO (Implementado el nuevo campo 'is_presidente' en lugar de role='Presidente')
+// clubs.js - CORREGIDO (El rol 'admin' se preserva durante la aprobación/eliminación de clubes)
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -232,8 +232,10 @@ async function statusChangeHandler(req, res) {
                 }
 
                 let nombrePresidente;
-                const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
-                nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
+                // 💡 FIX 1: Obtener el rol actual del usuario antes de actualizarlo
+                const presidenteUserRes = await client.query('SELECT name, role FROM public."users" WHERE id = $1', [club.id_presidente]);
+                nombrePresidente = presidenteUserRes.rows[0]?.name || 'Usuario desconocido';
+                const currentPresidenteRole = presidenteUserRes.rows[0]?.role || 'user'; // 'user' o 'admin'
 
                 // Usamos la URL de la imagen que ya está guardada en clubs_pendientes
                 // ⭐ MODIFICACIÓN INSERT: Añadir campo 'enfoque'
@@ -243,11 +245,11 @@ async function statusChangeHandler(req, res) {
                 );
                 const newClubId = insertRes.rows[0].id;
 
-                // 🚨 CAMBIO CRÍTICO: Actualización para el nuevo esquema de usuario
-                // El rol se cambia a 'user' (rol base) y se activa la bandera is_presidente = TRUE
+                // 🚨 CAMBIO CRÍTICO: Usar el rol actual del presidente (currentPresidenteRole) 
+                // en lugar de forzar a 'user'. Si era 'admin', se queda como 'admin'.
                 await client.query(
                     'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
-                    ['user', newClubId, club.id_presidente]
+                    [currentPresidenteRole, newClubId, club.id_presidente]
                 );
 
                 await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [id]);
@@ -308,7 +310,7 @@ async function clubsHandler(req, res) {
 
     try {
         if (method === "GET") {
-
+            // ... (Lógica GET sin cambios críticos en esta sección)
             if (estado === 'pendiente') {
                 try {
                     verifyAdmin(req);
@@ -409,6 +411,7 @@ async function clubsHandler(req, res) {
         }
 
         if (method === "POST") {
+            // ... (Lógica POST sin cambios críticos en esta sección, ya maneja bien el rol 'admin')
             let imagenFilePathTemp = null;
             let imagen_club_url = null;
             let isCloudinaryUploadSuccess = false;
@@ -579,6 +582,7 @@ async function clubsHandler(req, res) {
 
 
         if (method === "PUT") {
+            // ... (Lógica PUT sin cambios críticos en esta sección, la verificación de ownership es suficiente)
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID del club es requerido para actualizar." });
 
@@ -732,9 +736,14 @@ async function clubsHandler(req, res) {
 
                 if (deleteRes.rows.length > 0) {
                     if (id_presidente) {
-                        // 🚨 CAMBIO CRÍTICO: Actualización para el nuevo esquema de usuario (Eliminación)
-                        // El rol se restablece a 'user' y se desactiva la bandera is_presidente = FALSE
-                        await client.query('UPDATE public."users" SET role = $1, club_id = NULL, is_presidente = FALSE WHERE id = $2', ['user', id_presidente]);
+
+                        // 💡 FIX 1 (DELETION): Obtener el rol actual del usuario antes de actualizar
+                        const userRoleRes = await client.query('SELECT role FROM public."users" WHERE id = $1', [id_presidente]);
+                        const currentRole = userRoleRes.rows[0]?.role || 'user'; // Por si acaso
+
+                        // 🚨 CAMBIO CRÍTICO: Usar el rol actual (currentRole) en la actualización
+                        // El rol se mantiene (admin o user) y se desactiva la bandera is_presidente = FALSE
+                        await client.query('UPDATE public."users" SET role = $1, club_id = NULL, is_presidente = FALSE WHERE id = $2', [currentRole, id_presidente]);
                     }
 
                     // Eliminación de Cloudinary fuera de la transacción para evitar fallos de commit, 
