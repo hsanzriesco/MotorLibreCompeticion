@@ -20,40 +20,42 @@
         </a>
     </nav>
 
-    <div class="form-container">
-        <div class="form-box">
-            <h2>Iniciar Sesión</h2>
-            <form id="loginForm">
-                <label for="username">Nombre de usuario</label>
-                <input type="text" id="username" required placeholder="Ej. piloto123" />
+    <main>
+        <div class="form-container">
+            <div class="form-box">
+                <h2>Iniciar Sesión</h2>
+                <form id="loginForm">
+                    <label for="username">Nombre de usuario</label>
+                    <input type="text" id="username" required placeholder="Ej. piloto123" />
 
-                <label for="password">Contraseña</label>
-                <div class="password-wrapper">
-                    <input type="password" id="password" required placeholder="********" />
-                    <i class="bi bi-eye-slash" id="togglePassword"></i>
+                    <label for="password">Contraseña</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" required placeholder="********" />
+                        <i class="bi bi-eye-slash" id="togglePassword"></i>
+                    </div>
+                    <button type="submit">Iniciar sesión</button>
+                </form>
+
+                <p class="switch-link">
+                    ¿No tienes cuenta?
+                    <a href="../register/register.html">Regístrate aquí</a>
+                </p>
+
+                <p class="forgot-password-link">
+                    <a href="#" id="forgotPasswordLink">Olvidé mi contraseña</a>
+                </p>
+
+                <div id="emailRequestForm"
+                    style="display:none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
+                    <label for="resetEmail">Ingresa tu email:</label>
+                    <input type="email" id="resetEmail" required placeholder="ejemplo@correo.com" />
+                    <button type="button" id="sendResetEmailBtn" class="btn btn-sm btn-danger mt-2">Enviar
+                        Enlace</button>
                 </div>
-                <button type="submit">Iniciar sesión</button>
-            </form>
 
-            <p class="switch-link">
-                ¿No tienes cuenta?
-                <a href="../register/register.html">Regístrate aquí</a>
-            </p>
-
-            <p class="forgot-password-link">
-                <a href="#" id="forgotPasswordLink">Olvidé mi contraseña</a>
-            </p>
-
-            <div id="emailRequestForm"
-                style="display:none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
-                <label for="resetEmail">Ingresa tu email:</label>
-                <input type="email" id="resetEmail" required placeholder="ejemplo@correo.com" />
-                <button type="button" id="sendResetEmailBtn" class="btn btn-sm btn-danger mt-2">Enviar Enlace</button>
             </div>
-
         </div>
-    </div>
-
+    </main>
     <script src="../../../js/alertas.js"></script>
     <script src="./login.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
