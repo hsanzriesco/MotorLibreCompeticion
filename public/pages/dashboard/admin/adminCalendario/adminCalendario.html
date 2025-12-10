@@ -314,6 +314,7 @@
                             <thead>
                                 <tr>
                                     <th>Nombre de Usuario</th>
+                                    <th>Club</th>
                                     <th>Fecha de Inscripción</th>
                                 </tr>
                             </thead>
@@ -432,8 +433,8 @@
             registrationsTableBody.innerHTML = ''; // Limpiar la tabla anterior
             registrationsEmptyMessage.style.display = 'none';
             // Indicador de carga
-            registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center">Cargando inscritos...</td></tr>';
-
+            registrationsTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Cargando inscritos...</td></tr>';
+            // 🚨 NOTA: Se cambió el colspan a 3, ya que ahora hay 3 columnas.
 
             try {
                 // Llama a la nueva endpoint que creamos en events.js
@@ -444,12 +445,14 @@
                     if (result.data.length > 0) {
                         let htmlContent = '';
                         result.data.forEach((reg, index) => {
-                            // La DB solo nos devuelve 'id', 'user_id', 'usuario_inscrito', 'registered_at'
+                            // 🚨 CAMBIO CRÍTICO 2: Asumimos que la DB devuelve 'club_name' (puede ser NULL)
                             const username = reg.usuario_inscrito;
+                            const clubName = reg.club_name || ''; // Si es NULL, se mostrará vacío.
 
                             htmlContent += `
                                 <tr>
                                     <td>${username}</td>
+                                    <td>${clubName}</td> 
                                     <td>${formatRegistrationDate(reg.registered_at)}</td>
                                 </tr>
                             `;
@@ -461,14 +464,14 @@
                     }
                 } else {
                     showAlert('Error', result.message || 'Fallo al cargar la lista de inscritos.', 'error');
-                    registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Error al cargar la lista.</td></tr>';
+                    registrationsTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error al cargar la lista.</td></tr>';
                     registrationsEmptyMessage.style.display = 'none';
                 }
 
             } catch (error) {
                 console.error("Fallo al obtener los inscritos:", error);
                 showAlert('Error de Red', 'No se pudo conectar con el servidor para obtener los inscritos.', 'error');
-                registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Error de conexión.</td></tr>';
+                registrationsTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error de conexión.</td></tr>';
                 registrationsEmptyMessage.style.display = 'none';
             }
         }
@@ -487,7 +490,7 @@
                 await loadEventRegistrations(eventId);
             } else {
                 registrationsEventTitle.textContent = `Lista de Usuarios Inscritos`;
-                registrationsTableBody.innerHTML = '<tr><td colspan="2" class="text-center">No se pudo cargar el evento.</td></tr>';
+                registrationsTableBody.innerHTML = '<tr><td colspan="3" class="text-center">No se pudo cargar el evento.</td></tr>';
             }
         });
 
