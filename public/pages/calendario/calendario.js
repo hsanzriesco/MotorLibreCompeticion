@@ -53,31 +53,40 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // ===============================================================
     // ⭐⭐ FUNCIÓN CORREGIDA PARA EL FORMATO DE HORA (FRONTEND) ⭐⭐
-    // Se ha hecho más robusta contra valores no-string
+    // Ahora maneja eventos de día completo sin parte de hora.
     // ===============================================================
 
     /**
-     * Convierte la cadena de fecha SQL limpia ("YYYY-MM-DD HH:MM:SS") 
+     * Convierte la cadena de fecha SQL limpia ("YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DD") 
      * en una representación que JavaScript interprete correctamente como hora local.
      * @param {string} sqlTimeString La cadena de fecha/hora limpia recibida.
      * @returns {string} La fecha/hora formateada para el usuario.
      */
     function formatLocalTime(sqlTimeString) {
-        // Hacemos la cláusula de guardia más estricta: debe ser una cadena y no estar vacía.
+        // Si no es una cadena O está vacía, devuelve el error.
         if (typeof sqlTimeString !== 'string' || !sqlTimeString.trim()) return 'Fecha/Hora no válida';
 
         try {
             // Dividimos la cadena en componentes para construir la fecha
-            // Si sqlTimeString no tiene el formato esperado, el split fallará y pasará al catch.
-            const [datePart, timePart] = sqlTimeString.split(' ');
+            const parts = sqlTimeString.split(' ');
+            const datePart = parts[0];
+            let timePart = parts[1]; // Puede ser undefined si es un evento de día completo
 
-            // Verificación adicional para asegurar que hay dos partes y que timePart existe
-            if (!datePart || !timePart) {
-                throw new Error("Formato de fecha SQL incorrecto: Falta parte de hora.");
+            // Si timePart es undefined (evento de día completo), establecemos 00:00:00 como hora por defecto.
+            if (!timePart) {
+                // Si la cadena solo tiene la parte de la fecha, usamos medianoche local.
+                timePart = '00:00:00';
+            }
+
+            // Verificación para asegurar que la parte de la fecha existe
+            if (!datePart) {
+                // Esto solo ocurriría si sqlTimeString fuera un espacio vacío, pero la línea 71 lo maneja
+                throw new Error("Formato de fecha SQL incorrecto: Falta parte de fecha.");
             }
 
             const [year, month, day] = datePart.split('-').map(Number);
-            // El tiempo puede ser opcional o no contener segundos
+            // El tiempo puede no contener segundos, por lo que hour/minute pueden ser 0 si falta
+            // Además, si la cadena es '00:00:00', map(Number) funcionará correctamente
             const [hour, minute] = timePart.split(':').map(Number);
 
             // Creamos la fecha pasándole los componentes, forzando la interpretación como hora LOCAL.
@@ -91,6 +100,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             // Formateamos la fecha a la configuración regional deseada
+            // Nota: Si el evento es de día completo (00:00), esto mostrará '12:00 a. m.' o similar.
+            // Para eventos de día completo, podrías considerar mostrar solo la fecha si es necesario.
             return date.toLocaleDateString("es-ES", DATE_OPTIONS);
         } catch (error) {
             // Si el error original venía aquí, ahora lo manejará
@@ -126,8 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // ⭐ CORRECCIÓN CRÍTICA: Chequeo de hora de fin usando getTime()
-        // Recuperamos la hora de fin. FullCalendar ya lo ha convertido a Date.
+        // ⭐ Chequeo de hora de fin (se mantiene la lógica de seguridad)
         const eventEndDateString = registerBtn.getAttribute('data-event-end-time');
 
         if (eventEndDateString) {
@@ -146,7 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
         }
-        // ⭐ FIN CORRECCIÓN CRÍTICA
+        // ⭐ FIN Chequeo de hora de fin
 
         registerBtn.disabled = true;
         statusSpan.textContent = "Inscribiendo...";
@@ -282,9 +292,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const extendedProps = e.extendedProps;
             const eventId = e.id;
 
-            // FullCalendar devuelve e.start y e.end como objetos Date.
-            // e.startStr y e.endStr contienen la cadena limpia del servidor (YYYY-MM-DD HH:MM:SS)
-
             // Verificamos si el evento ha finalizado
             const eventEndDate = e.end ? new Date(e.end) : null;
             const now = new Date();
@@ -326,11 +333,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             modalDesc.textContent = extendedProps.description || "Sin descripción.";
             modalLoc.textContent = extendedProps.location || "Ubicación no especificada.";
 
-            // ⭐⭐ APLICACIÓN DE LA CORRECCIÓN DE HORA ⭐⭐
-            // Usamos SOLO las cadenas limpias (e.startStr y e.endStr). 
-            // Si son null/undefined, formatLocalTime lo manejará con la cláusula de guardia.
+            // ⭐⭐ CORRECCIÓN: Usamos solo las cadenas limpias (e.startStr/e.endStr)
+            // para evitar pasar objetos Date a formatLocalTime.
             const startTimeString = e.startStr;
-            const endTimeString = e.endStr; // Anteriormente: e.endStr || e.end (esto causaba el error si e.end era un objeto Date)
+            const endTimeString = e.endStr;
 
             const formattedStart = formatLocalTime(startTimeString);
             const formattedEnd = formatLocalTime(endTimeString);
@@ -352,7 +358,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             cancelBtn.setAttribute('data-event-id', eventId);
 
             // Guardar la cadena de hora de fin para el chequeo de seguridad en handleRegistration
-            // Guardamos la cadena limpia (e.endStr) para evitar problemas en new Date()
             registerBtn.setAttribute('data-event-end-time', endTimeString);
 
             const userId = (usuario && usuario.id) ? usuario.id : null;
