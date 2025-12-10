@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 mostrarAlerta(data.message || "Error cargando clubes", "error");
                 return;
             }
-            renderClubes(data.data);
+            renderClubes(data.clubs);
         } catch (err) {
             console.error("Error cargando clubes:", err);
             mostrarAlerta("No se pudo conectar con el servidor", "error");
