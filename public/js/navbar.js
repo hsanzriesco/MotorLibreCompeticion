@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof mostrarAlerta === 'function') {
             if (isAutoLogout) {
                 // Alerta específica para inactividad
-                mostrarAlerta("Sesión expirada por inactividad.", "advertencia");
+                mostrarAlerta("Sesión expirada por inactividad.", "error");
             } else {
                 mostrarAlerta("Sesión cerrada correctamente.", "exito");
             }
