@@ -2,48 +2,91 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     // ------------------------------------------
-    // 🔔 LÓGICA DE ALERTA (INTEGRADA) 🔔
-    // ESTA ES LA FUNCIÓN QUE ASEGURA EL USO DE TU ESTILO.
-    // SI EL ESTILO NO FUNCIONA, DEBES REEMPLAZAR EL CONTENIDO DE ESTA FUNCIÓN
-    // CON EL CÓDIGO EXACTO DE TU FUNCIÓN mostrarAlerta() DE alertas.js
+    // 🔔 LÓGICA DE ALERTA (INTEGRADA desde alertas.js) 🔔
+    // Se inserta la función aquí para garantizar el scope y el estilo.
+    // **NOTA:** La lógica de tu users.js usa 'success', 'danger', 'warning'.
+    // Esta función mapea esos nombres a tus clases CSS: 'exito', 'error', 'advertencia'.
 
-    // **Asegúrate de tener un contenedor en tu HTML, por ejemplo,
-    // <div id="alert-container" class="fixed-top mt-5 p-3" style="z-index: 2000;"></div>
-    // Para que las alertas aparezcan correctamente.**
-
-    function mostrarAlerta(message, type) {
-        const alertContainer = document.getElementById('alert-container');
-        if (!alertContainer) {
-            console.error("No se encontró el contenedor de alertas (#alert-container). Usando alert() por defecto.");
-            alert(`${type.toUpperCase()}: ${message}`);
-            return;
+    function mostrarAlerta(mensaje, tipo, duracion = 4000, limpiarPrevias = true) {
+        let container = document.getElementById('alertas-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'alertas-container';
+            // Usa la clase que define la posición de tus alertas
+            container.classList.add('alerta-container');
+            document.body.appendChild(container);
         }
 
-        // Limpiar alertas previas
-        alertContainer.innerHTML = '';
+        // Mapear tipos de Bootstrap a tus clases CSS personalizadas
+        let tipoAlerta;
+        switch (tipo.toLowerCase()) {
+            case 'success':
+            case 'exito':
+                tipoAlerta = 'exito';
+                break;
+            case 'danger':
+            case 'error':
+                tipoAlerta = 'error';
+                break;
+            case 'warning':
+            case 'advertencia':
+                tipoAlerta = 'advertencia';
+                break;
+            case 'info':
+            default:
+                tipoAlerta = 'info';
+                break;
+        }
 
-        // Crea el elemento de alerta (utilizando clases genéricas y las clases de tu alertas.css)
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = [
-            // Usa una clase base (ej. 'alerta') y una clase de tipo (ej. 'alerta-success')
-            // Estas deben coincidir con tu alertas.css
-            `<div class="alerta alerta-${type} alert-dismissible fade show" role="alert">`,
-            `   <div>${message}</div>`,
-            '   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>',
-            '</div>'
-        ].join('');
+        // Cerrar alertas existentes
+        if (limpiarPrevias) {
+            const alertasExistentes = container.querySelectorAll('.alerta');
+            alertasExistentes.forEach(alerta => {
+                alerta.remove();
+            });
+        }
 
-        alertContainer.append(wrapper);
+        const alerta = document.createElement('div');
+        alerta.classList.add('alerta', tipoAlerta);
 
-        // Auto-cierre después de 5 segundos
-        setTimeout(() => {
-            const alertElement = wrapper.querySelector('.alerta');
-            if (alertElement) {
-                // Si estás usando la librería de Bootstrap 5
-                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
-                bsAlert.close();
-            }
-        }, 5000);
+        let iconoClase = '';
+        switch (tipoAlerta) {
+            case 'exito':
+                iconoClase = 'bi-check-circle-fill';
+                break;
+            case 'error':
+                iconoClase = 'bi-x-octagon-fill';
+                break;
+            case 'advertencia':
+                iconoClase = 'bi-exclamation-triangle-fill';
+                break;
+            case 'info':
+            default:
+                iconoClase = 'bi-info-circle-fill';
+                break;
+        }
+
+        alerta.innerHTML = `<i class="bi ${iconoClase}"></i><div class="alerta-texto">${mensaje}</div>`;
+
+        container.appendChild(alerta);
+
+        // Forzar reflow para aplicar la transición de entrada
+        alerta.offsetWidth;
+        alerta.classList.add('mostrar');
+
+        const remover = () => {
+            alerta.classList.remove('mostrar');
+            // Usar transitionend para asegurar que se remueve DESPUÉS de la animación de salida
+            alerta.addEventListener('transitionend', () => {
+                if (alerta.parentNode) {
+                    alerta.remove();
+                }
+            }, { once: true });
+        };
+
+        if (duracion > 0) {
+            setTimeout(remover, duracion);
+        }
     }
     // ------------------------------------------
 
@@ -91,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- HELPERS ---
 
-    // 🔑 FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA
+    // 🔑 FUNCIÓN DE VALIDACIÓN DE CONTRASEÑA (Usa mostrarAlerta) 🔑
     function validatePassword(password) {
         // Requisito 1: Longitud entre 8 y 12
         const lengthOK = password.length >= 8 && password.length <= 12;
@@ -154,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 🚀 VERIFICACIÓN DE AUTORIZACIÓN (401/403)
             if (response.status === 401 || response.status === 403) {
                 console.error("Token no válido. Redirigiendo a login.");
-                // Usando mostrarAlerta
+                // Usando mostrarAlerta (usa 'danger')
                 mostrarAlerta("Sesión expirada o no autorizada. Por favor, inicia sesión de nuevo.", "danger");
                 sessionStorage.clear();
                 window.location.href = ROOT_REDIRECT;
@@ -164,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
-                // Usando mostrarAlerta
+                // Usando mostrarAlerta (usa 'danger')
                 mostrarAlerta("Error al cargar usuarios: " + data.message, "danger");
                 return;
             }
@@ -178,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderUsersTable(data.data);
         } catch (error) {
             console.error("Error fetching users:", error);
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'danger')
             mostrarAlerta("Error de conexión al cargar usuarios.", "danger");
         }
     }
@@ -286,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 const data = await response.json();
                 if (!response.ok || !data.data || data.data.length === 0) {
-                    // Usando mostrarAlerta
+                    // Usando mostrarAlerta (usa 'danger')
                     mostrarAlerta("Error al cargar usuario para edición.", "danger");
                     return;
                 }
@@ -309,7 +352,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userModal.show();
         } catch (error) {
             console.error("Error loading user:", error);
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'danger')
             mostrarAlerta("Error de conexión al cargar usuario.", "danger");
         }
     }
@@ -326,12 +369,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // 1. VALIDACIÓN DE COINCIDENCIA DE CONTRASEÑAS (para creación o cambio de contraseña)
         if (newPassword) {
             if (newPassword !== confirmPassword) {
-                // Usando mostrarAlerta
+                // Usando mostrarAlerta (usa 'warning')
                 mostrarAlerta("Las contraseñas no coinciden.", "warning");
                 return;
             }
         } else if (isCreation) {
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'warning')
             mostrarAlerta("Debe especificar una contraseña para el nuevo usuario.", "warning");
             return;
         }
@@ -341,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (newPassword) {
             const passwordError = validatePassword(newPassword);
             if (passwordError) {
-                // Usando mostrarAlerta
+                // Usando mostrarAlerta (usa 'warning')
                 mostrarAlerta(passwordError, "warning");
                 return;
             }
@@ -374,18 +417,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
-                // Usando mostrarAlerta
+                // Usando mostrarAlerta (usa 'danger')
                 mostrarAlerta(`Error al ${id ? 'actualizar' : 'crear'} usuario: ${data.message}`, "danger");
                 return;
             }
 
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'success')
             mostrarAlerta(`Usuario ${id ? 'actualizado' : 'creado'} correctamente.`, "success");
             userModal.hide();
             fetchUsers();
         } catch (error) {
             console.error("Error submitting form:", error);
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'danger')
             mostrarAlerta("Error de conexión al guardar usuario.", "danger");
         }
     });
@@ -407,19 +450,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
-                // Usando mostrarAlerta
+                // Usando mostrarAlerta (usa 'danger')
                 mostrarAlerta(`Error al eliminar usuario: ${data.message}`, "danger");
                 return;
             }
 
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'success')
             mostrarAlerta("Usuario eliminado correctamente.", "success");
             deleteConfirmModal.hide();
             fetchUsers();
             userIdToDelete = null;
         } catch (error) {
             console.error("Error deleting user:", error);
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'danger')
             mostrarAlerta("Error de conexión al eliminar usuario.", "danger");
         }
     });
@@ -473,7 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const reason = banReason.value.trim();
 
         if (shouldBan && reason.length < 5) {
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'warning')
             mostrarAlerta("La razón del baneo debe tener al menos 5 caracteres.", "warning");
             return;
         }
@@ -497,18 +540,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
-                // Usando mostrarAlerta
+                // Usando mostrarAlerta (usa 'danger')
                 mostrarAlerta(`Error al ${shouldBan ? 'banear' : 'desbanear'} usuario: ${data.message}`, "danger");
                 return;
             }
 
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'success')
             mostrarAlerta(`Usuario ${shouldBan ? 'baneado' : 'desbaneado'} correctamente.`, "success");
             banUserModal.hide();
             fetchUsers(); // Recargar la tabla
         } catch (error) {
             console.error("Error confirming ban action:", error);
-            // Usando mostrarAlerta
+            // Usando mostrarAlerta (usa 'danger')
             mostrarAlerta("Error de conexión al procesar la acción de baneo.", "danger");
         }
     }
