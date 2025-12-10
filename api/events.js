@@ -1,14 +1,7 @@
-// events.js - MODIFICADO (Optimización DB y Autenticación JWT)
-
 import { Pool } from "pg";
 import pg from 'pg'; // Importación necesaria para configurar el parser de tipos
 import { v2 as cloudinary } from 'cloudinary';
 import formidable from 'formidable';
-import jwt from "jsonwebtoken"; // MOD: Importar JWT
-
-// ===============================================
-// CONFIGURACIÓN GLOBAL Y OPTIMIZACIÓN
-// ===============================================
 
 export const config = {
     api: {
@@ -16,25 +9,14 @@ export const config = {
     },
 };
 
-// MOD: Inicializar Pool, Cloudinary y JWT fuera del handler (optimización)
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-});
-
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_not_for_prod'; // Usar una variable de entorno para el secreto
-
 // ===============================================
 // CONFIGURACIÓN DE TIMEZONE PARA POSTGRESQL (PG)
 // SOLUCIÓN DEFINITIVA DE HORA (+1) EN LECTURA
 // ===============================================
 // El OID 1114 es el identificador para TIMESTAMP WITHOUT TIME ZONE
+// Esto fuerza al driver de Node.js a devolver la hora como una CADENA LITERAL,
+// evitando que Node.js la convierta automáticamente a un objeto Date
+// y le aplique una compensación de zona horaria adicional.
 pg.types.setTypeParser(1114, function (stringValue) {
     return stringValue;
 });
@@ -42,41 +24,8 @@ pg.types.setTypeParser(1114, function (stringValue) {
 
 
 // ===============================================
-// FUNCIONES DE UTILIDAD Y AUTENTICACIÓN
+// FUNCIONES DE PARSEO Y CORRECCIÓN DE HORA
 // ===============================================
-
-/**
- * MOD: Función para verificar JWT y el rol de Administrador.
- */
-function verifyAdmin(req) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new Error("Acceso denegado. Token no proporcionado.");
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        // Se asume que solo los administradores tienen acceso a estas rutas
-        if (!decoded.isAdmin) {
-             throw new Error("No autorizado. Se requiere rol de administrador.");
-        }
-        
-        return decoded; 
-    } catch (e) {
-        if (e.name === 'TokenExpiredError' || e.name === 'JsonWebTokenError') {
-            throw new Error("Acceso denegado. Token inválido o expirado.");
-        }
-        // Lanza el error de admin si ya fue formateado, sino lanza el error general.
-        if (e.message.includes("administrador")) {
-             throw e;
-        }
-        throw new Error("Acceso denegado. Token inválido o expirado.");
-    }
-}
-
 
 function readJsonBody(req) {
     return new Promise((resolve, reject) => {
@@ -151,7 +100,8 @@ function toSqlDateTimeLocal(dateString) {
 
 export default async function handler(req, res) {
     const { id, action } = req.query;
-    let client; // MOD: Declaración de cliente
+    let pool;
+    let client;
 
     // 1. VERIFICACIÓN DE ENTORNO
     const requiredEnvVars = [
@@ -159,7 +109,6 @@ export default async function handler(req, res) {
         "CLOUDINARY_CLOUD_NAME",
         "CLOUDINARY_API_KEY",
         "CLOUDINARY_API_SECRET",
-        "JWT_SECRET", // MOD: Añadir JWT_SECRET
     ];
     const missingVars = requiredEnvVars.filter(name => !process.env[name]);
 
@@ -172,33 +121,26 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Conexión a DB (Usando la Pool global)
+        // Configuración de Cloudinary
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET,
+        });
+
+        // Inicialización de Pool y conexión a DB
+        pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false },
+        });
         client = await pool.connect();
-
-        // 2. VERIFICACIÓN DE AUTENTICACIÓN (Solo para métodos y acciones sensibles/admin)
-        const isAuthRequired = req.method === "POST" && !['register'].includes(action) || 
-                             req.method === "PUT" || 
-                             req.method === "DELETE" && !['cancel'].includes(action) ||
-                             (req.method === "GET" && ['getAllEventsList', 'getAllUsersList', 'getRegistrationCount', 'getRegistrations'].includes(action));
-
-
-        if (isAuthRequired) {
-             try {
-                 verifyAdmin(req);
-             } catch (authError) {
-                 // 401: No autorizado (token faltante/inválido) | 403: Prohibido (rol incorrecto)
-                 const statusCode = authError.message.includes('administrador') ? 403 : 401;
-                 return res.status(statusCode).json({ success: false, message: authError.message });
-             }
-        }
-
 
         // ===============================================
         // MANEJADOR GET
         // ===============================================
         if (req.method === "GET") {
 
-            // Obtener lista simple de todos los EVENTOS (ID y Título) - REQUIERE AUTH/ADMIN
+            // Obtener lista simple de todos los EVENTOS (ID y Título)
             if (action === 'getAllEventsList') {
                 const result = await client.query(
                     `SELECT id, title FROM events ORDER BY event_start DESC`
@@ -206,7 +148,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // Obtener lista simple de todos los USUARIOS (ID y Nombre) - REQUIERE AUTH/ADMIN
+            // Obtener lista simple de todos los USUARIOS (ID y Nombre)
             if (action === 'getAllUsersList') {
                 const result = await client.query(
                     `SELECT id, name FROM users ORDER BY name ASC`
@@ -214,7 +156,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // GET: Cargar todos los eventos - PÚBLICO
+            // GET: Cargar todos los eventos
             if (!action) {
                 const result = await client.query(
                     // Las columnas 'start' y 'end' se devuelven ahora como cadenas de texto gracias al setTypeParser(1114)
@@ -223,7 +165,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // GET: Verificar inscripción - PÚBLICO
+            // GET: Verificar inscripción
             if (action === 'checkRegistration') {
                 const { user_id, event_id } = req.query;
 
@@ -239,7 +181,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, isRegistered: result.rows.length > 0 });
             }
 
-            // GET: Obtener solo el CONTEO de inscritos para un evento - REQUIERE AUTH/ADMIN
+            // GET: Obtener solo el CONTEO de inscritos para un evento
             if (action === 'getRegistrationCount') {
                 const { event_id } = req.query;
 
@@ -267,7 +209,7 @@ export default async function handler(req, res) {
             }
 
 
-            // GET: Obtener lista de inscritos para un evento - REQUIERE AUTH/ADMIN
+            // GET: Obtener lista de inscritos para un evento
             if (action === 'getRegistrations') {
                 const { event_id } = req.query;
 
@@ -299,7 +241,7 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "POST") {
 
-            // POST: Registrar inscripción - PÚBLICO
+            // POST: Registrar inscripción 
             if (action === 'register') {
                 const jsonBody = await readJsonBody(req);
                 const { user_id, event_id } = jsonBody;
@@ -320,12 +262,12 @@ export default async function handler(req, res) {
                 // --------------------------------------------------------------------------------------------------------
                 const existenceAndStatusCheck = await client.query(
                     `SELECT 
-                         id 
-                      FROM 
-                          events 
-                      WHERE 
-                          id = $1 
-                          AND event_end > NOW()`, // <-- Solo permite el registro si la hora de fin es MAYOR a la hora actual
+                        id 
+                     FROM 
+                        events 
+                     WHERE 
+                        id = $1 
+                        AND event_end > NOW()`, // <-- Solo permite el registro si la hora de fin es MAYOR a la hora actual
                     [parsedEventId]
                 );
 
@@ -406,7 +348,7 @@ export default async function handler(req, res) {
                 return res.status(201).json({ success: true, message: "Inscripción al evento exitosa.", registrationId: result.rows[0].id });
             }
 
-            // POST: Crear evento - REQUIERE AUTH/ADMIN
+            // POST: Crear evento 
             if (!action) {
                 const { fields, files } = await parseMultipart(req);
 
@@ -447,10 +389,9 @@ export default async function handler(req, res) {
         }
 
         // ===============================================
-        // MANEJADOR PUT - REQUIERE AUTH/ADMIN
+        // MANEJADOR PUT 
         // ===============================================
         if (req.method === "PUT") {
-            // Se asume que no hay acciones PUT. Todo PUT es para editar el evento por ID.
 
             // PUT: Editar evento 
             const { fields, files } = await parseMultipart(req);
@@ -500,7 +441,7 @@ export default async function handler(req, res) {
         // ===============================================
         if (req.method === "DELETE") {
 
-            // Cancelar inscripción - PÚBLICO
+            // Cancelar inscripción
             if (action === 'cancel') {
                 const { user_id, event_id } = req.query;
 
@@ -520,7 +461,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, message: "Inscripción cancelada correctamente." });
             }
 
-            // Eliminar evento - REQUIERE AUTH/ADMIN
+            // Eliminar evento
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
             // Eliminar inscripciones relacionadas antes de eliminar el evento
@@ -544,28 +485,18 @@ export default async function handler(req, res) {
         console.error("Error general en /api/events:", error);
 
         let errorMessage = 'Error interno del servidor.';
-        let statusCode = 500;
 
-        // MOD: Manejo de errores de JWT/Auth
-        if (error.message.includes('Acceso denegado') || error.message.includes('Token') || error.message.includes('administrador')) {
-            statusCode = error.message.includes('administrador') ? 403 : 401;
-            errorMessage = error.message;
-        } 
         // Manejo de errores de PostgreSQL más específicos
-        else if (error.code === '42703' && error.message.includes('user')) {
+        if (error.code === '42703' && error.message.includes('user')) {
             errorMessage = 'Error de Base de Datos: Columna "user" no encontrada.';
         } else if (error.code === '22P02') {
             errorMessage = 'Error de Base de Datos: Valor de ID o dato numérico inválido.';
-            statusCode = 400; 
         } else if (error.message.includes('Error al parsear el cuerpo JSON')) {
             errorMessage = 'Error de formato de datos (JSON) en la solicitud.';
-            statusCode = 400;
         } else if (error.code === '22007') {
             errorMessage = 'Error de formato de fecha/hora o ID inválido al intentar guardar en la DB.';
-            statusCode = 400;
         } else if (error.code === '23505') {
             errorMessage = 'Error: Ya existe un registro similar en la base de datos (posiblemente ya inscrito).';
-            statusCode = 409; 
         } else if (error.code === '42601') {
             errorMessage = 'Error de sintaxis SQL.';
         } else if (error.code === '42P01') {
@@ -575,9 +506,8 @@ export default async function handler(req, res) {
         }
 
 
-        return res.status(statusCode).json({ success: false, message: errorMessage });
+        return res.status(500).json({ success: false, message: errorMessage });
     } finally {
-        // Asegurar la liberación del cliente de DB
         if (client) {
             client.release();
         }
