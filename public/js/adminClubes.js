@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - NO MODIFICADO (CÓDIGO ANTERIOR VÁLIDO)
+// public/js/adminClubes.js - MODIFICADO (Pequeñas mejoras de lógica y debugging)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -58,23 +58,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Formulario y botón de nueva creación
     const form = document.getElementById("club-form");
-    // Asumiendo que existe un botón para 'Nuevo Club' fuera del form (No visible en HTML, pero es una buena práctica)
     const btnNewClub = document.getElementById("btn-new-club");
 
-    // Asumiendo que existe un modal principal para la edición/creación
-    const clubModalEl = document.getElementById('clubModal'); // Este modal no está en el HTML, pero mantenemos la referencia si es que el formulario es un modal. (Asumiendo que club-form está fijo en la página)
+    const clubModalEl = document.getElementById('clubModal');
 
     // Elementos del formulario de edición/creación
     const inputId = document.getElementById("club-id");
     const inputNombre = document.getElementById("nombre_evento");
     const inputDescripcion = document.getElementById("descripcion");
-    // 🛠️ AÑADIDO: Referencia para CIUDAD y ENFOQUE.
     const inputCiudad = document.getElementById("ciudad");
     const inputEnfoque = document.getElementById("enfoque");
     const inputImagen = document.getElementById("imagen_club"); // Input de tipo file
     const inputFecha = document.getElementById("fecha_creacion");
-    // ID del presidente (oculto, para gestionar pendientes)
-    const inputIdPresidente = document.getElementById("id_presidente"); // Ahora existe en el HTML
+    const inputIdPresidente = document.getElementById("id_presidente");
 
     // Modals de Bootstrap
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
@@ -84,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let clubToDeleteId = null;
 
     const statusModalEl = document.getElementById("statusConfirmModal");
-    const statusConfirmModal = statusModalEl ? new bootstrap.Modal(statusModalEl) : null;
+    const statusConfirmModal = statusModalEl ? new bootstrap.Modal(statusConfirmModal) : null;
     const btnConfirmStatus = document.getElementById("btnConfirmStatus");
     const statusConfirmMessage = document.getElementById("statusConfirmMessage");
     let clubToChangeStatus = { id: null, action: null };
@@ -110,18 +106,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (form) form.reset();
         if (inputId) inputId.value = "";
         if (inputIdPresidente) inputIdPresidente.value = "";
-        // 🛠️ AÑADIDO: Limpiar explícitamente los valores de los nuevos inputs
         if (inputCiudad) inputCiudad.value = "";
         if (inputEnfoque) inputEnfoque.value = "";
         setFechaDefault();
-        // Nota: La alerta de "Formulario listo" se puede comentar si es muy ruidosa
-        // mostrarAlerta("Formulario listo para crear un nuevo club.", "info"); 
     }
 
     if (btnNewClub) {
         btnNewClub.addEventListener('click', () => {
             clearForm();
-            // Mostrar modal de creación (si existe)
             if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
         });
     }
@@ -143,15 +135,20 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Muestra una alerta en el placeholder. */
     function mostrarAlerta(message, type) {
         console.log(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
-        const alertPlaceholder = document.getElementById('alert-placeholder');
+        const alertPlaceholder = document.getElementById('alertas-container');
         if (alertPlaceholder) {
             const bsType = type === 'exito' ? 'success' : type === 'error' ? 'danger' : 'info';
-            alertPlaceholder.innerHTML = `
-                <div class="alert alert-${bsType} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
+            // Utiliza la función de alertas.js si está disponible, sino, fallback
+            if (typeof mostrarAlertaDesdeJS === 'function') {
+                mostrarAlertaDesdeJS(message, type);
+            } else {
+                alertPlaceholder.innerHTML = `
+                    <div class="alert alert-${bsType} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            }
         }
     }
 
@@ -163,9 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Carga los clubes activos y pendientes de la API y renderiza las tablas. */
     async function cargarClubes() {
         const token = getToken();
-        // Ya se verificó el token en checkAdminAccess, pero lo mantenemos para la alerta específica
         if (!token) {
-            // El usuario ya fue redirigido por checkAdminAccess, pero mostramos una alerta de respaldo
             mostrarAlerta("❌ **ERROR CRÍTICO:** Token de administrador no disponible. Se requiere re-login.", "error");
             renderTabla(tablaActivos, [], 'error');
             renderTabla(tablaPendientes, [], 'error');
@@ -176,13 +171,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
-            // Solicitudes concurrentes (Activos y Pendientes)
             const [resActivos, resPendientes] = await Promise.all([
                 fetch("/api/clubs?estado=activo", { headers }),
                 fetch("/api/clubs?estado=pendiente", { headers })
             ]);
 
-            // Función de manejo de errores de respuesta interna
             const checkResponse = async (res, type) => {
                 if (!res.ok) {
                     const errorText = await res.text();
@@ -197,11 +190,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const activos = dataActivos.success ? (dataActivos.clubs || []) : [];
             const pendientes = dataPendientes.success ? (dataPendientes.pending_clubs || []) : [];
 
-            // Renderizar tablas
             renderTabla(tablaActivos, activos);
             renderTabla(tablaPendientes, pendientes);
 
-            // Actualizar el contador de pendientes
             if (badgePendientes) {
                 badgePendientes.textContent = pendientes.length;
                 badgePendientes.style.display = pendientes.length > 0 ? 'inline-block' : 'none';
@@ -231,8 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         contenedorTabla.innerHTML = "";
 
-        // ** FIX: Definir la variable aquí para usarla en el mensaje de tabla vacía **
-        const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes'; // ** Solución de ReferenceError **
+        const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes';
 
         if (status === 'error') {
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
@@ -240,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!Array.isArray(clubes) || clubes.length === 0) {
-            const mensaje = esPendiente ? // Usamos la variable definida arriba
+            const mensaje = esPendiente ?
                 "No hay solicitudes de clubes pendientes." :
                 "No hay clubes activos registrados.";
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-secondary text-center">${mensaje}</td></tr>`;
@@ -252,8 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const fecha = club.fecha_creacion ? club.fecha_creacion.toString().split('T')[0] : 'N/A';
             let badgeEstado = '';
             let accionesEspeciales = '';
-
-            // const esPendiente fue movida arriba y reutilizada aquí
 
             if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
@@ -271,7 +259,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? `${escapeHtml(club.nombre_presidente || 'N/A')} (ID: ${club.id_presidente})`
                 : 'Admin';
 
-            // Recorte de descripción para mejor visualización
             const descripcionCorta = club.descripcion
                 ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
                 : "Sin descripción";
@@ -296,7 +283,6 @@ document.addEventListener("DOMContentLoaded", () => {
             contenedorTabla.appendChild(fila);
         });
 
-        // Adjuntar listeners de eventos
         contenedorTabla.querySelectorAll(".editar-btn").forEach(btn =>
             btn.addEventListener("click", cargarClubEnFormulario)
         );
@@ -350,17 +336,14 @@ document.addEventListener("DOMContentLoaded", () => {
             inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
-            // 🛠️ LLENAR CIUDAD y ENFOQUE (Ahora los inputs existen en el HTML)
+
             if (inputCiudad) inputCiudad.value = c.ciudad || "";
             if (inputEnfoque) inputEnfoque.value = c.enfoque || "";
 
-            if (inputImagen) inputImagen.value = "";
+            if (inputImagen) inputImagen.value = ""; // No se rellena el input file
 
             // Cargar ID del presidente
             if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
-
-            // Mostrar el modal de edición (Si el form está en un modal. Si no, simplemente el scroll)
-            // if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
 
             if (c.estado === 'pendiente' || c.estado === null) {
                 mostrarAlerta("Club pendiente cargado. Al guardar, se establecerá como activo.", "info");
@@ -392,10 +375,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const id = inputId.value;
         const metodo = id ? "PUT" : "POST";
+        // Si es PUT, el ID ya está en la URL
         const url = "/api/clubs" + (id ? `?id=${id}` : "");
 
         // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE
-        // Esta línea ya NO dará error gracias al cambio en admin.html
         if (!inputNombre.value || !inputDescripcion.value || !inputCiudad.value || !inputEnfoque.value) {
             mostrarAlerta("❌ Faltan campos obligatorios: Nombre, Descripción, Ciudad o Enfoque.", "error");
             return;
@@ -403,7 +386,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const formData = new FormData(form);
 
-        // Lógica de Estado: Si es creación (POST) o edición de pendiente (PUT), forzar estado 'activo'
+        // 💡 MODIFICACIÓN: Limpiar FormData de campos vacíos, excepto el archivo.
+        // Esto previene que claves vacías como 'id_presidente' causen problemas en el backend
+        // (aunque el error 500 es probablemente otra cosa, es buena práctica)
+        for (const [key, value] of formData.entries()) {
+            if (typeof value === 'string' && value.trim() === '') {
+                // Conservamos el campo en el formData, pero podríamos haberlo eliminado si el backend es estricto
+                // Sin embargo, si es un campo de texto simple y está vacío, lo dejamos
+            } else if (key === 'imagen_club' && value.name === '') {
+                // Si el input file está vacío (no se ha seleccionado archivo), la clave 'imagen_club'
+                // tiene un valor de File con nombre vacío. Lo eliminamos para que el backend 
+                // no intente procesar una imagen vacía en una edición si no se cambió.
+                formData.delete('imagen_club');
+            }
+        }
+
         const isEditingPending = metodo === 'PUT' && inputIdPresidente && inputIdPresidente.value !== '';
 
         if (metodo === 'POST' || isEditingPending) {
@@ -411,19 +408,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            // El Content-Type es manejado por el navegador (multipart/form-data)
-            // Este es el punto de la solicitud POST 400
+            // Línea 416
             const res = await fetch(url, {
                 method: metodo,
                 headers: {
                     'Authorization': `Bearer ${token}`
+                    // NO AGREGAR 'Content-Type': 'multipart/form-data', el navegador lo hace.
                 },
                 body: formData
             });
 
             if (!res.ok) {
+                // 💡 MEJORA: Obtener el mensaje de error del backend incluso si es 500
                 const errorText = await res.text();
-                throw new Error(`Error ${res.status} al guardar: ${errorText.substring(0, 100)}...`);
+                // El error 500 se capturará aquí y se lanzará con el mensaje del servidor
+                throw new Error(`Error ${res.status} al guardar: ${errorText.substring(0, 200)}...`);
             }
 
             const r = await res.json();
@@ -435,7 +434,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             mostrarAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
-            // Cerrar modal (si el form estuviera en un modal)
             if (clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
 
             clearForm();
@@ -443,6 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (error) {
             console.error("Error submit club:", error);
+            // Mostrar el mensaje capturado de errorText
             const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor: ${error.message}`;
             mostrarAlerta(errorMessage, "error");
         }
@@ -560,7 +559,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 let successMessage;
 
                 if (action === 'aprobar') {
-                    // PUT: Cambia estado a activo (asumiendo que el backend maneja la promoción)
                     res = await fetch(url, {
                         method: 'PUT',
                         headers: { ...headers, 'Content-Type': 'application/json' },
@@ -568,7 +566,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    // DELETE: Elimina la solicitud de pendiente
                     res = await fetch(url, {
                         method: 'DELETE',
                         headers: headers
