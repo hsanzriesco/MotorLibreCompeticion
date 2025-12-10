@@ -151,26 +151,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 : '<span class="badge text-bg-success">ACTIVO</span>';
 
             row.innerHTML = `
-                <td>${user.name}</td>
-                <td>${user.email}</td>
-                <td><span class="badge text-bg-secondary">${user.role.toUpperCase()}</span></td>
-                <td>${statusBadge}</td>
-                <td>${date}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary btn-edit me-2" data-id="${user.id}">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-sm ${banButtonClass} btn-ban me-2" 
-                            data-id="${user.id}" 
-                            data-name="${user.name}" 
-                            data-isbanned="${isBanned}">
-                        <i class="bi ${banButtonIcon}"></i> ${banButtonText}
-                    </button>
-                    <button class="btn btn-sm btn-warning btn-delete" data-id="${user.id}" data-name="${user.name}">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </td>
-            `;
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td><span class="badge text-bg-secondary">${user.role.toUpperCase()}</span></td>
+                <td>${statusBadge}</td>
+                <td>${date}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary btn-edit me-2" data-id="${user.id}">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button class="btn btn-sm ${banButtonClass} btn-ban me-2" 
+                            data-id="${user.id}" 
+                            data-name="${user.name}" 
+                            data-isbanned="${isBanned}">
+                        <i class="bi ${banButtonIcon}"></i> ${banButtonText}
+                    </button>
+                    <button class="btn btn-sm btn-warning btn-delete" data-id="${user.id}" data-name="${user.name}">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </td>
+            `;
         });
 
         // Agregar listeners para editar
@@ -324,8 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!userIdToDelete) return;
 
         try {
-            // 🛑 MODIFICADO: Usar parámetro de ruta en lugar de parámetro de consulta para DELETE
-            const response = await fetch(`/api/users/${userIdToDelete}`, {
+            const response = await fetch(`/api/users?id=${userIdToDelete}`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
