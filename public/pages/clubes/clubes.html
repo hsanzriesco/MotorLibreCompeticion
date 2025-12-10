@@ -15,16 +15,33 @@
     <link rel="stylesheet" href="../../css/alertas.css">
 
     <style>
+        /* =========================================================
+        ESTAS SON LAS REGLAS CLAVE para el "Sticky Footer" (Flexbox)
+        DEBES ASEGURARTE DE QUE ESTÉN EN style.css O AQUÍ
+        =========================================================
+        */
         body {
+            /* Reglas del Flexbox para empujar el footer */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            /* Asegura que no haya márgenes no deseados */
+
+            /* Tus estilos existentes */
             background-color: #111;
             color: white;
             font-family: 'Orbitron', sans-serif;
         }
 
         main {
+            /* Hace que el contenido principal absorba todo el espacio extra */
+            flex-grow: 1;
             padding-top: 100px;
+            /* Mantiene tu padding existente */
         }
 
+        /* Tus otros estilos existentes */
         .titulo {
             border-bottom: 2px solid #e50914;
             padding-bottom: 10px;
@@ -96,9 +113,6 @@
             <a href="../calendario/calendario.html" class="d-block text-light mb-2">
                 Calendario
             </a>
-            <!-- <a href="./clubes.html" class="d-block text-light mb-2">
-                Clubes
-            </a> -->
             <a href="../perfil/perfil.html" class="d-block text-light mb-2">
                 Mi perfil
             </a>
@@ -120,12 +134,17 @@
                 <i class="bi bi-person-workspace me-2"></i> Registrar Mi Club
             </a>
         </div>
-        <div id="clubes-container" class="row mt-4 g-4"></div>
+        <div id="clubes-container" class="row mt-4 g-4">
+            <div class="col-12 mt-5">
+                <p class="text-danger fw-bold">Aún no hay clubes creados.</p>
+            </div>
+        </div>
 
     </main>
 
-    <script src="../../js/alertas.js"></script>
-    <script src="clubes.js"></script>
+    <footer id="footer-placeholder">
+    </footer>
+
     <div class="modal fade" id="modalSalirClub" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="background:#111; border:1px solid #e50914; border-radius:10px;">
@@ -168,10 +187,11 @@
         </div>
     </div>
 
+    <script src="../../js/alertas.js"></script>
+    <script src="clubes.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../js/navbar.js"></script>
     <script src="../../footer/footer.js"></script>
-
 </body>
 
 </html>
