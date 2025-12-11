@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL UNIFICADA Y ROBUSTA PARA MANEJAR /api/clubs Y /api/clubs/ID
+// clubs.js - VERSIÓN FINAL UNIFICADA Y ROBUSTA
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from 'cloudinary';
 import { promisify } from 'util';
 
-// --- CONFIGURACIÓN DE BASE DE DATOS ---
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
@@ -17,58 +16,40 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    // ✅ CORRECCIÓN: Aseguramos el acceso correcto a la variable de entorno.
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Convertir fs.unlink en una función Promise para usar con async/await
 const unlinkAsync = promisify(fs.unlink);
 
-// Desactiva el body parser de Next.js para permitir que formidable lea el cuerpo del request
 export const config = {
     api: { bodyParser: false, },
 };
 
-// 🛠️ HELPER: Función para leer el cuerpo JSON (para join/leave y status change)
 const getBody = async (req) => {
     try {
         const chunks = [];
-        // Intentar leer y concatenar los chunks
         for await (const chunk of req) chunks.push(chunk);
         const buffer = Buffer.concat(chunks);
         if (buffer.length === 0) return null;
-
-        // Solo intentar parsear si hay contenido
         return JSON.parse(buffer.toString('utf8'));
     } catch (e) {
-        // En caso de error de parseo o lectura, devolver null/lanzar error controlado
         console.warn("ADVERTENCIA: Falló el parseo del cuerpo JSON:", e.message);
         return null;
     }
 };
 
-// Función de utilidad para eliminar una imagen de Cloudinary
 async function deleteFromCloudary(imageUrl) {
     if (!imageUrl) return;
-
     try {
         const parts = imageUrl.split('/');
-        // La carpeta es 'motor-libre-clubs'
         const folder = 'motor-libre-clubs';
         const filenameWithExt = parts[parts.length - 1];
-        // Asumiendo que la imagen_club contiene el public_id completo (incluyendo la extensión) al final
         const publicIdWithoutExt = filenameWithExt.split('.')[0];
         const publicId = `${folder}/${publicIdWithoutExt}`;
 
-        const result = await cloudinary.uploader.destroy(publicId);
-
-        if (result.result === 'not found') {
-            console.warn(`ADVERTENCIA: Imagen no encontrada en Cloudinary: ${publicId}`);
-        } else {
-            console.log(`Imagen ${publicId} eliminada de Cloudinary.`);
-        }
+        await cloudinary.uploader.destroy(publicId);
     } catch (e) {
-        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudinary):", e.message);
+        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary:", e.message);
     }
 }
 
@@ -78,14 +59,11 @@ const parseForm = (req) => {
         const form = formidable({
             multiples: false,
             keepExtensions: true,
-            maxFileSize: 5 * 1024 * 1024, // 5MB 
+            maxFileSize: 5 * 1024 * 1024,
         });
 
         form.parse(req, async (err, fields, files) => {
-
             let imagenFilePathTemp = null;
-
-            // Buscar por los nombres comunes que vienen del cliente
             if (files.imagen && files.imagen[0]) {
                 imagenFilePathTemp = files.imagen[0].filepath;
             } else if (files.imagen_club_nueva && files.imagen_club_nueva[0]) {
@@ -95,9 +73,8 @@ const parseForm = (req) => {
             }
 
             if (err) {
-                console.error("Error parsing form:", err);
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
-                    try { await unlinkAsync(imagenFilePathTemp); } catch (e) { console.error("Error al limpiar temp file:", e); }
+                    try { await unlinkAsync(imagenFilePathTemp); } catch (e) { }
                 }
                 return reject(err);
             }
@@ -119,22 +96,14 @@ const parseForm = (req) => {
 
 async function uploadToCloudinary(filePath) {
     if (!filePath) return null;
-
     try {
         const result = await cloudinary.uploader.upload(filePath, {
-            folder: 'motor-libre-clubs', // Carpeta específica en tu Cloudinary
+            folder: 'motor-libre-clubs',
         });
-
-        if (fs.existsSync(filePath)) {
-            await unlinkAsync(filePath);
-        }
-
+        if (fs.existsSync(filePath)) await unlinkAsync(filePath);
         return result.secure_url;
     } catch (error) {
-        if (fs.existsSync(filePath)) {
-            await unlinkAsync(filePath);
-        }
-        console.error("Cloudinary Error Detallado:", error);
+        if (fs.existsSync(filePath)) await unlinkAsync(filePath);
         throw new Error(`Cloudinary upload failed: ${error.message}`);
     }
 }
@@ -147,65 +116,32 @@ const verifyToken = (req) => {
     const token = authHeader.split(' ')[1];
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        // ⭐ Corregir la estructura de retorno para incluir 'id' y 'user'
         return { authorized: true, user: decoded, id: decoded.id };
     } catch (e) {
-        // En lugar de loguear la traza completa, logueamos el error de JWT
-        console.warn("Advertencia de Token Inválido/Expirado:", e.message);
         return { authorized: false, message: 'Token inválido o expirado.' };
     }
 };
 
 const verifyAdmin = (req) => {
     const verification = verifyToken(req);
-    if (!verification.authorized) {
-        throw new Error(verification.message);
-    }
-    if (verification.user.role !== 'admin') {
-        throw new Error('Acceso denegado: Se requiere rol de administrador.');
-    }
+    if (!verification.authorized) throw new Error(verification.message);
+    if (verification.user.role !== 'admin') throw new Error('Acceso denegado: Se requiere rol de administrador.');
     return verification.user;
 };
 
 const verifyClubOwnershipOrAdmin = async (req, clubId) => {
     const verification = verifyToken(req);
-
-    if (!verification.authorized) {
-        throw new Error(verification.message || 'Debe iniciar sesión para realizar esta acción.');
-    }
-
+    if (!verification.authorized) throw new Error(verification.message || 'Debe iniciar sesión para realizar esta acción.');
     const decodedUser = verification.user;
+    if (decodedUser.role === 'admin') return decodedUser;
+    if (!clubId) throw new Error('ID de club requerido para la verificación de propiedad.');
 
-    // A. Permiso de Administrador
-    if (decodedUser.role === 'admin') {
-        return decodedUser;
-    }
-
-    // B. Permiso de Presidente
-    if (!clubId) {
-        throw new Error('ID de club requerido para la verificación de propiedad.');
-    }
-
-    // 1. Verificar si el usuario es presidente y el club_id coincide con el solicitado
     const clubIdNum = parseInt(clubId);
+    const checkPresidente = await pool.query('SELECT id_presidente FROM public.clubs WHERE id = $1', [clubIdNum]);
 
-    const checkPresidente = await pool.query(
-        'SELECT id_presidente FROM public.clubs WHERE id = $1',
-        [clubIdNum]
-    );
-
-    if (checkPresidente.rows.length === 0) {
-        // Club no encontrado o no activo
-        throw new Error('Club no encontrado o no activo.');
-    }
-
+    if (checkPresidente.rows.length === 0) throw new Error('Club no encontrado o no activo.');
     const presidenteClubId = checkPresidente.rows[0].id_presidente;
-
-    // El usuario logueado (decodedUser.id) debe ser el id_presidente del club
-    if (presidenteClubId !== decodedUser.id) {
-        throw new Error('Acceso denegado: Solo el administrador o el presidente de este club pueden editarlo.');
-    }
-
+    if (presidenteClubId !== decodedUser.id) throw new Error('Acceso denegado: Solo el administrador o el presidente de este club pueden editarlo.');
     return decodedUser;
 };
 
@@ -215,23 +151,17 @@ async function statusChangeHandler(req, res) {
 
     try {
         verifyAdmin(req);
-
         if (!id) return res.status(400).json({ success: false, message: "ID del club es requerido." });
 
         if (method === 'PUT') {
-            // El body es JSON simple, usamos getBody
             const body = await getBody(req);
-
-            const { estado } = body || {}; // Manejar body nulo
-
+            const { estado } = body || {};
             if (estado !== 'activo') return res.status(400).json({ success: false, message: "Estado de actualización no válido." });
 
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
-
                 const pendingClubRes = await client.query(
-                    // ⭐ MODIFICACIÓN GET: Añadir campo 'enfoque'
                     'SELECT nombre_evento, descripcion, imagen_club as imagen_url, id_presidente, ciudad, enfoque FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
                     [id]
                 );
@@ -242,40 +172,26 @@ async function statusChangeHandler(req, res) {
                 }
 
                 const club = pendingClubRes.rows[0];
-
-                if (!club.id_presidente) {
-                    await client.query('ROLLBACK');
-                    return res.status(400).json({ success: false, message: "El solicitante (id_presidente) no está definido." });
-                }
-
                 let nombrePresidente;
                 const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
                 nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
-                // Usamos la URL de la imagen que ya está guardada en clubs_pendientes
-                // ⭐ MODIFICACIÓN INSERT: Añadir campo 'enfoque'
                 const insertRes = await client.query(
                     'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) RETURNING id',
                     [club.nombre_evento, club.descripcion, club.imagen_url, club.id_presidente, nombrePresidente, 'activo', club.ciudad, club.enfoque]
                 );
                 const newClubId = insertRes.rows[0].id;
 
-                // 🚨 IMPORTANTE: CORRECCIÓN EN statusChangeHandler 
-                // Al aprobar un club pendiente, el usuario debe cambiar a rol 'presidente' y establecerse is_presidente = TRUE.
-                // Asumo que un club pendiente siempre lo solicita un 'user' regular.
                 await client.query(
                     'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
                     ['presidente', newClubId, club.id_presidente]
                 );
-
                 await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [id]);
-
                 await client.query('COMMIT');
                 return res.status(200).json({ success: true, message: "Club aprobado y activado correctamente." });
 
             } catch (error) {
                 await client.query('ROLLBACK');
-                // Si el error es una duplicidad de clave o algo grave, loguear y lanzar
                 throw error;
             } finally {
                 client.release();
@@ -283,54 +199,32 @@ async function statusChangeHandler(req, res) {
 
         } else if (method === 'DELETE') {
             const clubRes = await pool.query('SELECT imagen_club FROM public.clubs_pendientes WHERE id = $1', [id]);
-
             const result = await pool.query('DELETE FROM public.clubs_pendientes WHERE id = $1 RETURNING id', [id]);
 
-            if (result.rows.length === 0) {
-                return res.status(404).json({ success: false, message: "Solicitud de club pendiente no encontrada para rechazar." });
-            }
-
-            // Eliminar imagen de Cloudinary si existe
-            if (clubRes.rows.length > 0 && clubRes.rows[0].imagen_club) {
-                await deleteFromCloudary(clubRes.rows[0].imagen_club);
-            }
-
+            if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Solicitud no encontrada." });
+            if (clubRes.rows.length > 0 && clubRes.rows[0].imagen_club) await deleteFromCloudary(clubRes.rows[0].imagen_club);
             return res.status(200).json({ success: true, message: "Solicitud de club rechazada y eliminada." });
         }
-
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
     } catch (error) {
-        console.error("Error en statusChangeHandler:", error);
-        if (error.message.includes('Acceso denegado') || error.message.includes('Token')) {
-            return res.status(401).json({ success: false, message: error.message });
-        }
-        return res.status(500).json({ success: false, message: "Error interno del servidor en cambio de estado." });
+        return res.status(500).json({ success: false, message: "Error interno en cambio de estado." });
     }
 }
 
 async function clubsHandler(req, res) {
     const { method, query } = req;
-
-    // 💡 CORRECCIÓN CRÍTICA: Obtenemos el ID de forma robusta
-    // Añadido 'id: queryId' para capturar el parámetro 'id' enviado por el cliente. (Fix Error 400)
     let { estado, clubId: queryClubId, id: queryId } = query;
-    // La variable 'id' prioriza 'queryId' (como lo usa adminClubes.js), luego 'queryClubId'
     let id = queryId || queryClubId;
 
     if (!id && req.url) {
-        // Intento de parsear el ID de la URL si no viene en la query
         const parts = req.url.split('?')[0].split('/');
         const possibleId = parts[parts.length - 1];
-        if (possibleId && !isNaN(parseInt(possibleId)) && possibleId !== 'clubs') {
-            id = possibleId;
-        }
+        if (possibleId && !isNaN(parseInt(possibleId)) && possibleId !== 'clubs') id = possibleId;
     }
-    // ----------------------------------------------------
 
     let isAdmin = false;
     let userId = null;
-
     let authVerification = verifyToken(req);
 
     if (authVerification.authorized) {
@@ -338,228 +232,81 @@ async function clubsHandler(req, res) {
         isAdmin = authVerification.user.role === 'admin';
     }
 
-
     try {
         if (method === "GET") {
-
-            // --- Lógica GET para obtener club y miembros (ruta usada por editarUsuario.js) ---
             if (id && query.includeMembers === 'true') {
                 const clubIdNum = parseInt(id);
-
-                if (isNaN(clubIdNum)) {
-                    return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
-                }
-
-                // 🛑 CORRECCIÓN CLAVE: Verificar que el usuario esté logueado
-                if (!authVerification.authorized) {
-                    return res.status(401).json({ success: false, message: "Debe iniciar sesión para ver los miembros del club." });
-                }
-
-                // 1. Obtener datos del club
-                let clubQueryText = `
-                    SELECT 
-                        id, nombre_evento as name, descripcion, imagen_club as imagen_url, 
-                        fecha_creacion, estado, id_presidente as president_id, 
-                        nombre_presidente as president_name, ciudad, enfoque
-                    FROM public.clubs 
-                    WHERE id = $1 AND estado = 'activo'
-                `;
-                const clubResult = await pool.query(clubQueryText, [clubIdNum]);
-
-                if (clubResult.rows.length === 0) {
-                    // 🚨 Si no lo encuentra, devolvemos 404, no un 200 incompleto.
-                    return res.status(404).json({ success: false, message: "Club no encontrado." });
-                }
-                const club = clubResult.rows[0];
-
-                // 2. Obtener la lista de miembros
-                const membersQueryText = `
-                    SELECT 
-                        id as user_id, name as username, email, club_id 
-                    FROM public."users" 
-                    WHERE club_id = $1
-                    ORDER BY club_id, name ASC 
-                `;
-                const membersResult = await pool.query(membersQueryText, [clubIdNum]);
-
-                return res.status(200).json({ success: true, club: club, members: membersResult.rows });
+                if (!authVerification.authorized) return res.status(401).json({ success: false, message: "Debe iniciar sesión." });
+                const clubResult = await pool.query(`SELECT id, nombre_evento as name, descripcion, imagen_club as imagen_url, fecha_creacion, estado, id_presidente as president_id, nombre_presidente as president_name, ciudad, enfoque FROM public.clubs WHERE id = $1 AND estado = 'activo'`, [clubIdNum]);
+                if (clubResult.rows.length === 0) return res.status(404).json({ success: false, message: "Club no encontrado." });
+                const membersResult = await pool.query(`SELECT id as user_id, name as username, email, club_id FROM public."users" WHERE club_id = $1 ORDER BY name ASC`, [clubIdNum]);
+                return res.status(200).json({ success: true, club: clubResult.rows[0], members: membersResult.rows });
             }
-            // --- Fin Lógica GET para obtener club y miembros ---
 
             if (estado === 'pendiente') {
-                try {
-                    verifyAdmin(req);
-                } catch (error) {
-                    return res.status(401).json({ success: false, message: "Acceso denegado a solicitudes pendientes. Se requiere rol de administrador." });
-                }
-                isAdmin = true;
+                try { verifyAdmin(req); isAdmin = true; } catch (e) { return res.status(401).json({ success: false, message: "Acceso denegado." }); }
             }
 
             if (id) {
                 const clubIdNum = parseInt(id);
-                if (isNaN(clubIdNum)) {
-                    return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
-                }
-
-                // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs
-                let queryText = `
-                    SELECT 
-                        id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                        estado, id_presidente, nombre_presidente, ciudad, enfoque, 
-                        0 as miembros 
-                    FROM public.clubs 
-                    WHERE id = $1 AND estado = 'activo'
-                `;
+                let queryText = `SELECT id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, estado, id_presidente, nombre_presidente, ciudad, enfoque, 0 as miembros FROM public.clubs WHERE id = $1 AND estado = 'activo'`;
                 const result = await pool.query(queryText, [clubIdNum]);
 
                 if (result.rows.length === 0 && isAdmin) {
-                    // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs_pendientes
-                    const pendingRes = await pool.query(
-                        `SELECT 
-                            p.id, p.nombre_evento, p.descripcion, p.imagen_club as imagen_url, 
-                            p.fecha_solicitud as fecha_creacion, p.ciudad, p.enfoque,
-                            p.id_presidente, 
-                            u.name as nombre_presidente, 
-                            'pendiente' as estado 
-                        FROM public.clubs_pendientes p
-                        JOIN public."users" u ON p.id_presidente = u.id 
-                        WHERE p.id = $1`,
-                        [clubIdNum]
-                    );
-                    if (pendingRes.rows.length > 0) {
-                        return res.status(200).json({ success: true, club: pendingRes.rows[0], pending_club: pendingRes.rows[0] });
-                    }
+                    const pendingRes = await pool.query(`SELECT p.id, p.nombre_evento, p.descripcion, p.imagen_club as imagen_url, p.fecha_solicitud as fecha_creacion, p.ciudad, p.enfoque, p.id_presidente, u.name as nombre_presidente, 'pendiente' as estado FROM public.clubs_pendientes p JOIN public."users" u ON p.id_presidente = u.id WHERE p.id = $1`, [clubIdNum]);
+                    if (pendingRes.rows.length > 0) return res.status(200).json({ success: true, club: pendingRes.rows[0], pending_club: pendingRes.rows[0] });
                 }
-
-                if (result.rows.length === 0) {
-                    return res.status(404).json({ success: false, message: "Club no encontrado." });
-                }
+                if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Club no encontrado." });
                 return res.status(200).json({ success: true, club: result.rows[0] });
 
-            }
-
-            else if (estado) {
+            } else if (estado) {
                 if (estado === 'activo') {
-                    // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
-                    const result = await pool.query(`
-                        SELECT 
-                            id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                            estado, id_presidente, nombre_presidente, ciudad, enfoque,
-                            0 as miembros 
-                        FROM public.clubs WHERE estado = $1 ORDER BY fecha_creacion DESC
-                    `, ['activo']);
+                    const result = await pool.query(`SELECT id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, estado, id_presidente, nombre_presidente, ciudad, enfoque, 0 as miembros FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC`);
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
-                    // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
-                    const queryText = `
-                        SELECT 
-                            p.id, 
-                            p.nombre_evento, 
-                            p.descripcion, 
-                            p.imagen_club as imagen_url, 
-                            p.fecha_solicitud as fecha_creacion, 
-                            p.ciudad,
-                            p.enfoque,
-                            'pendiente' as estado,
-                            p.id_presidente,
-                            u.name as nombre_presidente 
-                        FROM public.clubs_pendientes p
-                        JOIN public."users" u ON p.id_presidente = u.id 
-                        ORDER BY p.fecha_solicitud DESC
-                    `;
-                    const result = await pool.query(queryText);
+                    const result = await pool.query(`SELECT p.id, p.nombre_evento, p.descripcion, p.imagen_club as imagen_url, p.fecha_solicitud as fecha_creacion, p.ciudad, p.enfoque, 'pendiente' as estado, p.id_presidente, u.name as nombre_presidente FROM public.clubs_pendientes p JOIN public."users" u ON p.id_presidente = u.id ORDER BY p.fecha_solicitud DESC`);
                     return res.status(200).json({ success: true, pending_clubs: result.rows });
                 }
-
-                return res.status(400).json({ success: false, message: "Estado no válido o permiso denegado." });
+                return res.status(400).json({ success: false, message: "Estado no válido." });
             }
 
-            // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
-            const defaultResult = await pool.query(`
-                SELECT 
-                    id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                    estado, id_presidente, nombre_presidente, ciudad, enfoque,
-                    0 as miembros 
-                FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
-            `);
+            const defaultResult = await pool.query(`SELECT id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, estado, id_presidente, nombre_presidente, ciudad, enfoque, 0 as miembros FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC`);
             return res.status(200).json({ success: true, clubs: defaultResult.rows });
         }
 
         if (method === "POST") {
-
-            // 🛑 FIX CLAVE: Manejar JOIN (y antes LEAVE) antes de intentar parsear el formulario
-            if (query.action === 'join') { // Lógica LEAVE movida a PUT
+            if (query.action === 'join') {
                 const verification = verifyToken(req);
-                if (!verification.authorized) {
-                    return res.status(401).json({ success: false, message: verification.message });
-                }
+                if (!verification.authorized) return res.status(401).json({ success: false, message: verification.message });
                 const requestingUserId = verification.user.id;
-
-                // Usamos getBody para leer el JSON simple
                 const body = await getBody(req);
                 const { club_id } = body || {};
-
-                if (!club_id) return res.status(400).json({ success: false, message: "ID del club es requerido para la acción." });
+                if (!club_id) return res.status(400).json({ success: false, message: "ID del club requerido." });
 
                 const client = await pool.connect();
                 try {
                     await client.query('BEGIN');
-
-                    // 1. Verificar si ya es presidente o miembro de otro club
-                    // CONSULTA: Se obtienen club_id e is_presidente
                     const userRes = await client.query('SELECT club_id, is_presidente FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
-
-                    if (userRes.rows.length === 0) {
-                        await client.query('ROLLBACK');
-                        return res.status(404).json({ success: false, message: "Usuario no encontrado." });
-                    }
-
-                    // ✅ CORRECCIÓN: Desestructuramos club_id e is_presidente
+                    if (userRes.rows.length === 0) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, message: "Usuario no encontrado." }); }
                     const { club_id: currentClubId, is_presidente } = userRes.rows[0];
 
                     if (currentClubId !== null) {
                         await client.query('ROLLBACK');
-                        // ✅ LÓGICA AGREGADA: Si es presidente, rechazar con mensaje específico
-                        if (is_presidente) {
-                            return res.status(403).json({ success: false, message: "Como presidente, no puedes unirte a otro club. Debes disolver o transferir tu club actual primero." });
-                        }
-                        // Lógica para miembros regulares de otro club
-                        return res.status(400).json({ success: false, message: "Ya eres miembro de un club. Primero debes abandonarlo." });
+                        if (is_presidente) return res.status(403).json({ success: false, message: "Eres presidente, no puedes unirte a otro club." });
+                        return res.status(400).json({ success: false, message: "Ya eres miembro de un club." });
                     }
 
-                    // 2. Unir al usuario al club (Actualizar tabla users)
                     await client.query('UPDATE public."users" SET club_id = $1 WHERE id = $2', [club_id, requestingUserId]);
-
-                    // --- SINCRONIZACIÓN DE TOKEN (JOIN) ---
-                    // 3. Obtener los datos del usuario actualizados (con el nuevo club_id)
-                    const updatedUserRes = await pool.query(
-                        'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
-                        [requestingUserId]
-                    );
-                    const updatedUser = updatedUserRes.rows[0];
-
-                    // 4. Generar un nuevo token con los datos frescos
-                    const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                    // --- FIN SINCRONIZACIÓN DE TOKEN ---
-
+                    const updatedUserRes = await pool.query('SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1', [requestingUserId]);
+                    const newToken = jwt.sign(updatedUserRes.rows[0], JWT_SECRET, { expiresIn: '1d' });
                     await client.query('COMMIT');
-                    return res.status(200).json({
-                        success: true,
-                        message: "Te has unido al club.",
-                        token: newToken // <-- Devolver el nuevo token
-                    });
-
+                    return res.status(200).json({ success: true, message: "Te has unido al club.", token: newToken });
                 } catch (error) {
                     await client.query('ROLLBACK');
-                    console.error("Error en join club:", error);
-                    return res.status(500).json({ success: false, message: "Error interno al procesar la solicitud de club." });
-                } finally {
-                    client.release();
-                }
+                    return res.status(500).json({ success: false, message: "Error interno." });
+                } finally { client.release(); }
             }
-            // 🛑 FIN BLOQUE JOIN
 
-            // --- Lógica de Creación de Club (Existente) ---
             let imagenFilePathTemp = null;
             let imagen_club_url = null;
             let isCloudinaryUploadSuccess = false;
@@ -567,503 +314,178 @@ async function clubsHandler(req, res) {
             try {
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
-
-                // ⭐ CORRECCIÓN CLAVE POST: Aceptar 'nombre_club' o 'nombre_evento'
                 const { nombre_club, nombre_evento, descripcion, ciudad, enfoque } = fields;
                 const final_nombre_evento = nombre_club || nombre_evento;
 
-                if (!final_nombre_evento || !descripcion || !ciudad || !enfoque) {
-                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: Nombre, descripción, ciudad o enfoque." });
-                }
-
-                if (!authVerification.authorized || !userId) {
-                    return res.status(401).json({ success: false, message: "Debe iniciar sesión para crear o solicitar un club." });
-                }
+                if (!final_nombre_evento || !descripcion || !ciudad || !enfoque) return res.status(400).json({ success: false, message: "Faltan campos obligatorios." });
+                if (!authVerification.authorized || !userId) return res.status(401).json({ success: false, message: "Debe iniciar sesión." });
 
                 if (imagenFilePathTemp) {
                     imagen_club_url = await uploadToCloudinary(imagenFilePathTemp);
                     isCloudinaryUploadSuccess = true;
                 }
 
-                let tabla;
-                let clubEstado;
-                let idPresidente = userId;
-                let insertColumns;
-                let params;
-
                 if (isAdmin) {
-                    // --- MODIFICACIÓN CLAVE: ADMINISTRADOR USA TRANSACCIÓN ---
                     const client = await pool.connect();
                     try {
                         await client.query('BEGIN');
-
-                        tabla = 'clubs';
-                        clubEstado = 'activo';
-
-                        // ⭐ MODIFICACIÓN INSERT: Añadir 'enfoque'
-                        insertColumns = `nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque`;
-
                         let nombrePresidente;
-                        const presidenteNameRes = await pool.query('SELECT name FROM public."users" WHERE id = $1', [idPresidente]);
+                        const presidenteNameRes = await pool.query('SELECT name FROM public."users" WHERE id = $1', [userId]);
                         nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
 
-                        params = [
-                            final_nombre_evento, // Usamos el nombre corregido
-                            descripcion,
-                            imagen_club_url,
-                            idPresidente,
-                            nombrePresidente,
-                            clubEstado,
-                            ciudad,
-                            enfoque // Enfoque ($8)
-                        ];
-
-                        const insertQuery = `
-                            INSERT INTO public."${tabla}" (${insertColumns}) 
-                            VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) 
-                            RETURNING id, nombre_evento, imagen_club
-                        `;
-                        const result = await client.query(insertQuery, params);
-                        const newClubId = result.rows[0].id;
-
-                        // Asignar club_id y rol 'presidente' al usuario
-                        await client.query(
-                            'UPDATE public."users" SET club_id = $1, is_presidente = TRUE WHERE id = $2',
-                            [newClubId, idPresidente]
+                        const result = await client.query(
+                            `INSERT INTO public."clubs" (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) RETURNING id, nombre_evento, imagen_club`,
+                            [final_nombre_evento, descripcion, imagen_club_url, userId, nombrePresidente, 'activo', ciudad, enfoque]
                         );
-
+                        await client.query('UPDATE public."users" SET club_id = $1, is_presidente = TRUE WHERE id = $2', [result.rows[0].id, userId]);
                         await client.query('COMMIT');
-
-                        return res.status(201).json({ success: true, message: "Club creado y activado (por admin).", club: result.rows[0] });
-                    } catch (error) {
-                        await client.query('ROLLBACK');
-                        throw error; // Lanzar para que el catch externo maneje la limpieza de Cloudinary si aplica
-                    } finally {
-                        client.release();
-                    }
-                    // --- FIN MODIFICACIÓN CLAVE ---
+                        return res.status(201).json({ success: true, message: "Club creado y activado.", club: result.rows[0] });
+                    } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
                 } else {
-                    // Lógica para usuario normal (Solicitud Pendiente) - Sin transacción (solo una inserción)
                     const checkUser = await pool.query('SELECT role, club_id FROM public."users" WHERE id = $1', [userId]);
-
-                    if (checkUser.rows.length === 0) {
-                        return res.status(403).json({ success: false, message: "Usuario no encontrado." });
-                    }
-                    const userDetails = checkUser.rows[0];
-
-                    if (userDetails.role === 'presidente' && userDetails.club_id !== null) {
-                        return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
-                    }
-
+                    if (checkUser.rows[0].role === 'presidente' && checkUser.rows[0].club_id !== null) return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                     const checkPending = await pool.query('SELECT id FROM public.clubs_pendientes WHERE id_presidente = $1', [userId]);
-                    if (checkPending.rows.length > 0) {
-                        return res.status(403).json({ success: false, message: "Ya tienes una solicitud de club pendiente." });
-                    }
+                    if (checkPending.rows.length > 0) return res.status(403).json({ success: false, message: "Ya tienes una solicitud pendiente." });
 
-                    tabla = 'clubs_pendientes';
-                    idPresidente = userId;
-
-                    // ⭐ MODIFICACIÓN INSERT: Añadir 'enfoque'
-                    insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente, ciudad, enfoque`;
-                    const insertValues = `($1, $2, $3, NOW(), $4, $5, $6)`;
-
-                    params = [
-                        final_nombre_evento, // Usamos el nombre corregido
-                        descripcion,
-                        imagen_club_url,
-                        idPresidente, // id_presidente es $4
-                        ciudad, // Ciudad ($5)
-                        enfoque // Enfoque ($6)
-                    ];
-
-                    const insertQuery = `
-                        INSERT INTO public."${tabla}" (${insertColumns}) 
-                        VALUES ${insertValues} 
-                        RETURNING id, nombre_evento
-                    `;
-                    const result = await pool.query(insertQuery, params);
-
-                    return res.status(201).json({ success: true, message: "Solicitud de club enviada y pendiente de aprobación.", pending_club: result.rows[0] });
+                    const result = await pool.query(
+                        `INSERT INTO public."clubs_pendientes" (nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente, ciudad, enfoque) VALUES ($1, $2, $3, NOW(), $4, $5, $6) RETURNING id, nombre_evento`,
+                        [final_nombre_evento, descripcion, imagen_club_url, userId, ciudad, enfoque]
+                    );
+                    return res.status(201).json({ success: true, message: "Solicitud enviada.", pending_club: result.rows[0] });
                 }
             } catch (uploadError) {
-                // Limpiar Cloudinary si la subida fue exitosa pero la inserción falló
-                if (isCloudinaryUploadSuccess && imagen_club_url) {
-                    await deleteFromCloudary(imagen_club_url);
-                }
-                console.error("Error durante la creación (POST):", uploadError.message);
-
-                if (uploadError.message.includes('Cloudinary upload failed')) {
-                    return res.status(500).json({ success: false, message: "Error al subir la imagen. Verifica las credenciales de Cloudinary." });
-                }
-                if (uploadError.message.includes('maxFileSize')) {
-                    return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
-                }
-                // Manejo de errores de campos obligatorios, etc.
-                if (uploadError.message.includes('nombre_evento') || uploadError.message.includes('descripcion') || uploadError.message.includes('ciudad') || uploadError.message.includes('enfoque') || uploadError.message.includes('Nombre')) {
-                    return res.status(400).json({ success: false, message: uploadError.message });
-                }
-                return res.status(500).json({ success: false, message: "Error interno en la creación del club." });
+                if (isCloudinaryUploadSuccess && imagen_club_url) await deleteFromCloudary(imagen_club_url);
+                return res.status(500).json({ success: false, message: uploadError.message });
             }
         }
 
         if (method === "PUT") {
-
-            // --- INICIO: Lógica para Salir del Club (Action: leave) ---
             const body = await getBody(req);
             if (body && body.action === 'leave') {
                 const verification = verifyToken(req);
-                if (!verification.authorized) {
-                    return res.status(401).json({ success: false, message: verification.message });
-                }
+                if (!verification.authorized) return res.status(401).json({ success: false, message: verification.message });
                 const requestingUserId = verification.user.id;
-
-                let client;
+                let client = await pool.connect();
                 try {
-                    client = await pool.connect();
                     await client.query('BEGIN');
-
-                    // 1. Verificar el club actual del usuario y si es presidente
                     const userRes = await pool.query('SELECT club_id, is_presidente, role FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
-
-                    if (userRes.rows.length === 0) {
-                        await client.query('ROLLBACK');
-                        return res.status(404).json({ success: false, message: "Usuario no encontrado." });
-                    }
-
                     const { club_id: currentClubId, is_presidente, role } = userRes.rows[0];
-
-                    if (!currentClubId) {
-                        await client.query('ROLLBACK');
-                        return res.status(400).json({ success: false, message: "Actualmente no eres miembro de ningún club para poder salir." });
-                    }
-
-                    if (is_presidente || role === 'presidente') {
-                        await client.query('ROLLBACK');
-                        return res.status(403).json({ success: false, message: "El presidente debe eliminar o transferir el club, no puede usar 'salir'." });
-                    }
-
-                    // 2. Abandonar el club (Actualizar tabla users)
+                    if (!currentClubId) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: "No eres miembro de ningún club." }); }
+                    if (is_presidente || role === 'presidente') { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: "El presidente debe eliminar el club." }); }
                     await client.query('UPDATE public."users" SET club_id = NULL WHERE id = $1', [requestingUserId]);
-
-                    // --- SINCRONIZACIÓN DE TOKEN (LEAVE) ---
-                    // 3. Obtener los datos del usuario actualizados (club_id = NULL)
-                    const updatedUserRes = await pool.query(
-                        'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
-                        [requestingUserId]
-                    );
-                    const updatedUser = updatedUserRes.rows[0];
-
-                    // 4. Generar un nuevo token con los datos frescos
-                    const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                    // --- FIN SINCRONIZACIÓN DE TOKEN ---
-
+                    const updatedUserRes = await pool.query('SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1', [requestingUserId]);
+                    const newToken = jwt.sign(updatedUserRes.rows[0], JWT_SECRET, { expiresIn: '1d' });
                     await client.query('COMMIT');
-                    return res.status(200).json({
-                        success: true,
-                        message: "Has abandonado el club.",
-                        token: newToken
-                    });
-
-                } catch (error) {
-                    await client.query('ROLLBACK');
-                    console.error("Error al salir del club (PUT action=leave):", error);
-                    // Si el error es el mensaje del presidente, lo devolvemos
-                    if (error.message.includes('presidente debe eliminar')) {
-                        return res.status(403).json({ success: false, message: error.message });
-                    }
-                    return res.status(500).json({ success: false, message: "Error interno al procesar la salida del club." });
-                } finally {
-                    if (client) client.release();
-                }
+                    return res.status(200).json({ success: true, message: "Has abandonado el club.", token: newToken });
+                } catch (error) { await client.query('ROLLBACK'); return res.status(500).json({ success: false, message: "Error interno." }); } finally { if (client) client.release(); }
             }
-            // --- FIN: Lógica para Salir del Club (Action: leave) ---
 
-            // --- Lógica para Actualizar Club por Formulario (Requiere ID) ---
-            const clubIdToUpdate = id; // Usamos el ID de la búsqueda robusta
-            if (!clubIdToUpdate) return res.status(400).json({ success: false, message: "ID del club es requerido para actualizar." });
+            const clubIdToUpdate = id;
+            if (!clubIdToUpdate) return res.status(400).json({ success: false, message: "ID requerido." });
 
-            let imagenFilePathTemp = null;
-            let imagen_club_url = null;
-            let old_imagen_club_url = null;
-            let isCloudinaryUploadSuccess = false;
+            let imagenFilePathTemp = null, imagen_club_url = null, old_imagen_club_url = null, isCloudinaryUploadSuccess = false;
 
             try {
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
-
-                // ⭐ CORRECCIÓN CLAVE PUT: Aceptar 'nombre_club' o 'nombre_evento'
-                const { nombre_club, nombre_evento, descripcion, ciudad: newCiudad, enfoque: newEnfoque, // Nuevo campo
-                    estado: newEstado, id_presidente: newIdPresidente } = fields;
-
+                const { nombre_club, nombre_evento, descripcion, ciudad: newCiudad, enfoque: newEnfoque, estado: newEstado, id_presidente: newIdPresidente } = fields;
                 const final_nombre_evento = nombre_club || nombre_evento;
-
-                // Solo Admin o Presidente pueden editar
                 const authorizedUser = await verifyClubOwnershipOrAdmin(req, clubIdToUpdate);
                 const isOnlyPresident = authorizedUser.role !== 'admin';
 
-
-                // 1. Subir nueva imagen si existe
                 if (imagenFilePathTemp) {
                     imagen_club_url = await uploadToCloudinary(imagenFilePathTemp);
                     isCloudinaryUploadSuccess = true;
                 }
-
-                // Obtener la URL de la imagen actual del club antes de la actualización
                 const clubCheckRes = await pool.query('SELECT imagen_club FROM public.clubs WHERE id = $1', [clubIdToUpdate]);
-                if (clubCheckRes.rows.length > 0) {
-                    old_imagen_club_url = clubCheckRes.rows[0].imagen_club;
-                }
+                if (clubCheckRes.rows.length > 0) old_imagen_club_url = clubCheckRes.rows[0].imagen_club;
 
-                const updates = [];
-                const values = [];
-                let paramIndex = 1;
-
-                if (final_nombre_evento) { // Usamos el nombre corregido
-                    updates.push(`nombre_evento = $${paramIndex++}`);
-                    values.push(final_nombre_evento);
-                }
-                if (descripcion) {
-                    updates.push(`descripcion = $${paramIndex++}`);
-                    values.push(descripcion);
-                }
-                if (imagen_club_url) { // Solo si se subió una nueva
-                    updates.push(`imagen_club = $${paramIndex++}`);
-                    values.push(imagen_club_url);
-                }
-                if (newCiudad) {
-                    updates.push(`ciudad = $${paramIndex++}`);
-                    values.push(newCiudad);
-                }
-                // ⭐ MODIFICACIÓN PUT: Añadir enfoque
-                if (newEnfoque) {
-                    updates.push(`enfoque = $${paramIndex++}`);
-                    values.push(newEnfoque);
-                }
-
-                // Si se intenta cambiar el estado o presidente, solo el admin puede hacerlo
+                const updates = []; const values = []; let paramIndex = 1;
+                if (final_nombre_evento) { updates.push(`nombre_evento = $${paramIndex++}`); values.push(final_nombre_evento); }
+                if (descripcion) { updates.push(`descripcion = $${paramIndex++}`); values.push(descripcion); }
+                if (imagen_club_url) { updates.push(`imagen_club = $${paramIndex++}`); values.push(imagen_club_url); }
+                if (newCiudad) { updates.push(`ciudad = $${paramIndex++}`); values.push(newCiudad); }
+                if (newEnfoque) { updates.push(`enfoque = $${paramIndex++}`); values.push(newEnfoque); }
                 if (!isOnlyPresident) {
-                    if (newEstado) {
-                        updates.push(`estado = $${paramIndex++}`);
-                        values.push(newEstado);
-                    }
-                    if (newIdPresidente) {
-                        // ⭐ CORRECCIÓN CLAVE (Error 500 mitigado): Convertir el ID de presidente a entero.
-                        const presidentIdNum = parseInt(newIdPresidente);
-
-                        // Solo actualizamos si es un número válido y positivo.
-                        if (!isNaN(presidentIdNum) && presidentIdNum > 0) {
-                            updates.push(`id_presidente = $${paramIndex++}`);
-                            values.push(presidentIdNum);
-                        } else {
-                            // Si se envía un valor que no es un número válido y se espera un cambio, 
-                            // esto podría causar un 400 o ignorarse. Optamos por ignorar el campo 
-                            // si no es un número válido y dejar que el cliente maneje la validación.
-                            console.warn(`ADVERTENCIA: ID de presidente no válido (${newIdPresidente}) ignorado en actualización.`);
-                        }
-                    }
+                    if (newEstado) { updates.push(`estado = $${paramIndex++}`); values.push(newEstado); }
+                    if (newIdPresidente && !isNaN(parseInt(newIdPresidente))) { updates.push(`id_presidente = $${paramIndex++}`); values.push(parseInt(newIdPresidente)); }
                 }
 
-                if (updates.length === 0) {
-                    return res.status(400).json({ success: false, message: "No se proporcionaron campos para actualizar." });
-                }
+                if (updates.length === 0) return res.status(400).json({ success: false, message: "Sin cambios." });
+                values.push(clubIdToUpdate);
+                const result = await pool.query(`UPDATE public.clubs SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`, values);
 
-                values.push(clubIdToUpdate); // ID siempre es el último parámetro
-
-                const updateQuery = `
-                    UPDATE public.clubs 
-                    SET ${updates.join(', ')} 
-                    WHERE id = $${paramIndex} 
-                    RETURNING id, nombre_evento, imagen_club, fecha_creacion, estado, nombre_presidente
-                `;
-
-                const result = await pool.query(updateQuery, values);
-
-                if (result.rows.length === 0) {
-                    // Limpiar Cloudinary si falló la actualización pero se subió la imagen
-                    if (isCloudinaryUploadSuccess && imagen_club_url) {
-                        await deleteFromCloudary(imagen_club_url);
-                    }
-                    return res.status(404).json({ success: false, message: "Club no encontrado para actualizar." });
-                }
-
-                // Si se subió una nueva imagen,
-                // eliminamos la imagen antigua de Cloudinary.
-                if (imagen_club_url && old_imagen_club_url) {
-                    await deleteFromCloudary(old_imagen_club_url);
-                }
-
+                if (imagen_club_url && old_imagen_club_url) await deleteFromCloudary(old_imagen_club_url);
                 return res.status(200).json({ success: true, message: "Club actualizado.", club: result.rows[0] });
 
             } catch (uploadError) {
-                // Limpiar Cloudinary si falló algo después de la subida
-                if (isCloudinaryUploadSuccess && imagen_club_url) {
-                    await deleteFromCloudary(imagen_club_url);
-                }
-                if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
-                    await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
-                }
-                console.error("Error durante la subida/actualización (PUT):", uploadError.message);
-
-                if (uploadError.message.includes('Cloudinary upload failed')) {
-                    return res.status(500).json({ success: false, message: "Error al subir la imagen. Verifica las credenciales de Cloudinary." });
-                }
-                if (uploadError.message.includes('maxFileSize')) {
-                    return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
-                }
-
-                // Captura de errores de autorización/propiedad
-                if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Debe iniciar sesión')) {
-                    return res.status(401).json({ success: false, message: uploadError.message });
-                }
-
-                return res.status(500).json({ success: false, message: "Error interno en la actualización del club." });
+                if (isCloudinaryUploadSuccess && imagen_club_url) await deleteFromCloudary(imagen_club_url);
+                return res.status(500).json({ success: false, message: uploadError.message });
             }
         }
 
-        // --- LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO (CORREGIDA Y ROBUSTA) ---
         if (method === "DELETE") {
             const clubId = parseInt(id);
+            if (!clubId || isNaN(clubId)) return res.status(400).json({ success: false, message: "ID requerido." });
 
-            // 🛑 VERIFICACIÓN: Si no hay ID o es una solicitud incompleta
-            if (!clubId || isNaN(clubId)) {
-                return res.status(400).json({ success: false, message: "ID del club es requerido para eliminar." });
-            }
-
-            // Verificar si es administrador O el presidente del club
-            let authorizedUser;
-            try {
-                // La verificación es CRÍTICA y usa el ID capturado
-                authorizedUser = await verifyClubOwnershipOrAdmin(req, clubId);
-            } catch (error) {
-                // Si la verificación falla (no es admin ni presidente), lanzamos el error
-                throw error;
-            }
-
+            const authorizedUser = await verifyClubOwnershipOrAdmin(req, clubId);
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
+                const clubInfoRes = await client.query('SELECT imagen_club, id_presidente FROM public.clubs WHERE id = $1 FOR UPDATE', [clubId]);
 
-                // 1. Obtener datos del club (imagen y presidente) antes de eliminar
-                const clubInfoRes = await client.query(
-                    'SELECT imagen_club, id_presidente FROM public.clubs WHERE id = $1 FOR UPDATE',
-                    [clubId]
-                );
-
-                // Si no se encuentra como club activo, buscar como solicitud pendiente
                 if (clubInfoRes.rows.length === 0) {
                     const pendingInfoRes = await pool.query('SELECT imagen_club FROM public.clubs_pendientes WHERE id = $1', [clubId]);
                     if (pendingInfoRes.rows.length > 0) {
-                        // Es una solicitud pendiente que el Admin está borrando con DELETE /api/clubs/ID
-                        const { imagen_club } = pendingInfoRes.rows[0];
                         await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [clubId]);
-                        if (imagen_club) await deleteFromCloudary(imagen_club);
+                        if (pendingInfoRes.rows[0].imagen_club) await deleteFromCloudary(pendingInfoRes.rows[0].imagen_club);
                         await client.query('COMMIT');
-                        // Respuesta correcta para un DELETE exitoso (200 OK)
-                        return res.status(200).json({ success: true, message: "Solicitud pendiente eliminada correctamente." });
+                        return res.status(200).json({ success: true, message: "Solicitud pendiente eliminada." });
                     }
-
                     await client.query('ROLLBACK');
-                    return res.status(404).json({ success: false, message: "Club o solicitud pendiente no encontrado para eliminar." });
+                    return res.status(404).json({ success: false, message: "Club no encontrado." });
                 }
 
                 const { imagen_club, id_presidente } = clubInfoRes.rows[0];
 
-                // 2. Desvincular a todos los miembros (incluyendo al presidente)
-                // Se actualizan: club_id = NULL, role = 'user', is_presidente = FALSE.
-                await client.query(
-                    `UPDATE public."users" 
-                    SET club_id = NULL, role = 'user', is_presidente = FALSE 
-                    WHERE club_id = $1`,
-                    [clubId]
-                );
-
-                // 3. Eliminar el club de la tabla 'clubs'
-                const deleteClubRes = await client.query(
-                    'DELETE FROM public.clubs WHERE id = $1 RETURNING id',
-                    [clubId]
-                );
-
-                if (deleteClubRes.rows.length === 0) {
-                    await client.query('ROLLBACK');
-                    return res.status(404).json({ success: false, message: "Club no encontrado para eliminar (fallo de concurrencia)." });
+                // ✅ CORRECCIÓN ESENCIAL DE ROBUSTEZ:
+                // Intentar borrar eventos primero. Si la tabla no existe o falla, atrapamos el error pero no rompemos todo si no es crítico,
+                // PERO para integridad referencial correcta, esto debe ocurrir.
+                try {
+                    await client.query('DELETE FROM public.events WHERE club_id = $1', [clubId]);
+                } catch (e) {
+                    console.warn("Advertencia: No se pudieron borrar eventos (tabla no existe o error), continuando eliminación de club:", e.message);
                 }
 
-                // 4. Eliminar imagen de Cloudinary
-                if (imagen_club) {
-                    await deleteFromCloudary(imagen_club);
-                }
+                await client.query(`UPDATE public."users" SET club_id = NULL, role = 'user', is_presidente = FALSE WHERE club_id = $1`, [clubId]);
+                await client.query('DELETE FROM public.clubs WHERE id = $1', [clubId]);
+                if (imagen_club) await deleteFromCloudary(imagen_club);
 
-                // 🛑 CORRECCIÓN CLAVE: Sincronización de Token para el Presidente (si no es Admin)
                 let newToken = null;
-                // Si la persona que borró era el presidente del club
                 if (authorizedUser.id === id_presidente) {
-                    // 5. Obtener los datos del usuario actualizados (club_id = NULL, role='user')
-                    const updatedUserRes = await client.query(
-                        'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
-                        [id_presidente]
-                    );
-                    const updatedUser = updatedUserRes.rows[0];
-
-                    // 6. Generar un nuevo token con los datos frescos
-                    if (updatedUser) {
-                        newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                    }
+                    const updatedUserRes = await client.query('SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1', [id_presidente]);
+                    if (updatedUserRes.rows[0]) newToken = jwt.sign(updatedUserRes.rows[0], JWT_SECRET, { expiresIn: '1d' });
                 }
-                // (Si fue un Admin quien borró el club, el Admin usa su propio token, que no cambia, por eso solo se actualiza si el user logueado era el presidente)
 
                 await client.query('COMMIT');
-                // Respuesta correcta para un DELETE exitoso (Ahora 200 OK para devolver el token)
-                return res.status(200).json({
-                    success: true,
-                    message: "Club y miembros desvinculados correctamente.",
-                    token: newToken // CLAVE: Devolver el token actualizado
-                });
+                // ✅ EL TOKEN SE DEVUELVE AQUÍ:
+                return res.status(200).json({ success: true, message: "Club eliminado.", token: newToken });
 
             } catch (error) {
                 await client.query('ROLLBACK');
-                console.error("Error en DELETE de club activo:", error);
-                // Re-lanza el error para que el catch externo lo maneje
                 throw error;
-            } finally {
-                client.release();
-            }
+            } finally { client.release(); }
         }
-        // --- FIN LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO ---
 
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
     } catch (error) {
-        console.error("Error en clubsHandler:", error);
-
-        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
-            // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
-            // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
-            return res.status(401).json({ success: false, message: error.message });
-        }
-        if (error.code === '42P01') {
-            return res.status(500).json({ success: false, message: "Error: La tabla de base de datos no fue encontrada." });
-        }
-        if (error.code && error.code.startsWith('23')) {
-            return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. (${error.code})` });
-        }
-
-        if (error.message.includes('Cloudinary')) {
-            return res.status(500).json({ success: false, message: "Error en Cloudinary. Revise los logs del servidor para detalles." });
-        }
-
-
-        return res.status(500).json({ success: false, message: "Error interno del servidor. Consulte la consola para más detalles." });
+        if (error.message.includes('Acceso denegado') || error.message.includes('Token')) return res.status(401).json({ success: false, message: error.message });
+        return res.status(500).json({ success: false, message: error.message });
     }
 }
 
 export default async function clubsCombinedHandler(req, res) {
-    const { query } = req;
-
-    // Si la query incluye 'status=change', se usa el handler específico de aprobación/rechazo
-    if (query.status === 'change') {
-        return statusChangeHandler(req, res);
-    }
-
-    // Si no, se usa el handler principal para CRUD y Join/Leave
+    if (req.query.status === 'change') return statusChangeHandler(req, res);
     return clubsHandler(req, res);
 }
