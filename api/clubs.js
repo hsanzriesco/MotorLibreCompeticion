@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
+// clubs.js - VERSIÓN FINAL CON SEGURIDAD CRÍTICA AÑADIDA PARA EDICIÓN DE CLUB
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -372,6 +372,17 @@ async function clubsHandler(req, res) {
                 if (isNaN(clubIdNum)) {
                     return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
                 }
+
+                // 🛑 MODIFICACIÓN CRÍTICA: Bloquear acceso a los datos del club si no es Admin o Presidente 🛑
+                try {
+                    // Si se pide un club por ID, se asume que es para edición, por lo que se requiere autorización.
+                    await verifyClubOwnershipOrAdmin(req, id);
+                } catch (error) {
+                    // Si falla la verificación (no logueado, token inválido o no es presidente/admin),
+                    // se lanza el error para que el catch final devuelva el 401/403.
+                    throw error;
+                }
+                // 🛑 FIN MODIFICACIÓN CRÍTICA 🛑
 
                 // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs
                 let queryText = `
@@ -969,9 +980,9 @@ async function clubsHandler(req, res) {
     } catch (error) {
         console.error("Error en clubsHandler:", error);
 
-        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
-            // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
-            // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
+        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión') || error.message.includes('Club no encontrado')) {
+            // Este catch final maneja los errores lanzados por verifyClubOwnershipOrAdmin.
+            // Devuelve 401 si falla el token o 403 si falla el rol/propiedad con el mensaje de error específico.
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
