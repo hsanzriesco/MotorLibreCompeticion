@@ -1,4 +1,4 @@
-// public/js/clubEdit.js - VERSIÓN MODIFICADA Y CORREGIDA (AJUSTADO AL ORDEN DE PARÁMETROS: MENSAJE, TIPO)
+// public/js/clubEdit.js - VERSIÓN FINAL Y CORREGIDA (CON MANEJO ROBUSTO DE JSON EN DELETE)
 
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
@@ -447,10 +447,19 @@ function handleClubDeletion(clubId) {
                 throw new Error(errorMessage); // Lanzar para el catch y el finally
             }
 
-            // Si es OK, leemos el resultado
-            const result = await response.json();
+            // Si es OK, parseamos el resultado
+            let result = {};
+            // 🛑 CORRECCIÓN CLAVE: Intentar leer el cuerpo JSON de forma segura en el éxito.
+            try {
+                // CLAVE: Intentar parsear el JSON. Si falla porque el cuerpo está vacío o es inválido, no es un error fatal.
+                result = await response.json();
+            } catch (e) {
+                // Si falla la lectura del JSON en una respuesta 200, asumimos éxito sin cuerpo.
+                console.warn("ADVERTENCIA: Respuesta 200/OK recibida sin un cuerpo JSON válido. Asumiendo éxito.", e.message);
+                result = { success: true, message: "Club eliminado con éxito. (Sin mensaje detallado del servidor)" };
+            }
 
-            // 🛑 INICIO CORRECCIÓN DE SINCRONIZACIÓN
+            // 🛑 INICIO LÓGICA DE ÉXITO Y REDIRECCIÓN
             const successMessage = result.message || 'Club eliminado con éxito. Redirigiendo a la lista de clubes.';
 
             if (typeof mostrarAlerta === 'function') {
@@ -478,7 +487,7 @@ function handleClubDeletion(clubId) {
             setTimeout(() => {
                 window.location.href = '/pages/clubes/clubes.html';
             }, 1500);
-            // 🛑 FIN CORRECCIÓN DE SINCRONIZACIÓN
+            // 🛑 FIN LÓGICA DE ÉXITO Y REDIRECCIÓN
 
         } catch (error) {
             console.error('Error al intentar eliminar el club:', error);
