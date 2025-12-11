@@ -690,11 +690,6 @@ async function clubsHandler(req, res) {
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
                     await deleteFromCloudary(imagen_club_url);
                 }
-                // Limpiar archivo temporal si existe
-                if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
-                    await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
-                }
-
                 console.error("Error durante la creación (POST):", uploadError.message);
 
                 if (uploadError.message.includes('Cloudinary upload failed')) {
@@ -904,7 +899,6 @@ async function clubsHandler(req, res) {
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
                     await deleteFromCloudary(imagen_club_url);
                 }
-                // Limpiar archivo temporal si existe
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
                     await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
                 }
@@ -936,10 +930,10 @@ async function clubsHandler(req, res) {
             }
 
             // Verificar si es administrador O el presidente del club
+            let authorizedUser;
             try {
                 // La verificación es CRÍTICA y usa el ID capturado
-                // Esto maneja la autorización para la ruta /api/clubs/ID
-                await verifyClubOwnershipOrAdmin(req, clubId);
+                authorizedUser = await verifyClubOwnershipOrAdmin(req, clubId);
             } catch (error) {
                 // Si la verificación falla (no es admin ni presidente), lanzamos el error
                 throw error;
@@ -964,7 +958,7 @@ async function clubsHandler(req, res) {
                         await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [clubId]);
                         if (imagen_club) await deleteFromCloudary(imagen_club);
                         await client.query('COMMIT');
-                        // ⭐ CORRECCIÓN DE ESTADO: Se cambia 204 a 200 para poder devolver el cuerpo.
+                        // Respuesta correcta para un DELETE exitoso (200 OK)
                         return res.status(200).json({ success: true, message: "Solicitud pendiente eliminada correctamente." });
                     }
 
@@ -999,9 +993,31 @@ async function clubsHandler(req, res) {
                     await deleteFromCloudary(imagen_club);
                 }
 
+                // 🛑 CORRECCIÓN CLAVE: Sincronización de Token para el Presidente (si no es Admin)
+                let newToken = null;
+                // Si la persona que borró era el presidente del club
+                if (authorizedUser.id === id_presidente) {
+                    // 5. Obtener los datos del usuario actualizados (club_id = NULL, role='user')
+                    const updatedUserRes = await client.query(
+                        'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
+                        [id_presidente]
+                    );
+                    const updatedUser = updatedUserRes.rows[0];
+
+                    // 6. Generar un nuevo token con los datos frescos
+                    if (updatedUser) {
+                        newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
+                    }
+                }
+                // (Si fue un Admin quien borró el club, el Admin usa su propio token, que no cambia, por eso solo se actualiza si el user logueado era el presidente)
+
                 await client.query('COMMIT');
-                // ⭐ CORRECCIÓN DE ESTADO: Se cambia 204 a 200 para poder devolver el cuerpo.
-                return res.status(200).json({ success: true, message: "Club y miembros desvinculados correctamente." });
+                // Respuesta correcta para un DELETE exitoso (Ahora 200 OK para devolver el token)
+                return res.status(200).json({
+                    success: true,
+                    message: "Club y miembros desvinculados correctamente.",
+                    token: newToken // CLAVE: Devolver el token actualizado
+                });
 
             } catch (error) {
                 await client.query('ROLLBACK');
