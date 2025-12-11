@@ -1,4 +1,4 @@
-// api/noticias.js
+
 import { Pool } from "pg";
 
 const pool = new Pool({
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     const method = req.method;
 
     try {
-        // GET - Obtener todas las noticias
+       
         if (method === "GET") {
             const result = await pool.query(
                 "SELECT * FROM noticias ORDER BY fecha DESC"
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
             return res.status(200).json(result.rows);
         }
 
-        // POST - Crear noticia
+       
         if (method === "POST") {
             const { titulo, contenido } = req.body;
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // PUT - Actualizar noticia
+        
         if (method === "PUT") {
             const { id, titulo, contenido } = req.body;
 
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // DELETE - Eliminar noticia
+      
         if (method === "DELETE") {
             const { id } = req.body;
 
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // Si el método no está permitido
+      
         return res.status(405).json({
             success: false,
             message: "Método no permitido",
