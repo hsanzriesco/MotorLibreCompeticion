@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionStorage.setItem("token", data.token);
             }
 
-            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' (CORRECCIÓN)
+            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' 
             const storedUser = sessionStorage.getItem("usuario");
             if (storedUser) {
                 try {
@@ -293,9 +293,14 @@ document.addEventListener("DOMContentLoaded", () => {
             // 1. Guardar el nuevo token (club_id: null) (SÓLO en sessionStorage)
             if (data.token) {
                 sessionStorage.setItem("token", data.token); // ✅ CORRECCIÓN CLAVE
+
+                // 🚨 DEBUG CRÍTICO: Comprobar el valor del token recién guardado
+                const tokenDebug = sessionStorage.getItem("token");
+                const payloadDebug = decodeJWT(tokenDebug);
+                console.log("DEBUG: Nuevo club_id del token tras salir:", payloadDebug?.club_id);
             }
 
-            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' (CORRECCIÓN)
+            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' 
             const storedUser = sessionStorage.getItem("usuario");
             if (storedUser) {
                 try {
