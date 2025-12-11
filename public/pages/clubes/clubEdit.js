@@ -1,5 +1,3 @@
-// public/js/clubEdit.js
-
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
 
@@ -225,7 +223,6 @@ async function handleFormSubmit(event) {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`
-                // NO ponemos Content-Type para FormData, el navegador lo pone con el boundary
             },
             body: updateData
         });
