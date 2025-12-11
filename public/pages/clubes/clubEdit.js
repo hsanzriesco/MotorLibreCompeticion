@@ -30,7 +30,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
     // Muestra la ÚNICA alerta deseada
     if (typeof mostrarAlerta === 'function') {
-        // ⭐ CORRECCIÓN DE ORDEN: Tu alertas.js usa (mensaje, tipo, duración)
+        // ⭐ ORDEN: (mensaje, tipo, duración)
         mostrarAlerta(mensaje, tipo, 1500);
     } else {
         alert(mensaje);
@@ -230,7 +230,7 @@ async function loadClubData(clubId) {
         }
 
         if (typeof mostrarAlerta === 'function') {
-            // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo)
+            // ⭐ ORDEN: (mensaje, tipo)
             mostrarAlerta(`Error al cargar: ${error.message}`, 'error');
         } else {
             alert(`Error: No se pudieron cargar los datos del club. ${error.message}`);
@@ -279,7 +279,7 @@ async function handleFormSubmit(event) {
 
     // Ocultar la alerta info si existe
     if (typeof limpiarAlertas === 'function') limpiarAlertas();
-    // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo, duración/subtítulo)
+    // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
     if (typeof mostrarAlerta === 'function') mostrarAlerta('Actualizando...', 'info', 'Enviando datos...');
 
 
@@ -312,7 +312,7 @@ async function handleFormSubmit(event) {
         const result = await response.json();
 
         if (typeof mostrarAlerta === 'function') {
-            // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo, duración/subtítulo)
+            // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
             mostrarAlerta('¡Club actualizado exitosamente!', 'exito', result.message || 'Los cambios se han guardado.');
         } else {
             alert('Club actualizado exitosamente!');
@@ -330,7 +330,7 @@ async function handleFormSubmit(event) {
         }
 
         if (typeof mostrarAlerta === 'function') {
-            // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo)
+            // ⭐ ORDEN: (mensaje, tipo)
             mostrarAlerta(`Fallo al actualizar el club: ${error.message}`, 'error');
         } else {
             alert(`Fallo al actualizar: ${error.message}`);
@@ -360,26 +360,23 @@ function handleClubDeletion(clubId) {
     // Usar una instancia del modal para poder ocultarlo programáticamente
     const deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl);
 
-    if (btnConfirmDelete) {
-        // Asegurarse de adjuntar el evento solo una vez
-        btnConfirmDelete.removeEventListener('click', handleConfirmDeleteClick);
-        btnConfirmDelete.addEventListener('click', handleConfirmDeleteClick);
-    }
-
+    // Definimos la función de clic aquí para que tenga acceso al 'clubId' pasado como argumento
     async function handleConfirmDeleteClick() {
-        const clubToDeleteId = document.getElementById('club-id').value;
+        // ⭐ CORRECCIÓN CLAVE: Usamos el 'clubId' pasado al inicializar, que es más fiable
+        //                     que leer el campo oculto del DOM, que puede estar vacío.
+        const clubToDeleteId = clubId;
         const token = getToken(); // Obtiene el token de sessionStorage
 
         if (!clubToDeleteId) {
             deleteConfirmModal.hide();
-            // ⭐ CORRECCIÓN CLAVE DEL ERROR: 
-            // Usar el orden (mensaje, tipo) para evitar el InvalidCharacterError
             const validationMessage = 'ID del club es requerido para eliminar.';
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta(validationMessage, 'error');
             } else {
                 alert(validationMessage);
             }
+            // En lugar de hacer throw Error, simplemente retornamos después de mostrar el aviso.
+            console.error(validationMessage);
             return;
         }
 
@@ -396,7 +393,7 @@ function handleClubDeletion(clubId) {
         try {
             // Ocultar el modal ANTES de la llamada a la API
             deleteConfirmModal.hide();
-            // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo, duración/subtítulo)
+            // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
             if (typeof mostrarAlerta === 'function') mostrarAlerta('Eliminando...', 'info', 'Procesando la solicitud de eliminación.');
 
             // Llamada a la API con método DELETE
@@ -423,7 +420,7 @@ function handleClubDeletion(clubId) {
                 }
 
                 if (typeof mostrarAlerta === 'function') {
-                    // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo)
+                    // ⭐ ORDEN: (mensaje, tipo)
                     mostrarAlerta(errorMessage, 'error');
                 } else {
                     alert(errorMessage);
@@ -439,7 +436,7 @@ function handleClubDeletion(clubId) {
             const successMessage = result.message || 'Club eliminado con éxito. Redirigiendo a la lista de clubes.';
 
             if (typeof mostrarAlerta === 'function') {
-                // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo, duración)
+                // ⭐ ORDEN: (mensaje, tipo, duración)
                 mostrarAlerta(successMessage, 'exito', 3000);
             } else {
                 alert(successMessage);
@@ -457,8 +454,6 @@ function handleClubDeletion(clubId) {
             // 2. CLAVE: Guardar el nuevo token limpio si el servidor lo devuelve
             if (result.token) {
                 sessionStorage.setItem('jwtToken', result.token);
-                // Si usas 'token' también, guarda
-                // sessionStorage.setItem('token', result.token); 
             }
 
             // 3. Redirigir a la lista de clubes (el estado ya está limpio)
@@ -473,7 +468,7 @@ function handleClubDeletion(clubId) {
             // La alerta ya se mostró dentro del if (!response.ok), solo manejamos el finally aquí.
             if (!error.message.includes('Error al eliminar el club') && !error.message.includes('Unauthorized')) {
                 if (typeof mostrarAlerta === 'function') {
-                    // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo)
+                    // ⭐ ORDEN: (mensaje, tipo)
                     mostrarAlerta('Error de conexión o inesperado al eliminar el club.', 'error');
                 }
             }
@@ -482,6 +477,12 @@ function handleClubDeletion(clubId) {
             btnConfirmDelete.disabled = false;
             btnConfirmDelete.textContent = 'Sí, Eliminar Club';
         }
+    }
+
+    if (btnConfirmDelete) {
+        // Asegurarse de adjuntar el evento solo una vez
+        btnConfirmDelete.removeEventListener('click', handleConfirmDeleteClick);
+        btnConfirmDelete.addEventListener('click', handleConfirmDeleteClick);
     }
 }
 
@@ -500,7 +501,7 @@ function initializeClubEditor(clubId) {
         console.error("No se encontró el formulario con ID 'club-edit-form'.");
     }
 
-    // 3. Inicializar el manejo de la eliminación
+    // 3. Inicializar el manejo de la eliminación, pasando el ID como variable
     handleClubDeletion(clubId);
 }
 
@@ -520,7 +521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 COMPROBACIÓN CRÍTICA: Solo el presidente puede acceder a esta página
         if (!isPresidente) {
             if (typeof mostrarAlerta === 'function') {
-                // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo, duración/subtítulo)
+                // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
                 mostrarAlerta('Solo el presidente del club puede editar el perfil.', 'error', 'Acceso Denegado');
             }
             // Redirigir si no es presidente (opcional, pero buena práctica)
@@ -538,14 +539,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             manejarFaltaAutenticacion('Error de autenticación: Sesión expirada.', 'error');
         } else if (error.message.includes('asignado')) {
             if (typeof mostrarAlerta === 'function') {
-                // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo, duración/subtítulo)
+                // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
                 mostrarAlerta('No tienes un club asignado para editar.', 'error', 'No tienes club');
             }
             // Redirigir a la lista de clubes
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
         } else {
             if (typeof mostrarAlerta === 'function') {
-                // ⭐ CORRECCIÓN DE ORDEN: (mensaje, tipo, duración/subtítulo)
+                // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
                 mostrarAlerta(`Error al iniciar la edición: ${error.message}`, 'error', 'Error al iniciar');
             }
         }
