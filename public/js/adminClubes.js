@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputIdPresidente = document.getElementById("id_presidente");
 
     // Modals de Bootstrap
-    // ✅ CORRECCIÓN: Se agrega la definición de clubModalEl, asumiendo el ID 'clubModal'
+    // Variable para el modal del formulario (corregida en el paso anterior)
     const clubModalEl = document.getElementById("clubModal");
 
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
@@ -272,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // ESTRUCTURA COINCIDENTE CON TU HTML (8 COLUMNAS):
             fila.innerHTML = `
                 <td>${escapeHtml(String(club.id || ''))}</td>
-                <td>${escapeHtml(club.nombre_club || club.nombre_evento || 'Sin nombre')}</td>
+                <td>${escapeHtml(club.nombre_club || 'Sin nombre')}</td>
                 <td>
                     ${descripcionCorta}
                     <div class="small text-muted">${escapeHtml(club.enfoque || '')}</div>
@@ -336,7 +336,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const r = await res.json();
-            // Aseguramos que la propiedad nombre_club se mapee correctamente de nombre_evento
             const c = r.club || r.pending_club;
 
             if (!r.success || !c) {
@@ -381,7 +380,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!inst) inst = new bootstrap.Modal(clubModalEl);
                 inst.show();
             }
-
 
         } catch (error) {
             console.error("Error cargarClubEnFormulario:", error);
@@ -511,21 +509,26 @@ document.addEventListener("DOMContentLoaded", () => {
         const clubName = e.currentTarget.dataset.nombre || "este club";
         if (!id) return;
 
-        clubToDeleteId = id;
+        clubToDeleteId = id; // Lo mantenemos por consistencia, pero confiamos en data-club-id
 
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}" (ID: ${id})? Esta acción es irreversible.`;
+
+        // ⭐ CORRECCIÓN CLAVE 1/2: Almacenar el ID en el botón de confirmación para una lectura fiable.
+        if (btnConfirmDelete) btnConfirmDelete.dataset.clubId = id;
 
         if (deleteConfirmModal) deleteConfirmModal.show();
     }
 
     if (btnConfirmDelete) {
-        btnConfirmDelete.addEventListener("click", async () => {
+        btnConfirmDelete.addEventListener("click", async (e) => {
             const token = getToken();
-            const id = clubToDeleteId;
+
+            // ⭐ CORRECCIÓN CLAVE 2/2: Leer el ID directamente del botón de confirmación (la fuente más segura)
+            const id = e.currentTarget.dataset.clubId;
 
             if (!id || !token) {
-                emitirAlerta("ID o token inválido", "error");
+                emitirAlerta("ID del club o token inválido.", "error");
                 if (deleteConfirmModal) deleteConfirmModal.hide();
                 return;
             }
@@ -553,6 +556,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 emitirAlerta("Club eliminado correctamente", "exito");
                 clubToDeleteId = null;
+                // Opcional: limpiar el atributo del botón
+                e.currentTarget.dataset.clubId = "";
                 cargarClubes();
 
             } catch (error) {
