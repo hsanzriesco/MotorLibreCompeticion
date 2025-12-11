@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - VERSIÓN FINAL CORREGIDA (8 COLUMNAS)
+// public/js/adminClubes.js - VERSIÓN FINAL CORREGIDA (9 COLUMNAS VISIBLES)
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -48,8 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // --- ⭐ CONFIGURACIÓN Y REFERENCIAS DEL DOM ⭐ ---
-    // COINCIDE CON EL HTML: ID, Nombre, Desc./Enfoque, Fecha, Ciudad, Presidente, Imagen, Acciones.
-    const TOTAL_COLUMNS = 8;
+    // Modificado a 9: Nombre, Descripción, Ciudad, Enfoque, Fecha, Estado, Presidente, Imagen, Acciones.
+    const TOTAL_COLUMNS = 9;
 
     // Elementos de las dos tablas y el contador
     const tablaActivos = document.getElementById("tabla-clubes-activos");
@@ -58,16 +58,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Formulario y botón de nueva creación
     const form = document.getElementById("club-form");
-    const btnNewClub = document.getElementById("btn-new-club"); // Este botón no existe en el HTML, pero se mantiene la referencia por si se añade.
+    const btnNewClub = document.getElementById("btn-new-club");
 
-    const clubModalEl = document.getElementById('clubModal'); // Este modal no existe en el HTML, se mantiene por si el formulario se moviera a un modal
+    const clubModalEl = document.getElementById('clubModal');
 
     // Elementos del formulario de edición/creación
     const inputId = document.getElementById("club-id");
-
-    // CORRECCIÓN: nombre_evento no existe en el formulario HTML, debe ser nombre_club
-    const inputNombre = document.getElementById("nombre_club");
-
+    const inputNombre = document.getElementById("nombre_evento");
     const inputDescripcion = document.getElementById("descripcion");
     const inputCiudad = document.getElementById("ciudad");
     const inputEnfoque = document.getElementById("enfoque");
@@ -231,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes';
 
         if (status === 'error') {
-            // Usa TOTAL_COLUMNS (8) para asegurar que el mensaje ocupe todo el ancho.
+            // Usa TOTAL_COLUMNS (9) para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
             return;
         }
@@ -240,24 +237,27 @@ document.addEventListener("DOMContentLoaded", () => {
             const mensaje = esPendiente ?
                 "No hay solicitudes de clubes pendientes." :
                 "No hay clubes activos registrados.";
-            // Usa TOTAL_COLUMNS (8) para asegurar que el mensaje ocupe todo el ancho.
+            // Usa TOTAL_COLUMNS (9) para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-secondary text-center">${mensaje}</td></tr>`;
             return;
         }
 
         clubes.forEach(club => {
             const fila = document.createElement("tr");
-
-            // Si la columna de cabecera es 'Fecha Creación', se usa esa. Si es 'Fecha Solicitud', se usa club.fecha_creacion.
             const fecha = club.fecha_creacion ? club.fecha_creacion.toString().split('T')[0] : 'N/A';
-
+            let badgeEstado = '';
             let accionesEspeciales = '';
 
             if (esPendiente) {
+                badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
                 accionesEspeciales = `
-                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
-                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
-                `;
+                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
+                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
+                `;
+            } else if (club.estado === 'activo') {
+                badgeEstado = '<span class="badge bg-primary">ACTIVO</span>';
+            } else {
+                badgeEstado = '<span class="badge bg-secondary">DESCONOCIDO/RECHAZADO</span>';
             }
 
             const presidenteInfo = club.id_presidente
@@ -268,23 +268,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
                 : "Sin descripción";
 
-            // COMBINACIÓN: Descripcion y Enfoque para la columna 'Desc./Enfoque' (la más ancha)
-            const descEnfoque = `
-                <div class="text-start">
-                    <span class="badge bg-danger">${escapeHtml(club.enfoque || 'N/A')}</span><br>
-                    <small class="text-muted">${descripcionCorta}</small>
-                </div>
-            `;
-
-            // 🛑 ESTRUCTURA DE 8 COLUMNAS (COINCIDE CON EL HTML) 🛑
+            // 🛑 ESTRUCTURA DE 9 COLUMNAS (Sin ID) 🛑
             fila.innerHTML = `
-                <td>${club.id}</td>                              <td>${escapeHtml(club.nombre_club || club.nombre_evento || 'N/A')}</td>       <td>${descEnfoque}</td>                          <td>${fecha}</td>                                <td>${escapeHtml(club.ciudad || 'N/A')}</td>     <td>${presidenteInfo}</td>                       <td>
-                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb img-thumbnail" alt="Imagen club">` : "-"}
-                </td>                                            <td>
-                    <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}"><i class="bi bi-pencil"></i> Editar</button>
-                    <button class="btn btn-danger btn-sm eliminar-btn" data-id="${club.id}"><i class="bi bi-trash"></i> Eliminar</button>
-                    ${accionesEspeciales ? `<hr class="my-1 border-secondary">${accionesEspeciales}` : ''}
-                </td>                                            `;
+                <td>${escapeHtml(club.nombre_evento)}</td>
+                <td>${descripcionCorta}</td>
+                <td>${escapeHtml(club.ciudad || 'N/A')}</td>
+                <td>${escapeHtml(club.enfoque || 'N/A')}</td>
+                <td>${fecha}</td>
+                <td>${badgeEstado}</td>
+                <td>${presidenteInfo}</td>
+                <td>
+                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb img-thumbnail" alt="Imagen club" style="width: 50px; height: 50px; object-fit: cover;">` : "-"}
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}"><i class="bi bi-pencil"></i> Editar</button>
+                    <button class="btn btn-danger btn-sm eliminar-btn" data-id="${club.id}"><i class="bi bi-trash"></i> Eliminar</button>
+                    ${accionesEspeciales ? `<hr class="my-1 border-secondary">${accionesEspeciales}` : ''}
+                </td>
+            `;
 
             contenedorTabla.appendChild(fila);
         });
@@ -340,10 +341,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Llenar el formulario con los datos del club
             inputId.value = c.id;
-
-            // Usar nombre_club que es el ID del input correcto en el HTML
-            if (inputNombre) inputNombre.value = c.nombre_club || c.nombre_evento || "";
-
+            inputNombre.value = c.nombre_evento || "";
             inputDescripcion.value = c.descripcion || "";
             inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
 
@@ -461,8 +459,8 @@ document.addEventListener("DOMContentLoaded", () => {
         clubToDeleteId = id;
 
         const row = e.currentTarget.closest("tr");
-        // El nombre es el segundo hijo (índice 1) ya que el ID es el primero (índice 0)
-        const clubName = row && row.children[1] ? row.children[1].textContent : "este club";
+        // El nombre es el primer hijo (índice 0)
+        const clubName = row && row.children[0] ? row.children[0].textContent : "este club";
 
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}" (ID: ${id})? Esta acción es irreversible.`;

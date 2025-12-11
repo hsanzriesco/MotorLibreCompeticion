@@ -1,11 +1,4 @@
-// 🛑 IMPORTANTE:
-// 1. Hemos quitado 'pages/api/clubs/[id].js' del comentario inicial.
-// 2. Hemos quitado 'export const config' (ya no es necesario en Express).
-// 3. Hemos quitado la función 'clubsCombinedHandler' y la hemos reemplazado por la lógica de Express.Router.
-
-import express from "express"; // ✅ Nueva importación para Express
-const router = express.Router(); // ✅ Inicialización del router de Express
-
+// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -24,17 +17,19 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    api_secret: process.CLOUDINARY_API_SECRET
 });
 
 // Convertir fs.unlink en una función Promise para usar con async/await
 const unlinkAsync = promisify(fs.unlink);
 
+// Desactiva el body parser de Next.js para permitir que formidable lea el cuerpo del request
+export const config = {
+    api: { bodyParser: false, },
+};
+
 // 🛠️ HELPER: Función para leer el cuerpo JSON (para join/leave)
 const getBody = async (req) => {
-    // Si req.body ya fue parseado por express.json() en server.js, lo usamos.
-    if (req.body && Object.keys(req.body).length > 0) return req.body;
-
     try {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
@@ -64,7 +59,7 @@ async function deleteFromCloudary(imageUrl) {
         if (result.result === 'not found') {
             console.warn(`ADVERTENCIA: Imagen no encontrada en Cloudinary: ${publicId}`);
         } else {
-            console.log(`Imagen ${publicId} eliminada de Cloudinary.`);
+            console.log(`Imagen ${publicId} eliminada de Cloudinary (Fallback).`);
         }
     } catch (e) {
         console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudinary):", e.message);
@@ -101,7 +96,6 @@ const parseForm = (req) => {
                 return reject(err);
             }
 
-            // Normalizar fields
             const fieldData = Object.keys(fields).reduce((acc, key) => {
                 acc[key] = fields[key][0];
                 return acc;
@@ -169,8 +163,7 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
     const verification = verifyToken(req);
 
     if (!verification.authorized) {
-        // 🛑 MENSAJE ESTANDARIZADO 401
-        throw new Error('Necesitas iniciar sesión para acceder a esta página.');
+        throw new Error(verification.message || 'Debe iniciar sesión para realizar esta acción.');
     }
 
     const decodedUser = verification.user;
@@ -189,7 +182,6 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
     const clubIdNum = parseInt(clubId);
 
     const checkPresidente = await pool.query(
-        // Se selecciona id_presidente (la columna faltante en el log)
         'SELECT id_presidente FROM public.clubs WHERE id = $1',
         [clubIdNum]
     );
@@ -203,8 +195,7 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
 
     // El usuario logueado (decodedUser.id) debe ser el id_presidente del club
     if (presidenteClubId !== decodedUser.id) {
-        // 🛑 MENSAJE ESTANDARIZADO 403
-        throw new Error('Necesitas ser presidente de un club para acceder a esta página.');
+        throw new Error('Acceso denegado: Solo el administrador o el presidente de este club pueden editarlo.');
     }
 
     return decodedUser;
@@ -231,7 +222,7 @@ async function statusChangeHandler(req, res) {
                 await client.query('BEGIN');
 
                 const pendingClubRes = await client.query(
-                    // ⭐ MODIFICACIÓN GET: Se incluye 'enfoque'
+                    // ⭐ MODIFICACIÓN GET: Añadir campo 'enfoque'
                     'SELECT nombre_evento, descripcion, imagen_club as imagen_url, id_presidente, ciudad, enfoque FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
                     [id]
                 );
@@ -252,7 +243,8 @@ async function statusChangeHandler(req, res) {
                 const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
                 nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
-                // ⭐ MODIFICACIÓN INSERT: Se incluye 'enfoque'
+                // Usamos la URL de la imagen que ya está guardada en clubs_pendientes
+                // ⭐ MODIFICACIÓN INSERT: Añadir campo 'enfoque'
                 const insertRes = await client.query(
                     'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) RETURNING id',
                     [club.nombre_evento, club.descripcion, club.imagen_url, club.id_presidente, nombrePresidente, 'activo', club.ciudad, club.enfoque]
@@ -261,6 +253,7 @@ async function statusChangeHandler(req, res) {
 
                 // 🚨 IMPORTANTE: CORRECCIÓN EN statusChangeHandler 
                 // Al aprobar un club pendiente, el usuario debe cambiar a rol 'presidente' y establecerse is_presidente = TRUE.
+                // Asumo que un club pendiente siempre lo solicita un 'user' regular.
                 await client.query(
                     'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
                     ['presidente', newClubId, club.id_presidente]
@@ -309,11 +302,7 @@ async function statusChangeHandler(req, res) {
 
 async function clubsHandler(req, res) {
     const { method, query } = req;
-
-    // 🛑 ADAPTACIÓN CLAVE: ID puede venir de req.query.id (de la adaptación de Express) 🛑
-    const id = query.id || query.clubId;
-    const estado = query.estado;
-    // ----------------------------------------------------
+    const { estado, id } = query;
 
     let isAdmin = false;
     let userId = null;
@@ -353,15 +342,17 @@ async function clubsHandler(req, res) {
                 const club = clubResult.rows[0];
 
                 // 2. Obtener la lista de miembros
-                // 🛑 CORRECCIÓN: Se debe seleccionar 'is_presidente' y ordenar por ella.
                 const membersQueryText = `
                     SELECT 
-                        id as user_id, name as username, email, club_id, is_presidente 
+                        id as user_id, name as username, email, club_id 
                     FROM public."users" 
                     WHERE club_id = $1
-                    ORDER BY is_presidente DESC, name ASC 
-                `; // ✅ CORRECCIÓN FINAL: Incluye 'is_presidente' en SELECT y en ORDER BY para poner al presidente primero.
+                    ORDER BY id_presidente DESC, name ASC 
+                `; // Se asume que president_id debe ser extraído de la tabla clubs para saber quién es presidente, pero se usa 'club_id' para filtrar
                 const membersResult = await pool.query(membersQueryText, [clubIdNum]);
+
+                // Se añade una propiedad 'is_president' a cada miembro en el JS si es necesario, 
+                // pero por ahora el cliente puede determinarlo comparando user_id con club.president_id
 
                 return res.status(200).json({ success: true, club: club, members: membersResult.rows });
             }
@@ -381,17 +372,6 @@ async function clubsHandler(req, res) {
                 if (isNaN(clubIdNum)) {
                     return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
                 }
-
-                // 🛑 MODIFICACIÓN CRÍTICA: Bloquear acceso a los datos del club si no es Admin o Presidente 🛑
-                try {
-                    // Si se pide un club por ID, se asume que es para edición, por lo que se requiere autorización.
-                    await verifyClubOwnershipOrAdmin(req, id);
-                } catch (error) {
-                    // Si falla la verificación (no logueado, token inválido o no es presidente/admin),
-                    // se lanza el error para que el catch final devuelva el 401/403.
-                    throw error;
-                }
-                // 🛑 FIN MODIFICACIÓN CRÍTICA 🛑
 
                 // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs
                 let queryText = `
@@ -480,7 +460,7 @@ async function clubsHandler(req, res) {
         if (method === "POST") {
 
             // 🛑 FIX CLAVE: Manejar JOIN (y antes LEAVE) antes de intentar parsear el formulario
-            if (query.action === 'join') {
+            if (query.action === 'join' || query.action === 'leave') {
                 const verification = verifyToken(req);
                 if (!verification.authorized) {
                     return res.status(401).json({ success: false, message: verification.message });
@@ -543,8 +523,13 @@ async function clubsHandler(req, res) {
                         });
 
                     }
+                    /* // Se remueve la lógica LEAVE de POST para usarla en PUT (más limpio)
+                    else if (query.action === 'leave') {
+                        // ...
+                    } 
+                    */
 
-                    // Si la acción existe pero no fue 'join'
+                    // Si la acción existe pero no fue 'join' ni 'leave' (e.g. action=unknown)
                     return res.status(400).json({ success: false, message: "Acción POST no válida." });
 
                 } catch (error) {
@@ -898,9 +883,8 @@ async function clubsHandler(req, res) {
                 }
 
                 // Captura de errores de autorización/propiedad
-                if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Debe iniciar sesión') || uploadError.message.includes('presidente de un club')) {
-                    // Usa el catch principal para manejar los errores de auth/permisos con los códigos correctos
-                    throw uploadError;
+                if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Debe iniciar sesión')) {
+                    return res.status(401).json({ success: false, message: uploadError.message });
                 }
 
                 return res.status(500).json({ success: false, message: "Error interno en la actualización del club." });
@@ -950,18 +934,6 @@ async function clubsHandler(req, res) {
                     [clubId]
                 );
 
-                // ⭐ INICIO CORRECCIÓN SINCRONIZACIÓN DE TOKEN (DELETE)
-                // Obtener los datos del usuario actualizados (club_id = NULL)
-                const updatedUserRes = await client.query(
-                    'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
-                    [id_presidente]
-                );
-                const updatedUser = updatedUserRes.rows[0];
-
-                // Generar un nuevo token con los datos frescos
-                const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                // ⭐ FIN CORRECCIÓN SINCRONIZACIÓN DE TOKEN
-
                 // 3. Eliminar el club de la tabla 'clubs'
                 const deleteClubRes = await client.query(
                     'DELETE FROM public.clubs WHERE id = $1 RETURNING id',
@@ -979,11 +951,7 @@ async function clubsHandler(req, res) {
                 }
 
                 await client.query('COMMIT');
-                return res.status(200).json({
-                    success: true,
-                    message: "Club y miembros desvinculados correctamente.",
-                    token: newToken // <-- DEVOLVER EL NUEVO TOKEN ACTUALIZADO
-                });
+                return res.status(200).json({ success: true, message: "Club y miembros desvinculados correctamente." });
 
             } catch (error) {
                 await client.query('ROLLBACK');
@@ -1001,32 +969,13 @@ async function clubsHandler(req, res) {
     } catch (error) {
         console.error("Error en clubsHandler:", error);
 
-        // 🛑 LÓGICA DE CAPTURA DE ERRORES MEJORADA (401 vs 403) 🛑
-        const isLoginRequired = error.message.includes('Necesitas iniciar sesión');
-        const isPresidentRequired = error.message.includes('Necesitas ser presidente');
-        const isTokenInvalid = error.message.includes('Token');
-
-        if (isLoginRequired || isTokenInvalid) {
-            // Caso 1: No logueado o token inválido -> 401
+        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
+            // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
+            // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
             return res.status(401).json({ success: false, message: error.message });
         }
-
-        if (isPresidentRequired) {
-            // Caso 2: Logueado pero sin permisos de presidente -> 403
-            return res.status(403).json({ success: false, message: error.message });
-        }
-
-        if (error.message.includes('Club no encontrado')) {
-            return res.status(404).json({ success: false, message: error.message });
-        }
-
         if (error.code === '42P01') {
             return res.status(500).json({ success: false, message: "Error: La tabla de base de datos no fue encontrada." });
-        }
-        // Error de Columna no existe: Postgres code 42703 (aunque ya fue reportado en clubsHandler)
-        if (error.code === '42703') {
-            console.error("ACCIÓN REQUERIDA: ¡ERROR DE ESQUEMA DB! La tabla 'clubs' o 'clubs_pendientes' carece de una de las columnas requeridas (id_presidente, nombre_presidente, o enfoque).");
-            return res.status(500).json({ success: false, message: "Error interno del servidor: Faltan columnas clave en la tabla de clubes." });
         }
         if (error.code && error.code.startsWith('23')) {
             return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. (${error.code})` });
@@ -1041,40 +990,14 @@ async function clubsHandler(req, res) {
     }
 }
 
+export default async function clubsCombinedHandler(req, res) {
+    const { query } = req;
 
-// ***************************************************************
-// 🛑 REEMPLAZO DE LA FUNCIÓN EXPORT DEFAULT DE NEXT.JS POR EXPRESS.ROUTER 🛑
-// ***************************************************************
-
-// El router de Express captura tanto /api/clubs como /api/clubs/24
-router.all(['/', '/:id'], async (req, res) => {
-    // 1. Adaptar la solicitud de Express a la estructura esperada por tu lógica Next.js
-    const idFromParams = req.params.id; // ID de la ruta dinámica /:id
-
-    // Creamos un objeto de solicitud adaptado
-    const adaptedReq = {
-        ...req,
-        // 2. Fusionar req.params.id en req.query.id
-        query: {
-            ...req.query,
-            id: idFromParams || req.query.id, // Usa el ID del path o el de la query
-            clubId: req.query.clubId || idFromParams // clubId también es usado en tu lógica
-        },
-    };
-
-    // 3. Replicar la lógica original de selección de handler (status vs clubs)
-    if (adaptedReq.query.status === 'change') {
-        return statusChangeHandler(adaptedReq, res);
+    // Si la query incluye 'status=change', se usa el handler específico de aprobación/rechazo
+    if (query.status === 'change') {
+        return statusChangeHandler(req, res);
     }
 
-    // Si no es un cambio de estado, usar el handler principal
-    return clubsHandler(adaptedReq, res);
-});
-
-
-// 🛑 EXPORTAMOS EL ROUTER DE EXPRESS 🛑
-export default router;
-
-// ***************************************************************
-// 🛑 FIN DEL ARCHIVO CLUBS.JS MODIFICADO 🛑
-// ***************************************************************
+    // Si no, se usa el handler principal para CRUD y Join/Leave
+    return clubsHandler(req, res);
+}
