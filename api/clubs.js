@@ -460,7 +460,7 @@ async function clubsHandler(req, res) {
 
                 // 1. Borrar inscripciones de eventos del club
                 // Si la tabla 'inscripciones' no existe o falla, el catch final te dirá por qué.
-                await client.query('DELETE FROM public.events WHERE event_id IN (SELECT id FROM public.events WHERE club_id = $1)', [clubId]);
+                await client.query('DELETE FROM public.clubs WHERE event_id IN (SELECT id FROM public.events WHERE club_id = $1)', [clubId]);
 
                 // 2. Borrar eventos
                 await client.query('DELETE FROM public.events WHERE club_id = $1', [clubId]);
