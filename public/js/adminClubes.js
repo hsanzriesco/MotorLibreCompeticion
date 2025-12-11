@@ -56,11 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const tablaPendientes = document.getElementById("tabla-clubes-pendientes");
     const badgePendientes = document.getElementById("badge-pendientes");
 
-    // Formulario (no tienes botón de nueva creación en tu HTML, lo quito)
+    // Formulario 
     const form = document.getElementById("club-form");
-    // const btnNewClub = document.getElementById("btn-new-club"); // COMENTADO: No está en tu HTML
-
-    const clubModalEl = document.getElementById('clubModal');
 
     // Elementos del formulario de edición/creación
     const inputId = document.getElementById("club-id");
@@ -71,7 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputImagen = document.getElementById("imagen_club"); // Input de tipo file
     const inputFecha = document.getElementById("fecha_creacion");
     const inputIdPresidente = document.getElementById("id_presidente");
-    // const inputPresidenteSelect = document.getElementById("presidente-select"); // COMENTADO: No se usa directamente aquí
 
     // Modals de Bootstrap
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
@@ -386,12 +382,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -----------------------------------------
-    // GUARDAR CLUB (POST / PUT)
+    // GUARDAR CLUB (POST / PUT) - SOLUCIÓN CLAVE
     // -----------------------------------------
 
     if (form) {
         form.addEventListener("submit", async (e) => {
-            // ⭐ SOLUCIÓN CLAVE: Prevenir el envío por defecto (ya estaba, pero es vital)
+            // ⭐ SOLUCIÓN CLAVE: Prevenir el envío por defecto 
             e.preventDefault();
 
             const token = getToken();
@@ -403,32 +399,33 @@ document.addEventListener("DOMContentLoaded", () => {
             const id = inputId ? inputId.value : '';
             const metodo = id ? "PUT" : "POST";
 
-            // URL con Query Parameter (convención mantenida)
+            // URL con Query Parameter (convención para Next.js)
             const url = id ? `/api/clubs?id=${id}` : "/api/clubs";
 
-            // 🚨 VERIFICACIÓN RÁPIDA DE CAMPOS OBLIGATORIOS Y EXISTENCIA DE ELEMENTOS
+            // 🚨 VALIDACIÓN RÁPIDA DE CAMPOS OBLIGATORIOS
             if (
                 !inputNombre || !inputNombre.value.trim() ||
                 !inputCiudad || !inputCiudad.value.trim() ||
                 !inputEnfoque || !inputEnfoque.value.trim()
             ) {
                 let missingFields = [];
-                // Se verifica si el elemento es null (falta en HTML) o si está vacío.
                 if (!inputNombre || inputNombre.value.trim() === "") missingFields.push("Nombre (ID: nombre_club)");
                 if (!inputCiudad || inputCiudad.value.trim() === "") missingFields.push("Ciudad (ID: ciudad)");
                 if (!inputEnfoque || inputEnfoque.value.trim() === "") missingFields.push("Enfoque (ID: enfoque)");
 
                 if (missingFields.length > 0) {
-                    emitirAlerta(`❌ Faltan campos obligatorios: **${missingFields.join(', ')}**. Por favor, revisa que los IDs HTML sean correctos.`, "error");
+                    emitirAlerta(`❌ Faltan campos obligatorios: **${missingFields.join(', ')}**.`, "error");
                 } else {
                     emitirAlerta("❌ Error desconocido en la validación de formulario.", "error");
                 }
                 return;
             }
 
+            // Usar FormData para manejar campos de texto e imagen (multipart/form-data)
             const formData = new FormData(form);
 
             // ⭐ CORRECCIÓN DE IMAGEN EN EDICIÓN: Limpiar FormData si no se subió una nueva
+            // Si es PUT y el input file no tiene archivo, eliminamos el campo para no borrar la imagen existente.
             const imageFile = formData.get('imagen_club');
             if (metodo === 'PUT' && imageFile && imageFile.name === '' && imageFile.size === 0) {
                 formData.delete('imagen_club');
@@ -439,18 +436,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 formData.set("id_presidente", inputIdPresidente.value);
             }
 
-            // Aseguramos que el estado sea activo al guardar/actualizar (a menos que se quiera otra lógica)
+            // Aseguramos que el estado sea activo al guardar/actualizar (creación por admin)
             formData.append("estado", "activo");
 
 
             try {
                 const res = await fetch(url, {
-                    method: metodo,
+                    method: metodo, // PUT o POST
                     headers: {
                         'Authorization': `Bearer ${token}`
-                        // El navegador establece automáticamente 'Content-Type: multipart/form-data'
+                        // ¡No se añade Content-Type! El navegador lo gestiona automáticamente con FormData.
                     },
-                    body: formData
+                    body: formData // Enviar el FormData directamente
                 });
 
                 if (!res.ok) {
@@ -467,7 +464,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 emitirAlerta(id ? "Club actualizado correctamente" : "Club creado correctamente", "exito");
 
-                // Ocultar el modal si está abierto (asumiendo que abres el modal)
+                // Ocultar el modal si está abierto (si usas un modal para el formulario)
                 if (clubModalEl && typeof bootstrap !== 'undefined') {
                     const inst = bootstrap.Modal.getInstance(clubModalEl);
                     if (inst) inst.hide();
@@ -492,7 +489,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------
 
     function preguntarEliminarClub(e) {
-        // ... (Lógica sin cambios, utiliza el modal de confirmación correctamente) ...
         const id = e.currentTarget.dataset.id;
         const clubName = e.currentTarget.dataset.nombre || "este club";
         if (!id) return;
@@ -555,7 +551,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // -------------------------------------------------------------------
 
     function preguntarCambioEstado(e, action) {
-        // ... (Lógica sin cambios, utiliza el modal de confirmación correctamente) ...
         const id = e.currentTarget.dataset.id;
         const nombre = e.currentTarget.dataset.nombre;
 
@@ -598,7 +593,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let successMessage;
 
                 if (action === 'aprobar') {
-                    // Endpoint específico para cambio de estado
+                    // Endpoint específico para cambio de estado (PUT con JSON body)
                     const urlAprobar = `/api/clubs?id=${id}&status=change`;
                     res = await fetch(urlAprobar, {
                         method: 'PUT',
@@ -607,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    // ⭐ RECHAZAR = ELIMINAR (usando DELETE)
+                    // RECHAZAR = ELIMINAR (usando DELETE)
                     res = await fetch(`/api/clubs?id=${id}`, {
                         method: 'DELETE',
                         headers: headers
