@@ -1,4 +1,5 @@
-// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
+// clubs.js - VERSIÓN FINAL CON SINCRONIZACIÓN DE TOKEN TRAS BORRADO DE CLUB
+
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -945,6 +946,18 @@ async function clubsHandler(req, res) {
                     [clubId]
                 );
 
+                // ⭐ INICIO CORRECCIÓN SINCRONIZACIÓN DE TOKEN (DELETE)
+                // Obtener los datos del usuario actualizados (club_id = NULL)
+                const updatedUserRes = await client.query(
+                    'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
+                    [id_presidente]
+                );
+                const updatedUser = updatedUserRes.rows[0];
+
+                // Generar un nuevo token con los datos frescos
+                const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
+                // ⭐ FIN CORRECCIÓN SINCRONIZACIÓN DE TOKEN
+
                 // 3. Eliminar el club de la tabla 'clubs'
                 const deleteClubRes = await client.query(
                     'DELETE FROM public.clubs WHERE id = $1 RETURNING id',
@@ -962,7 +975,11 @@ async function clubsHandler(req, res) {
                 }
 
                 await client.query('COMMIT');
-                return res.status(200).json({ success: true, message: "Club y miembros desvinculados correctamente." });
+                return res.status(200).json({
+                    success: true,
+                    message: "Club y miembros desvinculados correctamente.",
+                    token: newToken // <-- DEVOLVER EL NUEVO TOKEN ACTUALIZADO
+                });
 
             } catch (error) {
                 await client.query('ROLLBACK');
