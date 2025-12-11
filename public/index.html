@@ -117,8 +117,8 @@
         Clubes
       </a>
 
-      <a href="./pages/clubes/presidente/editarPresidente.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
-        Mi Club (Editar)
+      <a href="./pages/clubes/editarUsuario.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
+        Mi Club
       </a>
 
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
@@ -179,17 +179,6 @@
 
     <div class="row g-4">
 
-      <!-- <div class="col-md-4">
-        <div class="card bg-dark text-light border-danger h-100 d-flex flex-column">
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title text-danger">Inicio del Campeonato 2026</h5>
-            <p class="card-text">
-
-            </p>
-            <a href="./pages/noticias/campeonato2026.html" class="btn btn-outline-danger">Ir a Noticia</a>
-          </div>
-        </div>
-      </div> -->
       <div class="col-md-4">
         <div class="card bg-dark text-light border-danger h-100">
           <div class="card-body">
@@ -271,7 +260,7 @@
       const userName = document.getElementById("user-name");
       const loginIcon = document.getElementById("login-icon");
       const logoutBtn = document.getElementById("logout-btn");
-      const miClubLink = document.getElementById("mi-club-link");
+      const miClubLink = document.getElementById("mi-club-link"); // Elemento del menú "Mi Club"
 
       // ⭐⭐ LÓGICA DE VISIBILIDAD DE ELEMENTOS ⭐⭐
       if (usuario) {
@@ -286,11 +275,25 @@
           document.getElementById("logo-link").href = "./pages/dashboard/admin/admin.html";
         }
 
-        // Lógica específica para el Presidente del Club
-        const hasClub = !!usuario.clubId || !!usuario.club_id || !!clubIdInSession;
+        // 🛑 Lógica para el enlace "Mi Club"
+        const clubId = usuario.club_id || usuario.clubId || clubIdInSession;
+        // Asume roles de presidente o admin para poder editar
+        const isPresidenteOrAdmin = usuario.role === "admin" || usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
 
-        if (hasClub && miClubLink) {
+        if (clubId && miClubLink) {
+          // Decide la página de destino
+          const clubPage = isPresidenteOrAdmin
+            // Si es presidente/admin, va a la página de edición con el ID
+            ? `./pages/clubes/presidente/editarPresidente.html?id=${clubId}`
+            // Si es solo miembro, va a una página de vista general (ajusta esta ruta si tienes otra)
+            : `./pages/clubes/club_view.html?id=${clubId}`;
+
+          miClubLink.href = clubPage;
+          // Opcional: Modificar el texto para clarificar si tiene permiso de edición
+          miClubLink.textContent = isPresidenteOrAdmin ? "Mi Club (Editar)" : "Mi Club";
           miClubLink.style.display = "block";
+        } else if (miClubLink) {
+          miClubLink.style.display = "none";
         }
 
       } else {
