@@ -26,21 +26,20 @@
             padding-top: 75px;
             /* Ajuste para el navbar fijo */
 
-            /* ================================================= */
             /* === CÓDIGO AÑADIDO/MODIFICADO PARA STICKY FOOTER === */
+            /* Las siguientes propiedades de CSS son redundantes si usamos
+               las clases de Bootstrap 'd-flex flex-column min-vh-100'
+               en la etiqueta <body>, pero se mantienen por si style.css las anula. */
             min-height: 100vh;
-            /* Ocupa 100% de la altura de la ventana */
             display: flex;
-            /* Habilita Flexbox */
             flex-direction: column;
-            /* Apila los elementos verticalmente */
             /* ================================================= */
         }
 
         .main-perfil {
             padding-top: 2rem;
             padding-bottom: 2rem;
-            /* ================================================= */
+            /* === CÓDIGO CLAVE PARA STICKY FOOTER === */
             /* Hace que el main crezca y empuje el footer hacia abajo */
             flex-grow: 1;
             /* ================================================= */
@@ -134,7 +133,7 @@
 
 </head>
 
-<body>
+<body class="d-flex flex-column min-vh-100">
     <div id="alerta-container" class="alerta-container"></div>
 
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
@@ -194,7 +193,8 @@
             </a>
         </div>
     </div>
-    <main class="container main-perfil">
+
+    <main class="container main-perfil flex-grow-1">
         <h1 class="text-center mb-5">Mi Perfil</h1>
 
         <div class="row g-4">

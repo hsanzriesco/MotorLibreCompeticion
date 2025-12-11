@@ -1,19 +1,39 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Función para calcular la ruta base correcta (ej: '../../')
+    const getBaseHref = () => {
+        // La ruta actual es /pages/perfil/perfil.html (Profundidad 2)
+        // Necesitamos retroceder dos niveles: ../../
+        const pathSegments = window.location.pathname.split('/').filter(segment => segment.length > 0);
+
+        // Contamos cuántos niveles hay hasta la raíz (siempre quitando el nombre del archivo)
+        let depth = 0;
+        if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].endsWith('.html')) {
+            depth = pathSegments.length - 1; // Si es /pages/perfil/perfil.html -> 2 niveles a subir
+        } else {
+            depth = pathSegments.length; // Si es /pages/perfil/ -> 2 niveles a subir
+        }
+
+        // Generar la cadena de "../"
+        return depth > 0 ? Array(depth).fill('../').join('') : './';
+    };
+
+    const baseHref = getBaseHref();
+
     // 1. Crear el elemento 'footer' principal
     const footerElement = document.createElement('footer');
-    // Le asignamos el ID que usas en el CSS: #main-footer
+    // CLASES DE ESTILO Y LA CLAVE STICKY FOOTER: mt-auto
+    footerElement.className = 'bg-dark border-top border-danger mt-auto';
     footerElement.id = 'main-footer';
 
-    // 2. Definir el contenido HTML.
-    // Se usa py-3 para menos padding vertical y h6 para encabezados más pequeños.
+    // 2. Definir el contenido HTML. USANDO la variable baseHref
     footerElement.innerHTML = `
         <div class="footer-content container py-3"> 
             <div class="row">
                 
                 <div class="col-md-3 col-12 mb-3 text-center text-md-start">
                     
-                    <a href="./index.html" class="d-inline-block">
-                        <img src="/img/imagen-tfg.png" alt="MLC Logo" height="80" class="img-fluid mb-2">
+                    <a href="${baseHref}index.html" class="d-inline-block">
+                        <img src="${baseHref}img/imagen-tfg.png" alt="MLC Logo" height="80" class="img-fluid mb-2">
                     </a>
 
                     <div class="mt-2">
@@ -37,15 +57,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="col-md-4 col-12 mb-3 text-center text-md-start">
                     <h6 class="text-danger fw-bold mb-2">QUIENES SOMOS</h6>
                     <ul class="list-unstyled small">
-                        <li><a href="/quienes-somos.html" class="text-light text-decoration-none">Nuestra historia</a></li>
-                        <li><a href="/mision-vision.html" class="text-light text-decoration-none">Misión y Visión</a></li>
-                        <li><a href="/faq.html" class="text-light text-decoration-none">Preguntas frecuentes</a></li>
+                        <li><a href="${baseHref}quienes-somos.html" class="text-light text-decoration-none">Nuestra historia</a></li>
+                        <li><a href="${baseHref}mision-vision.html" class="text-light text-decoration-none">Misión y Visión</a></li>
+                        <li><a href="${baseHref}faq.html" class="text-light text-decoration-none">Preguntas frecuentes</a></li>
                     </ul>
                 </div>
                 
             </div>
             
             <div class="footer-bottom text-center pt-2 mt-3 border-top border-danger">
+                <p class="text-white-50 small mb-0">&copy; 2026 Motor Libre Competición. Todos los derechos reservados.</p>
             </div>
         </div>
     `;
