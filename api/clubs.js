@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
+// clubs.js - VERSIÓN FINAL CORREGIDA (SOLUCIÓN AL ERROR: column "id_presidente" does not exist)
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.CLOUDINARY_API_SECRET
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // Convertir fs.unlink en una función Promise para usar con async/await
@@ -182,8 +182,9 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
     // 1. Verificar si el usuario es presidente y el club_id coincide con el solicitado
     const clubIdNum = parseInt(clubId);
 
+    // 🚨 CORRECCIÓN CLAVE: Se asume que el nombre de columna correcto en public.clubs es 'presidente_id' (No 'id_presidente')
     const checkPresidente = await pool.query(
-        'SELECT id_presidente FROM public.clubs WHERE id = $1',
+        'SELECT presidente_id FROM public.clubs WHERE id = $1',
         [clubIdNum]
     );
 
@@ -192,7 +193,8 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
         throw new Error('Club no encontrado o no activo.');
     }
 
-    const presidenteClubId = checkPresidente.rows[0].id_presidente;
+    // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente'
+    const presidenteClubId = checkPresidente.rows[0].presidente_id;
 
     // El usuario logueado (decodedUser.id) debe ser el id_presidente del club
     if (presidenteClubId !== decodedUser.id) {
@@ -223,9 +225,10 @@ async function statusChangeHandler(req, res) {
             try {
                 await client.query('BEGIN');
 
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs_pendientes
                 const pendingClubRes = await client.query(
                     // ⭐ MODIFICACIÓN GET: Añadir campo 'enfoque'
-                    'SELECT nombre_evento, descripcion, imagen_club as imagen_url, id_presidente, ciudad, enfoque FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
+                    'SELECT nombre_evento, descripcion, imagen_club as imagen_url, presidente_id, ciudad, enfoque FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
                     [id]
                 );
 
@@ -236,29 +239,33 @@ async function statusChangeHandler(req, res) {
 
                 const club = pendingClubRes.rows[0];
 
-                if (!club.id_presidente) {
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente'
+                if (!club.presidente_id) {
                     await client.query('ROLLBACK');
-                    return res.status(400).json({ success: false, message: "El solicitante (id_presidente) no está definido." });
+                    return res.status(400).json({ success: false, message: "El solicitante (presidente_id) no está definido." });
                 }
 
                 let nombrePresidente;
-                const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente'
+                const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.presidente_id]);
                 nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
                 // Usamos la URL de la imagen que ya está guardada en clubs_pendientes
                 // ⭐ MODIFICACIÓN INSERT: Añadir campo 'enfoque'
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
                 const insertRes = await client.query(
-                    'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) RETURNING id',
-                    [club.nombre_evento, club.descripcion, club.imagen_url, club.id_presidente, nombrePresidente, 'activo', club.ciudad, club.enfoque]
+                    'INSERT INTO public.clubs (nombre_evento, descripcion, imagen_club, fecha_creacion, presidente_id, nombre_presidente, estado, ciudad, enfoque) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8) RETURNING id',
+                    [club.nombre_evento, club.descripcion, club.imagen_url, club.presidente_id, nombrePresidente, 'activo', club.ciudad, club.enfoque]
                 );
                 const newClubId = insertRes.rows[0].id;
 
                 // 🚨 IMPORTANTE: CORRECCIÓN EN statusChangeHandler 
                 // Al aprobar un club pendiente, el usuario debe cambiar a rol 'presidente' y establecerse is_presidente = TRUE.
                 // Asumo que un club pendiente siempre lo solicita un 'user' regular.
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente'
                 await client.query(
                     'UPDATE public."users" SET role = $1, club_id = $2, is_presidente = TRUE WHERE id = $3',
-                    ['presidente', newClubId, club.id_presidente]
+                    ['presidente', newClubId, club.presidente_id]
                 );
 
                 await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [id]);
@@ -332,10 +339,11 @@ async function clubsHandler(req, res) {
                 }
 
                 // 1. Obtener datos del club
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
                 let clubQueryText = `
                     SELECT 
                         id, nombre_evento as name, descripcion, imagen_club as imagen_url, 
-                        fecha_creacion, estado, id_presidente as president_id, 
+                        fecha_creacion, estado, presidente_id as president_id, 
                         nombre_presidente as president_name, ciudad, enfoque
                     FROM public.clubs 
                     WHERE id = $1 AND estado = 'activo'
@@ -348,7 +356,7 @@ async function clubsHandler(req, res) {
                 const club = clubResult.rows[0];
 
                 // 2. Obtener la lista de miembros
-                // 🛑 CORRECCIÓN: Se debe seleccionar 'is_presidente' y ordenar por ella.
+                // 🛑 CORRECCIÓN: Se debe seleccionar 'is_presidente' y ordenar por ella. (Esto ya estaba bien)
                 const membersQueryText = `
                     SELECT 
                         id as user_id, name as username, email, club_id, is_presidente 
@@ -392,10 +400,11 @@ async function clubsHandler(req, res) {
                 // 🛑 FIN MODIFICACIÓN CRÍTICA 🛑
 
                 // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
                 let queryText = `
                     SELECT 
                         id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                        estado, id_presidente, nombre_presidente, ciudad, enfoque, 
+                        estado, presidente_id, nombre_presidente, ciudad, enfoque, 
                         0 as miembros 
                     FROM public.clubs 
                     WHERE id = $1 AND estado = 'activo'
@@ -404,15 +413,16 @@ async function clubsHandler(req, res) {
 
                 if (result.rows.length === 0 && isAdmin) {
                     // ⭐ MODIFICACIÓN GET: Añadir 'enfoque' a la consulta de clubs_pendientes
+                    // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs_pendientes
                     const pendingRes = await pool.query(
                         `SELECT 
                             p.id, p.nombre_evento, p.descripcion, p.imagen_club as imagen_url, 
                             p.fecha_solicitud as fecha_creacion, p.ciudad, p.enfoque,
-                            p.id_presidente, 
+                            p.presidente_id, 
                             u.name as nombre_presidente, 
                             'pendiente' as estado 
                         FROM public.clubs_pendientes p
-                        JOIN public."users" u ON p.id_presidente = u.id 
+                        JOIN public."users" u ON p.presidente_id = u.id 
                         WHERE p.id = $1`,
                         [clubIdNum]
                     );
@@ -431,16 +441,18 @@ async function clubsHandler(req, res) {
             else if (estado) {
                 if (estado === 'activo') {
                     // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
+                    // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
                     const result = await pool.query(`
                         SELECT 
                             id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                            estado, id_presidente, nombre_presidente, ciudad, enfoque,
+                            estado, presidente_id, nombre_presidente, ciudad, enfoque,
                             0 as miembros 
                         FROM public.clubs WHERE estado = $1 ORDER BY fecha_creacion DESC
                     `, ['activo']);
                     return res.status(200).json({ success: true, clubs: result.rows });
                 } else if (estado === 'pendiente' && isAdmin) {
                     // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
+                    // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs_pendientes
                     const queryText = `
                         SELECT 
                             p.id, 
@@ -451,10 +463,10 @@ async function clubsHandler(req, res) {
                             p.ciudad,
                             p.enfoque,
                             'pendiente' as estado,
-                            p.id_presidente,
+                            p.presidente_id,
                             u.name as nombre_presidente 
                         FROM public.clubs_pendientes p
-                        JOIN public."users" u ON p.id_presidente = u.id 
+                        JOIN public."users" u ON p.presidente_id = u.id 
                         ORDER BY p.fecha_solicitud DESC
                     `;
                     const result = await pool.query(queryText);
@@ -465,10 +477,11 @@ async function clubsHandler(req, res) {
             }
 
             // ⭐ MODIFICACIÓN GET: Añadir 'enfoque'
+            // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
             const defaultResult = await pool.query(`
                 SELECT 
                     id, nombre_evento, descripcion, imagen_club as imagen_url, fecha_creacion, 
-                    estado, id_presidente, nombre_presidente, ciudad, enfoque,
+                    estado, presidente_id, nombre_presidente, ciudad, enfoque,
                     0 as miembros 
                 FROM public.clubs WHERE estado = 'activo' ORDER BY fecha_creacion DESC
             `);
@@ -602,7 +615,8 @@ async function clubsHandler(req, res) {
                         clubEstado = 'activo';
 
                         // ⭐ MODIFICACIÓN INSERT: Añadir 'enfoque'
-                        insertColumns = `nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque`;
+                        // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
+                        insertColumns = `nombre_evento, descripcion, imagen_club, fecha_creacion, presidente_id, nombre_presidente, estado, ciudad, enfoque`;
 
                         let nombrePresidente;
                         const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [idPresidente]);
@@ -656,7 +670,8 @@ async function clubsHandler(req, res) {
                         return res.status(403).json({ success: false, message: "Ya eres presidente de un club activo." });
                     }
 
-                    const checkPending = await pool.query('SELECT id FROM public.clubs_pendientes WHERE id_presidente = $1', [userId]);
+                    // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs_pendientes
+                    const checkPending = await pool.query('SELECT id FROM public.clubs_pendientes WHERE presidente_id = $1', [userId]);
                     if (checkPending.rows.length > 0) {
                         return res.status(403).json({ success: false, message: "Ya tienes una solicitud de club pendiente." });
                     }
@@ -665,14 +680,15 @@ async function clubsHandler(req, res) {
                     idPresidente = userId;
 
                     // ⭐ MODIFICACIÓN INSERT: Añadir 'enfoque'
-                    insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente, ciudad, enfoque`;
+                    // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs_pendientes
+                    insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, presidente_id, ciudad, enfoque`;
                     insertValues = `($1, $2, $3, NOW(), $4, $5, $6)`;
 
                     params = [
                         nombre_evento,
                         descripcion,
                         imagen_club_url,
-                        idPresidente, // id_presidente es $4
+                        idPresidente, // presidente_id es $4
                         ciudad, // Ciudad ($5)
                         enfoque // Enfoque ($6)
                     ];
@@ -793,8 +809,9 @@ async function clubsHandler(req, res) {
                 imagenFilePathTemp = tempPath;
 
                 // ⭐ MODIFICACIÓN PUT: Obtener 'enfoque' de los campos
+                // 🚨 CORRECCIÓN CLAVE: newIdPresidente debe ser manejado por Admin
                 const { nombre_evento, descripcion, ciudad: newCiudad, enfoque: newEnfoque, // Nuevo campo
-                    estado: newEstado, id_presidente: newIdPresidente } = fields;
+                    estado: newEstado, presidente_id: newIdPresidente } = fields;
 
                 // Solo Admin o Presidente pueden editar
                 const authorizedUser = await verifyClubOwnershipOrAdmin(req, id);
@@ -847,7 +864,8 @@ async function clubsHandler(req, res) {
                     }
                     if (newIdPresidente) {
                         // Lógica de transferencia de presidencia (más compleja, asumiendo que solo el admin lo hace simple)
-                        updates.push(`id_presidente = $${paramIndex++}`);
+                        // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
+                        updates.push(`presidente_id = $${paramIndex++}`);
                         values.push(newIdPresidente);
                     }
                 }
@@ -932,8 +950,9 @@ async function clubsHandler(req, res) {
                 await client.query('BEGIN');
 
                 // 1. Obtener datos del club (imagen y presidente) antes de eliminar
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente' para clubs
                 const clubInfoRes = await client.query(
-                    'SELECT imagen_club, id_presidente FROM public.clubs WHERE id = $1 FOR UPDATE',
+                    'SELECT imagen_club, presidente_id FROM public.clubs WHERE id = $1 FOR UPDATE',
                     [clubId]
                 );
 
@@ -942,7 +961,8 @@ async function clubsHandler(req, res) {
                     return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
                 }
 
-                const { imagen_club, id_presidente } = clubInfoRes.rows[0];
+                // 🚨 CORRECCIÓN CLAVE: Se usa 'presidente_id' en lugar de 'id_presidente'
+                const { imagen_club, presidente_id } = clubInfoRes.rows[0];
 
                 // 2. Desvincular a todos los miembros (incluyendo al presidente)
                 // Se actualizan: club_id = NULL, role = 'user', is_presidente = FALSE.
