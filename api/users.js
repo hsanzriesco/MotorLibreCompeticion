@@ -1,5 +1,5 @@
 // =========================================================================
-// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA)
+// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 2)
 // =========================================================================
 
 import { Pool } from "pg";
@@ -159,8 +159,9 @@ async function loginUserHandler(req, res) {
         }
 
         // Búsqueda por 'name' O 'email'
+        // 🚨 CAMBIO 1: SE INCLUYE club_id en la consulta SQL para el login.
         const { rows } = await pool.query(
-            "SELECT id, name, email, role, password, is_banned FROM users WHERE name = $1 OR email = $1",
+            "SELECT id, name, email, role, password, is_banned, club_id FROM users WHERE name = $1 OR email = $1",
             [username]
         );
 
@@ -207,6 +208,8 @@ async function loginUserHandler(req, res) {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                // 🚨 CAMBIO 2: SE INCLUYE club_id en la respuesta JSON del login.
+                club_id: user.club_id || null,
             },
         });
     } catch (error) {
@@ -245,8 +248,8 @@ async function getMeHandler(req, res) {
                 u.name, 
                 u.email, 
                 u.role, 
-                u.club_id,             
-                u.is_presidente       
+                u.club_id,          
+                u.is_presidente      
             FROM 
                 users u
             WHERE 
