@@ -1,8 +1,4 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // ====================================================================
-    // 🛡️ LÓGICA DE SEGURIDAD Y ACCESO (MODIFICADO: DESACTIVADO PARA DEPURACIÓN)
-    // ====================================================================
-
     const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
 
     let usuario = null;
@@ -21,7 +17,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     let eventModal;
     let registrationsModal;
 
-    // Solo inicializamos modales y variables de calendario si estamos en la página del calendario
     if (calendarEl && eventModalEl) {
         eventModal = new bootstrap.Modal(eventModalEl);
         if (registrationsModalEl) {
@@ -32,7 +27,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const titleInput = document.getElementById("title");
         const descriptionInput = document.getElementById("description");
 
-        // 🟢 CORRECCIÓN 1: Variable para el campo SELECT de Ubicación
         const locationIdSelect = document.getElementById("locationId");
 
         const capacityInput = document.getElementById("capacity");
@@ -55,18 +49,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         let selectedEvent = null;
         let eventInitialState = null;
 
-        // --- FUNCIONES DE ESTADO (CALENDARIO) ---
         function captureEventState() {
             const date = startDateInput.value;
             const startTime = startTimeInput.value;
             const endTime = endTimeInput.value;
 
-            // 🟢 CORRECCIÓN 2: Captura del valor del SELECT
             return {
                 id: eventIdInput.value,
                 title: titleInput.value.trim(),
                 description: descriptionInput.value.trim(),
-                location_id: locationIdSelect.value.trim(), // <--- CORREGIDO
+                location_id: locationIdSelect.value.trim(),
                 capacity: capacityInput.value.trim(),
                 start: date && startTime ? `${date}T${startTime}` : null,
                 end: date && endTime ? `${date}T${endTime}` : null,
@@ -79,11 +71,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const currentState = captureEventState();
 
-            // 🟢 CORRECCIÓN 3: Comparación usando location_id
             const fieldsChanged =
                 currentState.title !== eventInitialState.title ||
                 currentState.description !== eventInitialState.description ||
-                currentState.location_id !== eventInitialState.location_id || // <--- CORREGIDO
+                currentState.location_id !== eventInitialState.location_id ||
                 currentState.capacity !== eventInitialState.capacity ||
                 currentState.start !== eventInitialState.start ||
                 currentState.end !== eventInitialState.end ||
@@ -125,7 +116,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        // --- FUNCIONES DEL CALENDARIO ---
         async function fetchEvents() {
             try {
                 const res = await fetch("/api/events");
@@ -152,7 +142,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        // --- Inicialización FullCalendar ---
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
             selectable: true,
@@ -186,8 +175,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 titleInput.value = event.title;
                 descriptionInput.value = extendedProps.description || "";
 
-                // 🟢 CORRECCIÓN 4: Asignar el ID de ubicación al campo SELECT
-                locationIdSelect.value = locationIdValue; // <--- CORREGIDO
+                locationIdSelect.value = locationIdValue;
 
                 capacityInput.value = extendedProps.capacity || "";
                 imageURLInput.value = currentURL;
@@ -228,8 +216,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         calendar.render();
 
-        // --- MANEJADORES DE EVENTOS (CALENDARIO) ---
-
         imageFileInput.addEventListener('change', function () {
             const file = this.files[0];
 
@@ -262,7 +248,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             const capacity = capacityInput.value.trim();
             const locationId = locationIdSelect.value.trim();
 
-            // 1. COMPROBACIÓN DE CAMBIOS
             if (id && !hasEventChanged()) {
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("No hay cambios para guardar.", "info");
@@ -271,7 +256,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 🔑 NUEVA VALIDACIÓN DE CAPACIDAD 🔑
             const parsedCapacity = parseInt(capacity);
 
             if (capacity.length > 0 && (isNaN(parsedCapacity) || parsedCapacity < 0)) {
@@ -281,7 +265,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 🔑 VALIDACIÓN: Debe seleccionar un lugar 🔑
             if (!locationId) {
                 if (typeof mostrarAlerta === 'function') {
                     mostrarAlerta("Debes seleccionar una Ubicación para el evento.", "advertencia");
@@ -296,7 +279,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // 2. CONFIRMACIÓN ANTES DE GUARDAR
             let confirmado = true;
             if (id) {
                 if (typeof mostrarConfirmacion === 'function') {
@@ -310,8 +292,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // --- Lógica de guardado ---
-
             const start = `${date}T${startTime}`;
             const end = `${date}T${endTime}`;
 
@@ -319,8 +299,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             formData.append('title', titleInput.value.trim());
             formData.append('description', descriptionInput.value.trim());
 
-            // 🟢 CORRECCIÓN 5: Envío del location_id al API
-            formData.append('location_id', locationId); // <--- CORREGIDO
+            formData.append('location_id', locationId);
 
             formData.append('capacity', capacity);
             formData.append('start', start);
@@ -393,10 +372,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // ====================================================================
-    // 🚗 LÓGICA DE COCHE (SIN CAMBIOS)
-    // ====================================================================
-
     const carGarageForm = document.getElementById("carGarageForm");
     const carModalEl = document.getElementById("carGarageModal");
 
@@ -441,10 +416,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // ====================================================================
-    // 👥 NUEVA LÓGICA: GESTIÓN DE USUARIOS (CRUD ADMIN) - CORREGIDO
-    // ====================================================================
-
     const userTableBody = document.getElementById("userTableBody");
     const userEditModalEl = document.getElementById("userEditModal");
 
@@ -460,9 +431,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const saveUserBtn = document.getElementById("saveUserBtn");
         const deleteUserBtn = document.getElementById("deleteUserBtn");
 
-        // ----------------------------------------------------
-        // 🚀 FUNCIÓN 1: CARGAR Y MOSTRAR USUARIOS
-        // ----------------------------------------------------
         async function loadUsers() {
             if (!userTableBody) return;
 
@@ -474,7 +442,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 if (!data.success || !Array.isArray(data.data)) throw new Error(data.message || "Fallo al obtener la lista de usuarios.");
 
-                userTableBody.innerHTML = ''; // Limpiar el mensaje de carga
+                userTableBody.innerHTML = '';
 
                 data.data.forEach(user => {
                     const row = userTableBody.insertRow();
@@ -492,7 +460,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     `;
                 });
 
-                // Añadir listeners a los botones de edición
                 document.querySelectorAll(".edit-user-btn").forEach(btn => {
                     btn.addEventListener("click", (e) => {
                         const userData = JSON.parse(e.currentTarget.getAttribute("data-user"));
@@ -506,9 +473,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        // ----------------------------------------------------
-        // 🚀 FUNCIÓN 2: ABRIR MODAL DE EDICIÓN
-        // ----------------------------------------------------
         function openUserEditModal(user) {
             editUserId.value = user.id;
             editUserName.value = user.name;
@@ -519,9 +483,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             userEditModal.show();
         }
 
-        // ----------------------------------------------------
-        // 🚀 FUNCIÓN 3: GUARDAR EDICIÓN (CORREGIDO: Manejo de errores 400/500)
-        // ----------------------------------------------------
         saveUserBtn.addEventListener("click", async () => {
             const id = editUserId.value;
             const name = editUserName.value.trim();
@@ -547,7 +508,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             try {
-                // 💥 CORRECCIÓN CRÍTICA: Asegurar la correcta captura de errores y el envío del ID
                 const res = await fetch(`/api/users?id=${id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -557,7 +517,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const data = await res.json();
 
                 if (!res.ok) {
-                    // Si el servidor devuelve 400 o 500, capturamos el mensaje del body
+                    
                     throw new Error(data.message || `Fallo al guardar (${res.status})`);
                 }
 
@@ -565,7 +525,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     mostrarAlerta("Usuario actualizado correctamente", "exito");
                 }
                 userEditModal.hide();
-                loadUsers(); // Recargar la tabla
+                loadUsers();
             } catch (e) {
                 console.error("Error al actualizar usuario:", e);
                 if (typeof mostrarAlerta === 'function') {
@@ -574,9 +534,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
 
-        // ----------------------------------------------------
-        // 🚀 FUNCIÓN 4: ELIMINAR USUARIO (CORREGIDO: Manejo de errores 400/500)
-        // ----------------------------------------------------
         deleteUserBtn.addEventListener("click", async () => {
             const id = editUserId.value;
 
@@ -591,7 +548,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (confirmado) {
                 try {
-                    // 💥 CORRECCIÓN CRÍTICA: Envío del ID en el query parameter para DELETE
+                    
                     const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
                     const data = await res.json();
 
@@ -603,7 +560,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         mostrarAlerta("Usuario eliminado correctamente", "exito");
                     }
                     userEditModal.hide();
-                    loadUsers(); // Recargar la tabla
+                    loadUsers();
                 } catch (e) {
                     console.error("Error al eliminar usuario:", e);
                     if (typeof mostrarAlerta === 'function') {
@@ -613,7 +570,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
 
-        // Cargar usuarios al cargar la página si el elemento de tabla existe.
         if (userTableBody) {
             loadUsers();
         }
