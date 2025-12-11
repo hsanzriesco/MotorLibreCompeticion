@@ -1,10 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Crear el elemento 'footer' principal
-    const footerElement = document.createElement('footer');
-    // Le asignamos el ID que usas en el CSS: #main-footer
-    footerElement.id = 'main-footer';
+    // 1. ENCONTRAR el elemento 'footer' principal existente en el HTML
+    // CAMBIO CLAVE: Usamos getElementById en lugar de createElement
+    const footerElement = document.getElementById('main-footer');
 
-    // 2. Definir el contenido HTML.
+    // Si por alguna razón no existe, salimos
+    if (!footerElement) return;
+
+    // 2. Definir el contenido HTML (el resto del código se mantiene igual).
     // Se usa py-3 para menos padding vertical y h6 para encabezados más pequeños.
     footerElement.innerHTML = `
         <div class="footer-content container py-3"> 
@@ -51,6 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
 
-    // 3. Añadir el footer al final del body
-    document.body.appendChild(footerElement);
+    // 3. ELIMINAR ESTA LÍNEA: document.body.appendChild(footerElement);
+    // Ya no es necesario añadirlo, ya que se modificó el elemento existente.
 });
