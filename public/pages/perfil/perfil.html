@@ -173,7 +173,8 @@
 
             <hr class="border-secondary" />
 
-            <a href="#" id="logout-btn" class="d-block text-danger">
+            <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
+                data-bs-target="#logoutConfirmModal">
                 Cerrar sesión
             </a>
         </div>
@@ -319,8 +320,12 @@
         </div>
     </div>
 
+    <footer id="main-footer" class="mt-5">
+    </footer>
+
     <script src="../../js/alertas.js"></script>
     <script src="../../js/navbar.js"></script>
+    <script src="../../footer/footer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="./perfil.js"></script>
@@ -354,7 +359,7 @@
                 if (logoLink) logoLink.href = '../../index.html';
             }
 
-            // NOTA: La lógica de Cierre de Sesión (Logout) se maneja en 'navbar.js'.
+            // NOTA: La lógica de Cierre de Sesión (Logout) se maneja en 'navbar.js' y el modal.
         });
     </script>
 </body>
