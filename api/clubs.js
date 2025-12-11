@@ -348,13 +348,14 @@ async function clubsHandler(req, res) {
                 const club = clubResult.rows[0];
 
                 // 2. Obtener la lista de miembros
+                // 🛑 CORRECCIÓN: Se debe seleccionar 'is_presidente' y ordenar por ella.
                 const membersQueryText = `
                     SELECT 
-                        id as user_id, name as username, email, club_id 
+                        id as user_id, name as username, email, club_id, is_presidente 
                     FROM public."users" 
                     WHERE club_id = $1
-                    ORDER BY name ASC 
-                `; // CORRECCIÓN CLAVE 2: Se eliminó ORDER BY id_presidente, que no existe en la tabla users y causaba el error 500.
+                    ORDER BY is_presidente DESC, name ASC 
+                `; // ✅ CORRECCIÓN FINAL: Incluye 'is_presidente' en SELECT y en ORDER BY para poner al presidente primero.
                 const membersResult = await pool.query(membersQueryText, [clubIdNum]);
 
                 // Se añade una propiedad 'is_president' a cada miembro en el JS si es necesario, 
