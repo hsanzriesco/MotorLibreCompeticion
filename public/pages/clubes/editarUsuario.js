@@ -67,10 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const club = data.club;
             const members = data.members || [];
 
-            // 🛑 CORRECCIÓN CLAVE PARA EL ERROR DE "RESPUESTA INCOMPLETA" (LÍNEA ~66 original) 🛑
-            // Esta validación comprueba que el objeto 'club' exista y tenga un campo esencial (como 'name').
+            // 🛑 VALIDACIÓN CLAVE PARA EL ERROR DE "RESPUESTA INCOMPLETA"
             if (!club || typeof club !== 'object' || !club.name) {
-                // El error que tenías se lanza aquí si la estructura de 'data' es inesperada.
                 console.error('Estructura de datos recibida:', data);
                 throw new Error("El servidor no devolvió los datos completos del club. Respuesta incompleta o mal formada.");
             }
@@ -88,15 +86,17 @@ document.addEventListener("DOMContentLoaded", () => {
             if (membersCount) membersCount.textContent = members.length;
 
             if (members.length === 0) {
-                if (tableBody) tableBody.innerHTML = '<tr><td colspan="3" class="text-center">No hay miembros registrados aún.</td></tr>';
+                // El mensaje de no hay miembros también en blanco para consistencia
+                if (tableBody) tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-white">No hay miembros registrados aún.</td></tr>';
             } else {
                 members.forEach(member => {
                     if (tableBody) {
                         const row = tableBody.insertRow();
+                        // 🛠️ MODIFICACIÓN: Se añade la clase 'text-white' a los <td> para poner el texto en blanco
                         row.innerHTML = `
-                            <td>${member.username || 'Desconocido'}</td>
-                            <td>${member.email || 'N/A'}</td>
-                            <td>
+                            <td class="text-white">${member.username || 'Desconocido'}</td>
+                            <td class="text-white">${member.email || 'N/A'}</td>
+                            <td class="text-white">
                                 ${member.user_id === club.president_id ? '<span class="badge bg-danger">Presidente</span>' : 'Miembro'}
                             </td>
                         `;
