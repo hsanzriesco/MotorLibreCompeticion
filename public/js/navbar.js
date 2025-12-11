@@ -7,6 +7,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
+    // 1. NUEVOS ELEMENTOS DEL OFFCANVAS
+    const miClubLink = document.getElementById("mi-club-link");
+    const presidenteClubLink = document.getElementById("presidente-club-link"); // <-- NUEVO ENLACE
+
     // 🛑 BANDERA DE CONTROL CRÍTICA
     let redireccionExternaEnCurso = false;
 
@@ -16,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const REGISTER_PAGE_PATH = "/auth/register.html";
     const CALENDARIO_PAGE_PATH = "/pages/calendario/calendario.html";
     const CLUBES_PAGE_PATH = "/pages/clubes/clubes.html";
+    const CLUB_EDITAR_USUARIO_PATH = "/pages/clubes/editarUsuario.html";
+    const CLUB_EDITAR_PRESIDENTE_PATH = "/pages/clubes/presidente/editarPresidente.html";
 
     // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
@@ -24,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 1. CARGA DE USUARIO Y VALIDACIÓN DE SESIÓN
     const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+    const clubIdInSession = sessionStorage.getItem("clubId");
     let user = null;
 
     if (storedUser) {
@@ -48,22 +55,96 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // --- HEURÍSTICA DE RUTA RELATIVA ---
+    /**
+     * Calcula el prefijo ../../... necesario para llegar a la raíz.
+     * @returns {string} El prefijo relativo (ej: './', '../', '../../').
+     */
+    function getRelativeToRootPrefix() {
+        let pathPrefix = '';
+        // Contar la profundidad de la ruta (niveles de carpeta desde la raíz)
+        const pathSegments = window.location.pathname.split('/').filter(s => s.length > 0 && s !== 'index.html');
+        let depth = 0;
+
+        // Calcular la profundidad después de la raíz (ignorando el primer segmento si existe, que suele ser la raíz)
+        if (pathSegments.length > 0) {
+            // Si el primer segmento es 'pages', la cuenta comienza desde ahí.
+            const pagesIndex = pathSegments.indexOf('pages');
+            if (pagesIndex !== -1) {
+                depth = pathSegments.length - pagesIndex; // Ej: ['pages', 'clubes', 'editarUsuario.html'] -> depth = 2
+            } else {
+                depth = pathSegments.length; // Ej: ['otra_pagina.html'] -> depth = 1
+            }
+        }
+
+        // Si la página es la raíz o index.html, usar './'
+        if (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
+            return './';
+        }
+
+        // De lo contrario, subir tantos niveles como profundidad - 1 (para ignorar el nombre del archivo)
+        // Por ejemplo: /pages/clubes/editarUsuario.html necesita ../../
+        return Array(depth).fill('../').join('');
+    }
+
+    const relativeToRootPrefix = getRelativeToRootPrefix();
+    // -----------------------------------
+
+
     // 💥 MODIFICACIÓN CRÍTICA PARA DESHABILITAR Y OCULTAR SI NO HAY SESIÓN 💥
     if (!user) { // Si no hay usuario:
         if (userName) userName.style.display = "none";
-
-        // Asegurar que el login link está visible
         if (loginLink) loginLink.style.display = "block";
 
         if (logoutBtn) {
             logoutBtn.classList.add('disabled-link');
             logoutBtn.removeAttribute('href');
         }
+
+        // Ocultar links específicos del usuario
+        if (miClubLink) miClubLink.style.display = "none";
+        if (presidenteClubLink) presidenteClubLink.style.display = "none"; // <-- OCULTAR SI NO HAY USUARIO
+
     } else {
         // Si el usuario está logueado, aseguramos que el botón esté habilitado
         if (logoutBtn) {
             logoutBtn.classList.remove('disabled-link');
             logoutBtn.href = "#";
+        }
+
+        // =========================================================
+        // ⭐ LÓGICA DE VISIBILIDAD DE ENLACES DE CLUBES ⭐
+        // =========================================================
+        const clubId = user.club_id || user.clubId || clubIdInSession;
+        // La validación de presidente debe ser robusta
+        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.role === "presidente" || user.role === "admin";
+
+        // Quitar la barra inicial de las constantes para hacer la ruta relativa
+        const clubPathPresidenteBase = CLUB_EDITAR_PRESIDENTE_PATH.substring(1);
+        const clubPathUsuarioBase = CLUB_EDITAR_USUARIO_PATH.substring(1);
+
+
+        // --- Lógica del Mi Club (Editar/Ver) ---
+        if (clubId && miClubLink) {
+
+            const targetPathBase = isPresidente ? clubPathPresidenteBase : clubPathUsuarioBase;
+
+            miClubLink.href = `${relativeToRootPrefix}${targetPathBase}?id=${clubId}`;
+            miClubLink.textContent = isPresidente ? "Mi Club (Presidente)" : "Mi Club";
+            miClubLink.style.display = "block";
+        } else if (miClubLink) {
+            miClubLink.style.display = "none";
+        }
+
+        // --- Lógica del Presidente de Club (Solo si es presidente) ---
+        // Este enlace es visible si el usuario es presidente Y tiene un club asignado.
+        if (presidenteClubLink) {
+            if (isPresidente && clubId) {
+                presidenteClubLink.href = `${relativeToRootPrefix}${clubPathPresidenteBase}?id=${clubId}`;
+                presidenteClubLink.style.display = "block";
+            } else {
+                presidenteClubLink.style.display = "none";
+            }
         }
     }
 
@@ -81,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.removeItem("usuario");
         sessionStorage.removeItem("token");
         localStorage.removeItem("token");
+        sessionStorage.removeItem("clubId"); // Limpiamos clubId
 
         // Ocultar el modal si está visible
         if (logoutConfirmModal) {
@@ -92,14 +174,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Muestra alerta (requiere alertas.js)
         if (typeof mostrarAlerta === 'function') {
             if (isAutoLogout) {
-                // Alerta específica para inactividad
                 mostrarAlerta("Sesión expirada por inactividad.", "error");
             } else {
                 mostrarAlerta("Sesión cerrada correctamente.", "exito");
             }
         }
 
-        // Redirigir
+        // Redirigir a la raíz absoluta
         setTimeout(() => {
             window.location.href = "/index.html";
         }, 500);
@@ -117,7 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (user) {
             inactivityTimeout = setTimeout(autoLogout, INACTIVITY_TIMEOUT);
-            // console.log("Temporizador reiniciado.");
         }
     }
 
@@ -142,10 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } else {
 
-        // 🛑 LÓGICA CLAVE: DETECCIÓN DE ALERTA ROJA (PARA QUITAR LA AMARILLA DUPLICADA) 🛑
-        // Si otro script ya generó una alerta de tipo 'error' (roja), significa que
-        // la página específica ya está manejando la redirección. Salimos.
-        // ASUMIMOS QUE LA CLASE DE ERROR ES '.mlc-alert-box.error'
+        // 🛑 LÓGICA CLAVE: DETECCIÓN DE ALERTA ROJA 🛑
         if (document.querySelector('.mlc-alert-box.error')) {
             console.warn("navbar.js: Detectada alerta de error externa. Guardrail de navbar deshabilitado.");
             redireccionExternaEnCurso = true;
@@ -158,20 +235,20 @@ document.addEventListener("DOMContentLoaded", () => {
         // 🟢 EXCEPCIONES: Páginas permitidas sin sesión
         const isPublicPage =
             currentPath.endsWith('/index.html') ||
+            currentPath.endsWith('/') ||
             currentPath.includes(LOGIN_PAGE_PATH) ||
             currentPath.includes(REGISTER_PAGE_PATH) ||
             currentPath.includes(CALENDARIO_PAGE_PATH) ||
             currentPath.includes(CLUBES_PAGE_PATH);
 
 
-        // ⭐ EJECUCIÓN DE LA GUARDIA PREDETERMINADA (Muestra la ALERTA ROJA/CRÍTICA)
+        // ⭐ EJECUCIÓN DE LA GUARDIA PREDETERMINADA
         if (!isPublicPage && !redireccionExternaEnCurso) {
 
-            redireccionExternaEnCurso = true; // Activar la bandera de control
+            redireccionExternaEnCurso = true;
 
-            // Mostrar alerta de inicio de sesión (Usando el estilo de alertas.js/css)
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error"); // Cambiado a 'error' para un estilo más crítico/notorio
+                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error");
             }
 
             // Limpiar y redirigir
@@ -196,7 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS
+    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS (Asumiendo que es el link con id="menu-inicio")
     if (menuInicio) {
         menuInicio.addEventListener("click", (ev) => {
             ev.preventDefault();
@@ -208,33 +285,32 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // -----------------------------------------------------------------------------------
     // 4. LÓGICA DE CERRAR SESIÓN MANUAL (CORREGIDA)
-    // -----------------------------------------------------------------------------------
     if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
             e.preventDefault();
 
-            // Evitar la ejecución si está deshabilitado o si ya hay una redirección externa
             if (!user || redireccionExternaEnCurso) {
-                console.warn("Cierre de sesión bloqueado: Usuario no logueado o redirección en curso.");
+                if (!user && typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("No has iniciado sesión.", 'info');
+                }
                 return;
             }
 
-            // Limpiar el temporizador al iniciar el proceso manual de cierre de sesión
             clearTimeout(inactivityTimeout);
 
-            // Muestra el modal si el elemento existe en la página actual.
             if (logoutConfirmModal) {
+                const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                if (offcanvasMenu) offcanvasMenu.hide();
+
                 logoutConfirmModal.show();
             } else {
-                // Si el modal no existe, o no se encontró el elemento, se cierra la sesión directamente.
                 logoutUserAndRedirect();
             }
         });
     }
 
-    // 5. LÓGICA DE CONFIRMACIÓN DEL MODAL (Mantenido)
+    // 5. LÓGICA DE CONFIRMACIÓN DEL MODAL
     if (btnConfirmLogout) {
         btnConfirmLogout.addEventListener("click", () => {
             logoutUserAndRedirect();
@@ -242,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Opcional: Si se cierra el modal de logout sin confirmar, reiniciar el temporizador
-    if (logoutConfirmModalEl) {
+    if (logoutConfirmModalEl && user) {
         logoutConfirmModalEl.addEventListener('hidden.bs.modal', function () {
             resetTimer();
         });

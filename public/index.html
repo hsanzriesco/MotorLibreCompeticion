@@ -91,7 +91,7 @@
         <i class="bi bi-person-circle fs-4"></i>
       </a>
 
-      <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+      <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem; display: none;"></span>
 
       <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
@@ -108,6 +108,9 @@
     </div>
 
     <div class="offcanvas-body">
+      <a href="./index.html" id="menu-inicio" class="d-block text-light mb-2">
+        Inicio
+      </a>
 
       <a href="./pages/calendario/calendario.html" class="d-block text-light mb-2">
         Calendario
@@ -117,17 +120,22 @@
         Clubes
       </a>
 
-      <a href="./pages/clubes/editarUsuario.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
+      <a href="./pages/clubes/editarUsuario.html" id="mi-club-link" class="d-block text-light mb-2"
+        style="display:none;">
         Mi Club
       </a>
 
+      <a href="./pages/clubes/presidente/editarPresidente.html" id="presidente-club-link"
+        class="d-block text-warning fw-bold mb-2" style="display:none;">
+        Presidente de Club
+      </a>
       <a href="./pages/perfil/perfil.html" class="d-block text-light mb-2">
         Mi perfil
       </a>
 
       <hr class="border-secondary">
 
-      <a href="#" id="logout-btn" class="d-block text-danger">
+      <a href="#" id="logout-btn" class="d-block text-danger" style="display:none;">
         Cerrar sesión
       </a>
     </div>
@@ -184,8 +192,10 @@
           <div class="card-body">
             <h5 class="card-title text-danger">>Inicio del Campeonato 2026</h5>
             <p class="card-text">
-              La espera ha terminado. Motor Libre Competición inicia su andadura en el 2026 el próximo 5 de enero, y la
-              adrenalina se siente en el aire. Dejamos atrás la pausa invernal con más ganas que nunca. Vuelve el olor a
+              La espera ha terminado. Motor Libre Competición inicia su andadura en el 2026 el próximo 5
+              de enero, y la
+              adrenalina se siente en el aire. Dejamos atrás la pausa invernal con más ganas que nunca.
+              Vuelve el olor a
               gasolina quemada, los neumáticos chirriantes y los adelantamientos al límite.
             </p>
             <a href="./pages/noticias//campeonato2026.html" class="btn btn-outline-danger">Ir a Noticia</a>
@@ -198,12 +208,15 @@
           <div class="card-body">
             <h5 class="card-title text-danger">Nuevas Medidas de Seguridad en Chasis para 2027</h5>
             <p class="card-text">
-              La organización ha confirmado la implementación de un refuerzo obligatorio en la estructura del chasis
-              para todos los vehículos. Esta medida, efectiva a partir de la segunda carrera, busca elevar los
+              La organización ha confirmado la implementación de un refuerzo obligatorio en la estructura
+              del chasis
+              para todos los vehículos. Esta medida, efectiva a partir de la segunda carrera, busca elevar
+              los
               estándares de seguridad sin comprometer el rendimiento. Los equipos ya están trabajando en las
               adaptaciones técnicas.
             </p>
-            <a href="./pages/noticias/nuevasMedidasSeguridad2027.html" class="btn btn-outline-danger">Ir a Noticia</a>
+            <a href="./pages/noticias/nuevasMedidasSeguridad2027.html" class="btn btn-outline-danger">Ir a
+              Noticia</a>
           </div>
         </div>
       </div>
@@ -213,10 +226,13 @@
           <div class="card-body">
             <h5 class="card-title text-danger">Actualización del Reglamento Técnico</h5>
             <p class="card-text">
-              Documento Oficial que detalla la normativa obligatoria sobre las especificaciones técnicas y los
-              requisitos de seguridad que deben cumplir todos los vehículos para poder participar en las competiciones.
+              Documento Oficial que detalla la normativa obligatoria sobre las especificaciones técnicas y
+              los
+              requisitos de seguridad que deben cumplir todos los vehículos para poder participar en las
+              competiciones.
             </p>
-            <a href="./pdf/NORMATIVA-MLC-TFG.pdf" target="_blank" class="btn btn-outline-danger">Abrir PDF</a>
+            <a href="./pdf/NORMATIVA-MLC-TFG.pdf" target="_blank" class="btn btn-outline-danger">Abrir
+              PDF</a>
           </div>
         </div>
       </div>
@@ -243,111 +259,11 @@
       </div>
     </div>
   </div>
-  <script src="./js/alertas.js"></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-
-      const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-      const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
-      const btnConfirmLogout = document.getElementById("btnConfirmLogout");
-
-      const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
-      const clubIdInSession = sessionStorage.getItem("clubId");
-      const usuario = storedUser ? JSON.parse(storedUser) : null;
-
-      const bienvenida = document.getElementById("bienvenida");
-      const userName = document.getElementById("user-name");
-      const loginIcon = document.getElementById("login-icon");
-      const logoutBtn = document.getElementById("logout-btn");
-      const miClubLink = document.getElementById("mi-club-link"); // Elemento del menú "Mi Club"
-
-      // ⭐⭐ LÓGICA DE VISIBILIDAD DE ELEMENTOS ⭐⭐
-      if (usuario) {
-        bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
-        userName.textContent = usuario.name;
-
-        userName.style.display = "inline";
-        loginIcon.style.display = "none";
-        logoutBtn.style.display = "block";
-
-        if (usuario.role === "admin") {
-          document.getElementById("logo-link").href = "./pages/dashboard/admin/admin.html";
-        }
-
-        // 🛑 Lógica para el enlace "Mi Club"
-        const clubId = usuario.club_id || usuario.clubId || clubIdInSession;
-        // Asume roles de presidente o admin para poder editar
-        const isPresidenteOrAdmin = usuario.role === "admin" || usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
-
-        if (clubId && miClubLink) {
-          // Decide la página de destino
-          const clubPage = isPresidenteOrAdmin
-            // Si es presidente/admin, va a la página de edición con el ID
-            ? `./pages/clubes/presidente/editarPresidente.html?id=${clubId}`
-            // Si es solo miembro, va a una página de vista general (ajusta esta ruta si tienes otra)
-            : `./pages/clubes/editarUsuario.html?id=${clubId}`;
-
-          miClubLink.href = clubPage;
-          // Opcional: Modificar el texto para clarificar si tiene permiso de edición
-          miClubLink.textContent = isPresidenteOrAdmin ? "Mi Club (Editar)" : "Mi Club";
-          miClubLink.style.display = "block";
-        } else if (miClubLink) {
-          miClubLink.style.display = "none";
-        }
-
-      } else {
-        userName.style.display = "none";
-        loginIcon.style.display = "inline";
-        logoutBtn.style.display = "none";
-
-        if (miClubLink) {
-          miClubLink.style.display = "none";
-        }
-      }
-      // ⭐⭐ FIN LÓGICA DE VISIBILIDAD ⭐⭐
-
-
-      if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-
-          if (!usuario) {
-            mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
-            const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-            if (offcanvasMenu) offcanvasMenu.hide();
-            return;
-          }
-
-          if (logoutConfirmModal) logoutConfirmModal.show();
-
-          const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
-          if (offcanvasMenu) offcanvasMenu.hide();
-        });
-      }
-
-      if (btnConfirmLogout) {
-        btnConfirmLogout.addEventListener("click", () => {
-
-          if (logoutConfirmModal) logoutConfirmModal.hide();
-
-          // Limpiar datos de sesión y almacenamiento local
-          sessionStorage.removeItem("usuario");
-          localStorage.removeItem("usuario");
-          sessionStorage.removeItem("clubId");
-
-          mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
-
-          setTimeout(() => {
-            window.location.href = "./pages/auth/login/login.html";
-          }, 1500);
-        });
-      }
-    });
-  </script>
-  <script src="./footer/footer.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="./js/alertas.js"></script>
+  <script src="./js/navbar.js"></script>
+  <script src="./footer/footer.js"></script>
 
 </body>
 
