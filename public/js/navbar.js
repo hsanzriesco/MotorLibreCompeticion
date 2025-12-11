@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
+    // ⭐ NUEVO: Referencia al enlace de Mi Club
+    const miClubLink = document.getElementById("mi-club-link");
+
     // 🛑 BANDERA DE CONTROL CRÍTICA
     let redireccionExternaEnCurso = false;
 
@@ -38,6 +41,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Ocultar el icono de inicio de sesión
             if (loginLink) loginLink.style.display = "none";
+
+            // ⭐ LÓGICA REQUERIDA: Mostrar 'Mi Club' solo si el rol es 'presidente'
+            if (miClubLink && user.role === 'presidente') {
+                miClubLink.style.display = 'block';
+            }
+
 
         } catch (e) {
             console.error("Error parseando usuario:", e);
@@ -169,9 +178,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
             redireccionExternaEnCurso = true; // Activar la bandera de control
 
-            // Mostrar alerta de inicio de sesión (Usando el estilo de alertas.js/css)
+            // MODIFICACIÓN DE ALERTA: Usando 'error' para el estilo crítico, como se solicitó.
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error"); // Cambiado a 'error' para un estilo más crítico/notorio
+                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error");
             }
 
             // Limpiar y redirigir
