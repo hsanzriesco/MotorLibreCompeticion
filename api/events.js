@@ -9,23 +9,11 @@ export const config = {
     },
 };
 
-// ===============================================
-// CONFIGURACIÓN DE TIMEZONE PARA POSTGRESQL (PG)
-// SOLUCIÓN DEFINITIVA DE HORA (+1) EN LECTURA
-// ===============================================
-// El OID 1114 es el identificador para TIMESTAMP WITHOUT TIME ZONE
-// Esto fuerza al driver de Node.js a devolver la hora como una CADENA LITERAL,
-// evitando que Node.js la convierta automáticamente a un objeto Date
-// y le aplique una compensación de zona horaria adicional.
+
 pg.types.setTypeParser(1114, function (stringValue) {
     return stringValue;
 });
-// ===============================================
 
-
-// ===============================================
-// FUNCIONES DE PARSEO Y CORRECCIÓN DE HORA
-// ===============================================
 
 function readJsonBody(req) {
     return new Promise((resolve, reject) => {
@@ -57,7 +45,7 @@ function parseMultipart(req) {
                 return reject(err);
             }
 
-            // formidable devuelve arrays, los convertimos a valores únicos
+           
             const singleFields = Object.fromEntries(
                 Object.entries(fields).map(([key, value]) => [key, value[0]])
             );
@@ -67,12 +55,7 @@ function parseMultipart(req) {
     });
 }
 
-/**
- * Corrige la hora local para evitar la compensación de UTC al guardar.
- * Construye la hora a partir de los componentes locales del objeto Date.
- * @param {string} dateString La cadena de fecha/hora local recibida (ej: "2025-12-06 17:20").
- * @returns {string} La cadena de fecha/hora en formato SQL limpio ("YYYY-MM-DD HH:MM:SS").
- */
+
 function toSqlDateTimeLocal(dateString) {
     const date = new Date(dateString);
 
@@ -81,29 +64,29 @@ function toSqlDateTimeLocal(dateString) {
         return dateString;
     }
 
-    // Extracción manual de los componentes locales para forzar la hora introducida
+    
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
 
-    // Estos son los componentes que se ven desplazados si el servidor está en UTC
+    
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
-    // La base de datos guarda esta cadena literalmente como la hora que has introducido
+   
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 
-// ===============================================
+
 
 export default async function handler(req, res) {
     const { id, action } = req.query;
     let pool;
     let client;
 
-    // 1. VERIFICACIÓN DE ENTORNO
+   
     const requiredEnvVars = [
         "DATABASE_URL",
         "CLOUDINARY_CLOUD_NAME",
@@ -121,26 +104,24 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Configuración de Cloudinary
+       
         cloudinary.config({
             cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
             api_key: process.env.CLOUDINARY_API_KEY,
             api_secret: process.env.CLOUDINARY_API_SECRET,
         });
 
-        // Inicialización de Pool y conexión a DB
+    
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
         });
         client = await pool.connect();
 
-        // ===============================================
-        // MANEJADOR GET
-        // ===============================================
+       
         if (req.method === "GET") {
 
-            // Obtener lista simple de todos los EVENTOS (ID y Título)
+           
             if (action === 'getAllEventsList') {
                 const result = await client.query(
                     `SELECT id, title FROM events ORDER BY event_start DESC`
@@ -148,7 +129,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // Obtener lista simple de todos los USUARIOS (ID y Nombre)
+     
             if (action === 'getAllUsersList') {
                 const result = await client.query(
                     `SELECT id, name FROM users ORDER BY name ASC`
@@ -156,16 +137,16 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // GET: Cargar todos los eventos
+           
             if (!action) {
                 const result = await client.query(
-                    // Las columnas 'start' y 'end' se devuelven ahora como cadenas de texto gracias al setTypeParser(1114)
+                   
                     `SELECT id, title, description, location, event_start AS start, event_end AS "end", image_url, capacidad_max AS capacity FROM events ORDER BY start ASC`
                 );
                 return res.status(200).json({ success: true, data: result.rows });
             }
 
-            // GET: Verificar inscripción
+         
             if (action === 'checkRegistration') {
                 const { user_id, event_id } = req.query;
 
@@ -181,7 +162,7 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, isRegistered: result.rows.length > 0 });
             }
 
-            // GET: Obtener solo el CONTEO de inscritos para un evento
+           
             if (action === 'getRegistrationCount') {
                 const { event_id } = req.query;
 
@@ -194,7 +175,7 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "El ID del evento debe ser un número válido." });
                 }
 
-                // Consulta eficiente para obtener SOLO el conteo
+               
                 const result = await client.query(
                     `SELECT COUNT(id) AS count FROM event_registrations WHERE event_id = $1`,
                     [parsedEventId]
@@ -209,7 +190,7 @@ export default async function handler(req, res) {
             }
 
 
-            // GET: Obtener lista de inscritos para un evento
+           
             if (action === 'getRegistrations') {
                 const { event_id } = req.query;
 
@@ -222,7 +203,7 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "El ID del evento debe ser un número válido." });
                 }
 
-                // Se selecciona la información relevante para el administrador
+          
                 const result = await client.query(
                     `SELECT id, user_id, usuario_inscrito, registered_at FROM event_registrations WHERE event_id = $1 ORDER BY registered_at ASC`,
                     [parsedEventId]
@@ -236,12 +217,10 @@ export default async function handler(req, res) {
             }
         }
 
-        // ===============================================
-        // MANEJADOR POST
-        // ===============================================
+       
         if (req.method === "POST") {
 
-            // POST: Registrar inscripción 
+           
             if (action === 'register') {
                 const jsonBody = await readJsonBody(req);
                 const { user_id, event_id } = jsonBody;
@@ -257,9 +236,7 @@ export default async function handler(req, res) {
                     return res.status(400).json({ success: false, message: "Los IDs de usuario o evento deben ser números válidos." });
                 }
 
-                // --------------------------------------------------------------------------------------------------------
-                // ⭐ VERIFICACIÓN CRUCIAL: Verificación de existencia Y estado en tiempo real (event_end > NOW())
-                // --------------------------------------------------------------------------------------------------------
+               
                 const existenceAndStatusCheck = await client.query(
                     `SELECT 
                         id 
@@ -267,12 +244,12 @@ export default async function handler(req, res) {
                         events 
                      WHERE 
                         id = $1 
-                        AND event_end > NOW()`, // <-- Solo permite el registro si la hora de fin es MAYOR a la hora actual
+                        AND event_end > NOW()`, 
                     [parsedEventId]
                 );
 
                 if (existenceAndStatusCheck.rows.length === 0) {
-                    // Si la consulta no devuelve filas, el evento no existe O HA FINALIZADO.
+                    
 
                     const simpleExistenceCheck = await client.query(
                         `SELECT id FROM events WHERE id = $1`,
@@ -285,9 +262,7 @@ export default async function handler(req, res) {
                         return res.status(403).json({ success: false, message: "No es posible inscribirse. El evento ya ha finalizado y está cerrado." });
                     }
                 }
-                // --------------------------------------------------------------------------------------------------------
-
-                // 2. Verificar si ya está inscrito
+                
                 const check = await client.query(
                     `SELECT id FROM event_registrations WHERE user_id = $1 AND event_id = $2`,
                     [parsedUserId, parsedEventId]
@@ -297,7 +272,7 @@ export default async function handler(req, res) {
                     return res.status(409).json({ success: false, message: "Ya estás inscrito en este evento." });
                 }
 
-                // 3. Verificar si quedan cupos (capacidad_max > num_inscritos)
+               
                 const capacityCheck = await client.query(`
                     SELECT 
                         e.capacidad_max, 
@@ -318,7 +293,7 @@ export default async function handler(req, res) {
                     }
                 }
 
-                // 4. Obtener solo el nombre del usuario y el título del evento
+               
                 const dataQuery = `
                     SELECT
                         u.name AS user_name,
@@ -339,7 +314,7 @@ export default async function handler(req, res) {
                 const { user_name, event_title } = dataResult.rows[0];
 
 
-                // 5. Insertar inscripción SOLO con el nombre
+               
                 const result = await client.query(
                     `INSERT INTO event_registrations (user_id, event_id, usuario_inscrito, nombre_evento, registered_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
                     [parsedUserId, parsedEventId, user_name, event_title]
@@ -348,7 +323,7 @@ export default async function handler(req, res) {
                 return res.status(201).json({ success: true, message: "Inscripción al evento exitosa.", registrationId: result.rows[0].id });
             }
 
-            // POST: Crear evento 
+          
             if (!action) {
                 const { fields, files } = await parseMultipart(req);
 
@@ -362,7 +337,7 @@ export default async function handler(req, res) {
                     });
                 }
 
-                // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
+                
                 const eventStartLocal = toSqlDateTimeLocal(start);
                 const eventEndLocal = toSqlDateTimeLocal(end);
 
@@ -380,7 +355,7 @@ export default async function handler(req, res) {
                 }
 
                 const result = await client.query(
-                    // USAMOS LAS VARIABLES eventStartLocal y eventEndLocal (hora exacta introducida)
+                    
                     `INSERT INTO events (title, description, location, event_start, event_end, image_url, capacidad_max) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
                     [title, description, location, eventStartLocal, eventEndLocal, finalImageUrl, parsedCapacidadMax]
                 );
@@ -388,12 +363,10 @@ export default async function handler(req, res) {
             }
         }
 
-        // ===============================================
-        // MANEJADOR PUT 
-        // ===============================================
+       
         if (req.method === "PUT") {
 
-            // PUT: Editar evento 
+          
             const { fields, files } = await parseMultipart(req);
 
             const { title, description, location, start, end, imageURL, capacity } = fields;
@@ -406,7 +379,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // ⭐ SOLUCIÓN TIMEZONE/HORA: Utiliza la función para obtener la hora local exacta sin compensación UTC.
+           
             const eventStartLocal = toSqlDateTimeLocal(start);
             const eventEndLocal = toSqlDateTimeLocal(end);
 
@@ -427,7 +400,7 @@ export default async function handler(req, res) {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
             const result = await client.query(
-                // USAMOS LAS VARIABLES eventStartLocal y eventEndLocal
+               
                 `UPDATE events SET title = $1, description = $2, location = $3, event_start = $4, event_end = $5, image_url = $6, capacidad_max = $7 WHERE id = $8 RETURNING *`,
                 [title, description, location, eventStartLocal, eventEndLocal, finalImageUrl, parsedCapacidadMax, id]
             );
@@ -436,12 +409,10 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: result.rows[0] });
         }
 
-        // ===============================================
-        // MANEJADOR DELETE 
-        // ===============================================
+        
         if (req.method === "DELETE") {
 
-            // Cancelar inscripción
+         
             if (action === 'cancel') {
                 const { user_id, event_id } = req.query;
 
@@ -461,13 +432,13 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, message: "Inscripción cancelada correctamente." });
             }
 
-            // Eliminar evento
+         
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del evento." });
 
-            // Eliminar inscripciones relacionadas antes de eliminar el evento
+            
             await client.query("DELETE FROM event_registrations WHERE event_id = $1", [id]);
 
-            // Eliminar el evento
+      
             const deleteResult = await client.query("DELETE FROM events WHERE id = $1 RETURNING id", [id]);
 
             if (deleteResult.rows.length === 0) return res.status(404).json({ success: false, message: "Evento no encontrado para eliminar." });
@@ -475,9 +446,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, message: "Evento y sus inscripciones relacionadas eliminados correctamente." });
         }
 
-        // ===============================================
-        // MÉTODO NO PERMITIDO
-        // ===============================================
+
         res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
         return res.status(405).json({ success: false, message: `Método ${req.method} no permitido.` });
 
@@ -486,7 +455,7 @@ export default async function handler(req, res) {
 
         let errorMessage = 'Error interno del servidor.';
 
-        // Manejo de errores de PostgreSQL más específicos
+       
         if (error.code === '42703' && error.message.includes('user')) {
             errorMessage = 'Error de Base de Datos: Columna "user" no encontrada.';
         } else if (error.code === '22P02') {
