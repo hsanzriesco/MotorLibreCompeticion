@@ -304,7 +304,11 @@ async function statusChangeHandler(req, res) {
 
 async function clubsHandler(req, res) {
     const { method, query } = req;
-    const { estado, id } = query;
+
+    // 🛑 CORRECCIÓN CLAVE: Permite leer 'id' (de URL) o 'clubId' (del cliente JS) 🛑
+    const id = query.id || query.clubId;
+    const estado = query.estado;
+    // ----------------------------------------------------
 
     let isAdmin = false;
     let userId = null;
@@ -374,15 +378,15 @@ async function clubsHandler(req, res) {
                 if (isNaN(clubIdNum)) {
                     return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
                 }
-                
+
                 // 🛑 MODIFICACIÓN CRÍTICA: Bloquear acceso a los datos del club si no es Admin o Presidente 🛑
                 try {
                     // Si se pide un club por ID, se asume que es para edición, por lo que se requiere autorización.
-                    await verifyClubOwnershipOrAdmin(req, id); 
+                    await verifyClubOwnershipOrAdmin(req, id);
                 } catch (error) {
                     // Si falla la verificación (no logueado, token inválido o no es presidente/admin),
                     // se lanza el error para que el catch final devuelva el 401/403.
-                    throw error; 
+                    throw error;
                 }
                 // 🛑 FIN MODIFICACIÓN CRÍTICA 🛑
 
@@ -898,7 +902,7 @@ async function clubsHandler(req, res) {
                 // Captura de errores de autorización/propiedad
                 if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Debe iniciar sesión') || uploadError.message.includes('presidente de un club')) {
                     // Usa el catch principal para manejar los errores de auth/permisos con los códigos correctos
-                    throw uploadError; 
+                    throw uploadError;
                 }
 
                 return res.status(500).json({ success: false, message: "Error interno en la actualización del club." });
@@ -987,12 +991,12 @@ async function clubsHandler(req, res) {
         const isLoginRequired = error.message.includes('Necesitas iniciar sesión');
         const isPresidentRequired = error.message.includes('Necesitas ser presidente');
         const isTokenInvalid = error.message.includes('Token');
-        
+
         if (isLoginRequired || isTokenInvalid) {
             // Caso 1: No logueado o token inválido -> 401
             return res.status(401).json({ success: false, message: error.message });
         }
-        
+
         if (isPresidentRequired) {
             // Caso 2: Logueado pero sin permisos de presidente -> 403
             return res.status(403).json({ success: false, message: error.message });
