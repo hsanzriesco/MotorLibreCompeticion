@@ -421,7 +421,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // La condición es: si el elemento no existe (es null) O si existe y su valor está vacío.
             if (
                 !inputNombre || !inputNombre.value ||
-                !inputDescripcion || !inputDescripcion.value ||
                 !inputCiudad || !inputCiudad.value ||
                 !inputEnfoque || !inputEnfoque.value
             ) {
