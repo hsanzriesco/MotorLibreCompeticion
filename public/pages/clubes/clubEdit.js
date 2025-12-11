@@ -1,4 +1,4 @@
-// public/js/clubEdit.js
+// public/js/clubEdit.js - VERSIÓN MODIFICADA Y CORREGIDA
 
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
@@ -30,6 +30,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
     // Muestra la ÚNICA alerta deseada
     if (typeof mostrarAlerta === 'function') {
+        // CORRECCIÓN: Se usa el formato (tipo, mensaje, duración)
         mostrarAlerta(tipo, mensaje, 1500);
     } else {
         alert(mensaje);
@@ -365,7 +366,19 @@ function handleClubDeletion(clubId) {
         const clubToDeleteId = document.getElementById('club-id').value;
         const token = getToken(); // Obtiene el token de sessionStorage
 
-        if (!clubToDeleteId || !token) {
+        if (!clubToDeleteId) {
+            deleteConfirmModal.hide();
+            // ⭐ CORRECCIÓN CLAVE: Pasamos el TIPO como primer argumento, no el mensaje completo.
+            // Esto evita el error de DOMTokenList.
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('error', 'ID del club es requerido para eliminar.');
+            } else {
+                alert('ID del club es requerido para eliminar.');
+            }
+            return;
+        }
+
+        if (!token) {
             deleteConfirmModal.hide();
             manejarFaltaAutenticacion('Sesión inválida o ID de club faltante.');
             return;
@@ -415,7 +428,7 @@ function handleClubDeletion(clubId) {
             // Si es OK, leemos el resultado
             const result = await response.json();
 
-            // 🛑 INICIO CORRECCIÓN DE SINCRONIZACIÓN (LA SOLUCIÓN DEFINITIVA)
+            // 🛑 INICIO CORRECCIÓN DE SINCRONIZACIÓN
             const successMessage = result.message || 'Club eliminado con éxito. Redirigiendo a la lista de clubes.';
 
             if (typeof mostrarAlerta === 'function') {
@@ -498,7 +511,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 COMPROBACIÓN CRÍTICA: Solo el presidente puede acceder a esta página
         if (!isPresidente) {
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('error', 'AccesoDenegado', 'Solo el presidente del club puede editar el perfil.');
+                mostrarAlerta('error', 'Acceso Denegado', 'Solo el presidente del club puede editar el perfil.');
             }
             // Redirigir si no es presidente (opcional, pero buena práctica)
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
@@ -515,13 +528,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             manejarFaltaAutenticacion('Error de autenticación: Sesión expirada.', 'error');
         } else if (error.message.includes('asignado')) {
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('error', 'NoTienesClub', 'No tienes un club asignado para editar.');
+                mostrarAlerta('error', 'No tienes club', 'No tienes un club asignado para editar.');
             }
             // Redirigir a la lista de clubes
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
         } else {
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('error', 'ErrorAlIniciar', `Error al iniciar la edición: ${error.message}`);
+                mostrarAlerta('error', 'Error al iniciar', `Error al iniciar la edición: ${error.message}`);
             }
         }
     }
