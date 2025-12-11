@@ -5,25 +5,23 @@ export default async function handler(req, res) {
     let pool;
     let client;
 
-    // 1. VERIFICACIÓN DE ENTORNO
+   
     if (!process.env.DATABASE_URL) {
         return res.status(500).json({ success: false, message: "Error de configuración: Falta la variable DATABASE_URL." });
     }
 
     try {
-        // Inicialización de Pool y conexión a DB
+       
         pool = new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
         });
         client = await pool.connect();
 
-        // ===============================================
-        // MANEJADOR GET (Leer todos o uno)
-        // ===============================================
+       
         if (req.method === "GET") {
             if (id) {
-                // Leer un solo lugar por ID
+                
                 const result = await client.query(
                     `SELECT id, name, address, city, country, capacity FROM event_locations WHERE id = $1`,
                     [id]
@@ -33,7 +31,7 @@ export default async function handler(req, res) {
                 }
                 return res.status(200).json({ success: true, data: result.rows[0] });
             } else {
-                // Leer todos los lugares
+             
                 const result = await client.query(
                     `SELECT id, name, address, city, country, capacity FROM event_locations ORDER BY name ASC`
                 );
@@ -41,9 +39,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // ===============================================
-        // MANEJADOR POST (Crear nuevo lugar)
-        // ===============================================
+       
         if (req.method === "POST") {
             const { name, address, city, country, capacity } = req.body;
 
@@ -61,9 +57,7 @@ export default async function handler(req, res) {
             return res.status(201).json({ success: true, message: "Lugar creado correctamente.", data: result.rows[0] });
         }
 
-        // ===============================================
-        // MANEJADOR PUT (Actualizar lugar)
-        // ===============================================
+        
         if (req.method === "PUT") {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del lugar." });
 
@@ -85,9 +79,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, message: "Lugar actualizado correctamente.", data: result.rows[0] });
         }
 
-        // ===============================================
-        // MANEJADOR DELETE (Eliminar lugar)
-        // ===============================================
+       
         if (req.method === "DELETE") {
             if (!id) return res.status(400).json({ success: false, message: "Falta el ID del lugar." });
 
@@ -97,15 +89,13 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, message: "Lugar eliminado correctamente." });
         }
 
-        // ===============================================
-        // MÉTODO NO PERMITIDO
-        // ===============================================
+        
         res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
         return res.status(405).json({ success: false, message: `Método ${req.method} no permitido.` });
 
     } catch (error) {
         console.error("Error en /api/locations:", error);
-        // Manejo de errores específicos de SQL si es necesario
+       
         let errorMessage = 'Error interno del servidor.';
         if (error.code === '42P01') {
             errorMessage = 'Error: La tabla "event_locations" no existe. Asegúrate de crearla en tu base de datos.';
