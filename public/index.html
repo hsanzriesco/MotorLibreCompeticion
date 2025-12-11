@@ -286,7 +286,7 @@
             // Si es presidente/admin, va a la página de edición con el ID
             ? `./pages/clubes/presidente/editarPresidente.html?id=${clubId}`
             // Si es solo miembro, va a una página de vista general (ajusta esta ruta si tienes otra)
-            : `./pages/clubes/club_view.html?id=${clubId}`;
+            : `./pages/clubes/editarUsuario.html?id=${clubId}`;
 
           miClubLink.href = clubPage;
           // Opcional: Modificar el texto para clarificar si tiene permiso de edición
