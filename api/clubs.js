@@ -17,7 +17,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.CLOUDINARY_API_SECRET
+    // ✅ CORRECCIÓN: Se añade '.env' para acceder correctamente a la variable de entorno.
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // Convertir fs.unlink en una función Promise para usar con async/await
