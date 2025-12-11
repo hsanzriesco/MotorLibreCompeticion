@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CORREGIDA Y ROBUSTA
+// clubs.js - VERSIÓN FINAL UNIFICADA Y ROBUSTA PARA MANEJAR /api/clubs Y /api/clubs/ID
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -304,6 +304,7 @@ async function clubsHandler(req, res) {
     const { method, query } = req;
 
     // 💡 CORRECCIÓN CRÍTICA: Obtenemos el ID de forma robusta
+    // Esto permite que /api/clubs/ID funcione incluso en clubs.js
     let { estado, id } = query;
     if (!id && req.url) {
         // Intento de parsear el ID de la URL si no viene en la query (útil en Express/otros enrutadores)
@@ -598,7 +599,7 @@ async function clubsHandler(req, res) {
                         insertColumns = `nombre_evento, descripcion, imagen_club, fecha_creacion, id_presidente, nombre_presidente, estado, ciudad, enfoque`;
 
                         let nombrePresidente;
-                        const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [idPresidente]);
+                        const presidenteNameRes = await pool.query('SELECT name FROM public."users" WHERE id = $1', [idPresidente]);
                         nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
 
                         params = [
@@ -914,6 +915,7 @@ async function clubsHandler(req, res) {
             // Verificar si es administrador O el presidente del club
             try {
                 // La verificación es CRÍTICA y usa el ID capturado
+                // Esto maneja la autorización para la ruta /api/clubs/ID
                 await verifyClubOwnershipOrAdmin(req, clubId);
             } catch (error) {
                 // Si la verificación falla (no es admin ni presidente), lanzamos el error
@@ -930,9 +932,20 @@ async function clubsHandler(req, res) {
                     [clubId]
                 );
 
+                // Si no se encuentra como club activo, buscar como solicitud pendiente
                 if (clubInfoRes.rows.length === 0) {
+                    const pendingInfoRes = await client.query('SELECT imagen_club FROM public.clubs_pendientes WHERE id = $1', [clubId]);
+                    if (pendingInfoRes.rows.length > 0) {
+                        // Es una solicitud pendiente que el Admin está borrando con DELETE /api/clubs/ID
+                        const { imagen_club } = pendingInfoRes.rows[0];
+                        await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [clubId]);
+                        if (imagen_club) await deleteFromCloudary(imagen_club);
+                        await client.query('COMMIT');
+                        return res.status(204).json({ success: true, message: "Solicitud pendiente eliminada correctamente." });
+                    }
+
                     await client.query('ROLLBACK');
-                    return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
+                    return res.status(404).json({ success: false, message: "Club o solicitud pendiente no encontrado para eliminar." });
                 }
 
                 const { imagen_club, id_presidente } = clubInfoRes.rows[0];
@@ -945,9 +958,6 @@ async function clubsHandler(req, res) {
                     WHERE club_id = $1`,
                     [clubId]
                 );
-
-                // NOTA: Para el presidente del club eliminado, su token sigue siendo 'presidente'
-                // hasta que vuelva a iniciar sesión o el cliente actualice el token.
 
                 // 3. Eliminar el club de la tabla 'clubs'
                 const deleteClubRes = await client.query(
@@ -966,7 +976,7 @@ async function clubsHandler(req, res) {
                 }
 
                 await client.query('COMMIT');
-                // Respuesta correcta para un DELETE exitoso
+                // Respuesta correcta para un DELETE exitoso (204 No Content)
                 return res.status(204).json({ success: true, message: "Club y miembros desvinculados correctamente." });
 
             } catch (error) {
