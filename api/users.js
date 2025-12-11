@@ -1,26 +1,24 @@
-// =========================================================================
-// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA FINAL)
-// =========================================================================
+
 
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// --- CONFIGURACIÓN DE BASE DE DATOS ---
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
 });
 
-// ⚠️ NECESITAS DEFINIR ESTO EN TU .env
+
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_produccion';
 
-// Se requiere configurar `bodyParser: false` para usar `getBody`
+
 export const config = {
     api: { bodyParser: false },
 };
 
-// 🛠️ HELPER: Función para leer el cuerpo JSON cuando bodyParser está en false
+
 const getBody = async (req) => {
     try {
         const chunks = [];
@@ -33,7 +31,7 @@ const getBody = async (req) => {
     }
 };
 
-// 🔒 MIDDLEWARE DE SEGURIDAD: Verifica el JWT y extrae la carga útil (payload)
+
 const verifyToken = (req) => {
     const authHeader = req.headers.authorization;
 
@@ -52,7 +50,7 @@ const verifyToken = (req) => {
     }
 };
 
-// 🔒 MIDDLEWARE DE SEGURIDAD: Verifica el JWT y el Rol de Administrador
+
 const verifyAdmin = (req) => {
     const authHeader = req.headers.authorization;
 
@@ -76,9 +74,7 @@ const verifyAdmin = (req) => {
     }
 };
 
-// ------------------------------------------------------------------------------------------------
-// 1. REGISTRO PÚBLICO (Manejo de POST directo /api/users)
-// ------------------------------------------------------------------------------------------------
+
 async function createUserHandler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ success: false, message: "Método no permitido" });
@@ -90,7 +86,7 @@ async function createUserHandler(req, res) {
         if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
         const { name, email, password } = body;
-        // El registro público siempre asigna el rol 'user' por defecto, ignorando si el cuerpo intenta otra cosa.
+      
         const roleToAssign = 'user';
 
         if (!name || !email || !password) {
@@ -98,7 +94,7 @@ async function createUserHandler(req, res) {
             return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
         }
 
-        // Revisión de usuario existente por email o nombre
+        
         const existingUser = await pool.query(
             "SELECT * FROM users WHERE email = $1 OR name = $2",
             [email, name]
@@ -115,7 +111,7 @@ async function createUserHandler(req, res) {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // La inserción por defecto dejará club_id y is_presidente como NULL/FALSE (valores predeterminados de la tabla).
+      
         const result = await pool.query(
             "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, is_banned",
             [name, email, hashedPassword, roleToAssign]
@@ -137,9 +133,7 @@ async function createUserHandler(req, res) {
 }
 
 
-// ------------------------------------------------------------------------------------------------
-// 2. LOGIN DE USUARIO (Manejo de POST /api/users?action=login)
-// ------------------------------------------------------------------------------------------------
+
 async function loginUserHandler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ success: false, message: "Método no permitido" });
@@ -156,7 +150,7 @@ async function loginUserHandler(req, res) {
             return res.status(400).json({ success: false, message: "Faltan datos" });
         }
 
-        // Búsqueda por 'name' O 'email' y selección de campos clave
+        
         const { rows } = await pool.query(
             "SELECT id, name, email, role, password, is_banned, club_id, is_presidente FROM users WHERE name = $1 OR email = $1",
             [username]
@@ -170,7 +164,7 @@ async function loginUserHandler(req, res) {
         const user = rows[0];
         const hashedPassword = user.password;
 
-        // Verificar is_banned
+       
         if (user.is_banned) {
             console.log(`Login bloqueado: Usuario baneado (${username}).`);
             return res.status(403).json({
@@ -186,13 +180,13 @@ async function loginUserHandler(req, res) {
             return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
         }
 
-        // 🚨 CORRECCIÓN CLAVE: SE INCLUYE club_id e is_presidente en el payload del JWT
+        
         const token = jwt.sign(
             {
                 id: user.id,
                 role: user.role,
-                club_id: user.club_id || null, // Asegurar que sea null si no existe
-                is_presidente: user.is_presidente === true // Asegurar booleano
+                club_id: user.club_id || null, 
+                is_presidente: user.is_presidente === true 
             },
             JWT_SECRET,
             { expiresIn: '24h' }
@@ -200,7 +194,7 @@ async function loginUserHandler(req, res) {
 
         console.log(`LOGIN EXITOSO para ${username}.`);
 
-        // Devolver el token y los datos de usuario actualizados
+        
         return res.status(200).json({
             success: true,
             message: "Inicio de sesión correcto",
@@ -210,7 +204,7 @@ async function loginUserHandler(req, res) {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                club_id: user.club_id || null, // ✅ CORRECCIÓN: Se incluye club_id en la respuesta JSON
+                club_id: user.club_id || null, 
                 is_presidente: user.is_presidente === true
             },
         });
@@ -222,9 +216,7 @@ async function loginUserHandler(req, res) {
 }
 
 
-// ------------------------------------------------------------------------------------------------
-// 3. OBTENER PERFIL DEL USUARIO LOGUEADO (Manejo de GET /api/users?action=me)
-// ------------------------------------------------------------------------------------------------
+
 async function getMeHandler(req, res) {
     if (req.method !== "GET") {
         return res.status(405).json({ success: false, message: "Método no permitido" });
@@ -233,7 +225,7 @@ async function getMeHandler(req, res) {
     try {
         console.log("--- PERFIL DE USUARIO (/me) INICIADO ---");
 
-        // 1. Verificar el token y extraer la información del usuario logueado
+       
         const verification = verifyToken(req);
 
         if (!verification.authorized) {
@@ -242,7 +234,7 @@ async function getMeHandler(req, res) {
 
         const decodedUser = verification.user;
 
-        // 2. Obtener datos frescos de la base de datos
+       
         const query = `
             SELECT 
                 u.id, 
@@ -265,7 +257,7 @@ async function getMeHandler(req, res) {
 
         const userProfile = rows[0];
 
-        // 3. Formatear y devolver los datos del perfil
+       
         const clubId = userProfile.club_id || null;
         const isPresidente = userProfile.is_presidente === true;
 
@@ -285,13 +277,13 @@ async function getMeHandler(req, res) {
         console.error("### FALLO CRÍTICO EN getMeHandler (BD/SQL) ###");
         console.error("Detalle del error:", error.message);
 
-        // 💡 Manejo de error de esquema (columna faltante)
+    
         if (error.code === '42703') {
             console.error("ACCIÓN REQUERIDA: ¡ERROR DE ESQUEMA DB! La tabla 'users' carece de una de las columnas requeridas (club_id o is_presidente).");
             return res.status(500).json({ success: false, message: "Error interno del servidor: Faltan columnas clave en la tabla de usuarios." });
         }
 
-        // Manejo de errores de autenticación/JWT que el middleware pudo no haber atrapado
+       
         if (error.message.includes('No autorizado') || error.message.includes('Token')) {
             return res.status(401).json({ success: false, message: "Sesión inválida o expirada. Vuelva a iniciar sesión." });
         }
@@ -302,9 +294,7 @@ async function getMeHandler(req, res) {
 }
 
 
-// ------------------------------------------------------------------------------------------------
-// 4. ACCIONES DE USUARIO (UPDATE de Perfil/Contraseña - Manejo de PUT /api/users?action=...)
-// ------------------------------------------------------------------------------------------------
+
 async function userActionHandler(req, res) {
     const { method, query } = req;
     const action = query.action;
@@ -314,12 +304,11 @@ async function userActionHandler(req, res) {
             const body = await getBody(req);
             if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
-            // 4.1. ACTUALIZACIÓN DE CONTRASEÑA
+         
             if (action === "updatePassword") {
                 const { id, newPassword } = body;
 
-                // 💡 Nota: Una comprobación adicional de token aquí sería ideal, pero confiamos en que 
-                // el frontend envíe el ID del usuario logueado.
+               
 
                 if (!id || !newPassword)
                     return res.status(400).json({ success: false, message: "Datos inválidos" });
@@ -331,14 +320,14 @@ async function userActionHandler(req, res) {
                 return res.status(200).json({ success: true, message: "Contraseña actualizada correctamente." });
             }
 
-            // 4.2. ACTUALIZACIÓN DE NOMBRE/EMAIL
+           
             if (action === "updateName") {
                 const { id, newName, newEmail } = body;
 
                 if (!id || !newName || !newEmail)
                     return res.status(400).json({ success: false, message: "Datos inválidos (ID, nombre o email faltante)" });
 
-                // Validación de unicidad antes de actualizar
+               
                 const existingUser = await pool.query(
                     "SELECT id FROM users WHERE (email = $1 OR name = $2) AND id != $3",
                     [newEmail, newName, id]
@@ -357,7 +346,7 @@ async function userActionHandler(req, res) {
             }
         }
 
-        // Si no es un método PUT o una acción conocida
+      
         return res.status(405).json({
             success: false,
             message: "Ruta o método no válido en userActions.js",
@@ -375,15 +364,13 @@ async function userActionHandler(req, res) {
 }
 
 
-// ------------------------------------------------------------------------------------------------
-// 5. CRUD GENERAL (Admin) (GET, PUT, DELETE, POST con role) - MODIFICADO
-// ------------------------------------------------------------------------------------------------
+
 async function userListCrudHandler(req, res) {
     const { method, query } = req;
     let body;
 
     try {
-        // --- VISTA PÚBLICA (GET con ID) ---
+       
         if (method === "GET" && query.id) {
             const userResult = await pool.query(
                 "SELECT id, name, role, created_at, is_banned FROM users WHERE id = $1",
@@ -396,25 +383,22 @@ async function userListCrudHandler(req, res) {
 
             return res.status(200).json({ success: true, data: userResult.rows[0] });
         }
-        // --- FIN VISTA PÚBLICA ---
-
-
-        // 🚨 VERIFICACIÓN DE ADMIN: Bloquea todos los demás métodos (GET sin ID, POST, PUT, DELETE)
+        
         verifyAdmin(req);
         console.log(`Acceso de administrador verificado para la operación ${method}.`);
 
-        // Cargar el cuerpo manualmente si el método es POST o PUT
+        
         if (method === "POST" || method === "PUT") {
             body = await getBody(req);
             if (!body) {
-                // Si es POST o PUT sin parámetros de query, el cuerpo es obligatorio
+                
                 if (method === "POST" || (method === "PUT" && !query.id)) {
                     return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
                 }
             }
         }
 
-        // GET: LISTAR TODOS LOS USUARIOS (Protegido por Admin)
+       
         if (method === "GET") {
             const result = await pool.query(
                 "SELECT id, name, email, role, created_at, is_banned, club_id, is_presidente FROM users ORDER BY id DESC"
@@ -423,7 +407,7 @@ async function userListCrudHandler(req, res) {
         }
 
 
-        // POST: CREAR NUEVO USUARIO (Admin)
+        
         if (method === "POST") {
             const { name, email, password, role } = body;
 
@@ -431,7 +415,7 @@ async function userListCrudHandler(req, res) {
                 return res.status(400).json({ success: false, message: "Faltan campos requeridos." });
             }
 
-            // Validación de existencia
+           
             const existingUser = await pool.query(
                 "SELECT id FROM users WHERE email = $1 OR name = $2",
                 [email, name]
@@ -456,7 +440,7 @@ async function userListCrudHandler(req, res) {
         }
 
 
-        // PUT: ACTUALIZAR USUARIO (Admin)
+        
         if (method === "PUT") {
             const id = query.id || (body ? body.id : null);
             const { name, email, password, role, is_banned, club_id, is_presidente } = body;
@@ -465,20 +449,17 @@ async function userListCrudHandler(req, res) {
                 return res.status(400).json({ success: false, message: "ID de usuario requerido para la actualización." });
             }
 
-            // --- Lógica de Baneo/Desbaneo (Simplificada) ---
-            // Si solo viene 'is_banned', ejecutamos una actualización simple y terminamos.
+           
             if (is_banned !== undefined && Object.keys(body).length === 2 && body.id) {
                 await pool.query('UPDATE users SET is_banned = $1 WHERE id = $2', [is_banned, id]);
                 const status = is_banned ? 'baneado' : 'desbaneado';
                 console.log(`Usuario ${id} ${status}.`);
                 return res.status(200).json({ success: true, message: `Usuario ${status} con éxito.` });
             }
-            // --- Fin Lógica de Baneo/Desbaneo ---
+           
 
 
-            // --- Lógica de Actualización de Perfil (Admin) ---
-
-            // Validación de unicidad de nombre/email
+            
             if (name || email) {
                 const checkConflict = await pool.query(
                     "SELECT id FROM users WHERE (email = $1 OR name = $2) AND id != $3",
@@ -489,7 +470,7 @@ async function userListCrudHandler(req, res) {
                 }
             }
 
-            // 🚩 CORRECCIÓN CRÍTICA: Se corrige el ámbito de la variable hashedPassword.
+            
             let hashForUpdate = undefined;
             if (password) {
                 const salt = await bcrypt.genSalt(10);
@@ -512,9 +493,9 @@ async function userListCrudHandler(req, res) {
                 name ?? null,
                 email ?? null,
                 role ?? null,
-                hashForUpdate ?? null, // Usamos la variable con el hash
-                club_id, // Se permite actualizar club_id (puede ser null)
-                is_presidente, // Se permite actualizar is_presidente (puede ser booleano)
+                hashForUpdate ?? null, 
+                club_id, 
+                is_presidente, 
                 id
             ]);
 
@@ -525,14 +506,12 @@ async function userListCrudHandler(req, res) {
             return res.status(200).json({ success: true, user: result.rows[0], message: "Usuario actualizado por administrador." });
         }
 
-        // DELETE: ELIMINAR USUARIO (Admin)
+       
         if (method === "DELETE") {
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
 
-            // 💡 Nota: La eliminación en cascada es importante aquí.
-            // Si la columna 'users.club_id' tiene ON DELETE SET NULL, no hay problema.
-            // Si no, la FK debe manejarse para que no haya clubs huérfanos.
+           
 
             const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
 
@@ -548,7 +527,7 @@ async function userListCrudHandler(req, res) {
     } catch (error) {
         console.error("Error en userListCrudHandler:", error);
 
-        // Manejo de errores de autorización (Middleware)
+        
         if (error.message.includes('No autorizado') || error.message.includes('Acceso denegado')) {
             return res.status(401).json({ success: false, message: error.message });
         }
@@ -560,7 +539,7 @@ async function userListCrudHandler(req, res) {
         if (error.code === "23505") {
             return res.status(409).json({ success: false, message: "Nombre o correo ya registrados." });
         }
-        // Capturar error de columna faltante (Postgres error code 42703)
+        
         if (error.code === '42703') {
             console.error("ACCIÓN REQUERIDA: ¡ERROR DE ESQUEMA DB! La tabla 'users' carece de una de las columnas requeridas.");
             return res.status(500).json({ success: false, message: "Error interno del servidor: Faltan columnas clave en la tabla de usuarios." });
@@ -571,38 +550,36 @@ async function userListCrudHandler(req, res) {
 }
 
 
-// ------------------------------------------------------------------------------------------------
-// 6. EXPORTACIONES DEL HANDLER PRINCIPAL (Ruteador)
-// ------------------------------------------------------------------------------------------------
+
 export default async function usersCombinedHandler(req, res) {
     const { method, query } = req;
     const action = query.action;
 
-    // 1. REGISTRO PÚBLICO (POST simple a /api/users sin action)
+   
     if (method === "POST" && !action) {
         return createUserHandler(req, res);
     }
 
-    // 3. OBTENER PERFIL LOGUEADO (GET con ?action=me)
+    
     if (method === "GET" && action === "me") {
         return getMeHandler(req, res);
     }
 
-    // 2. LOGIN (POST con ?action=login)
+   
     if (method === "POST" && action === "login") {
         return loginUserHandler(req, res);
     }
 
-    // 4. ACCIONES DE PERFIL (PUT con ?action=updatePassword o ?action=updateName)
+   
     if (method === "PUT" && (action === "updatePassword" || action === "updateName")) {
         return userActionHandler(req, res);
     }
 
-    // 5. CRUD DE ADMINISTRACIÓN Y VISTA PÚBLICA POR ID
+   
     if (method === "GET" || method === "DELETE" || method === "PUT" || method === "POST") {
         return userListCrudHandler(req, res);
     }
 
-    // Método o ruta no reconocida
+   
     return res.status(405).json({ success: false, message: "Método o ruta de usuario no reconocida." });
 }
