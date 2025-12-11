@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON SEGURIDAD CRÍTICA AÑADIDA PARA EDICIÓN DE CLUB
+// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -62,7 +62,7 @@ async function deleteFromCloudary(imageUrl) {
             console.log(`Imagen ${publicId} eliminada de Cloudinary (Fallback).`);
         }
     } catch (e) {
-        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudinary):", e.message);
+        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudary):", e.message);
     }
 }
 
@@ -380,6 +380,7 @@ async function clubsHandler(req, res) {
                 } catch (error) {
                     // Si falla la verificación (no logueado, token inválido o no es presidente/admin),
                     // se lanza el error para que el catch final devuelva el 401/403.
+                    // Si no está logueado, el error será "Token no proporcionado" o "Debe iniciar sesión".
                     throw error;
                 }
                 // 🛑 FIN MODIFICACIÓN CRÍTICA 🛑
@@ -981,8 +982,8 @@ async function clubsHandler(req, res) {
         console.error("Error en clubsHandler:", error);
 
         if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión') || error.message.includes('Club no encontrado')) {
-            // Este catch final maneja los errores lanzados por verifyClubOwnershipOrAdmin.
-            // Devuelve 401 si falla el token o 403 si falla el rol/propiedad con el mensaje de error específico.
+            // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
+            // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
