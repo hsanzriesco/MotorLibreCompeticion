@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Elementos del formulario de edición/creación
     // Todos estos elementos deben existir en el HTML con el ID exacto.
     const inputId = document.getElementById("club-id");
-    const inputNombre = document.getElementById("nombre_evento"); // <--- Importante
+    const inputNombre = document.getElementById("nombre_club"); // <--- Importante
     const inputDescripcion = document.getElementById("descripcion");
     const inputCiudad = document.getElementById("ciudad");
     const inputEnfoque = document.getElementById("enfoque"); // <--- Importante
