@@ -1,19 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Función para calcular la ruta base correcta (ej: '../../')
-    const getBaseHref = () => {
-        // La ruta actual es /pages/perfil/perfil.html (Profundidad 2)
-        // Necesitamos retroceder dos niveles: ../../
-        const pathSegments = window.location.pathname.split('/').filter(segment => segment.length > 0);
 
-        // Contamos cuántos niveles hay hasta la raíz (siempre quitando el nombre del archivo)
+    // Función para calcular la ruta base correcta (ej: '../../' para la imagen y enlaces)
+    const getBaseHref = () => {
+        const pathSegments = window.location.pathname.split('/').filter(segment => segment.length > 0);
         let depth = 0;
         if (pathSegments.length > 0 && pathSegments[pathSegments.length - 1].endsWith('.html')) {
-            depth = pathSegments.length - 1; // Si es /pages/perfil/perfil.html -> 2 niveles a subir
+            depth = pathSegments.length - 1;
         } else {
-            depth = pathSegments.length; // Si es /pages/perfil/ -> 2 niveles a subir
+            depth = pathSegments.length;
         }
-
-        // Generar la cadena de "../"
         return depth > 0 ? Array(depth).fill('../').join('') : './';
     };
 
@@ -21,11 +16,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 1. Crear el elemento 'footer' principal
     const footerElement = document.createElement('footer');
-    // CLASES DE ESTILO Y LA CLAVE STICKY FOOTER: mt-auto
-    footerElement.className = 'bg-dark border-top border-danger mt-auto';
+
+    // =========================================================
+    // CLASES CLAVE: mt-auto (empuja al final) y mb-0 (elimina cualquier margen inferior)
+    footerElement.className = 'bg-dark border-top border-danger mt-auto mb-0';
+    // =========================================================
+
     footerElement.id = 'main-footer';
 
-    // 2. Definir el contenido HTML. USANDO la variable baseHref
+    // 2. Definir el contenido HTML (con rutas dinámicas y sección de copyright)
     footerElement.innerHTML = `
         <div class="footer-content container py-3"> 
             <div class="row">
