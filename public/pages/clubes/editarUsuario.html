@@ -16,6 +16,7 @@
             background-color: #111;
             color: white;
             padding-top: 100px;
+            /* Asegura que el contenido no quede debajo del navbar fijo */
         }
 
         .container {
@@ -33,11 +34,74 @@
             background-color: #e50914;
             border-color: #e50914;
         }
+
+        .modal-content {
+            background-color: #111;
+            color: white;
+            border: 1px solid #e50914;
+        }
+
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
     </style>
 </head>
 
 <body>
 
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+
+        <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+        </a>
+
+        <div class="d-flex align-items-center">
+
+            <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
+                <i class="bi bi-person-circle fs-4"></i>
+            </a>
+
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+
+        </div>
+    </nav>
+
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body">
+
+            <a href="../calendario/calendario.html" class="d-block text-light mb-2">
+                Calendario
+            </a>
+
+            <a href="../clubes/clubes.html" class="d-block text-light mb-2">
+                Clubes
+            </a>
+
+            <a href="./editarUsuario.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
+                Mi Club
+            </a>
+
+            <a href="../perfil/perfil.html" class="d-block text-light mb-2">
+                Mi perfil
+            </a>
+
+            <hr class="border-secondary">
+
+            <a href="#" id="logout-btn" class="d-block text-danger">
+                Cerrar sesión
+            </a>
+        </div>
+    </div>
     <div class="container my-5">
         <h1 class="text-danger mb-4 text-center">Gestión de Mi Club: <span id="club-name-header">...</span></h1>
 
@@ -46,6 +110,7 @@
                 <h5 class="card-title text-danger">Información del Club</h5>
                 <p><strong>Presidente:</strong> <span id="club-president"></span></p>
                 <p><strong>Descripción:</strong> <span id="club-description"></span></p>
+                <p><strong>Enfoque:</strong> <span id="club-enfoque"></span></p>
             </div>
         </div>
 
