@@ -68,7 +68,8 @@ async function deleteFromCloudary(imageUrl) {
             console.log(`Imagen ${publicId} eliminada de Cloudinary.`);
         }
     } catch (e) {
-        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudinary):", e.message);
+        // Devolvemos el control en lugar de lanzar una excepción que pueda colapsar el servidor
+        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudary):", e.message);
     }
 }
 
@@ -864,7 +865,11 @@ async function clubsHandler(req, res) {
                 }
 
                 if (updates.length === 0) {
-                    return res.status(400).json({ success: false, message: "No se proporcionaron campos para actualizar." });
+                    // 🛑 FIX PARA EL BUCLE (Limpieza): Si no hay updates, limpiamos el archivo temporal si existe
+                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
+                        await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file sin updates:", e));
+                    }
+                    return res.status(200).json({ success: true, message: "No se proporcionaron campos para actualizar." });
                 }
 
                 values.push(clubIdToUpdate); // ID siempre es el último parámetro
@@ -895,13 +900,17 @@ async function clubsHandler(req, res) {
                 return res.status(200).json({ success: true, message: "Club actualizado.", club: result.rows[0] });
 
             } catch (uploadError) {
-                // Limpiar Cloudinary si falló algo después de la subida
+                // 🛑 CORRECCIÓN CLAVE: Asegurar que el servidor siempre envíe respuesta
+                // 1. Limpiar Cloudinary si falló algo después de la subida (Hacemos el borrado seguro)
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
-                    await deleteFromCloudary(imagen_club_url);
+                    await deleteFromCloudary(imagen_club_url).catch(e => console.error("Error al limpiar Cloudinary en rollback (PUT):", e));
                 }
+
+                // 2. Limpiar archivo temporal si existe (Hacemos el borrado seguro)
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
-                    await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
+                    await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file (PUT):", e));
                 }
+
                 console.error("Error durante la subida/actualización (PUT):", uploadError.message);
 
                 if (uploadError.message.includes('Cloudinary upload failed')) {
@@ -916,6 +925,7 @@ async function clubsHandler(req, res) {
                     return res.status(401).json({ success: false, message: uploadError.message });
                 }
 
+                // 3. Respuesta final ante cualquier otro error interno
                 return res.status(500).json({ success: false, message: "Error interno en la actualización del club." });
             }
         }
@@ -1035,9 +1045,13 @@ async function clubsHandler(req, res) {
     } catch (error) {
         console.error("Error en clubsHandler:", error);
 
-        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
+        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión') || error.message.includes('Club no encontrado o no activo')) {
             // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
             // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
+            // Los errores lanzados en DELETE también caen aquí.
+            if (error.message.includes('Club no encontrado o no activo')) {
+                return res.status(404).json({ success: false, message: error.message });
+            }
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
