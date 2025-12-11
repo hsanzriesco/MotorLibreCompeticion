@@ -32,7 +32,7 @@
       filter: invert(1) grayscale(100%) brightness(200%);
     }
 
-    /* Efecto al pasar sobre las tarjetas de noticias */
+   
     .card {
       transition: transform .2s ease, box-shadow .2s ease;
     }
@@ -42,12 +42,10 @@
       box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
     }
 
-    /* ===================================================== */
-    /* CÓDIGO FINAL DE TAMAÑO UNIFORME Y RESPONSIVO DEL CARRUSEL */
-    /* ===================================================== */
+
 
     .carousel-inner {
-      /* Fija la altura uniforme para todos los carruseles por defecto (escritorio) */
+   
       height: 450px;
     }
 
@@ -58,21 +56,21 @@
     .carousel-item img {
       width: 100%;
       height: 100%;
-      /* Asegura que la imagen llene la caja de 450px/300px, recortando si es necesario */
+      
       object-fit: cover;
-      /* Ayuda a centrar la imagen para que el recorte sea más uniforme */
+     
       object-position: center center;
     }
 
-    /* Regla para dispositivos móviles (< 576px) */
+  
     @media (max-width: 576px) {
       .carousel-inner {
-        /* Fija la altura uniforme para móviles, un tamaño más corto */
+      
         height: 300px;
       }
     }
 
-    /* ===================================================== */
+  
   </style>
 
 </head>
@@ -280,11 +278,11 @@
       const loginIcon = document.getElementById("login-icon");
       const logoutBtn = document.getElementById("logout-btn");
       const miClubLink = document.getElementById("mi-club-link");
-      const presidenteClubLink = document.getElementById("presidente-club-link"); // Enlace de Presidente
+      const presidenteClubLink = document.getElementById("presidente-club-link"); 
 
-      //LÓGICA DE VISIBILIDAD DE ELEMENTOS
+    
       if (usuario) {
-        // 1. Visibilidad general de sesión
+       
         if (bienvenida) {
           bienvenida.textContent = `Bienvenido, ${usuario.name}!`;
         }
@@ -294,22 +292,22 @@
         loginIcon.style.display = "none";
         logoutBtn.style.display = "block";
 
-        // 2. Redirección de Logo para Administrador
+       
         if (usuario.role === "admin") {
           const logoLink = document.getElementById("logo-link");
           if (logoLink) logoLink.href = "./pages/dashboard/admin/admin.html";
         }
 
-        // 3. Lógica para el enlace "Mi Club"
+       
         const clubId = usuario.club_id || usuario.clubId || clubIdInSession;
-        // Consideramos a Admin y Presidente como usuarios con permisos de edición/gestión
+       
         const isPresidenteOrAdmin = usuario.role === "admin" || usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
 
         if (clubId && miClubLink) {
           const clubPage = isPresidenteOrAdmin
-            // Si es presidente/admin, va a la página de edición con el ID
+            
             ? `./pages/clubes/presidente/editarPresidente.html?id=${clubId}`
-            // Si es solo miembro, va a una página de vista general 
+           
             : `./pages/clubes/editarUsuario.html?id=${clubId}`;
 
           miClubLink.href = clubPage;
@@ -319,22 +317,22 @@
           miClubLink.style.display = "none";
         }
 
-        // 🎯 4. LÓGICA ESPECÍFICA PARA PRESIDENTE DE CLUB
+       
         const isPresidente = usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
 
         if (isPresidente && presidenteClubLink) {
-          // Si es presidente, mostramos el enlace adicional
+        
           presidenteClubLink.style.display = "block";
-          // Aseguramos que el enlace no tenga el ID del club en la URL si no es necesario (la página de presidente lo obtendrá del token)
+        
           presidenteClubLink.href = "./pages/clubes/presidente/editarPresidente.html";
         } else if (presidenteClubLink) {
-          // Si hay sesión pero NO es presidente, ocultamos el enlace
+        
           presidenteClubLink.style.display = "none";
         }
 
 
       } else {
-        // No hay sesión
+    
         if (bienvenida) {
           bienvenida.textContent = `Inicia sesión para más funcionalidades.`;
         }
@@ -342,7 +340,7 @@
         loginIcon.style.display = "inline";
         logoutBtn.style.display = "none";
 
-        // Ocultar todos los enlaces de usuario (Mi Club, Presidente)
+      
         if (miClubLink) {
           miClubLink.style.display = "none";
         }
@@ -350,10 +348,10 @@
           presidenteClubLink.style.display = "none";
         }
       }
-      // ⭐⭐ FIN LÓGICA DE VISIBILIDAD ⭐⭐
+   
 
 
-      // Lógica para el botón de Cerrar Sesión (Modal y acción)
+     
       if (logoutBtn) {
         logoutBtn.addEventListener("click", (e) => {
           e.preventDefault();
@@ -376,7 +374,7 @@
         btnConfirmLogout.addEventListener("click", () => {
           if (logoutConfirmModal) logoutConfirmModal.hide();
 
-          // Limpiar datos de sesión y almacenamiento local
+       
           sessionStorage.removeItem("usuario");
           localStorage.removeItem("usuario");
           sessionStorage.removeItem("clubId");
