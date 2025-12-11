@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- ⭐ CONFIGURACIÓN Y REFERENCIAS DEL DOM ⭐ ---
     // Total de columnas en la tabla para el colspan de mensajes.
-    const TOTAL_COLUMNS = 9;
+    const TOTAL_COLUMNS = 8; // Ajustado a las 8 columnas de tu HTML
 
     // Elementos de las dos tablas y el contador
     const tablaActivos = document.getElementById("tabla-clubes-activos");
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("club-form");
     const btnNewClub = document.getElementById("btn-new-club");
 
-    const clubModalEl = document.getElementById('clubModal'); // El modal contenedor
+    const clubModalEl = document.getElementById('clubModal'); // El modal contenedor (si existe)
 
     // Elementos del formulario de edición/creación
     // Todos estos elementos deben existir en el HTML con el ID exacto.
@@ -91,11 +91,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let statusConfirmModal = null;
 
     // Asignar las instancias de Bootstrap (usando el chequeo de existencia por si el HTML no está cargado)
-    if (deleteConfirmModalEl) {
+    if (deleteConfirmModalEl && typeof bootstrap !== 'undefined') {
         // Inicializa el modal de confirmación de borrado
         deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl, { keyboard: false });
     }
-    if (statusModalEl) {
+    if (statusModalEl && typeof bootstrap !== 'undefined') {
         // Inicializa el modal de confirmación de estado
         statusConfirmModal = new bootstrap.Modal(statusModalEl, { keyboard: false });
     }
@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (inputIdPresidente) inputIdPresidente.value = "";
         if (inputCiudad) inputCiudad.value = "";
         if (inputEnfoque) inputEnfoque.value = "";
+        if (inputNombre) inputNombre.value = "";
         setFechaDefault();
     }
 
@@ -133,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnNewClub.addEventListener('click', () => {
             clearForm();
             // Abre el modal para nuevo club (o edita si ya tiene instancia)
-            if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
+            if (clubModalEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(clubModalEl).show();
         });
     }
 
@@ -153,14 +154,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /** * Muestra una alerta, usando la implementación global (alertas.js) si está disponible. */
     function emitirAlerta(message, type) {
-        console.log(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
+        console.log(`[${(type || 'log').toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
 
         if (typeof window.mostrarAlerta === 'function') {
             // Asume que mostrarAlerta existe globalmente (e.g., in alertas.js)
             window.mostrarAlerta(message, type);
         } else {
             // Fallback simple
-            alert(`[${type.toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
+            alert(`[${(type || 'INFO').toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
         }
     }
 
@@ -238,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const esPendiente = contenedorTabla.id === 'tabla-clubes-pendientes';
 
         if (status === 'error') {
-            // Usa TOTAL_COLUMNS (9) para asegurar que el mensaje ocupe todo el ancho.
+            // Usa TOTAL_COLUMNS para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-danger text-center">**Error de servidor o acceso denegado al cargar datos**</td></tr>`;
             return;
         }
@@ -247,7 +248,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const mensaje = esPendiente ?
                 "No hay solicitudes de clubes pendientes." :
                 "No hay clubes activos registrados.";
-            // Usa TOTAL_COLUMNS (9) para asegurar que el mensaje ocupe todo el ancho.
             contenedorTabla.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-secondary text-center">${mensaje}</td></tr>`;
             return;
         }
@@ -261,8 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
                 accionesEspeciales = `
-                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
-                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
+                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_club || '')}"><i class="bi bi-check-circle"></i> Aprobar</button>
+                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_club || '')}"><i class="bi bi-x-circle"></i> Rechazar</button>
                 `;
             } else if (club.estado === 'activo') {
                 badgeEstado = '<span class="badge bg-primary">ACTIVO</span>';
@@ -278,17 +278,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
                 : "Sin descripción";
 
-            // Dato extraído para el botón (mejora de UX en la confirmación)
-            const clubNameForBtn = escapeHtml(club.nombre_evento || `Club ID: ${club.id}`);
+            // Nombre para botones y confirmaciones
+            const clubNameForBtn = escapeHtml(club.nombre_club || `Club ID: ${club.id}`);
 
-            // 🛑 ESTRUCTURA DE 9 COLUMNAS 🛑
+            // ESTRUCTURA COINCIDENTE CON TU HTML (8 COLUMNAS):
+            // ID | Nombre | Desc./Enfoque | Fecha Creación | Ciudad | Presidente | Imagen | Acciones
             fila.innerHTML = `
-                <td>${escapeHtml(club.nombre_evento)}</td>
-                <td>${descripcionCorta}</td>
-                <td>${escapeHtml(club.ciudad || 'N/A')}</td>
-                <td>${escapeHtml(club.enfoque || 'N/A')}</td>
+                <td>${escapeHtml(String(club.id || ''))}</td>
+                <td>${escapeHtml(club.nombre_club || 'Sin nombre')}</td>
+                <td>
+                    ${descripcionCorta}
+                    <div class="small text-muted">${escapeHtml(club.enfoque || '')}</div>
+                </td>
                 <td>${fecha}</td>
-                <td>${badgeEstado}</td>
+                <td>${escapeHtml(club.ciudad || 'N/A')}</td>
                 <td>${presidenteInfo}</td>
                 <td>
                     ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb img-thumbnail" alt="Imagen club" style="width: 50px; height: 50px; object-fit: cover;">` : "-"}
@@ -337,7 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
-            // ⭐ Endpoint con query string ?id= para Next.js
+            // Endpoint con query string ?id= para Next.js
             const res = await fetch(`/api/clubs?id=${id}`, { headers });
 
             if (!res.ok) {
@@ -355,12 +358,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Si el modal está definido en el HTML, lo abrimos
-            if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
+            if (clubModalEl && typeof bootstrap !== 'undefined') new bootstrap.Modal(clubModalEl).show();
 
             // Llenar el formulario con los datos del club
             // Se añaden los 'if' para prevenir errores si el elemento no existe en el HTML
             if (inputId) inputId.value = c.id;
-            if (inputNombre) inputNombre.value = c.nombre_evento || "";
+            if (inputNombre) inputNombre.value = c.nombre_club || "";
             if (inputDescripcion) inputDescripcion.value = c.descripcion || "";
             // ARREGLO DE FECHA
             if (inputFecha) inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
@@ -373,21 +376,20 @@ document.addEventListener("DOMContentLoaded", () => {
             // Cargar ID del presidente
             if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
 
-
             if (c.estado === 'pendiente' || c.estado === null) {
                 emitirAlerta(`Club pendiente ID ${c.id} cargado. Al guardar, se establecerá como activo.`, "info");
             } else {
                 emitirAlerta(`Club ID ${c.id} cargado para edición.`, "info");
             }
 
-            // ⭐ ARREGLO CLAVE: Comprobar si inputNombre existe antes de llamar a .focus()
+            // Foco en el nombre si existe
             if (inputNombre) inputNombre.focus();
 
         } catch (error) {
             console.error("Error cargarClubEnFormulario:", error);
             // Mostrar un mensaje específico si el error sigue siendo de tipo null
             if (error instanceof TypeError && (error.message.includes("Cannot set properties of null") || error.message.includes("Cannot read properties of null"))) {
-                emitirAlerta("Error cargando club: **Verifica que todos los campos del formulario (IDs: 'fecha_creacion', 'nombre_evento', etc.) en tu HTML existan y sean correctos.**", "error");
+                emitirAlerta("Error cargando club: **Verifica que todos los campos del formulario (IDs: 'fecha_creacion', 'nombre_club', etc.) en tu HTML existan y sean correctos.**", "error");
             } else {
                 emitirAlerta("Error cargando club: " + error.message, "error");
             }
@@ -399,105 +401,112 @@ document.addEventListener("DOMContentLoaded", () => {
     // GUARDAR CLUB (POST / PUT)
     // -----------------------------------------
 
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-        const token = getToken();
-        if (!token) {
-            emitirAlerta("❌ Error: No se encontró el token de administrador.", "error");
-            return;
-        }
-
-        const id = inputId ? inputId.value : '';
-        const metodo = id ? "PUT" : "POST";
-
-        // ⭐ CORRECCIÓN CLAVE: Usar Query Parameter para PUT y DELETE.
-        const url = id ? `/api/clubs?id=${id}` : "/api/clubs";
-
-        // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE (AHORA CON DIAGNÓSTICO DETALLADO)
-        // La condición es: si el elemento no existe (es null) O si existe y su valor está vacío.
-        if (
-            !inputNombre || !inputNombre.value ||
-            !inputDescripcion || !inputDescripcion.value ||
-            !inputCiudad || !inputCiudad.value ||
-            !inputEnfoque || !inputEnfoque.value
-        ) {
-            // ⭐ MENSAJE CLAVE: Diagnostica exactamente cuál podría faltar
-            let missingFields = [];
-            // Si el elemento es null, o si existe pero su valor es cadena vacía.
-            if (!inputNombre || inputNombre.value.trim() === "") missingFields.push("Nombre (ID: nombre_evento)");
-            if (!inputDescripcion || inputDescripcion.value.trim() === "") missingFields.push("Descripción (ID: descripcion)");
-            if (!inputCiudad || inputCiudad.value.trim() === "") missingFields.push("Ciudad (ID: ciudad)");
-            if (!inputEnfoque || inputEnfoque.value.trim() === "") missingFields.push("Enfoque (ID: enfoque)");
-
-            // Si el error es por valor vacío o elemento HTML faltante:
-            if (missingFields.length > 0) {
-                emitirAlerta(`❌ Faltan campos obligatorios o el elemento HTML no fue encontrado: **${missingFields.join(', ')}**. Por favor, revisa que los IDs HTML sean correctos.`, "error");
-            } else {
-                emitirAlerta("❌ Error desconocido en la validación de formulario.", "error");
-            }
-            return;
-        }
-
-        const formData = new FormData(form);
-
-        // Limpiar FormData de campos vacíos (especialmente el archivo si no se subió uno nuevo)
-        const imageFile = formData.get('imagen_club');
-        if (imageFile && imageFile.name === '' && imageFile.size === 0) {
-            formData.delete('imagen_club');
-        } else {
-            // Si hay un archivo, se mantiene.
-        }
-
-        // Agregar el ID del presidente si está presente
-        if (inputIdPresidente && inputIdPresidente.value) {
-            formData.set("id_presidente", inputIdPresidente.value);
-        }
-
-        // Si es una creación (POST) o una edición de un club pendiente, aseguramos que el estado sea activo.
-        if (metodo === 'POST' || (metodo === 'PUT' && inputIdPresidente && inputIdPresidente.value)) {
-            formData.append("estado", "activo");
-        }
-
-
-        try {
-            const res = await fetch(url, {
-                method: metodo,
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                    // NO AGREGAR 'Content-Type': 'multipart/form-data', el navegador lo hace automáticamente
-                },
-                body: formData
-            });
-
-            if (!res.ok) {
-                const errorText = await res.text();
-                throw new Error(`Error ${res.status} al guardar: ${errorText.substring(0, 200)}...`);
-            }
-
-            const r = await res.json();
-
-            if (!r.success) {
-                emitirAlerta(r.message || "Error guardando club", "error");
+            const token = getToken();
+            if (!token) {
+                emitirAlerta("❌ Error: No se encontró el token de administrador.", "error");
                 return;
             }
 
-            emitirAlerta(id ? "Club actualizado" : "Club creado", "exito");
+            const id = inputId ? inputId.value : '';
+            const metodo = id ? "PUT" : "POST";
 
-            // Ocultar el modal si está abierto
-            // Usamos el operador de encadenamiento opcional para mayor seguridad
-            if (clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
+            // ⭐ CORRECCIÓN CLAVE: Usar Query Parameter para PUT y DELETE.
+            const url = id ? `/api/clubs?id=${id}` : "/api/clubs";
 
-            clearForm();
-            cargarClubes();
+            // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE (AHORA CON DIAGNÓSTICO DETALLADO)
+            // La condición es: si el elemento no existe (es null) O si existe y su valor está vacío.
+            if (
+                !inputNombre || !inputNombre.value ||
+                !inputDescripcion || !inputDescripcion.value ||
+                !inputCiudad || !inputCiudad.value ||
+                !inputEnfoque || !inputEnfoque.value
+            ) {
+                // ⭐ MENSAJE CLAVE: Diagnostica exactamente cuál podría faltar
+                let missingFields = [];
+                // Si el elemento es null, o si existe pero su valor es cadena vacía.
+                if (!inputNombre || inputNombre.value.trim() === "") missingFields.push("Nombre (ID: nombre_club)");
+                if (!inputDescripcion || inputDescripcion.value.trim() === "") missingFields.push("Descripción (ID: descripcion)");
+                if (!inputCiudad || inputCiudad.value.trim() === "") missingFields.push("Ciudad (ID: ciudad)");
+                if (!inputEnfoque || inputEnfoque.value.trim() === "") missingFields.push("Enfoque (ID: enfoque)");
 
-        } catch (error) {
-            console.error("Error submit club:", error);
-            // Mostrar el mensaje capturado de errorText
-            const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor: ${error.message}`;
-            emitirAlerta(errorMessage, "error");
-        }
-    });
+                // Si el error es por valor vacío o elemento HTML faltante:
+                if (missingFields.length > 0) {
+                    emitirAlerta(`❌ Faltan campos obligatorios o el elemento HTML no fue encontrado: **${missingFields.join(', ')}**. Por favor, revisa que los IDs HTML sean correctos.`, "error");
+                } else {
+                    emitirAlerta("❌ Error desconocido en la validación de formulario.", "error");
+                }
+                return;
+            }
+
+            const formData = new FormData(form);
+
+            // Limpiar FormData de campos vacíos (especialmente el archivo si no se subió uno nuevo)
+            const imageFile = formData.get('imagen_club');
+            if (imageFile && imageFile.name === '' && imageFile.size === 0) {
+                formData.delete('imagen_club');
+            } else {
+                // Si hay un archivo, se mantiene.
+            }
+
+            // Agregar el ID del presidente si está presente
+            if (inputIdPresidente && inputIdPresidente.value) {
+                formData.set("id_presidente", inputIdPresidente.value);
+            }
+
+            // Si es una creación (POST) o una edición de un club pendiente, aseguramos que el estado sea activo.
+            if (metodo === 'POST' || (metodo === 'PUT' && inputIdPresidente && inputIdPresidente.value)) {
+                formData.append("estado", "activo");
+            }
+
+
+            try {
+                const res = await fetch(url, {
+                    method: metodo,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                        // NO AGREGAR 'Content-Type': 'multipart/form-data', el navegador lo hace automáticamente
+                    },
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Error ${res.status} al guardar: ${errorText.substring(0, 200)}...`);
+                }
+
+                const r = await res.json();
+
+                if (!r.success) {
+                    emitirAlerta(r.message || "Error guardando club", "error");
+                    return;
+                }
+
+                emitirAlerta(id ? "Club actualizado" : "Club creado", "exito");
+
+                // Ocultar el modal si está abierto
+                // Usamos el operador de encadenamiento opcional para mayor seguridad
+                if (clubModalEl && typeof bootstrap !== 'undefined') {
+                    const inst = bootstrap.Modal.getInstance(clubModalEl);
+                    if (inst) inst.hide();
+                }
+
+                clearForm();
+                cargarClubes();
+
+            } catch (error) {
+                console.error("Error submit club:", error);
+                // Mostrar el mensaje capturado de errorText
+                const errorMessage = error.message.includes("403") ? "Acceso denegado (403). No eres administrador." : `Error de servidor: ${error.message}`;
+                emitirAlerta(errorMessage, "error");
+            }
+        });
+    } else {
+        console.warn("Formulario #club-form no encontrado en el DOM.");
+    }
 
 
     // -----------------------------------------
