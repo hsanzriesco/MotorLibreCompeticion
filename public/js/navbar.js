@@ -164,14 +164,14 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPath.includes(CLUBES_PAGE_PATH);
 
 
-        // ⭐ EJECUCIÓN DE LA GUARDIA PREDETERMINADA (Muestra la ALERTA AMARILLA)
+        // ⭐ EJECUCIÓN DE LA GUARDIA PREDETERMINADA (Muestra la ALERTA ROJA/CRÍTICA)
         if (!isPublicPage && !redireccionExternaEnCurso) {
 
             redireccionExternaEnCurso = true; // Activar la bandera de control
 
-            // Mostrar alerta de inicio de sesión (ALERTA AMARILLA)
+            // Mostrar alerta de inicio de sesión (Usando el estilo de alertas.js/css)
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "advertencia");
+                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error"); // Cambiado a 'error' para un estilo más crítico/notorio
             }
 
             // Limpiar y redirigir
