@@ -15,7 +15,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
     redireccionEnCurso = true;
 
-    // Limpiar todas las claves de sesión posibles para un logout forzado
+    // Limpiar todas las claves de sesión posibles para un logout forzado (SÓLO SESSIONSTORAGE)
     sessionStorage.removeItem('usuario');
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('token');
@@ -23,7 +23,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
     sessionStorage.removeItem('club_id');
     sessionStorage.removeItem('role');
 
-    // Limpiar localStorage (para opción "recordarme")
+    // Limpiar localStorage (SE ELIMINA la limpieza para forzar la política "SÓLO SESSIONSTORAGE")
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');
     localStorage.removeItem('jwtToken');
@@ -44,7 +44,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
 /**
  * Función mejorada para obtener el token.
- * Busca en sessionStorage y localStorage, y busca 'jwtToken' o 'token'.
+ * Busca SOLO en sessionStorage para alinearse con la política 'SÓLO CON SESSIONSTORAGE'.
  * @returns {string|null} El token encontrado.
  */
 function getToken() {
@@ -54,11 +54,8 @@ function getToken() {
     token = sessionStorage.getItem('token');
     if (token) return token;
 
-    // Si se usó "recordarme"
-    token = localStorage.getItem('jwtToken');
-    if (token) return token;
-
-    return localStorage.getItem('token');
+    // Eliminada la búsqueda en localStorage.
+    return null;
 }
 
 /**
@@ -109,13 +106,13 @@ async function getClubIdAndUser() {
         // 💡 Ajuste: Usar la propiedad 'is_presidente' o 'rol' para determinar si es presidente
         const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.rol === 'presidente';
 
-        // Opcional: Persistir el club_id en sesión para otros scripts (aunque no es necesario aquí)
+        // Opcional: Persistir el club_id en sesión para otros scripts
         if (clubId) {
             sessionStorage.setItem('club_id', clubId);
         }
 
         if (!clubId) {
-            // Este es el error original si el usuario no tiene club asociado.
+            // Este es el error si el usuario no tiene club asociado.
             throw new Error('El usuario no está asignado a un club.');
         }
 
@@ -367,8 +364,7 @@ function handleClubDeletion(clubId) {
 
     async function handleConfirmDeleteClick() {
         const clubToDeleteId = document.getElementById('club-id').value;
-        // Obtenemos el token para enviarlo
-        const token = getToken();
+        const token = getToken(); // Obtiene el token de sessionStorage
 
         if (!clubToDeleteId || !token) {
             deleteConfirmModal.hide();
@@ -427,34 +423,13 @@ function handleClubDeletion(clubId) {
                 alert(result.message || 'Club eliminado. Redirigiendo...');
             }
 
-            // 🛑 CORRECCIÓN DE SINCRONIZACIÓN: Limpiar todas las claves de membresía y token.
-            // Esto es crucial porque el usuario ya no tiene club y debe forzar un nuevo login/estado.
-
-            // Obtenemos el token activo para saber si está en sessionStorage o localStorage
-            const activeToken = getToken();
-
-            // 1. Limpiar las claves de club/rol
+            // 🛑 CORRECCIÓN DE SINCRONIZACIÓN FINAL: Limpiar TODAS las claves de membresía y token de sessionStorage.
             sessionStorage.removeItem('club_id');
             sessionStorage.removeItem('role');
-            sessionStorage.removeItem('usuario'); // Limpiamos el objeto de usuario que contenía el club_id
-
-            // 2. Limpiar el token (siempre la fuente de verdad)
-            if (activeToken === sessionStorage.getItem('token')) {
-                sessionStorage.removeItem('token');
-            }
-            if (activeToken === sessionStorage.getItem('jwtToken')) {
-                sessionStorage.removeItem('jwtToken');
-            }
-            if (activeToken === localStorage.getItem('token')) {
-                localStorage.removeItem('token');
-            }
-            if (activeToken === localStorage.getItem('jwtToken')) {
-                localStorage.removeItem('jwtToken');
-            }
-            // También se puede llamar a manejarFaltaAutenticacion(..., 'exito') para limpiar todo,
-            // pero la redirección debe ser a la página de clubes.
-
-            // Fin de la CORRECCIÓN DE SINCRONIZACIÓN
+            sessionStorage.removeItem('usuario');
+            sessionStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('jwtToken');
 
             setTimeout(() => {
                 // Redirigir a la lista de clubes o inicio
@@ -513,8 +488,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 COMPROBACIÓN CRÍTICA: Solo el presidente puede acceder a esta página
         if (!isPresidente) {
             if (typeof mostrarAlerta === 'function') {
-                // 🛑 CORRECCIÓN: Se cambia 'Acceso denegado' (con espacio) por 'AccesoDenegado' (sin espacio)
-                // para evitar el error 'Failed to execute add on DOMTokenList'.
+                // CORRECCIÓN: Se cambia 'Acceso denegado' (con espacio) por 'AccesoDenegado' (sin espacio)
                 mostrarAlerta('error', 'AccesoDenegado', 'Solo el presidente del club puede editar el perfil.');
             }
             // Redirigir si no es presidente (opcional, pero buena práctica)
@@ -538,8 +512,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
         } else {
             if (typeof mostrarAlerta === 'function') {
-                // 🛑 CORRECCIÓN: Si `mostrarAlerta` usa el segundo argumento como clase,
-                // aseguramos un token limpio y pasamos el mensaje completo como tercero.
                 mostrarAlerta('error', 'ErrorAlIniciar', `Error al iniciar la edición: ${error.message}`);
             }
         }
