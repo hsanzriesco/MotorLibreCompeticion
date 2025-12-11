@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
+// clubs.js - VERSIÓN FINAL CORREGIDA CON CÓDIGOS DE ERROR 401/403 ESPECÍFICOS
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -62,7 +62,7 @@ async function deleteFromCloudary(imageUrl) {
             console.log(`Imagen ${publicId} eliminada de Cloudinary (Fallback).`);
         }
     } catch (e) {
-        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudary):", e.message);
+        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudinary):", e.message);
     }
 }
 
@@ -159,11 +159,13 @@ const verifyAdmin = (req) => {
     return verification.user;
 };
 
+// 🛑 FUNCIÓN CRÍTICA CORREGIDA PARA MENSAJES DE ERROR ESPECÍFICOS 🛑
 const verifyClubOwnershipOrAdmin = async (req, clubId) => {
     const verification = verifyToken(req);
 
     if (!verification.authorized) {
-        throw new Error(verification.message || 'Debe iniciar sesión para realizar esta acción.');
+        // 🛑 MENSAJE 401
+        throw new Error('Necesitas iniciar sesión para acceder a esta página.');
     }
 
     const decodedUser = verification.user;
@@ -195,7 +197,8 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
 
     // El usuario logueado (decodedUser.id) debe ser el id_presidente del club
     if (presidenteClubId !== decodedUser.id) {
-        throw new Error('Acceso denegado: Solo el administrador o el presidente de este club pueden editarlo.');
+        // 🛑 MENSAJE 403
+        throw new Error('Necesitas ser presidente de un club para acceder a esta página.');
     }
 
     return decodedUser;
@@ -240,7 +243,7 @@ async function statusChangeHandler(req, res) {
                 }
 
                 let nombrePresidente;
-                const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
+                const presidenteNameRes = await pool.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
                 nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
                 // Usamos la URL de la imagen que ya está guardada en clubs_pendientes
@@ -293,6 +296,7 @@ async function statusChangeHandler(req, res) {
 
     } catch (error) {
         console.error("Error en statusChangeHandler:", error);
+        // El handler de estado solo lo usa el admin, por lo que cualquier fallo de auth es 401
         if (error.message.includes('Acceso denegado') || error.message.includes('Token')) {
             return res.status(401).json({ success: false, message: error.message });
         }
@@ -376,11 +380,10 @@ async function clubsHandler(req, res) {
                 // 🛑 MODIFICACIÓN CRÍTICA: Bloquear acceso a los datos del club si no es Admin o Presidente 🛑
                 try {
                     // Si se pide un club por ID, se asume que es para edición, por lo que se requiere autorización.
+                    // Si falla, verifyClubOwnershipOrAdmin lanza el error con el mensaje específico (401 o 403)
                     await verifyClubOwnershipOrAdmin(req, id);
                 } catch (error) {
-                    // Si falla la verificación (no logueado, token inválido o no es presidente/admin),
-                    // se lanza el error para que el catch final devuelva el 401/403.
-                    // Si no está logueado, el error será "Token no proporcionado" o "Debe iniciar sesión".
+                    // Si falla la verificación, lanzamos el error para que el catch final devuelva el 401/403.
                     throw error;
                 }
                 // 🛑 FIN MODIFICACIÓN CRÍTICA 🛑
@@ -475,6 +478,7 @@ async function clubsHandler(req, res) {
             if (query.action === 'join' || query.action === 'leave') {
                 const verification = verifyToken(req);
                 if (!verification.authorized) {
+                    // Si falla el token, devolvemos el error de verifyToken
                     return res.status(401).json({ success: false, message: verification.message });
                 }
                 const requestingUserId = verification.user.id;
@@ -791,6 +795,7 @@ async function clubsHandler(req, res) {
                     estado: newEstado, id_presidente: newIdPresidente } = fields;
 
                 // Solo Admin o Presidente pueden editar
+                // Si falla, verifyClubOwnershipOrAdmin lanza el error con el mensaje específico (401 o 403)
                 const authorizedUser = await verifyClubOwnershipOrAdmin(req, id);
                 const isOnlyPresident = authorizedUser.role !== 'admin';
 
@@ -895,8 +900,9 @@ async function clubsHandler(req, res) {
                 }
 
                 // Captura de errores de autorización/propiedad
-                if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Debe iniciar sesión')) {
-                    return res.status(401).json({ success: false, message: uploadError.message });
+                if (uploadError.message.includes('Necesitas iniciar sesión') || uploadError.message.includes('Necesitas ser presidente') || uploadError.message.includes('Token')) {
+                    // Usa el catch principal para manejar los errores de auth/permisos con los códigos correctos
+                    throw uploadError;
                 }
 
                 return res.status(500).json({ success: false, message: "Error interno en la actualización del club." });
@@ -981,11 +987,24 @@ async function clubsHandler(req, res) {
     } catch (error) {
         console.error("Error en clubsHandler:", error);
 
-        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión') || error.message.includes('Club no encontrado')) {
-            // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
-            // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
+        // 🛑 LÓGICA DE CAPTURA DE ERRORES MEJORADA (401 vs 403) 🛑
+        const isLoginRequired = error.message.includes('Necesitas iniciar sesión') || error.message.includes('Token');
+        const isPresidentRequired = error.message.includes('Necesitas ser presidente');
+
+        if (isLoginRequired) {
+            // Caso 1: No logueado o token inválido -> 401
             return res.status(401).json({ success: false, message: error.message });
         }
+
+        if (isPresidentRequired) {
+            // Caso 2: Logueado pero sin permisos de presidente -> 403
+            return res.status(403).json({ success: false, message: error.message });
+        }
+
+        if (error.message.includes('Club no encontrado')) {
+            return res.status(404).json({ success: false, message: error.message });
+        }
+
         if (error.code === '42P01') {
             return res.status(500).json({ success: false, message: "Error: La tabla de base de datos no fue encontrada." });
         }

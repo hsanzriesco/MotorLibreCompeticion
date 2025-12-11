@@ -7,18 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
-    // ⭐ Referencia al enlace de Mi Club
-    const miClubLink = document.getElementById("mi-club-link");
-
-    // ⭐ Ruta específica del club para presidentes (asumo que es donde apunta este enlace)
-    const MI_CLUB_EDIT_PAGE_PATH = "/pages/miClub/editarPresidente.html";
-
-    // ⭐ REFUERZO DE SEGURIDAD INICIAL: Asegurar que esté oculto Y NO CLICABLE por defecto.
-    if (miClubLink) {
-        miClubLink.style.display = 'none';
-        miClubLink.removeAttribute('href'); // 🔑 Bloquea la funcionalidad de click/navegación
-    }
-
     // 🛑 BANDERA DE CONTROL CRÍTICA
     let redireccionExternaEnCurso = false;
 
@@ -50,13 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Ocultar el icono de inicio de sesión
             if (loginLink) loginLink.style.display = "none";
-
-            // ⭐ LÓGICA DE HABILITACIÓN: Mostrar Y ASIGNAR HREF si is_presidente es TRUE
-            if (miClubLink && user.is_presidente === true) {
-                miClubLink.style.display = 'block';
-                miClubLink.href = MI_CLUB_EDIT_PAGE_PATH; // 🔑 Restaurar el enlace
-            }
-
 
         } catch (e) {
             console.error("Error parseando usuario:", e);
@@ -188,9 +169,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
             redireccionExternaEnCurso = true; // Activar la bandera de control
 
-            // Usando 'error' para el estilo crítico.
+            // Mostrar alerta de inicio de sesión (Usando el estilo de alertas.js/css)
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error");
+                mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error"); // Cambiado a 'error' para un estilo más crítico/notorio
             }
 
             // Limpiar y redirigir
@@ -203,22 +184,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // -----------------------------------------------------------------------------------
-    // 8. LÓGICA DE BLOQUEO DE CLICK PARA MI CLUB (ULTRA-SEGURIDAD)
-    // -----------------------------------------------------------------------------------
-    if (miClubLink) {
-        miClubLink.addEventListener("click", (e) => {
-            // Verificamos si el enlace no tiene el atributo 'href' (porque fue removido por JS)
-            if (miClubLink.getAttribute('href') === null) {
-                e.preventDefault(); // Bloquea la navegación
-
-                // Muestra alerta si intentan hacer clic en un enlace deshabilitado
-                if (typeof mostrarAlerta === 'function' && !redireccionExternaEnCurso) {
-                    mostrarAlerta("Solo los presidentes de club pueden acceder a esta opción.", "advertencia");
-                }
-            }
-        });
-    }
 
     // -----------------------------------------------------------------------------------
     // 2. REDIRECCIÓN DEL LOGO
