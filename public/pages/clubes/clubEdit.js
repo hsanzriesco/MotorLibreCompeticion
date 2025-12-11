@@ -73,10 +73,21 @@ async function getClubIdAndUser() {
         });
 
         if (!response.ok) {
+            let errorMessage = `Fallo en la API al obtener el perfil. Código: ${response.status}`;
+
+            // 💡 MODIFICACIÓN: Intentar leer el JSON para obtener un mensaje de error más específico
+            try {
+                const errorData = await response.json();
+                // Preferir el mensaje del cuerpo, si existe
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                // Si falla al leer el JSON (ej. si es un 500 sin body JSON), usamos el mensaje por defecto.
+            }
+
             if (response.status === 401) {
                 throw new Error('Unauthorized');
             }
-            throw new Error(`Fallo en la API al obtener el perfil. Código: ${response.status}`);
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
@@ -124,10 +135,20 @@ async function loadClubData(clubId) {
         });
 
         if (!response.ok) {
+            let errorMessage = `Fallo al cargar los datos del club. Código: ${response.status}`;
+
+            // 💡 MODIFICACIÓN: Intentar leer el JSON para obtener un mensaje más detallado
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                // Fallback a mensaje por defecto.
+            }
+
             if (response.status === 401) {
                 throw new Error('Unauthorized');
             }
-            throw new Error(`Fallo al cargar los datos del club. Código: ${response.status}`);
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
@@ -259,14 +280,26 @@ async function handleFormSubmit(event) {
             body: updateData
         });
 
-        const result = await response.json();
-
+        // 💡 MODIFICACIÓN: Comprobación de error más robusta
         if (!response.ok) {
+            let errorMessage = 'Error desconocido al actualizar el club.';
+
+            // Intentamos leer el JSON para obtener un mensaje de error más específico
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                errorMessage += ` (Código: ${response.status})`;
+            }
+
             if (response.status === 401) {
                 throw new Error('Unauthorized');
             }
-            throw new Error(result.message || 'Error desconocido al actualizar el club.');
+            throw new Error(errorMessage);
         }
+
+        // Si la respuesta fue OK, parseamos el resultado
+        const result = await response.json();
 
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta('Club actualizado exitosamente!', 'exito');
@@ -340,47 +373,65 @@ async function handleClubDeletion(clubId) {
                     }
                 });
 
-                const result = await response.json();
-
                 deleteConfirmModal.hide(); // Ocultar el modal
 
-                if (response.ok) {
+                // 💡 MODIFICACIÓN: Comprobación de error más robusta
+                if (!response.ok) {
+                    let errorMessage = 'Error al eliminar el club.';
 
-                    if (typeof mostrarAlerta === 'function') {
-                        mostrarAlerta(result.message || 'Club eliminado. Redirigiendo...', 'exito', 3000);
-                    } else {
-                        alert(result.message || 'Club eliminado. Redirigiendo...');
+                    // Intentamos leer el JSON para obtener un mensaje de error más específico
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch (e) {
+                        errorMessage += ` (Código: ${response.status})`;
                     }
 
-                    // Limpiar datos de sesión relevantes
-                    sessionStorage.removeItem('club_id');
-                    sessionStorage.removeItem('role');
-
-                    // Redirigir a la lista de clubes
-                    setTimeout(() => {
-                        // AJUSTA ESTA RUTA A DONDE DEBA IR EL USUARIO DESPUÉS DE ELIMINAR SU CLUB
-                        window.location.href = '/pages/clubes/clubes.html';
-                    }, 1500);
-
-                } else {
                     if (response.status === 401) {
-                        manejarFaltaAutenticacion(result.message || 'Acceso no autorizado para eliminar club.');
+                        manejarFaltaAutenticacion(errorMessage);
                         return;
                     }
+
+                    // Mostrar alerta de error de la API
                     if (typeof mostrarAlerta === 'function') {
-                        mostrarAlerta(result.message || 'Error al eliminar el club.', 'error');
+                        mostrarAlerta(errorMessage, 'error');
                     } else {
-                        alert(result.message || 'Error al eliminar el club.');
+                        alert(errorMessage);
                     }
+
+                    throw new Error(errorMessage); // Lanzar para el catch y el finally
                 }
+
+                // Si es OK, leemos el resultado
+                const result = await response.json();
+
+                // Lógica de éxito
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta(result.message || 'Club eliminado. Redirigiendo...', 'exito', 3000);
+                } else {
+                    alert(result.message || 'Club eliminado. Redirigiendo...');
+                }
+
+                // Limpiar datos de sesión relevantes
+                sessionStorage.removeItem('club_id');
+                sessionStorage.removeItem('role');
+
+                // Redirigir a la lista de clubes
+                setTimeout(() => {
+                    // AJUSTA ESTA RUTA A DONDE DEBA IR EL USUARIO DESPUÉS DE ELIMINAR SU CLUB
+                    window.location.href = '/pages/clubes/clubes.html';
+                }, 1500);
 
             } catch (error) {
                 console.error('Error al intentar eliminar el club:', error);
-                deleteConfirmModal.hide();
-                if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta('Error de conexión con el servidor al eliminar el club.', 'error');
-                } else {
-                    alert('Error de conexión con el servidor al eliminar el club.');
+
+                // Si no es un error de la API (ya manejado arriba), asume que es un error de red o de código.
+                if (!error.message.includes('Error al eliminar el club')) {
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta('Error de conexión con el servidor al eliminar el club.', 'error');
+                    } else {
+                        alert('Error de conexión con el servidor al eliminar el club.');
+                    }
                 }
             } finally {
                 // Volver a habilitar el botón
@@ -435,7 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error("Error crítico durante la inicialización:", error.message);
 
-        if (error.message.includes('Token') || error.message.includes('Unauthorized')) {
+        if (error.message.includes('Unauthorized')) {
             manejarFaltaAutenticacion('Error de autenticación', 'error');
         } else if (error.message.includes('asignado')) {
             if (typeof mostrarAlerta === 'function') {
