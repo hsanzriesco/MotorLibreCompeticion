@@ -115,37 +115,51 @@
 
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
         <a id="logo-link" href="../../../index.html" class="navbar-brand d-flex align-items-center">
-            <img src="../../../img/imagen-tfg.png" alt="Logo" height="55" class="me-2" />
+            <img src="../../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2" />
         </a>
 
-        <button class="btn btn-dark border border-secondary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
-            <i class="bi bi-list"></i>
-        </button>
+        <div class="d-flex align-items-center">
+            <a href="../../auth/login/login.html" id="login-icon" class="text-light me-3">
+                <i class="bi bi-person-circle fs-4"></i>
+            </a>
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+        </div>
     </nav>
 
-    <div class="offcanvas offcanvas-end bg-dark text-light" id="offcanvasMenu">
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
         <div class="offcanvas-header border-bottom border-secondary">
             <h5 id="offcanvas-title">Menú</h5>
-            <button class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
 
         <div class="offcanvas-body">
-            <a href="../calendario/calendario.html" class="d-block text-light mb-2">Calendario</a>
-            <a href="../clubes/clubes.html" class="d-block text-light mb-2">Clubes</a>
-            <a href="../perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
+            <a id="menu-inicio" class="d-block text-light mb-2" href="../../../index.html">
+                Inicio
+            </a>
+            <a href="../../calendario/calendario.html" class="d-block text-light mb-2">Calendario</a>
+            <a href="../../clubes/clubes.html" class="d-block text-light mb-2">Clubes</a>
+            <a href="./editarPresidente.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
+                Mi Club (Editar)
+            </a>
+            <a href="../../perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
 
             <div id="admin-links" style="display:none;">
                 <hr class="border-secondary" />
                 <h6 class="text-danger mt-3">Gestión de Administrador</h6>
-                <a href="../adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de Eventos</a>
-                <a href="../lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de Lugares</a>
-                <a href="../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
+                <a href="../../adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de
+                    Eventos</a>
+                <a href="../../lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de Lugares</a>
+                <a href="../../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
             </div>
 
             <hr class="border-secondary" />
 
-            <a href="#" id="logout-btn" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
-                class="d-block text-danger">Cerrar sesión</a>
+            <a href="#" id="logout-btn" class="d-block text-danger">Cerrar sesión</a>
         </div>
     </div>
 
@@ -217,8 +231,9 @@
                     Actualizar
                     Club</button>
             </form>
-            
-            <button type="button" id="btn-delete-club" class="btn btn-outline-danger btn-sm mt-3 w-100" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
+
+            <button type="button" id="btn-delete-club" class="btn btn-outline-danger btn-sm mt-3 w-100"
+                data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
                 <i class="bi bi-trash"></i> Eliminar Club
             </button>
             <div class="text-center mt-4">
@@ -253,14 +268,16 @@
             </div>
         </div>
     </div>
-    
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
 
                 <div class="modal-header border-danger">
                     <h5 class="modal-title text-danger" id="deleteConfirmModalLabel">Confirmar Eliminación</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
 
                 <div class="modal-body">
@@ -294,38 +311,16 @@
             if (role === 'admin') {
                 if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Administrador';
                 if (adminLinks) adminLinks.style.display = 'block';
-                // Si es admin, el logo lo lleva al dashboard de admin
-                if (logoLink) logoLink.href = '../admin.html';
+                // Si es admin, el logo lo lleva al dashboard de admin. Ruta corregida (../../)
+                if (logoLink) logoLink.href = '../../admin.html';
             } else {
                 // Si es presidente (u otro rol), asegura que solo vea los enlaces normales
                 if (offcanvasTitle) offcanvasTitle.textContent = 'Menú de Usuario';
                 if (adminLinks) adminLinks.style.display = 'none';
             }
 
-            // Lógica de Logout
-            const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-            const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
-            const btnConfirmLogout = document.getElementById("btnConfirmLogout");
-            const logoutBtn = document.getElementById("logout-btn");
-
-            if (btnConfirmLogout) {
-                btnConfirmLogout.addEventListener("click", () => {
-                    if (logoutConfirmModal) logoutConfirmModal.hide();
-
-                    // Limpiar datos de sesión
-                    sessionStorage.clear();
-                    localStorage.clear();
-
-                    if (typeof mostrarAlerta === 'function') {
-                        mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
-                    }
-
-                    setTimeout(() => {
-                        // Redirigir al login
-                        window.location.href = "../../auth/login/login.html";
-                    }, 1500);
-                });
-            }
+            // NOTA: La lógica de Logout (cierre de sesión) ha sido eliminada de este script 
+            // para que sea manejada completamente por el script 'navbar.js'.
         });
     </script>
 </body>

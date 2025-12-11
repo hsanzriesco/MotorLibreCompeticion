@@ -4,12 +4,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Le asignamos el ID que usas en el CSS: #main-footer
     footerElement.id = 'main-footer';
 
-    // 2. Definir el contenido HTML. Se usa py-3 para menos padding vertical y h6 para encabezados más pequeños.
+    // 2. Definir el contenido HTML.
+    // Se usa py-3 para menos padding vertical y h6 para encabezados más pequeños.
     footerElement.innerHTML = `
         <div class="footer-content container py-3"> 
             <div class="row">
                 
-                <div class="col-md-3 mb-3 text-center text-md-start">
+                <div class="col-md-3 col-12 mb-3 text-center text-md-start">
                     
                     <a href="./index.html" class="d-inline-block">
                         <img src="/img/imagen-tfg.png" alt="MLC Logo" height="80" class="img-fluid mb-2">
@@ -21,17 +22,31 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </div>
                 
-                <div class="col-md-9 mb-3 text-center text-md-start">
+                <div class="col-md-4 col-12 mb-3 text-center text-md-start">
                     <h6 class="text-danger fw-bold mb-2">CONTACTO</h6>
                     <ul class="list-unstyled small">
                         <li><a href="mailto:infmotorlibrecompeticion@gmail.com" class="text-light text-decoration-none"><i class="bi bi-envelope-fill me-1"></i> infmotorlibrecompeticion@gmail.com</a></li>
                         <li><a href="tel:+34629XXXXXXX" class="text-light text-decoration-none"><i class="bi bi-phone-fill me-1"></i> +34 629 XXX XXX</a></li>
                     </ul>
                 </div>
+
+                <div class="col-md-1 d-none d-md-block d-flex justify-content-center">
+                    <hr class="vr text-danger mx-auto" />
+                </div>
+
+                <div class="col-md-4 col-12 mb-3 text-center text-md-start">
+                    <h6 class="text-danger fw-bold mb-2">QUIENES SOMOS</h6>
+                    <ul class="list-unstyled small">
+                        <li><a href="/quienes-somos.html" class="text-light text-decoration-none">Nuestra historia</a></li>
+                        <li><a href="/mision-vision.html" class="text-light text-decoration-none">Misión y Visión</a></li>
+                        <li><a href="/faq.html" class="text-light text-decoration-none">Preguntas frecuentes</a></li>
+                    </ul>
+                </div>
+                
             </div>
             
             <div class="footer-bottom text-center pt-2 mt-3 border-top border-danger">
-                </div>
+            </div>
         </div>
     `;
 

@@ -17,7 +17,6 @@
     <style>
         /* =========================================================
         ESTAS SON LAS REGLAS CLAVE para el "Sticky Footer" (Flexbox)
-        DEBES ASEGURARTE DE QUE ESTÉN EN style.css O AQUÍ
         =========================================================
         */
         body {
@@ -86,37 +85,56 @@
 <body>
 
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+
         <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
             <img src="../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
         </a>
+
         <div class="d-flex align-items-center">
+
             <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
                 <i class="bi bi-person-circle fs-4"></i>
             </a>
-            <span id="user-name" class="text-light fw-bold me-3" style="font-size: 1.1rem; display:none"></span>
+
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+
             <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
                 data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
                 <i class="bi bi-list fs-4"></i>
             </button>
+
         </div>
     </nav>
-
     <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
         <div class="offcanvas-header border-bottom border-secondary">
             <h5 class="offcanvas-title">Menú</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
+
         <div class="offcanvas-body">
             <a id="menu-inicio" class="d-block text-light mb-2" href="../../index.html">
                 Inicio
             </a>
+
             <a href="../calendario/calendario.html" class="d-block text-light mb-2">
                 Calendario
             </a>
+
+            <a href="./clubes.html" class="d-block text-light mb-2">
+                Clubes
+            </a>
+
+            <a href="./presidente/editarPresidente.html" id="mi-club-link" class="d-block text-light mb-2"
+                style="display:none;">
+                Mi Club (Editar)
+            </a>
+
             <a href="../perfil/perfil.html" class="d-block text-light mb-2">
                 Mi perfil
             </a>
+
             <hr class="border-secondary">
+
             <a href="#" id="logout-btn" class="d-block text-danger">
                 Cerrar sesión
             </a>

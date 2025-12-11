@@ -122,16 +122,16 @@
 <body>
     <div id="alerta-container" class="alerta-container"></div>
 
-    <nav class="navbar navbar-dark bg-dark px-3 fixed-top navbar-mlc">
-        <a id="logo-link" class="navbar-brand d-flex align-items-center" href="/index.html">
-            <img src="../../img/imagen-tfg.png" alt="MLC" height="55" />
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+        <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../img/imagen-tfg.png" alt="MLC" height="70" class="me-2" />
         </a>
 
         <div class="d-flex align-items-center ms-auto me-1">
-            <a id="login-icon" href="../auth/login/login.html" class="text-light me-3">
+            <a href="../../auth/login/login.html" id="login-icon" class="text-light me-3">
                 <i class="bi bi-person-circle fs-4"></i>
             </a>
-            <span id="user-name" class="text-light fw-bold me-3"></span>
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
 
             <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
                 data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
@@ -142,28 +142,38 @@
 
     <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
         <div class="offcanvas-header border-bottom border-secondary">
-            <h5 class="offcanvas-title">Menú</h5>
+            <h5 class="offcanvas-title" id="offcanvas-title">Menú</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
 
         <div class="offcanvas-body">
-
-            <a id="menu-inicio" class="d-block text-light mb-2" href="/index.html">
+            <a id="menu-inicio" class="d-block text-light mb-2" href="../../index.html">
                 Inicio
             </a>
-
             <a href="../calendario/calendario.html" class="d-block text-light mb-2">
                 Calendario
             </a>
-
             <a href="../clubes/clubes.html" class="d-block text-light mb-2">
                 Clubes
             </a>
+            <a href="../clubes/presidente/editarPresidente.html" id="mi-club-link" class="d-block text-light mb-2"
+                style="display:none;">
+                Mi Club (Editar)
+            </a>
+            <a href="./perfil.html" class="d-block text-light mb-2">Mi perfil</a>
+
+
+            <div id="admin-links" style="display:none;">
+                <hr class="border-secondary" />
+                <h6 class="text-danger mt-3">Gestión de Administrador</h6>
+                <a href="../adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de Eventos</a>
+                <a href="../lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de Lugares</a>
+                <a href="../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
+            </div>
 
             <hr class="border-secondary" />
 
-            <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
-                data-bs-target="#logoutConfirmModal">
+            <a href="#" id="logout-btn" class="d-block text-danger">
                 Cerrar sesión
             </a>
         </div>
@@ -315,6 +325,38 @@
 
     <script src="./perfil.js"></script>
 
+    <script>
+        // Lógica de Adaptación de Navbar: 
+        // Si el usuario es 'admin' o 'presidente', se muestran los enlaces de gestión.
+        document.addEventListener('DOMContentLoaded', () => {
+            const role = sessionStorage.getItem('role');
+            const offcanvasTitle = document.getElementById('offcanvas-title');
+            const adminLinks = document.getElementById('admin-links');
+            const miClubLink = document.getElementById('mi-club-link');
+            const logoLink = document.getElementById('logo-link');
+
+            if (role === 'admin') {
+                if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Administrador';
+                if (adminLinks) adminLinks.style.display = 'block';
+                // Si es admin, el logo lo lleva al dashboard de admin
+                if (logoLink) logoLink.href = '../admin.html';
+            } else if (role === 'presidente') {
+                if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Presidente';
+                if (miClubLink) miClubLink.style.display = 'block';
+                if (adminLinks) adminLinks.style.display = 'none';
+                // Para el presidente, el logo va al inicio normal
+                if (logoLink) logoLink.href = '../../index.html';
+            } else {
+                // Si es usuario normal
+                if (offcanvasTitle) offcanvasTitle.textContent = 'Menú de Usuario';
+                if (adminLinks) adminLinks.style.display = 'none';
+                if (miClubLink) miClubLink.style.display = 'none';
+                if (logoLink) logoLink.href = '../../index.html';
+            }
+
+            // NOTA: La lógica de Cierre de Sesión (Logout) se maneja en 'navbar.js'.
+        });
+    </script>
 </body>
 
 </html>
