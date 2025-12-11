@@ -563,11 +563,12 @@ async function clubsHandler(req, res) {
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
 
-                // ⭐ MODIFICACIÓN POST: Obtener 'enfoque' de los campos
-                const { nombre_evento, descripcion, ciudad, enfoque } = fields;
+                // ⭐ CORRECCIÓN CLAVE POST: Aceptar 'nombre_club' o 'nombre_evento'
+                const { nombre_club, nombre_evento, descripcion, ciudad, enfoque } = fields;
+                const final_nombre_evento = nombre_club || nombre_evento;
 
-                if (!nombre_evento || !descripcion || !ciudad || !enfoque) {
-                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: nombre_evento, descripcion, ciudad o enfoque." });
+                if (!final_nombre_evento || !descripcion || !ciudad || !enfoque) {
+                    return res.status(400).json({ success: false, message: "Faltan campos obligatorios: Nombre, descripción, ciudad o enfoque." });
                 }
 
                 if (!authVerification.authorized || !userId) {
@@ -583,7 +584,6 @@ async function clubsHandler(req, res) {
                 let clubEstado;
                 let idPresidente = userId;
                 let insertColumns;
-                let insertValues;
                 let params;
 
                 if (isAdmin) {
@@ -603,7 +603,7 @@ async function clubsHandler(req, res) {
                         nombrePresidente = presidenteNameRes.rows[0]?.name || 'Admin';
 
                         params = [
-                            nombre_evento,
+                            final_nombre_evento, // Usamos el nombre corregido
                             descripcion,
                             imagen_club_url,
                             idPresidente,
@@ -660,10 +660,10 @@ async function clubsHandler(req, res) {
 
                     // ⭐ MODIFICACIÓN INSERT: Añadir 'enfoque'
                     insertColumns = `nombre_evento, descripcion, imagen_club, fecha_solicitud, id_presidente, ciudad, enfoque`;
-                    insertValues = `($1, $2, $3, NOW(), $4, $5, $6)`;
+                    const insertValues = `($1, $2, $3, NOW(), $4, $5, $6)`;
 
                     params = [
-                        nombre_evento,
+                        final_nombre_evento, // Usamos el nombre corregido
                         descripcion,
                         imagen_club_url,
                         idPresidente, // id_presidente es $4
@@ -694,7 +694,7 @@ async function clubsHandler(req, res) {
                     return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
                 }
                 // Manejo de errores de campos obligatorios, etc.
-                if (uploadError.message.includes('nombre_evento') || uploadError.message.includes('descripcion') || uploadError.message.includes('ciudad') || uploadError.message.includes('enfoque')) {
+                if (uploadError.message.includes('nombre_evento') || uploadError.message.includes('descripcion') || uploadError.message.includes('ciudad') || uploadError.message.includes('enfoque') || uploadError.message.includes('Nombre')) {
                     return res.status(400).json({ success: false, message: uploadError.message });
                 }
                 return res.status(500).json({ success: false, message: "Error interno en la creación del club." });
@@ -786,9 +786,11 @@ async function clubsHandler(req, res) {
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
 
-                // ⭐ MODIFICACIÓN PUT: Obtener 'enfoque' de los campos
-                const { nombre_evento, descripcion, ciudad: newCiudad, enfoque: newEnfoque, // Nuevo campo
+                // ⭐ CORRECCIÓN CLAVE PUT: Aceptar 'nombre_club' o 'nombre_evento'
+                const { nombre_club, nombre_evento, descripcion, ciudad: newCiudad, enfoque: newEnfoque, // Nuevo campo
                     estado: newEstado, id_presidente: newIdPresidente } = fields;
+
+                const final_nombre_evento = nombre_club || nombre_evento;
 
                 // Solo Admin o Presidente pueden editar
                 const authorizedUser = await verifyClubOwnershipOrAdmin(req, clubIdToUpdate);
@@ -811,9 +813,9 @@ async function clubsHandler(req, res) {
                 const values = [];
                 let paramIndex = 1;
 
-                if (nombre_evento) {
+                if (final_nombre_evento) { // Usamos el nombre corregido
                     updates.push(`nombre_evento = $${paramIndex++}`);
-                    values.push(nombre_evento);
+                    values.push(final_nombre_evento);
                 }
                 if (descripcion) {
                     updates.push(`descripcion = $${paramIndex++}`);
