@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Función para calcular la ruta base correcta (ej: '../../' para la imagen y enlaces)
     const getBaseHref = () => {
         const pathSegments = window.location.pathname.split('/').filter(segment => segment.length > 0);
         let depth = 0;
@@ -14,17 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const baseHref = getBaseHref();
 
-    // 1. Crear el elemento 'footer' principal
     const footerElement = document.createElement('footer');
-
-    // =========================================================
-    // CLASES CLAVE: mt-auto (empuja al final) y mb-0 (elimina cualquier margen inferior)
     footerElement.className = 'bg-dark border-top border-danger mt-auto mb-0';
-    // =========================================================
-
     footerElement.id = 'main-footer';
 
-    // 2. Definir el contenido HTML (con rutas dinámicas y sección de copyright)
     footerElement.innerHTML = `
         <div class="footer-content container py-3"> 
             <div class="row">
@@ -71,6 +63,5 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
 
-    // 3. Añadir el footer al final del body
     document.body.appendChild(footerElement);
 });
