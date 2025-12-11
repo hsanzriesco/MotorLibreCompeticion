@@ -23,7 +23,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
     sessionStorage.removeItem('club_id');
     sessionStorage.removeItem('role');
 
-    // Limpiar localStorage (SE ELIMINA la limpieza para forzar la política "SÓLO SESSIONSTORAGE")
+    // Limpiar localStorage (SE MANTIENE la limpieza para eliminar estados antiguos, aunque no se usa en getToken)
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');
     localStorage.removeItem('jwtToken');
@@ -54,7 +54,7 @@ function getToken() {
     token = sessionStorage.getItem('token');
     if (token) return token;
 
-    // Eliminada la búsqueda en localStorage.
+    // Eliminada la búsqueda en localStorage para forzar política SessionStorage.
     return null;
 }
 
@@ -416,25 +416,24 @@ function handleClubDeletion(clubId) {
             // Si es OK, leemos el resultado
             const result = await response.json();
 
-            // Lógica de éxito
+            // Lógica de éxito: FORZAR LOGOUT/RE-LOGIN para refrescar el token
+            // 🛑 CORRECCIÓN DE SINCRONIZACIÓN
+
+            // 1. Mostrar mensaje de éxito
+            const successMessage = result.message || 'Club eliminado con éxito. Por favor, vuelve a iniciar sesión.';
+
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('exito', result.message || 'Club eliminado con éxito. Redirigiendo...', 3000);
+                // Mostrar alerta de éxito, pero sin redirección automática, ya que la hará manejarFaltaAutenticacion
+                mostrarAlerta('exito', successMessage, 1500);
             } else {
-                alert(result.message || 'Club eliminado. Redirigiendo...');
+                alert(successMessage);
             }
 
-            // 🛑 CORRECCIÓN DE SINCRONIZACIÓN FINAL: Limpiar TODAS las claves de membresía y token de sessionStorage.
-            sessionStorage.removeItem('club_id');
-            sessionStorage.removeItem('role');
-            sessionStorage.removeItem('usuario');
-            sessionStorage.removeItem('user');
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('jwtToken');
-
-            setTimeout(() => {
-                // Redirigir a la lista de clubes o inicio
-                window.location.href = '/pages/clubes/clubes.html'; // Redirigir a la lista de clubes
-            }, 1500);
+            // 2. Ejecutar la función de manejo de falta de autenticación con el tipo 'exito'.
+            // Esta función limpia *TODAS* las claves de sesión (incluyendo el token obsoleto) 
+            // y redirige forzadamente al login. Esto garantiza un nuevo inicio de sesión 
+            // con un token fresco y el estado correcto (sin club).
+            manejarFaltaAutenticacion(successMessage, 'exito');
 
         } catch (error) {
             console.error('Error al intentar eliminar el club:', error);
