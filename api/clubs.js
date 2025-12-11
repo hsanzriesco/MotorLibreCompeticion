@@ -68,8 +68,7 @@ async function deleteFromCloudary(imageUrl) {
             console.log(`Imagen ${publicId} eliminada de Cloudinary.`);
         }
     } catch (e) {
-        // Devolvemos el control en lugar de lanzar una excepción que pueda colapsar el servidor
-        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudary):", e.message);
+        console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudinary):", e.message);
     }
 }
 
@@ -865,12 +864,7 @@ async function clubsHandler(req, res) {
                 }
 
                 if (updates.length === 0) {
-                    // 🛑 FIX PARA EL BUCLE (Limpieza): Si no hay updates, limpiamos el archivo temporal si existe
-                    if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
-                        await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file sin updates:", e));
-                    }
-                    console.log(`[EXIT PUT] Club ID ${clubIdToUpdate}: ENVIANDO RESPUESTA SIN CAMBIOS (200).`);
-                    return res.status(200).json({ success: true, message: "No se proporcionaron campos para actualizar." });
+                    return res.status(400).json({ success: false, message: "No se proporcionaron campos para actualizar." });
                 }
 
                 values.push(clubIdToUpdate); // ID siempre es el último parámetro
@@ -889,7 +883,6 @@ async function clubsHandler(req, res) {
                     if (isCloudinaryUploadSuccess && imagen_club_url) {
                         await deleteFromCloudary(imagen_club_url);
                     }
-                    console.log(`[EXIT PUT] Club ID ${clubIdToUpdate}: ENVIANDO RESPUESTA NO ENCONTRADO (404).`);
                     return res.status(404).json({ success: false, message: "Club no encontrado para actualizar." });
                 }
 
@@ -899,40 +892,30 @@ async function clubsHandler(req, res) {
                     await deleteFromCloudary(old_imagen_club_url);
                 }
 
-                console.log(`[EXIT PUT] Club ID ${clubIdToUpdate}: ENVIANDO RESPUESTA EXITOSA (200).`);
                 return res.status(200).json({ success: true, message: "Club actualizado.", club: result.rows[0] });
 
             } catch (uploadError) {
-                // 🛑 CORRECCIÓN CLAVE: Asegurar que el servidor siempre envíe respuesta
-                // 1. Limpiar Cloudinary si falló algo después de la subida (Hacemos el borrado seguro)
+                // Limpiar Cloudinary si falló algo después de la subida
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
-                    await deleteFromCloudary(imagen_club_url).catch(e => console.error("Error al limpiar Cloudinary en rollback (PUT):", e));
+                    await deleteFromCloudary(imagen_club_url);
                 }
-
-                // 2. Limpiar archivo temporal si existe (Hacemos el borrado seguro)
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
-                    await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file (PUT):", e));
+                    await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
                 }
-
                 console.error("Error durante la subida/actualización (PUT):", uploadError.message);
 
                 if (uploadError.message.includes('Cloudinary upload failed')) {
-                    console.error(`[EXIT PUT] Club ID ${clubIdToUpdate}: ENVIANDO RESPUESTA DE ERROR (500) por Cloudinary.`);
                     return res.status(500).json({ success: false, message: "Error al subir la imagen. Verifica las credenciales de Cloudinary." });
                 }
                 if (uploadError.message.includes('maxFileSize')) {
-                    console.error(`[EXIT PUT] Club ID ${clubIdToUpdate}: ENVIANDO RESPUESTA DE ERROR (400) por tamaño de archivo.`);
                     return res.status(400).json({ success: false, message: "El archivo de imagen es demasiado grande. El límite es de 5MB." });
                 }
 
                 // Captura de errores de autorización/propiedad
                 if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Debe iniciar sesión')) {
-                    console.error(`[EXIT PUT] Club ID ${clubIdToUpdate}: ENVIANDO RESPUESTA DE ERROR (401) por autorización.`);
                     return res.status(401).json({ success: false, message: uploadError.message });
                 }
 
-                // 3. Respuesta final ante cualquier otro error interno
-                console.error(`[EXIT PUT] Club ID ${clubIdToUpdate}: ENVIANDO RESPUESTA DE ERROR (500) general.`);
                 return res.status(500).json({ success: false, message: "Error interno en la actualización del club." });
             }
         }
@@ -943,7 +926,6 @@ async function clubsHandler(req, res) {
 
             // 🛑 VERIFICACIÓN: Si no hay ID o es una solicitud incompleta
             if (!clubId || isNaN(clubId)) {
-                console.log(`[EXIT DELETE] ENVIANDO RESPUESTA ERROR (400) - Sin ID.`);
                 return res.status(400).json({ success: false, message: "ID del club es requerido para eliminar." });
             }
 
@@ -953,7 +935,7 @@ async function clubsHandler(req, res) {
                 // La verificación es CRÍTICA y usa el ID capturado
                 authorizedUser = await verifyClubOwnershipOrAdmin(req, clubId);
             } catch (error) {
-                // Si la verificación falla (no es admin ni presidente), el error se lanza al catch principal (y envía respuesta)
+                // Si la verificación falla (no es admin ni presidente), lanzamos el error
                 throw error;
             }
 
@@ -977,12 +959,10 @@ async function clubsHandler(req, res) {
                         if (imagen_club) await deleteFromCloudary(imagen_club);
                         await client.query('COMMIT');
                         // Respuesta correcta para un DELETE exitoso (200 OK)
-                        console.log(`[EXIT DELETE] Club ID ${clubId}: ENVIANDO RESPUESTA EXITOSA PENDIENTE (200).`);
                         return res.status(200).json({ success: true, message: "Solicitud pendiente eliminada correctamente." });
                     }
 
                     await client.query('ROLLBACK');
-                    console.log(`[EXIT DELETE] Club ID ${clubId}: ENVIANDO RESPUESTA NO ENCONTRADO (404).`);
                     return res.status(404).json({ success: false, message: "Club o solicitud pendiente no encontrado para eliminar." });
                 }
 
@@ -1005,7 +985,6 @@ async function clubsHandler(req, res) {
 
                 if (deleteClubRes.rows.length === 0) {
                     await client.query('ROLLBACK');
-                    console.log(`[EXIT DELETE] Club ID ${clubId}: ENVIANDO RESPUESTA NO ENCONTRADO/CONCURRENCIA (404).`);
                     return res.status(404).json({ success: false, message: "Club no encontrado para eliminar (fallo de concurrencia)." });
                 }
 
@@ -1030,11 +1009,9 @@ async function clubsHandler(req, res) {
                         newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
                     }
                 }
-                // (Si fue un Admin quien borró el club, el Admin usa su propio token, que no cambia)
+                // (Si fue un Admin quien borró el club, el Admin usa su propio token, que no cambia, por eso solo se actualiza si el user logueado era el presidente)
 
                 await client.query('COMMIT');
-
-                console.log(`[EXIT DELETE] Club ID ${clubId}: ENVIANDO RESPUESTA EXITOSA (200).`);
                 // Respuesta correcta para un DELETE exitoso (Ahora 200 OK para devolver el token)
                 return res.status(200).json({
                     success: true,
@@ -1058,32 +1035,23 @@ async function clubsHandler(req, res) {
     } catch (error) {
         console.error("Error en clubsHandler:", error);
 
-        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión') || error.message.includes('Club no encontrado o no activo')) {
+        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
             // Este catch final es el que manejará los errores lanzados por verifyClubOwnershipOrAdmin
             // devolviendo 401 si falla el token o 403/401 si falla el rol/propiedad con el mensaje de error específico.
-            // Los errores lanzados en DELETE también caen aquí.
-            if (error.message.includes('Club no encontrado o no activo')) {
-                console.error(`[EXIT GENERAL CATCH] Club ID ${id}: ENVIANDO RESPUESTA ERROR (404) por falta de club.`);
-                return res.status(404).json({ success: false, message: error.message });
-            }
-            console.error(`[EXIT GENERAL CATCH] Club ID ${id}: ENVIANDO RESPUESTA ERROR (401) por autorización.`);
             return res.status(401).json({ success: false, message: error.message });
         }
         if (error.code === '42P01') {
-            console.error(`[EXIT GENERAL CATCH] Club ID ${id}: ENVIANDO RESPUESTA ERROR (500) por tabla no encontrada.`);
             return res.status(500).json({ success: false, message: "Error: La tabla de base de datos no fue encontrada." });
         }
         if (error.code && error.code.startsWith('23')) {
-            console.error(`[EXIT GENERAL CATCH] Club ID ${id}: ENVIANDO RESPUESTA ERROR (500) por integridad de datos.`);
             return res.status(500).json({ success: false, message: `Error de DB: Falla de integridad de datos. (${error.code})` });
         }
 
         if (error.message.includes('Cloudinary')) {
-            console.error(`[EXIT GENERAL CATCH] Club ID ${id}: ENVIANDO RESPUESTA ERROR (500) por Cloudinary.`);
             return res.status(500).json({ success: false, message: "Error en Cloudinary. Revise los logs del servidor para detalles." });
         }
 
-        console.error(`[EXIT GENERAL CATCH] Club ID ${id}: ENVIANDO RESPUESTA ERROR (500) general.`);
+
         return res.status(500).json({ success: false, message: "Error interno del servidor. Consulte la consola para más detalles." });
     }
 }
