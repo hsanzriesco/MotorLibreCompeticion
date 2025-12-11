@@ -18,53 +18,36 @@
     <link rel="stylesheet" href="./perfil.css" />
 
     <style>
-        /* ESTILOS GLOBALES MLC */
         body {
             background-color: #1a1a1a;
-            /* Fondo oscuro principal */
             color: #f8f9fa;
-            /* Texto claro */
             padding-top: 75px;
-            /* Ajuste para el navbar fijo */
-
-            /* === CÓDIGO CLAVE PARA STICKY FOOTER === */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             font-family: 'Orbitron', sans-serif;
-            /* ================================================= */
         }
 
         .main-perfil {
             padding-top: 2rem;
             padding-bottom: 2rem;
-            /* === CÓDIGO CLAVE PARA STICKY FOOTER === */
-            /* Hace que el main crezca y empuje el footer hacia abajo */
             flex-grow: 1;
-            /* ================================================= */
         }
 
         h1,
         h4 {
             color: #e50914;
-            /* Títulos en rojo MLC */
         }
 
-        /* ESTILO DE TARJETAS (CARDS) */
         .card-mlc {
             background-color: #212529;
-            /* Color de fondo de las tarjetas (gris oscuro) */
             border: 1px solid #e50914;
-            /* Borde rojo sutil */
             color: #f8f9fa;
             height: 100%;
-            /* Asegura que ambas columnas tengan la misma altura */
         }
 
-        /* ESTILO DE INPUTS Y SELECTS */
         .mlc-input {
             background-color: #343a40;
-            /* Fondo del input más oscuro */
             color: #f8f9fa;
             border: 1px solid #495057;
         }
@@ -73,19 +56,15 @@
             background-color: #343a40;
             color: #f8f9fa;
             border-color: #e50914;
-            /* Resaltar en rojo al enfocar */
             box-shadow: 0 0 0 0.25rem rgba(229, 9, 20, 0.25);
         }
 
         .form-label {
             color: #ced4da;
-            /* Etiquetas en gris claro */
         }
 
-        /* ESTILO DE BOTONES */
         .btn-mlc-save {
             background-color: #e50914;
-            /* Botón principal de guardar en rojo */
             border-color: #e50914;
             color: white;
         }
@@ -98,7 +77,6 @@
 
         .btn-mlc-add {
             background-color: #4CAF50;
-            /* Botón de añadir en verde */
             border-color: #4CAF50;
             color: white;
         }
@@ -118,7 +96,6 @@
             background-color: #e50914;
         }
 
-        /* ESTILOS DEL MODAL (YA EXISTENTES PERO CLARIFICADOS) */
         .modal-content {
             background-color: #111;
             color: white;
@@ -368,15 +345,12 @@
             const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
             const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
-            // --- LÓGICA DE VISIBILIDAD DEL NAVBAR ---
             if (usuario) {
-                // 1. Visibilidad general de sesión
                 userName.textContent = usuario.name;
                 userName.style.display = "inline";
                 loginIcon.style.display = "none";
                 logoutBtn.style.display = "block";
 
-                // 2. Roles y enlaces del menú
                 const role = usuario.role;
                 const clubId = usuario.club_id || usuario.clubId || clubIdInSession;
                 const isPresidente = role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
@@ -384,56 +358,41 @@
                 if (role === 'admin') {
                     if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Administrador';
                     if (adminLinks) adminLinks.style.display = 'block';
-                    // Ruta Admin Dashboard
                     if (logoLink) logoLink.href = '../dashboard/admin.html';
                 } else if (isPresidente) {
                     if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Presidente';
-                    // Enlace de Presidente
                     if (presidenteClubLink) presidenteClubLink.style.display = 'block';
-                    // Ocultar enlaces de admin para presidente
                     if (adminLinks) adminLinks.style.display = 'none';
-                    // El logo va a la raíz
                     if (logoLink) logoLink.href = '../../index.html';
                 } else {
-                    // Usuario Normal
                     if (offcanvasTitle) offcanvasTitle.textContent = 'Menú de Usuario';
                     if (adminLinks) adminLinks.style.display = 'none';
                     if (presidenteClubLink) presidenteClubLink.style.display = 'none';
                     if (logoLink) logoLink.href = '../../index.html';
                 }
 
-                // 3. Lógica para el enlace "Mi Club" (Miembro)
                 if (clubId && miClubLink && !isPresidente) {
-                    // Si el usuario es miembro de un club (no presidente)
-                    // Ruta relativa a pages/clubes/editarUsuario.html
                     miClubLink.href = `../clubes/editarUsuario.html?id=${clubId}`;
                     miClubLink.textContent = "Mi Club (Miembro)";
                     miClubLink.style.display = "block";
                 } else if (miClubLink) {
-                    // Si no tiene club o es presidente, lo ocultamos para evitar duplicidad con "Presidente de Club"
                     miClubLink.style.display = "none";
                 }
 
             } else {
-                // No hay sesión
                 userName.style.display = "none";
                 loginIcon.style.display = "inline";
                 logoutBtn.style.display = "none";
-
-                // Ocultar enlaces de gestión
                 if (adminLinks) adminLinks.style.display = 'none';
                 if (miClubLink) miClubLink.style.display = 'none';
                 if (presidenteClubLink) presidenteClubLink.style.display = 'none';
             }
-            // --- FIN LÓGICA DE VISIBILIDAD DEL NAVBAR ---
 
-            // --- LÓGICA DE CERRAR SESIÓN (MODAL) ---
             if (logoutBtn) {
                 logoutBtn.addEventListener("click", (e) => {
                     e.preventDefault();
                     if (usuario && logoutConfirmModal) {
                         logoutConfirmModal.show();
-                        // Cierra el offcanvas al abrir el modal
                         const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
                         if (offcanvasMenu) offcanvasMenu.hide();
                     } else {
@@ -446,21 +405,18 @@
                 btnConfirmLogout.addEventListener("click", () => {
                     if (logoutConfirmModal) logoutConfirmModal.hide();
 
-                    // Limpiar datos de sesión y almacenamiento local
                     sessionStorage.removeItem("usuario");
                     localStorage.removeItem("usuario");
                     sessionStorage.removeItem("clubId");
-                    sessionStorage.removeItem("role"); // Aseguramos que se limpie el rol
+                    sessionStorage.removeItem("role");
 
                     mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
                     setTimeout(() => {
-                        // Redirigir al login (Ruta relativa a pages/auth/login/login.html desde pages/perfil/)
                         window.location.href = "../auth/login/login.html";
                     }, 1500);
                 });
             }
-            // --- FIN LÓGICA DE CERRAR SESIÓN ---
         });
     </script>
 </body>
