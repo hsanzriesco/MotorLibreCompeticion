@@ -15,9 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // -----------------------------------------
-    // 2. OBTENER CLUB ID DE LA URL
-    // -----------------------------------------
+    // OBTENER CLUB ID DE LA URL
     const urlParams = new URLSearchParams(window.location.search);
     const clubId = urlParams.get('clubId');
 
@@ -27,9 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // -----------------------------------------
     // 3. CARGAR DATOS DEL CLUB Y MIEMBROS
-    // -----------------------------------------
     async function cargarDatosClub() {
         try {
             // ⭐ Reemplaza esta URL con tu endpoint para obtener un club por ID ⭐

@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL UNIFICADA Y ROBUSTA
+// clubs.js - VERSIÓN CORREGIDA (SOLUCIÓN AL HANGING)
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -21,8 +21,12 @@ cloudinary.config({
 
 const unlinkAsync = promisify(fs.unlink);
 
+// CONFIGURACIÓN IMPORTANTE PARA EVITAR QUE SE CUELGUE
 export const config = {
-    api: { bodyParser: false, },
+    api: {
+        bodyParser: false, // Necesario para formidable
+        externalResolver: true, // Ayuda a evitar timeouts fantasma
+    },
 };
 
 const getBody = async (req) => {
@@ -52,7 +56,6 @@ async function deleteFromCloudary(imageUrl) {
         console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary:", e.message);
     }
 }
-
 
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
@@ -360,25 +363,36 @@ async function clubsHandler(req, res) {
         }
 
         if (method === "PUT") {
-            const body = await getBody(req);
-            if (body && body.action === 'leave') {
-                const verification = verifyToken(req);
-                if (!verification.authorized) return res.status(401).json({ success: false, message: verification.message });
-                const requestingUserId = verification.user.id;
-                let client = await pool.connect();
-                try {
-                    await client.query('BEGIN');
-                    const userRes = await pool.query('SELECT club_id, is_presidente, role FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
-                    const { club_id: currentClubId, is_presidente, role } = userRes.rows[0];
-                    if (!currentClubId) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: "No eres miembro de ningún club." }); }
-                    if (is_presidente || role === 'presidente') { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: "El presidente debe eliminar el club." }); }
-                    await client.query('UPDATE public."users" SET club_id = NULL WHERE id = $1', [requestingUserId]);
-                    const updatedUserRes = await pool.query('SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1', [requestingUserId]);
-                    const newToken = jwt.sign(updatedUserRes.rows[0], JWT_SECRET, { expiresIn: '1d' });
-                    await client.query('COMMIT');
-                    return res.status(200).json({ success: true, message: "Has abandonado el club.", token: newToken });
-                } catch (error) { await client.query('ROLLBACK'); return res.status(500).json({ success: false, message: "Error interno." }); } finally { if (client) client.release(); }
+            // 🛑 CORRECCIÓN CRÍTICA: DETECCIÓN DE CONTENT-TYPE
+            const contentType = req.headers['content-type'] || '';
+
+            // --- A. LÓGICA 'LEAVE' (SOLO SI ES JSON) ---
+            if (contentType.includes('application/json')) {
+                // Solo leemos el body si estamos seguros que es JSON
+                const body = await getBody(req);
+                if (body && body.action === 'leave') {
+                    const verification = verifyToken(req);
+                    if (!verification.authorized) return res.status(401).json({ success: false, message: verification.message });
+                    const requestingUserId = verification.user.id;
+                    let client = await pool.connect();
+                    try {
+                        await client.query('BEGIN');
+                        const userRes = await pool.query('SELECT club_id, is_presidente, role FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
+                        const { club_id: currentClubId, is_presidente, role } = userRes.rows[0];
+                        if (!currentClubId) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: "No eres miembro de ningún club." }); }
+                        if (is_presidente || role === 'presidente') { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: "El presidente debe eliminar el club." }); }
+                        await client.query('UPDATE public."users" SET club_id = NULL WHERE id = $1', [requestingUserId]);
+                        const updatedUserRes = await pool.query('SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1', [requestingUserId]);
+                        const newToken = jwt.sign(updatedUserRes.rows[0], JWT_SECRET, { expiresIn: '1d' });
+                        await client.query('COMMIT');
+                        return res.status(200).json({ success: true, message: "Has abandonado el club.", token: newToken });
+                    } catch (error) { await client.query('ROLLBACK'); return res.status(500).json({ success: false, message: "Error interno." }); } finally { if (client) client.release(); }
+                }
             }
+
+            // --- B. LÓGICA UPDATE (MULTIPART FORM) ---
+            // Si no es JSON (o no entramos al if), procedemos con parseForm. 
+            // IMPORTANTE: NO HEMOS LLAMADO A getBody() AQUÍ, ASÍ QUE EL STREAM ESTÁ INTACTO.
 
             const clubIdToUpdate = id;
             if (!clubIdToUpdate) return res.status(400).json({ success: false, message: "ID requerido." });
@@ -386,6 +400,7 @@ async function clubsHandler(req, res) {
             let imagenFilePathTemp = null, imagen_club_url = null, old_imagen_club_url = null, isCloudinaryUploadSuccess = false;
 
             try {
+                // Aquí parseForm podrá leer el stream porque getBody NO lo consumió antes
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
                 const { nombre_club, nombre_evento, descripcion, ciudad: newCiudad, enfoque: newEnfoque, estado: newEstado, id_presidente: newIdPresidente } = fields;
@@ -448,9 +463,6 @@ async function clubsHandler(req, res) {
 
                 const { imagen_club, id_presidente } = clubInfoRes.rows[0];
 
-                // ✅ CORRECCIÓN ESENCIAL DE ROBUSTEZ:
-                // Intentar borrar eventos primero. Si la tabla no existe o falla, atrapamos el error pero no rompemos todo si no es crítico,
-                // PERO para integridad referencial correcta, esto debe ocurrir.
                 try {
                     await client.query('DELETE FROM public.events WHERE club_id = $1', [clubId]);
                 } catch (e) {
@@ -468,7 +480,6 @@ async function clubsHandler(req, res) {
                 }
 
                 await client.query('COMMIT');
-                // ✅ EL TOKEN SE DEVUELVE AQUÍ:
                 return res.status(200).json({ success: true, message: "Club eliminado.", token: newToken });
 
             } catch (error) {

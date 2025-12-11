@@ -3,12 +3,10 @@
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
 
-// 🛑 BANDERA DE CONTROL Y FUNCIÓN CENTRALIZADA
 let redireccionEnCurso = false;
 
 function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
     if (redireccionEnCurso) return;
-
     redireccionEnCurso = true;
 
     sessionStorage.removeItem('usuario');
@@ -227,6 +225,7 @@ async function handleFormSubmit(event) {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`
+                // NO ponemos Content-Type para FormData, el navegador lo pone con el boundary
             },
             body: updateData
         });
@@ -308,16 +307,13 @@ async function handleClubDeletion(clubId) {
                 deleteConfirmModal.hide();
 
                 if (response.ok) {
-                    // ✅ CORRECCIÓN ESENCIAL: Actualizar token si el backend lo envía
                     if (result.token) {
                         console.log("Actualizando token con rol degradado (usuario)...");
                         sessionStorage.setItem('jwtToken', result.token);
-                        // Compatibilidad legacy
                         sessionStorage.setItem('token', result.token);
                         localStorage.setItem('jwtToken', result.token);
                     }
 
-                    // Limpiar datos obsoletos de la sesión
                     sessionStorage.removeItem('club_id');
                     sessionStorage.removeItem('role');
                     sessionStorage.removeItem('is_presidente');
