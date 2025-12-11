@@ -1,18 +1,16 @@
-// api/cierre_eventos_automatico.js
+
 
 import cron from 'node-cron';
 import { Pool } from "pg"; 
 
-// Ajusta esta importación/definición a cómo manejas tu conexión DB
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
 });
 
 
-/**
- * Función que contiene la lógica para marcar eventos como finalizados.
- */
+
 async function cerrarEventosVencidos() {
     console.log(`[CIERRE_AUTOMATICO] Buscando eventos finalizados para marcar...`);
 
@@ -45,13 +43,11 @@ async function cerrarEventosVencidos() {
     }
 }
 
-/**
- * Inicia la tarea programada (cron job) para el cierre automático.
- */
+
 export function iniciarCierreAutomatico() {
     console.log("Iniciando el proceso de Cierre Automático de Eventos (cada 5 min)...");
     
-    // Ejecutar cada 5 minutos
+   
     cron.schedule('*/5 * * * *', cerrarEventosVencidos, {
         scheduled: true,
     });
