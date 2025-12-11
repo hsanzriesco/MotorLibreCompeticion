@@ -454,39 +454,40 @@ async function clubsHandler(req, res) {
 
                 const { imagen_club, id_presidente } = clubInfoRes.rows[0];
 
-                // 🛑 LIMPIEZA PROFUNDA (Deep Clean)
-                // Intentamos borrar todo lo que pueda estar vinculado al club
-                try {
-                    // 1. Borrar inscripciones de eventos del club (si existen y están vinculadas a eventos)
-                    // NOTA: Si tu tabla se llama diferente (ej: 'registrations'), cambia 'inscripciones' aquí.
-                    try { await client.query('DELETE FROM public.inscripciones WHERE event_id IN (SELECT id FROM public.events WHERE club_id = $1)', [clubId]); } catch (e) { }
+                // 🛑 LIMPIEZA PROFUNDA (Deep Clean) - CORRECCIÓN CLAVE
+                // La eliminación de dependencias se hace secuencialmente. Si una falla,
+                // la transacción entera fallará al instante y el catch lo detectará correctamente.
 
-                    // 2. Borrar eventos
-                    await client.query('DELETE FROM public.events WHERE club_id = $1', [clubId]);
+                // 1. Borrar inscripciones de eventos del club
+                // Si la tabla 'inscripciones' no existe o falla, el catch final te dirá por qué.
+                await client.query('DELETE FROM public.inscripciones WHERE event_id IN (SELECT id FROM public.events WHERE club_id = $1)', [clubId]);
 
-                    // 3. Borrar posts, noticias, o publicaciones del club
-                    try { await client.query('DELETE FROM public.posts WHERE club_id = $1', [clubId]); } catch (e) { }
-                    try { await client.query('DELETE FROM public.noticias WHERE club_id = $1', [clubId]); } catch (e) { }
-                    try { await client.query('DELETE FROM public.comentarios WHERE club_id = $1', [clubId]); } catch (e) { }
+                // 2. Borrar eventos
+                await client.query('DELETE FROM public.events WHERE club_id = $1', [clubId]);
 
-                } catch (e) {
-                    console.warn("Error no crítico limpiando dependencias:", e.message);
-                }
+                // 3. Borrar posts, noticias, o publicaciones del club
+                await client.query('DELETE FROM public.posts WHERE club_id = $1', [clubId]);
+                await client.query('DELETE FROM public.noticias WHERE club_id = $1', [clubId]);
+                await client.query('DELETE FROM public.comentarios WHERE club_id = $1', [clubId]);
 
+                // 4. Desvincular usuarios y borrar el club
                 await client.query(`UPDATE public."users" SET club_id = NULL, role = 'user', is_presidente = FALSE WHERE club_id = $1`, [clubId]);
                 await client.query('DELETE FROM public.clubs WHERE id = $1', [clubId]);
                 if (imagen_club) await deleteFromCloudary(imagen_club);
 
+                // 5. Generar nuevo token
                 let newToken = null;
                 if (authorizedUser.id === id_presidente) {
                     const updatedUserRes = await client.query('SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1', [id_presidente]);
                     if (updatedUserRes.rows[0]) newToken = jwt.sign(updatedUserRes.rows[0], JWT_SECRET, { expiresIn: '1d' });
                 }
 
+                // 6. Finalizar Transacción
                 await client.query('COMMIT');
                 return res.status(200).json({ success: true, message: "Club eliminado.", token: newToken });
 
             } catch (error) {
+                // 🛑 CORRECTO: Si algo falla, el ROLLBACK se ejecuta y luego se lanza el error al manejador final.
                 await client.query('ROLLBACK');
                 throw error;
             } finally { client.release(); }
@@ -495,21 +496,25 @@ async function clubsHandler(req, res) {
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
     } catch (error) {
+        // --- 🛑 BLOQUE DE DIAGNÓSTICO MEJORADO ("EL CHIVATO") 🛑 ---
         console.error("Error DETALLADO en clubsHandler:", error);
 
         if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
             return res.status(401).json({ success: false, message: error.message });
         }
 
+        // 42P01: Tabla no existe. Esto ocurrirá si una de las tablas de limpieza profunda no existe.
         if (error.code === '42P01') {
-            return res.status(500).json({ success: false, message: "Error crítico: Falta una tabla en la base de datos." });
+            const tableName = error.message.match(/relation "public\.(.+?)"/)?.[1] || 'una tabla desconocida';
+            return res.status(500).json({ success: false, message: `Error de la base de datos: La tabla "${tableName}" no fue encontrada.` });
         }
 
+        // 23xxx: Violación de integridad (Foreign Key). Esto ocurrirá si la limpieza no fue suficiente.
         if (error.code && error.code.startsWith('23')) {
             const detalle = error.detail ? error.detail : `Código de error: ${error.code}`;
-            let mensajeAmigable = "No se puede eliminar el club porque tiene elementos asociados.";
+            let mensajeAmigable = "No se puede eliminar el club porque tiene elementos asociados (posts, inscripciones, etc.) que no se pudieron borrar.";
             if (detalle.includes('table')) {
-                mensajeAmigable += ` Revisa la tabla: ${detalle.split('table')[1]}`;
+                mensajeAmigable += ` La tabla vinculada es: ${detalle.split('table')[1]}`;
             }
 
             return res.status(500).json({
