@@ -32,11 +32,16 @@ export const config = {
 const getBody = async (req) => {
     try {
         const chunks = [];
+        // Intentar leer y concatenar los chunks
         for await (const chunk of req) chunks.push(chunk);
         const buffer = Buffer.concat(chunks);
         if (buffer.length === 0) return null;
-        return JSON.parse(buffer.toString());
+
+        // Solo intentar parsear si hay contenido
+        return JSON.parse(buffer.toString('utf8'));
     } catch (e) {
+        // En caso de error de parseo o lectura, devolver null/lanzar error controlado
+        console.warn("ADVERTENCIA: Falló el parseo del cuerpo JSON:", e.message);
         return null;
     }
 };
@@ -59,7 +64,7 @@ async function deleteFromCloudary(imageUrl) {
         if (result.result === 'not found') {
             console.warn(`ADVERTENCIA: Imagen no encontrada en Cloudinary: ${publicId}`);
         } else {
-            console.log(`Imagen ${publicId} eliminada de Cloudinary (Fallback).`);
+            console.log(`Imagen ${publicId} eliminada de Cloudinary.`);
         }
     } catch (e) {
         console.warn("ADVERTENCIA: Falló la eliminación de la imagen en Cloudinary (en deleteFromCloudinary):", e.message);
@@ -144,6 +149,8 @@ const verifyToken = (req) => {
         // ⭐ Corregir la estructura de retorno para incluir 'id' y 'user'
         return { authorized: true, user: decoded, id: decoded.id };
     } catch (e) {
+        // En lugar de loguear la traza completa, logueamos el error de JWT
+        console.warn("Advertencia de Token Inválido/Expirado:", e.message);
         return { authorized: false, message: 'Token inválido o expirado.' };
     }
 };
@@ -214,7 +221,8 @@ async function statusChangeHandler(req, res) {
             // El body es JSON simple, usamos getBody
             const body = await getBody(req);
 
-            const { estado } = body;
+            const { estado } = body || {}; // Manejar body nulo
+
             if (estado !== 'activo') return res.status(400).json({ success: false, message: "Estado de actualización no válido." });
 
             const client = await pool.connect();
@@ -304,10 +312,11 @@ async function clubsHandler(req, res) {
     const { method, query } = req;
 
     // 💡 CORRECCIÓN CRÍTICA: Obtenemos el ID de forma robusta
-    // Esto permite que /api/clubs/ID funcione incluso en clubs.js
-    let { estado, id } = query;
+    let { estado, clubId: queryClubId } = query;
+    let id = queryClubId;
+
     if (!id && req.url) {
-        // Intento de parsear el ID de la URL si no viene en la query (útil en Express/otros enrutadores)
+        // Intento de parsear el ID de la URL si no viene en la query
         const parts = req.url.split('?')[0].split('/');
         const possibleId = parts[parts.length - 1];
         if (possibleId && !isNaN(parseInt(possibleId)) && possibleId !== 'clubs') {
@@ -330,11 +339,17 @@ async function clubsHandler(req, res) {
     try {
         if (method === "GET") {
 
-            // --- Lógica GET para obtener miembros ---
+            // --- Lógica GET para obtener club y miembros (ruta usada por editarUsuario.js) ---
             if (id && query.includeMembers === 'true') {
                 const clubIdNum = parseInt(id);
+
                 if (isNaN(clubIdNum)) {
                     return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
+                }
+
+                // 🛑 CORRECCIÓN CLAVE: Verificar que el usuario esté logueado
+                if (!authVerification.authorized) {
+                    return res.status(401).json({ success: false, message: "Debe iniciar sesión para ver los miembros del club." });
                 }
 
                 // 1. Obtener datos del club
@@ -349,6 +364,7 @@ async function clubsHandler(req, res) {
                 const clubResult = await pool.query(clubQueryText, [clubIdNum]);
 
                 if (clubResult.rows.length === 0) {
+                    // 🚨 Si no lo encuentra, devolvemos 404, no un 200 incompleto.
                     return res.status(404).json({ success: false, message: "Club no encontrado." });
                 }
                 const club = clubResult.rows[0];
@@ -359,16 +375,13 @@ async function clubsHandler(req, res) {
                         id as user_id, name as username, email, club_id 
                     FROM public."users" 
                     WHERE club_id = $1
-                    ORDER BY id_presidente DESC, name ASC 
-                `; // Se asume que president_id debe ser extraído de la tabla clubs para saber quién es presidente, pero se usa 'club_id' para filtrar
+                    ORDER BY club_id, name ASC 
+                `;
                 const membersResult = await pool.query(membersQueryText, [clubIdNum]);
-
-                // Se añade una propiedad 'is_president' a cada miembro en el JS si es necesario, 
-                // pero por ahora el cliente puede determinarlo comparando user_id con club.president_id
 
                 return res.status(200).json({ success: true, club: club, members: membersResult.rows });
             }
-            // --- Fin Lógica GET para obtener miembros ---
+            // --- Fin Lógica GET para obtener club y miembros ---
 
             if (estado === 'pendiente') {
                 try {
@@ -472,7 +485,7 @@ async function clubsHandler(req, res) {
         if (method === "POST") {
 
             // 🛑 FIX CLAVE: Manejar JOIN (y antes LEAVE) antes de intentar parsear el formulario
-            if (query.action === 'join' || query.action === 'leave') {
+            if (query.action === 'join') { // Lógica LEAVE movida a PUT
                 const verification = verifyToken(req);
                 if (!verification.authorized) {
                     return res.status(401).json({ success: false, message: verification.message });
@@ -489,60 +502,49 @@ async function clubsHandler(req, res) {
                 try {
                     await client.query('BEGIN');
 
-                    if (query.action === 'join') {
-                        // 1. Verificar si ya es presidente o miembro de otro club
-                        // CONSULTA: Se obtienen club_id e is_presidente
-                        const userRes = await client.query('SELECT club_id, is_presidente FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
+                    // 1. Verificar si ya es presidente o miembro de otro club
+                    // CONSULTA: Se obtienen club_id e is_presidente
+                    const userRes = await client.query('SELECT club_id, is_presidente FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
 
-                        if (userRes.rows.length === 0) {
-                            await client.query('ROLLBACK');
-                            return res.status(404).json({ success: false, message: "Usuario no encontrado." });
-                        }
-
-                        // ✅ CORRECCIÓN: Desestructuramos club_id e is_presidente
-                        const { club_id: currentClubId, is_presidente } = userRes.rows[0];
-
-                        if (currentClubId !== null) {
-                            await client.query('ROLLBACK');
-                            // ✅ LÓGICA AGREGADA: Si es presidente, rechazar con mensaje específico
-                            if (is_presidente) {
-                                return res.status(403).json({ success: false, message: "Como presidente, no puedes unirte a otro club. Debes disolver o transferir tu club actual primero." });
-                            }
-                            // Lógica para miembros regulares de otro club
-                            return res.status(400).json({ success: false, message: "Ya eres miembro de un club. Primero debes abandonarlo." });
-                        }
-
-                        // 2. Unir al usuario al club (Actualizar tabla users)
-                        await client.query('UPDATE public."users" SET club_id = $1 WHERE id = $2', [club_id, requestingUserId]);
-
-                        // --- SINCRONIZACIÓN DE TOKEN (JOIN) ---
-                        // 3. Obtener los datos del usuario actualizados (con el nuevo club_id)
-                        const updatedUserRes = await client.query(
-                            'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
-                            [requestingUserId]
-                        );
-                        const updatedUser = updatedUserRes.rows[0];
-
-                        // 4. Generar un nuevo token con los datos frescos
-                        const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                        // --- FIN SINCRONIZACIÓN DE TOKEN ---
-
-                        await client.query('COMMIT');
-                        return res.status(200).json({
-                            success: true,
-                            message: "Te has unido al club.",
-                            token: newToken // <-- Devolver el nuevo token
-                        });
-
+                    if (userRes.rows.length === 0) {
+                        await client.query('ROLLBACK');
+                        return res.status(404).json({ success: false, message: "Usuario no encontrado." });
                     }
-                    /* // Se remueve la lógica LEAVE de POST para usarla en PUT (más limpio)
-                    else if (query.action === 'leave') {
-                        // ...
-                    } 
-                    */
 
-                    // Si la acción existe pero no fue 'join' ni 'leave' (e.g. action=unknown)
-                    return res.status(400).json({ success: false, message: "Acción POST no válida." });
+                    // ✅ CORRECCIÓN: Desestructuramos club_id e is_presidente
+                    const { club_id: currentClubId, is_presidente } = userRes.rows[0];
+
+                    if (currentClubId !== null) {
+                        await client.query('ROLLBACK');
+                        // ✅ LÓGICA AGREGADA: Si es presidente, rechazar con mensaje específico
+                        if (is_presidente) {
+                            return res.status(403).json({ success: false, message: "Como presidente, no puedes unirte a otro club. Debes disolver o transferir tu club actual primero." });
+                        }
+                        // Lógica para miembros regulares de otro club
+                        return res.status(400).json({ success: false, message: "Ya eres miembro de un club. Primero debes abandonarlo." });
+                    }
+
+                    // 2. Unir al usuario al club (Actualizar tabla users)
+                    await client.query('UPDATE public."users" SET club_id = $1 WHERE id = $2', [club_id, requestingUserId]);
+
+                    // --- SINCRONIZACIÓN DE TOKEN (JOIN) ---
+                    // 3. Obtener los datos del usuario actualizados (con el nuevo club_id)
+                    const updatedUserRes = await client.query(
+                        'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
+                        [requestingUserId]
+                    );
+                    const updatedUser = updatedUserRes.rows[0];
+
+                    // 4. Generar un nuevo token con los datos frescos
+                    const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
+                    // --- FIN SINCRONIZACIÓN DE TOKEN ---
+
+                    await client.query('COMMIT');
+                    return res.status(200).json({
+                        success: true,
+                        message: "Te has unido al club.",
+                        token: newToken // <-- Devolver el nuevo token
+                    });
 
                 } catch (error) {
                     await client.query('ROLLBACK');
@@ -943,6 +945,7 @@ async function clubsHandler(req, res) {
                         await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [clubId]);
                         if (imagen_club) await deleteFromCloudary(imagen_club);
                         await client.query('COMMIT');
+                        // Respuesta correcta para un DELETE exitoso (204 No Content)
                         return res.status(204).json({ success: true, message: "Solicitud pendiente eliminada correctamente." });
                     }
 
