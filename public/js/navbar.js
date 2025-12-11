@@ -10,9 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ⭐ Referencia al enlace de Mi Club
     const miClubLink = document.getElementById("mi-club-link");
 
-    // ⭐ REFUERZO DE SEGURIDAD: Asegurar que esté oculto al cargar JS (a menos que el HTML ya lo haga)
+    // ⭐ REFUERZO DE SEGURIDAD: Asegurar que esté oculto Y NO CLICABLE por defecto.
     if (miClubLink) {
         miClubLink.style.display = 'none';
+        miClubLink.removeAttribute('href'); // Deshabilita la funcionalidad de click/navegación
     }
 
     // 🛑 BANDERA DE CONTROL CRÍTICA
@@ -24,6 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const REGISTER_PAGE_PATH = "/auth/register.html";
     const CALENDARIO_PAGE_PATH = "/pages/calendario/calendario.html";
     const CLUBES_PAGE_PATH = "/pages/clubes/clubes.html";
+
+    // ⭐ Ruta específica del club para presidentes (asumo que es donde apunta este enlace)
+    const MI_CLUB_EDIT_PAGE_PATH = "/pages/miClub/editarPresidente.html";
 
     // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
@@ -47,9 +51,10 @@ document.addEventListener("DOMContentLoaded", () => {
             // Ocultar el icono de inicio de sesión
             if (loginLink) loginLink.style.display = "none";
 
-            // ⭐ LÓGICA ACTUALIZADA: Mostrar 'Mi Club' si is_presidente es TRUE
+            // ⭐ LÓGICA ACTUALIZADA: Mostrar Y HABILITAR 'Mi Club' si is_presidente es TRUE
             if (miClubLink && user.is_presidente === true) {
                 miClubLink.style.display = 'block';
+                miClubLink.href = MI_CLUB_EDIT_PAGE_PATH; // Restaurar el enlace
             }
 
 
@@ -73,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
             logoutBtn.classList.add('disabled-link');
             logoutBtn.removeAttribute('href');
         }
+        // Nota: miClubLink ya está oculto y deshabilitado por el refuerzo de seguridad inicial.
     } else {
         // Si el usuario está logueado, aseguramos que el botón esté habilitado
         if (logoutBtn) {
