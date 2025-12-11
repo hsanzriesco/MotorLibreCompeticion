@@ -1,5 +1,5 @@
 // =========================================================================
-// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 2)
+// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 3 - AÑADIDO club_id al JWT)
 // =========================================================================
 
 import { Pool } from "pg";
@@ -159,9 +159,9 @@ async function loginUserHandler(req, res) {
         }
 
         // Búsqueda por 'name' O 'email'
-        // 🚨 CAMBIO 1: SE INCLUYE club_id en la consulta SQL para el login.
+        // ✅ CORRECCIÓN DE SQL: SE INCLUYE club_id y is_presidente
         const { rows } = await pool.query(
-            "SELECT id, name, email, role, password, is_banned, club_id FROM users WHERE name = $1 OR email = $1",
+            "SELECT id, name, email, role, password, is_banned, club_id, is_presidente FROM users WHERE name = $1 OR email = $1",
             [username]
         );
 
@@ -190,8 +190,14 @@ async function loginUserHandler(req, res) {
         }
 
         // Generar el JWT
+        // 🚨 CORRECCIÓN CLAVE: SE INCLUYE club_id e is_presidente en el payload del JWT
         const token = jwt.sign(
-            { id: user.id, role: user.role },
+            {
+                id: user.id,
+                role: user.role,
+                club_id: user.club_id || null, // Asegurar que sea null si no existe
+                is_presidente: user.is_presidente === true // Asumir booleano 
+            },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -208,8 +214,9 @@ async function loginUserHandler(req, res) {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                // 🚨 CAMBIO 2: SE INCLUYE club_id en la respuesta JSON del login.
+                // ✅ CORRECCIÓN: SE INCLUYE club_id en la respuesta JSON del login.
                 club_id: user.club_id || null,
+                is_presidente: user.is_presidente === true
             },
         });
     } catch (error) {
@@ -243,18 +250,18 @@ async function getMeHandler(req, res) {
         // 2. Obtener datos frescos de la base de datos
         // ⭐ CONSULTA FINAL: Se asume que club_id e is_presidente están directamente en la tabla 'users'
         const query = `
-            SELECT 
-                u.id, 
-                u.name, 
-                u.email, 
-                u.role, 
-                u.club_id,          
-                u.is_presidente      
-            FROM 
-                users u
-            WHERE 
-                u.id = $1
-        `;
+            SELECT 
+                u.id, 
+                u.name, 
+                u.email, 
+                u.role, 
+                u.club_id,          
+                u.is_presidente      
+            FROM 
+                users u
+            WHERE 
+                u.id = $1
+        `;
 
         const { rows } = await pool.query(query, [decodedUser.id]);
 
@@ -490,14 +497,14 @@ async function userListCrudHandler(req, res) {
 
 
             const updateQuery = `
-                UPDATE users
-                SET name = COALESCE($1, name),
-                    email = COALESCE($2, email),
-                    role = COALESCE($3, role),
-                    password = COALESCE($4, password)
-                WHERE id = $5
-                RETURNING id, name, email, role, created_at, is_banned
-            `;
+                UPDATE users
+                SET name = COALESCE($1, name),
+                    email = COALESCE($2, email),
+                    role = COALESCE($3, role),
+                    password = COALESCE($4, password)
+                WHERE id = $5
+                RETURNING id, name, email, role, created_at, is_banned
+            `;
 
             const result = await pool.query(updateQuery, [
                 name ?? null,
