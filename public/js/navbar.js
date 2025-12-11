@@ -9,12 +9,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 1. ELEMENTOS DEL OFFCANVAS
     const miClubLink = document.getElementById("mi-club-link");
-    // const presidenteClubLink = document.getElementById("presidente-club-link"); // <-- ELIMINADO POR REDUNDANCIA
+    const presidenteClubLink = document.getElementById("presidente-club-link");
 
     // 🛑 BANDERA DE CONTROL CRÍTICA
     let redireccionExternaEnCurso = false;
 
-    // 🟢 RUTAS CENTRALIZADAS
+    // 🟢 RUTAS CENTRALIZADAS DEL DASHBOARD
     const ADMIN_DASHBOARD_HOME = "/pages/dashboard/admin/admin.html";
     const LOGIN_PAGE_PATH = "/auth/login/login.html";
     const REGISTER_PAGE_PATH = "/auth/register.html";
@@ -25,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
-    // Se usa 'bootstrap.Modal' directamente para evitar problemas si aún no se ha cargado totalmente
     const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
     const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
@@ -63,7 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function getRelativeToRootPrefix() {
         let pathPrefix = '';
-        // Contar la profundidad de la ruta (niveles de carpeta desde la raíz)
         const pathSegments = window.location.pathname.split('/').filter(s => s.length > 0 && s !== 'index.html');
         let depth = 0;
 
@@ -72,17 +70,13 @@ document.addEventListener("DOMContentLoaded", () => {
             return './';
         }
 
-        // Calcular la profundidad de la carpeta si existe el segmento 'pages'
         const pagesIndex = pathSegments.indexOf('pages');
         if (pagesIndex !== -1) {
-            // Ejemplo: ['pages', 'clubes', 'editarUsuario.html'] -> depth = 2 (clubes, editarUsuario.html)
             depth = pathSegments.length - pagesIndex;
         } else {
-            // Ejemplo: ['otra_pagina.html'] -> depth = 1
             depth = pathSegments.length;
         }
 
-        // Generar '../' por cada nivel de profundidad
         return Array(depth).fill('../').join('');
     }
 
@@ -90,26 +84,39 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------
 
 
-    // 💥 MODIFICACIÓN CRÍTICA PARA DESHABILITAR Y OCULTAR SI NO HAY SESIÓN 💥
-    if (!user) { // Si no hay usuario:
+    // 💥 BLOQUE CLAVE: LÓGICA DE OCULTAMIENTO/VISIBILIDAD 💥
+    if (!user) { // Si NO hay usuario (No logueado):
+
         if (userName) userName.style.display = "none";
         if (loginLink) loginLink.style.display = "block";
-        if (logoutBtn) logoutBtn.style.display = "none";
 
-        // Ocultar links específicos del usuario
+        // Aseguramos que los enlaces de usuario estén ocultos
+        if (logoutBtn) {
+            // El código original usaba classList.add('disabled-link') que es una buena práctica
+            logoutBtn.style.display = "none";
+            logoutBtn.classList.add('disabled-link');
+            logoutBtn.removeAttribute('href');
+        }
         if (miClubLink) miClubLink.style.display = "none";
-        // if (presidenteClubLink) presidenteClubLink.style.display = "none"; // ELIMINADO
 
-    } else {
+        // ⭐ LÍNEA CLAVE PARA TU REQUERIMIENTO: Ocultar si no hay sesión
+        if (presidenteClubLink) presidenteClubLink.style.display = "none";
+
+    } else { // Si SÍ hay usuario (Logueado):
+
         // Si el usuario está logueado, aseguramos que el botón de logout esté visible
-        if (logoutBtn) logoutBtn.style.display = "block";
+        if (logoutBtn) {
+            logoutBtn.style.display = "block";
+            logoutBtn.classList.remove('disabled-link');
+            logoutBtn.href = "#";
+        }
 
         // =========================================================
         // ⭐ LÓGICA DE VISIBILIDAD DE ENLACES DE CLUBES ⭐
         // =========================================================
         const clubId = user.club_id || user.clubId || clubIdInSession;
         // La validación de presidente debe ser robusta
-        const isPresidenteOrAdmin = user.is_presidente === 1 || user.is_presidente === true || user.role === "presidente" || user.role === "admin";
+        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.role === "presidente" || user.role === "admin";
 
         // Quitar la barra inicial de las constantes para hacer la ruta relativa
         const clubPathPresidenteBase = CLUB_EDITAR_PRESIDENTE_PATH.substring(1);
@@ -117,20 +124,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         // --- Lógica del Mi Club (Editar/Ver) ---
-        // ESTE ENLACE AHORA GESTIONA TODA LA NAVEGACIÓN DE CLUBES DE USUARIO
         if (clubId && miClubLink) {
 
-            const targetPathBase = isPresidenteOrAdmin ? clubPathPresidenteBase : clubPathUsuarioBase;
+            const targetPathBase = isPresidente ? clubPathPresidenteBase : clubPathUsuarioBase;
 
             miClubLink.href = `${relativeToRootPrefix}${targetPathBase}?id=${clubId}`;
-            miClubLink.textContent = isPresidenteOrAdmin ? "Mi Club (Presidente)" : "Mi Club";
+            miClubLink.textContent = isPresidente ? "Mi Club (Presidente)" : "Mi Club";
             miClubLink.style.display = "block";
         } else if (miClubLink) {
             miClubLink.style.display = "none";
         }
 
-        // ❌ No se necesita lógica adicional para presidenteClubLink ya que se eliminó.
+        // --- Lógica del Presidente de Club (Solo si es presidente) ---
+        // Este enlace es visible si el usuario es presidente Y tiene un club asignado.
+        if (presidenteClubLink) {
+            if (isPresidente && clubId) {
+                presidenteClubLink.href = `${relativeToRootPrefix}${clubPathPresidenteBase}?id=${clubId}`;
+                presidenteClubLink.style.display = "block";
+            } else {
+                // Si está logueado pero NO es presidente/admin o NO tiene club, se OCULTA.
+                presidenteClubLink.style.display = "none";
+            }
+        }
     }
+    // 💥 FIN BLOQUE CLAVE 💥
 
 
     // -----------------------------------------------------------------------------------
@@ -146,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.removeItem("usuario");
         sessionStorage.removeItem("token");
         localStorage.removeItem("token");
-        sessionStorage.removeItem("clubId"); // Limpiamos clubId
+        sessionStorage.removeItem("clubId");
 
         // Ocultar el modal si está visible
         if (logoutConfirmModal) {
@@ -166,7 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Redirigir a la raíz absoluta
         setTimeout(() => {
-            // Asegurar que la redirección sea siempre a la raíz del proyecto para evitar problemas de rutas
             window.location.href = "/index.html";
         }, 500);
     }
@@ -175,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 6. LÓGICA DE CIERRE DE SESIÓN AUTOMÁTICO POR INACTIVIDAD
     // -----------------------------------------------------------------------------------
 
-    const INACTIVITY_TIMEOUT = 60000; // 1 minuto
+    const INACTIVITY_TIMEOUT = 60000;
     let inactivityTimeout;
 
     function resetTimer() {
@@ -252,8 +268,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------------------------------------------------
     if (logoLink) {
         if (user && user.role === "admin") {
+            // ✅ CORREGIDO para usar la ruta relativa
             logoLink.href = `${relativeToRootPrefix}${ADMIN_DASHBOARD_HOME.substring(1)}`;
         } else {
+            // ✅ CORREGIDO para usar la ruta relativa
             logoLink.href = `${relativeToRootPrefix}index.html`;
         }
     }
@@ -263,8 +281,10 @@ document.addEventListener("DOMContentLoaded", () => {
         menuInicio.addEventListener("click", (ev) => {
             ev.preventDefault();
             if (user && user.role === "admin") {
+                // ✅ CORREGIDO para usar la ruta relativa
                 window.location.href = `${relativeToRootPrefix}${ADMIN_DASHBOARD_HOME.substring(1)}`;
             } else {
+                // ✅ CORREGIDO para usar la ruta relativa
                 window.location.href = `${relativeToRootPrefix}index.html`;
             }
         });
