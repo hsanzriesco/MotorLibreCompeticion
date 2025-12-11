@@ -95,10 +95,10 @@ async function getClubIdAndUser() {
         }
 
         // 💡 NOTA: Asumimos que la API YA devuelve 'is_presidente'
-        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.rol === 'presidente' || user.role === 'presidente' || user.role === 'admin';
+        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.rol === 'presidente';
 
         console.log("ID de club del usuario obtenido:", clubId);
-        console.log("Es presidente o Admin:", isPresidente);
+        console.log("Es presidente:", isPresidente);
 
         // Devolvemos el objeto completo para usar más adelante si es necesario
         return { clubId, user, isPresidente };
@@ -109,7 +109,6 @@ async function getClubIdAndUser() {
     }
 }
 
-// 🛑 FUNCIÓN MODIFICADA: MEJORA DEL MANEJO DE ERRORES 403 Y REDIRECCIÓN
 async function loadClubData(clubId) {
     const token = getToken();
     const clubUrl = `${API_CLUBS_URL}?id=${clubId}`;
@@ -125,24 +124,10 @@ async function loadClubData(clubId) {
         });
 
         if (!response.ok) {
-            // Intentar leer el JSON del cuerpo para obtener el mensaje del servidor
-            const errorResult = await response.json().catch(() => ({}));
-
             if (response.status === 401) {
                 throw new Error('Unauthorized');
             }
-
-            // 🛑 LÓGICA CLAVE: Capturar el 403 que ahora el servidor envía
-            if (response.status === 403) {
-                // El servidor envía el mensaje amigable de error en el body
-                const errorMessage = errorResult.message || 'Acceso denegado: No eres el presidente de este club.';
-                // Usamos un mensaje distintivo para el catch
-                throw new Error(`Permisos Denegados: ${errorMessage}`);
-            }
-
-            // Para 404 o cualquier otro error
-            const genericErrorMessage = errorResult.message || `Fallo al cargar los datos del club. Código: ${response.status}`;
-            throw new Error(genericErrorMessage);
+            throw new Error(`Fallo al cargar los datos del club. Código: ${response.status}`);
         }
 
         const data = await response.json();
@@ -217,24 +202,8 @@ async function loadClubData(clubId) {
     } catch (error) {
         console.error("Error al cargar los datos del club:", error.message);
 
-        if (error.message.includes('Unauthorized') || error.message.includes('Token')) {
+        if (error.message.includes('Unauthorized')) {
             manejarFaltaAutenticacion('Sesión expirada', 'error');
-            return;
-        }
-
-        // 🛑 LÓGICA CLAVE: Capturar el error de Permisos (403) y Redirigir
-        if (error.message.includes('Permisos Denegados')) {
-            // Elimina el prefijo para mostrar solo el mensaje del servidor
-            const alertMessage = error.message.replace('Permisos Denegados: ', '');
-
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(alertMessage, 'error');
-            } else {
-                alert(alertMessage);
-            }
-
-            // Redirigir, ya que la edición no es posible
-            setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
             return;
         }
 
@@ -245,8 +214,6 @@ async function loadClubData(clubId) {
         }
     }
 }
-// -------------------------------------------------------------------------
-// El resto del código permanece igual
 
 async function handleFormSubmit(event) {
     event.preventDefault();
@@ -298,10 +265,6 @@ async function handleFormSubmit(event) {
             if (response.status === 401) {
                 throw new Error('Unauthorized');
             }
-            // 🛑 Captura de 403 en PUT (si el servidor lo envía)
-            if (response.status === 403) {
-                throw new Error(result.message || 'Acceso denegado: Necesitas ser presidente del club.');
-            }
             throw new Error(result.message || 'Error desconocido al actualizar el club.');
         }
 
@@ -319,18 +282,6 @@ async function handleFormSubmit(event) {
 
         if (error.message.includes('Unauthorized')) {
             manejarFaltaAutenticacion('Sesión expirada', 'error');
-            return;
-        }
-
-        // 🛑 Lógica de captura de 403 en PUT (para evitar que sea un error genérico)
-        if (error.message.includes('Acceso denegado') || error.message.includes('Necesitas ser presidente')) {
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(`Fallo al actualizar el club: ${error.message}`, 'error');
-            } else {
-                alert(`Fallo al actualizar: ${error.message}`);
-            }
-            // Redirigir si falla por permisos
-            setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
             return;
         }
 
@@ -471,7 +422,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 NUEVA COMPROBACIÓN ADICIONAL
         if (!isPresidente) {
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('Acceso denegado: Solo el presidente del club o un administrador pueden editar.', 'error');
+                mostrarAlerta('Acceso denegado: Solo el presidente del club puede editar.', 'error');
             }
             // Redirigir si no es presidente (opcional, pero buena práctica)
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);

@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CORREGIDA CON CÓDIGOS DE ERROR 401/403 ESPECÍFICOS
+// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -159,12 +159,11 @@ const verifyAdmin = (req) => {
     return verification.user;
 };
 
-// 🛑 FUNCIÓN CRÍTICA CORREGIDA PARA MENSAJES DE ERROR ESPECÍFICOS 🛑
 const verifyClubOwnershipOrAdmin = async (req, clubId) => {
     const verification = verifyToken(req);
 
     if (!verification.authorized) {
-        // 🛑 MENSAJE 401
+        // 🛑 MENSAJE ESTANDARIZADO 401
         throw new Error('Necesitas iniciar sesión para acceder a esta página.');
     }
 
@@ -197,7 +196,7 @@ const verifyClubOwnershipOrAdmin = async (req, clubId) => {
 
     // El usuario logueado (decodedUser.id) debe ser el id_presidente del club
     if (presidenteClubId !== decodedUser.id) {
-        // 🛑 MENSAJE 403
+        // 🛑 MENSAJE ESTANDARIZADO 403
         throw new Error('Necesitas ser presidente de un club para acceder a esta página.');
     }
 
@@ -243,7 +242,7 @@ async function statusChangeHandler(req, res) {
                 }
 
                 let nombrePresidente;
-                const presidenteNameRes = await pool.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
+                const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
                 nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
                 // Usamos la URL de la imagen que ya está guardada en clubs_pendientes
@@ -296,7 +295,6 @@ async function statusChangeHandler(req, res) {
 
     } catch (error) {
         console.error("Error en statusChangeHandler:", error);
-        // El handler de estado solo lo usa el admin, por lo que cualquier fallo de auth es 401
         if (error.message.includes('Acceso denegado') || error.message.includes('Token')) {
             return res.status(401).json({ success: false, message: error.message });
         }
@@ -376,15 +374,15 @@ async function clubsHandler(req, res) {
                 if (isNaN(clubIdNum)) {
                     return res.status(400).json({ success: false, message: "ID del club debe ser un número válido." });
                 }
-
+                
                 // 🛑 MODIFICACIÓN CRÍTICA: Bloquear acceso a los datos del club si no es Admin o Presidente 🛑
                 try {
                     // Si se pide un club por ID, se asume que es para edición, por lo que se requiere autorización.
-                    // Si falla, verifyClubOwnershipOrAdmin lanza el error con el mensaje específico (401 o 403)
-                    await verifyClubOwnershipOrAdmin(req, id);
+                    await verifyClubOwnershipOrAdmin(req, id); 
                 } catch (error) {
-                    // Si falla la verificación, lanzamos el error para que el catch final devuelva el 401/403.
-                    throw error;
+                    // Si falla la verificación (no logueado, token inválido o no es presidente/admin),
+                    // se lanza el error para que el catch final devuelva el 401/403.
+                    throw error; 
                 }
                 // 🛑 FIN MODIFICACIÓN CRÍTICA 🛑
 
@@ -478,7 +476,6 @@ async function clubsHandler(req, res) {
             if (query.action === 'join' || query.action === 'leave') {
                 const verification = verifyToken(req);
                 if (!verification.authorized) {
-                    // Si falla el token, devolvemos el error de verifyToken
                     return res.status(401).json({ success: false, message: verification.message });
                 }
                 const requestingUserId = verification.user.id;
@@ -795,7 +792,6 @@ async function clubsHandler(req, res) {
                     estado: newEstado, id_presidente: newIdPresidente } = fields;
 
                 // Solo Admin o Presidente pueden editar
-                // Si falla, verifyClubOwnershipOrAdmin lanza el error con el mensaje específico (401 o 403)
                 const authorizedUser = await verifyClubOwnershipOrAdmin(req, id);
                 const isOnlyPresident = authorizedUser.role !== 'admin';
 
@@ -900,9 +896,9 @@ async function clubsHandler(req, res) {
                 }
 
                 // Captura de errores de autorización/propiedad
-                if (uploadError.message.includes('Necesitas iniciar sesión') || uploadError.message.includes('Necesitas ser presidente') || uploadError.message.includes('Token')) {
+                if (uploadError.message.includes('Acceso denegado') || uploadError.message.includes('Token') || uploadError.message.includes('Debe iniciar sesión') || uploadError.message.includes('presidente de un club')) {
                     // Usa el catch principal para manejar los errores de auth/permisos con los códigos correctos
-                    throw uploadError;
+                    throw uploadError; 
                 }
 
                 return res.status(500).json({ success: false, message: "Error interno en la actualización del club." });
@@ -988,14 +984,15 @@ async function clubsHandler(req, res) {
         console.error("Error en clubsHandler:", error);
 
         // 🛑 LÓGICA DE CAPTURA DE ERRORES MEJORADA (401 vs 403) 🛑
-        const isLoginRequired = error.message.includes('Necesitas iniciar sesión') || error.message.includes('Token');
+        const isLoginRequired = error.message.includes('Necesitas iniciar sesión');
         const isPresidentRequired = error.message.includes('Necesitas ser presidente');
-
-        if (isLoginRequired) {
+        const isTokenInvalid = error.message.includes('Token');
+        
+        if (isLoginRequired || isTokenInvalid) {
             // Caso 1: No logueado o token inválido -> 401
             return res.status(401).json({ success: false, message: error.message });
         }
-
+        
         if (isPresidentRequired) {
             // Caso 2: Logueado pero sin permisos de presidente -> 403
             return res.status(403).json({ success: false, message: error.message });
