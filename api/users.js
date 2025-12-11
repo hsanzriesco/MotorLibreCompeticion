@@ -1,5 +1,5 @@
 // =========================================================================
-// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 4 - ESTABILIZACIÓN GET /ME)
+// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 5 - FIX COLUMNAS DB)
 // =========================================================================
 
 import { Pool } from "pg";
@@ -296,10 +296,11 @@ async function getMeHandler(req, res) {
         console.error("### FALLO CRÍTICO EN getMeHandler (BD/SQL) ###");
         console.error("Detalle del error:", error.message);
 
-        // Si la columna club_id no existe, el error de la BD lo reportará.
-        if (error.message.includes('column "club_id" does not exist')) {
-            // Esto es útil para el log de Vercel.
-            console.error("ACCIÓN REQUERIDA: La tabla 'users' necesita la columna 'club_id'.");
+        // 💡 MODIFICACIÓN CRÍTICA: Capturar error de columna faltante (Postgres error code 42703)
+        if (error.code === '42703') {
+            console.error("ACCIÓN REQUERIDA: ¡ERROR DE ESQUEMA DB! La tabla 'users' carece de una de las columnas requeridas (club_id o is_presidente).");
+            // Devolvemos un mensaje de error más específico para el log de Vercel y el frontend
+            return res.status(500).json({ success: false, message: "Error interno del servidor: Faltan columnas clave en la tabla de usuarios." });
         }
 
         return res.status(500).json({ success: false, message: "Error interno del servidor al obtener perfil." });
@@ -493,7 +494,7 @@ async function userListCrudHandler(req, res) {
             let hashedPassword = undefined;
             if (password) {
                 const salt = await bcrypt.genSalt(10);
-                hashedPassword = await bcrypt.hash(password, salt);
+                const hashedPassword = await bcrypt.hash(password, salt);
             }
 
 
