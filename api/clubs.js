@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON DESVINCULACIÓN DE USUARIOS TRAS BORRADO DE CLUB Y PERMISO DE PRESIDENTE
+// clubs.js - VERSIÓN FINAL CORREGIDA Y ROBUSTA
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -302,7 +302,18 @@ async function statusChangeHandler(req, res) {
 
 async function clubsHandler(req, res) {
     const { method, query } = req;
-    const { estado, id } = query;
+
+    // 💡 CORRECCIÓN CRÍTICA: Obtenemos el ID de forma robusta
+    let { estado, id } = query;
+    if (!id && req.url) {
+        // Intento de parsear el ID de la URL si no viene en la query (útil en Express/otros enrutadores)
+        const parts = req.url.split('?')[0].split('/');
+        const possibleId = parts[parts.length - 1];
+        if (possibleId && !isNaN(parseInt(possibleId)) && possibleId !== 'clubs') {
+            id = possibleId;
+        }
+    }
+    // ----------------------------------------------------
 
     let isAdmin = false;
     let userId = null;
@@ -762,8 +773,8 @@ async function clubsHandler(req, res) {
             // --- FIN: Lógica para Salir del Club (Action: leave) ---
 
             // --- Lógica para Actualizar Club por Formulario (Requiere ID) ---
-            const { id } = query;
-            if (!id) return res.status(400).json({ success: false, message: "ID del club es requerido para actualizar." });
+            const clubIdToUpdate = id; // Usamos el ID de la búsqueda robusta
+            if (!clubIdToUpdate) return res.status(400).json({ success: false, message: "ID del club es requerido para actualizar." });
 
             let imagenFilePathTemp = null;
             let imagen_club_url = null;
@@ -779,7 +790,7 @@ async function clubsHandler(req, res) {
                     estado: newEstado, id_presidente: newIdPresidente } = fields;
 
                 // Solo Admin o Presidente pueden editar
-                const authorizedUser = await verifyClubOwnershipOrAdmin(req, id);
+                const authorizedUser = await verifyClubOwnershipOrAdmin(req, clubIdToUpdate);
                 const isOnlyPresident = authorizedUser.role !== 'admin';
 
 
@@ -790,7 +801,7 @@ async function clubsHandler(req, res) {
                 }
 
                 // Obtener la URL de la imagen actual del club antes de la actualización
-                const clubCheckRes = await pool.query('SELECT imagen_club FROM public.clubs WHERE id = $1', [id]);
+                const clubCheckRes = await pool.query('SELECT imagen_club FROM public.clubs WHERE id = $1', [clubIdToUpdate]);
                 if (clubCheckRes.rows.length > 0) {
                     old_imagen_club_url = clubCheckRes.rows[0].imagen_club;
                 }
@@ -838,7 +849,7 @@ async function clubsHandler(req, res) {
                     return res.status(400).json({ success: false, message: "No se proporcionaron campos para actualizar." });
                 }
 
-                values.push(id); // ID siempre es el último parámetro
+                values.push(clubIdToUpdate); // ID siempre es el último parámetro
 
                 const updateQuery = `
                     UPDATE public.clubs 
@@ -891,20 +902,21 @@ async function clubsHandler(req, res) {
             }
         }
 
-        // --- LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO (CORREGIDA) ---
+        // --- LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO (CORREGIDA Y ROBUSTA) ---
         if (method === "DELETE") {
             const clubId = parseInt(id);
+
+            // 🛑 VERIFICACIÓN: Si no hay ID o es una solicitud incompleta
             if (!clubId || isNaN(clubId)) {
                 return res.status(400).json({ success: false, message: "ID del club es requerido para eliminar." });
             }
 
             // Verificar si es administrador O el presidente del club
             try {
-                // CORRECCIÓN CLAVE: Usamos la función que permite eliminar al Admin O al Presidente del club
+                // La verificación es CRÍTICA y usa el ID capturado
                 await verifyClubOwnershipOrAdmin(req, clubId);
             } catch (error) {
                 // Si la verificación falla (no es admin ni presidente), lanzamos el error
-                // para que el catch general lo maneje y devuelva el 401 o 403 con el mensaje específico.
                 throw error;
             }
 
@@ -934,6 +946,9 @@ async function clubsHandler(req, res) {
                     [clubId]
                 );
 
+                // NOTA: Para el presidente del club eliminado, su token sigue siendo 'presidente'
+                // hasta que vuelva a iniciar sesión o el cliente actualice el token.
+
                 // 3. Eliminar el club de la tabla 'clubs'
                 const deleteClubRes = await client.query(
                     'DELETE FROM public.clubs WHERE id = $1 RETURNING id',
@@ -951,7 +966,8 @@ async function clubsHandler(req, res) {
                 }
 
                 await client.query('COMMIT');
-                return res.status(200).json({ success: true, message: "Club y miembros desvinculados correctamente." });
+                // Respuesta correcta para un DELETE exitoso
+                return res.status(204).json({ success: true, message: "Club y miembros desvinculados correctamente." });
 
             } catch (error) {
                 await client.query('ROLLBACK');

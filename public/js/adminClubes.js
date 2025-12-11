@@ -1,4 +1,4 @@
-// public/js/adminClubes.js - VERSIÓN FINAL CORREGIDA (9 COLUMNAS VISIBLES)
+// public/js/adminClubes.js - VERSIÓN FINAL CORREGIDA Y MEJORADA
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -251,9 +251,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (esPendiente) {
                 badgeEstado = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
                 accionesEspeciales = `
-                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
-                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
-                `;
+                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-check-circle"></i> Aprobar</button>
+                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_evento)}"><i class="bi bi-x-circle"></i> Rechazar</button>
+                `;
             } else if (club.estado === 'activo') {
                 badgeEstado = '<span class="badge bg-primary">ACTIVO</span>';
             } else {
@@ -268,24 +268,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
                 : "Sin descripción";
 
+            // Dato extraído para el botón (mejora de UX en la confirmación)
+            const clubNameForBtn = escapeHtml(club.nombre_evento || `Club ID: ${club.id}`);
+
             // 🛑 ESTRUCTURA DE 9 COLUMNAS (Sin ID) 🛑
             fila.innerHTML = `
-                <td>${escapeHtml(club.nombre_evento)}</td>
-                <td>${descripcionCorta}</td>
-                <td>${escapeHtml(club.ciudad || 'N/A')}</td>
-                <td>${escapeHtml(club.enfoque || 'N/A')}</td>
-                <td>${fecha}</td>
-                <td>${badgeEstado}</td>
-                <td>${presidenteInfo}</td>
-                <td>
-                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb img-thumbnail" alt="Imagen club" style="width: 50px; height: 50px; object-fit: cover;">` : "-"}
-                </td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}"><i class="bi bi-pencil"></i> Editar</button>
-                    <button class="btn btn-danger btn-sm eliminar-btn" data-id="${club.id}"><i class="bi bi-trash"></i> Eliminar</button>
-                    ${accionesEspeciales ? `<hr class="my-1 border-secondary">${accionesEspeciales}` : ''}
-                </td>
-            `;
+                <td>${escapeHtml(club.nombre_evento)}</td>
+                <td>${descripcionCorta}</td>
+                <td>${escapeHtml(club.ciudad || 'N/A')}</td>
+                <td>${escapeHtml(club.enfoque || 'N/A')}</td>
+                <td>${fecha}</td>
+                <td>${badgeEstado}</td>
+                <td>${presidenteInfo}</td>
+                <td>
+                    ${club.imagen_club ? `<img src="${club.imagen_club}" class="club-thumb img-thumbnail" alt="Imagen club" style="width: 50px; height: 50px; object-fit: cover;">` : "-"}
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm me-2 editar-btn" data-id="${club.id}"><i class="bi bi-pencil"></i> Editar</button>
+                    <button class="btn btn-danger btn-sm eliminar-btn" data-id="${club.id}" data-nombre="${clubNameForBtn}"><i class="bi bi-trash"></i> Eliminar</button>
+                    ${accionesEspeciales ? `<hr class="my-1 border-secondary">${accionesEspeciales}` : ''}
+                </td>
+            `;
 
             contenedorTabla.appendChild(fila);
         });
@@ -454,14 +457,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function preguntarEliminarClub(e) {
         const id = e.currentTarget.dataset.id;
+        const clubName = e.currentTarget.dataset.nombre || "este club"; // Añadido: obtener el nombre del data-attribute
         if (!id) return;
 
         clubToDeleteId = id;
 
-        const row = e.currentTarget.closest("tr");
-        // El nombre es el primer hijo (índice 0)
-        const clubName = row && row.children[0] ? row.children[0].textContent : "este club";
-
+        // Utilizamos el nombre del data-attribute o, como fallback, el nombre de la fila
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}" (ID: ${id})? Esta acción es irreversible.`;
 
@@ -483,7 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
-                // Usar la ruta RESTful /api/clubs/ID
+                // Usar la ruta RESTful /api/clubs/ID (Esto es correcto, el 404 está en el servidor)
                 const res = await fetch(`/api/clubs/${id}`, {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
