@@ -17,7 +17,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
     // Limpiar todas las claves de sesión posibles para un logout forzado
     sessionStorage.removeItem('usuario');
-    sessionStorage.removeItem('user'); // Nueva clave para la sesión completa
+    sessionStorage.removeItem('user');
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('jwtToken');
     sessionStorage.removeItem('club_id');
@@ -45,6 +45,7 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 /**
  * Función mejorada para obtener el token.
  * Busca en sessionStorage y localStorage, y busca 'jwtToken' o 'token'.
+ * @returns {string|null} El token encontrado.
  */
 function getToken() {
     let token = sessionStorage.getItem('jwtToken');
@@ -115,7 +116,6 @@ async function getClubIdAndUser() {
 
         if (!clubId) {
             // Este es el error original si el usuario no tiene club asociado.
-            // Corregido un pequeño error tipográfico: 'new new Error' -> 'new Error'
             throw new Error('El usuario no está asignado a un club.');
         }
 
@@ -367,6 +367,7 @@ function handleClubDeletion(clubId) {
 
     async function handleConfirmDeleteClick() {
         const clubToDeleteId = document.getElementById('club-id').value;
+        // Obtenemos el token para enviarlo
         const token = getToken();
 
         if (!clubToDeleteId || !token) {
@@ -426,15 +427,38 @@ function handleClubDeletion(clubId) {
                 alert(result.message || 'Club eliminado. Redirigiendo...');
             }
 
-            // 🛑 Limpiar sesión completa del usuario (ya no tiene club)
+            // 🛑 CORRECCIÓN DE SINCRONIZACIÓN: Limpiar todas las claves de membresía y token.
+            // Esto es crucial porque el usuario ya no tiene club y debe forzar un nuevo login/estado.
+
+            // Obtenemos el token activo para saber si está en sessionStorage o localStorage
+            const activeToken = getToken();
+
+            // 1. Limpiar las claves de club/rol
             sessionStorage.removeItem('club_id');
             sessionStorage.removeItem('role');
-            sessionStorage.removeItem('jwtToken');
-            sessionStorage.removeItem('user');
+            sessionStorage.removeItem('usuario'); // Limpiamos el objeto de usuario que contenía el club_id
+
+            // 2. Limpiar el token (siempre la fuente de verdad)
+            if (activeToken === sessionStorage.getItem('token')) {
+                sessionStorage.removeItem('token');
+            }
+            if (activeToken === sessionStorage.getItem('jwtToken')) {
+                sessionStorage.removeItem('jwtToken');
+            }
+            if (activeToken === localStorage.getItem('token')) {
+                localStorage.removeItem('token');
+            }
+            if (activeToken === localStorage.getItem('jwtToken')) {
+                localStorage.removeItem('jwtToken');
+            }
+            // También se puede llamar a manejarFaltaAutenticacion(..., 'exito') para limpiar todo,
+            // pero la redirección debe ser a la página de clubes.
+
+            // Fin de la CORRECCIÓN DE SINCRONIZACIÓN
 
             setTimeout(() => {
                 // Redirigir a la lista de clubes o inicio
-                window.location.href = '../../../index.html';
+                window.location.href = '/pages/clubes/clubes.html'; // Redirigir a la lista de clubes
             }, 1500);
 
         } catch (error) {
@@ -508,7 +532,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             manejarFaltaAutenticacion('Error de autenticación: Sesión expirada.', 'error');
         } else if (error.message.includes('asignado')) {
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('error', 'No tienes un club asignado para editar.', 'Información');
+                mostrarAlerta('error', 'NoTienesClub', 'No tienes un club asignado para editar.');
             }
             // Redirigir a la lista de clubes
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
