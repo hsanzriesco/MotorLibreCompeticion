@@ -1,31 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 🛑 BANDERA DE CONTROL CRÍTICA PARA EVITAR MÚLTIPLES ALERTAS/REDIRECCIONES
     let redireccionEnCurso = false;
 
-    // Función centralizada para manejar la falta de autenticación
     function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
         if (redireccionEnCurso) return;
 
-        redireccionEnCurso = true; // Activa la bandera
+        redireccionEnCurso = true;
 
-        // Limpiar cualquier sesión corrupta o residual
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
-        // También limpia el token para mayor seguridad
         sessionStorage.removeItem('token');
         localStorage.removeItem('token');
 
 
-        // ⭐ MODIFICACIÓN CLAVE: Muestra la ÚNICA alerta deseada (roja)
-        // Se fuerza el mensaje y el tipo 'error' para evitar duplicados de diferente color
         mostrarAlerta("Tienes que iniciar sesión para acceder a tu perfil", 'error');
 
-        // Redirige
         setTimeout(() => window.location.href = '../auth/login/login.html', 1200);
     }
 
-    // --- Variables del DOM ---
     const profileForm = document.getElementById('profile-form');
     const carForm = document.getElementById('car-form');
     const carList = document.getElementById('car-list');
@@ -48,31 +40,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const carPhotoPreview = document.getElementById('carPhotoPreview');
     const carPhotoContainer = document.getElementById('carPhotoContainer');
     const clearCarPhotoBtn = document.getElementById('clearCarPhotoBtn');
-    // Variable para el botón de Cerrar Sesión
     const btnConfirmLogout = document.getElementById('btnConfirmLogout');
 
     let currentVehicle = null;
 
-    // 🛑 LÓGICA DE AUTENTICACIÓN CENTRALIZADA (INICIO) 🛑
     const stored = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     let user = null;
 
     if (!stored) {
-        // Si no hay sesión, llama a la función centralizada y sale.
         manejarFaltaAutenticacion("Mensaje irrelevante, la función lo reemplaza", 'error');
-        return; // ⬅️ CRÍTICO: Detiene la ejecución del script y evita llamadas a la API
     }
 
     try {
         user = JSON.parse(stored);
     } catch (err) {
-        // Si el JSON está mal, llama a la función centralizada y sale.
         manejarFaltaAutenticacion("Sesión corrupta. Vuelve a iniciar sesión.", 'error');
         return;
     }
-    // ----------------------------------------
-
-    // Si llegamos aquí, 'user' es válido.
 
     userNameElement.textContent = user.name || 'Usuario';
     if (loginIcon) loginIcon.style.display = 'none';
@@ -80,8 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('user-id').value = user.id || '';
     document.getElementById('profile-name').value = user.name || '';
     document.getElementById('profile-email').value = user.email || '';
-
-    // --- FUNCIONES DE VEHÍCULOS Y UTILIDADES ---
 
     function escapeHtml(s) {
         return String(s || '').replace(/[&<>"']/g, c => ({
@@ -109,9 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="car-card" role="button" tabindex="0">
                 <div class="car-image-container">
                     <img src="${imgSrc}" 
-                                 alt="Foto de ${escapeHtml(name)}" 
-                                 loading="lazy"
-                                 onerror="this.onerror=null;this.src='${defaultImg}';" />
+                             alt="Foto de ${escapeHtml(name)}" 
+                             loading="lazy"
+                             onerror="this.onerror=null;this.src='${defaultImg}';" />
                 </div>
                 <div class="car-details-content">
                     <div class="car-name-group">
@@ -129,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadVehicles() {
-        // ⭐ SEGUNDA MODIFICACIÓN CLAVE: Si ya se inició la redirección/alerta, sal de aquí.
         if (redireccionEnCurso) return;
 
         const allVehicles = [];
@@ -138,17 +119,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let carsHtml = '';
         let motorcyclesHtml = '';
 
-        // --- LÓGICA PARA COCHES (CORRECCIÓN APLICADA AQUÍ) ---
         try {
             const carsResp = await fetch(`/api/carGarage?user_id=${userId}`);
 
-            // 🛑 CORRECCIÓN CRÍTICA: Verifica explícitamente el estado de la API
             if (carsResp.status === 401 || carsResp.status === 403) {
-                // Si la sesión expiró/es inválida, redirige
                 return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
             }
 
-            // Manejo de otros errores no-OK (ej: 500 Internal Server Error)
             if (!carsResp.ok) {
                 const errorJson = await carsResp.json().catch(() => ({ msg: `Error HTTP ${carsResp.status} al cargar coches.` }));
                 throw new Error(errorJson.msg || `Error HTTP ${carsResp.status} al cargar coches.`);
@@ -168,17 +145,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error al cargar coches:", e.message);
         }
 
-        // --- LÓGICA PARA MOTOS (CORRECCIÓN APLICADA AQUÍ) ---
         try {
             const bikesResp = await fetch(`/api/motosGarage?user_id=${userId}`);
 
-            // 🛑 CORRECCIÓN CRÍTICA: Verifica explícitamente el estado de la API
             if (bikesResp.status === 401 || bikesResp.status === 403) {
-                // Si la sesión expiró/es inválida, redirige
                 return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
             }
 
-            // Manejo de otros errores no-OK (ej: 500 Internal Server Error)
             if (!bikesResp.ok) {
                 const errorJson = await bikesResp.json().catch(() => ({ msg: `Error HTTP ${bikesResp.status} al cargar motos.` }));
                 throw new Error(errorJson.msg || `Error HTTP ${bikesResp.status} al cargar motos.`);
@@ -226,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (vehicle) {
                     openCarModal(vehicle);
-                    // Asegurar que el modal se abre usando la clase de Bootstrap
                     const carModalInstance = bootstrap.Modal.getOrCreateInstance(carModal);
                     carModalInstance.show();
                 }
@@ -234,11 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * @description Actualiza el texto del modal y deshabilita el select si se está editando.
-     * @param {string} type - 'car' o 'motorcycle'
-     * @param {boolean} isEdit - Si es true, estamos editando.
-     */
     function updateCarModalUI(type, isEdit = false) {
         const isCar = type === 'car';
 
@@ -281,23 +248,19 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteCarBtn.style.display = 'none';
         }
 
-        // Establecer el valor del SELECT para el tipo de vehículo
         vehicleTypeSelect.value = type;
 
         updateCarModalUI(type, isEdit);
     }
 
-    // --- MANEJO DE EVENTOS ---
 
     openAddCarBtn.addEventListener('click', () => {
         openCarModal(null);
-        // Asegurar que el modal se abre usando la clase de Bootstrap
         const carModalInstance = bootstrap.Modal.getOrCreateInstance(carModal);
         carModalInstance.show();
     });
 
     vehicleTypeSelect.addEventListener('change', (e) => {
-        // Solo actualiza la UI si estamos en modo "Añadir" (no hay vehículo actual)
         if (!currentVehicle) {
             updateCarModalUI(e.target.value, false);
         }
@@ -340,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const vehicleYear = parseInt(carYearInput.value.trim());
         const currentYear = new Date().getFullYear();
 
-        // Validación de Año
         if (carYearInput.value.trim() && (isNaN(vehicleYear) || vehicleYear < 1900 || vehicleYear > currentYear)) {
             mostrarAlerta(`El año del vehículo no es válido. Debe ser entre 1900 y ${currentYear}.`, 'error');
             return;
@@ -381,7 +343,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            // CORRECCIÓN: Agregar chequeo de sesión en otras llamadas a la API
             if (resp.status === 401 || resp.status === 403) {
                 return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
             }
@@ -420,7 +381,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'DELETE'
             });
 
-            // CORRECCIÓN: Agregar chequeo de sesión en otras llamadas a la API
             if (resp.status === 401 || resp.status === 403) {
                 return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
             }
@@ -442,7 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- FUNCIÓN DE CONFIRMACIÓN CUSTOM (SIN CAMBIOS) ---
     function mostrarConfirmacion(mensaje = '¿Confirmar?', confirmText = 'Confirmar') {
         return new Promise((resolve) => {
             if (document.getElementById('mlc-confirm-overlay')) {
@@ -535,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- MANEJO DE FORMULARIO DE PERFIL ---
 
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -557,8 +515,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Nota: Este endpoint puede requerir un cambio si el email es la clave única y se está modificando.
-            // Asumo que el backend maneja la validación de la contraseña si se cambia el email.
             const resp = await fetch('/api/users?action=updateName', {
                 method: 'PUT',
                 headers: {
@@ -571,7 +527,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            // CORRECCIÓN: Agregar chequeo de sesión en otras llamadas a la API
             if (resp.status === 401 || resp.status === 403) {
                 return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
             }
@@ -582,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(json.message || 'Error al actualizar perfil.');
             }
 
-            // Actualizar el objeto de usuario y almacenamiento local/sesión
             user.name = newName;
             user.email = newEmail;
 
@@ -600,13 +554,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ==========================================================
-    // ⭐ NUEVA FUNCIÓN DE DESVINCULACIÓN DEL CLUB (GLOBAL)
-    // ==========================================================
     window.desvincularUsuarioDelClub = async function () {
         if (!user || redireccionEnCurso) return;
 
-        // 1. Confirmar la acción con el usuario
         const confirmar = await mostrarConfirmacion('¿Estás seguro de que quieres salir de tu club?', 'Sí, Salir del Club');
         if (!confirmar) {
             mostrarAlerta('Desvinculación cancelada', 'info');
@@ -614,9 +564,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // 2. Llama a la API para desvincular al usuario del club (AJUSTA ESTE ENDPOINT)
             const resp = await fetch('/api/club/desvincular', {
-                method: 'PUT', // O DELETE, según tu API
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -634,29 +583,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(json.msg || 'Fallo al desvincularse del club.');
             }
 
-            // 3. Obtener la ubicación de almacenamiento (sessionStorage o localStorage)
             const storage = localStorage.getItem('usuario') ? localStorage : sessionStorage;
 
-            // 4. Limpiar la información del club en el objeto de usuario (CLAVE)
-            // Se asume que estos campos definen la pertenencia
             delete user.club_id;
             delete user.clubId;
 
-            // Si el rol era de club, cambiarlo a usuario normal
             if (user.role === 'presidente' || user.role === 'miembro') {
                 user.role = 'usuario';
             }
 
-            // 5. Guardar el objeto de usuario actualizado (LIMPIO)
             storage.setItem('usuario', JSON.stringify(user));
 
-            // 6. Establecer el indicador de recarga para clubes.html (CLAVE para la recarga)
             sessionStorage.setItem('clubesDebeRecargar', 'true');
 
             mostrarAlerta('Te has desvinculado del club con éxito. Actualizando lista de clubes...', 'exito');
 
-            // 7. Redirigir a clubes.html
-            redireccionEnCurso = true; // Impedir otras acciones
+            redireccionEnCurso = true;
             setTimeout(() => {
                 window.location.href = '../clubes/clubes.html';
             }, 1200);
@@ -666,13 +608,9 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarAlerta('Error al salir del club. ' + e.message, 'error');
         }
     }
-    // ==========================================================
 
-
-    // --- LÓGICA DE CIERRE DE SESIÓN AGREGADA ---
 
     function cerrarSesion() {
-        // Limpia toda la información de la sesión
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
         sessionStorage.removeItem('token');
@@ -680,15 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         mostrarAlerta('Has cerrado la sesión', 'info');
-        // Redirigir al inicio después de un breve retraso
         setTimeout(() => window.location.href = '/index.html', 800);
     }
 
     if (btnConfirmLogout) {
         btnConfirmLogout.addEventListener('click', () => {
-            // Cerrar el modal antes de cerrar la sesión
             const modalElement = document.getElementById('logoutConfirmModal');
-            // Usar getOrCreateInstance para ser más robusto
             const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
             if (modalInstance) {
                 modalInstance.hide();
@@ -696,9 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cerrarSesion();
         });
     }
-    // ---------------------------------------------
 
 
-    // Iniciar la carga de vehículos (Solo si el script no ha salido antes)
     loadVehicles();
 });
