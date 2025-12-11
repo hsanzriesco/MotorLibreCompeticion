@@ -1,65 +1,44 @@
-// public/js/adminClubes.js - VERSIÓN FINAL COMPLETAMENTE CORREGIDA
 
 document.addEventListener("DOMContentLoaded", () => {
-
-    // -----------------------------------------
-    // UTIL: Token, Rol y Seguridad
-    // -----------------------------------------
-
-    /** Obtiene el Token JWT de la sessionStorage. */
     function getToken() {
         const token = sessionStorage.getItem('jwtToken');
         if (token) return token;
         return sessionStorage.getItem('token');
     }
 
-    /** Obtiene el rol del usuario de la sessionStorage. */
     function getRole() {
         return sessionStorage.getItem('role');
     }
 
-    /** REDIRECCIÓN DE SEGURIDAD. Verifica token y rol de administrador. */
     function checkAdminAccess() {
         const token = getToken();
         const role = getRole();
 
         if (!token) {
             alert("Acceso no autorizado. Debes iniciar sesión.");
-            // Redirige al login si no hay token
             window.location.href = '/pages/auth/login.html';
             return false;
         }
 
-        // Si el rol no es 'admin', redirigir
         if (role !== 'admin') {
             alert("Permisos insuficientes. Solo los administradores pueden acceder a esta página.");
-            // Redirige a la página principal si el rol no es 'admin'
             window.location.href = '/index.html';
             return false;
         }
         return true;
     }
 
-    // 🚨 ¡VERIFICACIÓN DE ACCESO CRÍTICA AL INICIO DEL SCRIPT! 🚨
     if (!checkAdminAccess()) {
         return; // Detiene la ejecución si la verificación falla
     }
-    // FIN DE VERIFICACIÓN
 
 
-    // --- ⭐ CONFIGURACIÓN Y REFERENCIAS DEL DOM ⭐ ---
-    // Total de columnas en la tabla para el colspan de mensajes.
     const TOTAL_COLUMNS = 8; // Asegurado que coincida con tu HTML
 
-    // Elementos de las dos tablas y el contador
     const tablaActivos = document.getElementById("tabla-clubes-activos");
     const tablaPendientes = document.getElementById("tabla-clubes-pendientes");
     const badgePendientes = document.getElementById("badge-pendientes");
-
-    // Formulario 
     const form = document.getElementById("club-form");
-
-    // Elementos del formulario de edición/creación
     const inputId = document.getElementById("club-id");
     const inputNombre = document.getElementById("nombre_club");
     const inputDescripcion = document.getElementById("descripcion");
@@ -68,72 +47,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputImagen = document.getElementById("imagen_club"); // Input de tipo file
     const inputFecha = document.getElementById("fecha_creacion");
     const inputIdPresidente = document.getElementById("id_presidente");
-
-    // Modals de Bootstrap
     const clubModalEl = document.getElementById("clubModal");
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
     const btnConfirmDelete = document.getElementById("btnConfirmDelete");
     const deleteMessageEl = document.getElementById("deleteConfirmMessage");
     let clubToDeleteId = null;
-
     const statusModalEl = document.getElementById("statusConfirmModal");
     const btnConfirmStatus = document.getElementById("btnConfirmStatus");
     const statusConfirmMessage = document.getElementById("statusConfirmMessage");
     let clubToChangeStatus = { id: null, action: null };
 
-    // Declarar e inicializar las variables de instancia de Bootstrap Modal
     let deleteConfirmModal = null;
     let statusConfirmModal = null;
-
-    // Asignar las instancias de Bootstrap 
     if (deleteConfirmModalEl && typeof bootstrap !== 'undefined') {
         deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl, { keyboard: false });
     }
     if (statusModalEl && typeof bootstrap !== 'undefined') {
         statusConfirmModal = new bootstrap.Modal(statusModalEl, { keyboard: false });
     }
-    // FIN DE INSTANCIAS DE MODAL
 
-
-    // -----------------------------------------
-    // UTIL: Fecha, Limpieza y Escape HTML
-    // -----------------------------------------
-
-    /** Obtiene la fecha de hoy en formato 'YYYY-MM-DD'. */
     function hoyISODate() {
         const d = new Date();
         return d.toISOString().split('T')[0];
     }
 
-    /** Inicializa el valor del input de fecha a la fecha actual. */
     function setFechaDefault() {
         if (inputFecha) inputFecha.value = hoyISODate();
     }
 
-    /** Limpia el formulario y lo prepara para la creación. */
     function clearForm() {
-        // CORREGIDO: Usamos form.reset() y limpiamos los inputs ocultos/específicos.
         if (form) form.reset();
-
         if (inputId) inputId.value = "";
         if (inputIdPresidente) inputIdPresidente.value = "";
-
-        // Resetear select del enfoque al valor por defecto
         if (inputEnfoque) inputEnfoque.value = "";
-
-        // La fecha de creación solo se rellena automáticamente en modo creación.
         if (!inputId || inputId.value === "") setFechaDefault();
-
-        // Ocultar select de presidente si es un formulario unificado.
         const presidenteSelectContainer = document.getElementById('presidente-select-container');
         if (presidenteSelectContainer) presidenteSelectContainer.style.display = 'none';
-
-        // Reajustar el título del formulario (asumiendo que tiene un h3)
         const h3Title = document.querySelector('.admin-section h3.text-danger');
         if (h3Title) h3Title.textContent = 'Guardar Club';
     }
 
-    /** Escapa caracteres HTML para prevenir XSS. */
     function escapeHtml(str = "") {
         return String(str)
             .replaceAll("&", "&amp;")
@@ -142,12 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&#39;");
     }
-
-    // -----------------------------------------
-    // ALERTA
-    // -----------------------------------------
-
-    /** * Muestra una alerta, usando la implementación global (alertas.js) si está disponible. */
     function emitirAlerta(message, type) {
         console.log(`[${(type || 'log').toUpperCase()}] ${message.replace(/\*\*|/g, '')}`);
 
@@ -158,11 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // -----------------------------------------
-    // CARGAR LISTA DE CLUBES Y DISTRIBUIR
-    // -----------------------------------------
-
-    /** Carga los clubes activos y pendientes de la API y renderiza las tablas. */
     async function cargarClubes() {
         const token = getToken();
         if (!token) {
@@ -175,12 +117,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const headers = { 'Authorization': `Bearer ${token}` };
 
-        // Mostrar estados de carga iniciales
         if (tablaActivos) tablaActivos.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-warning text-center">Cargando clubes activos...</td></tr>`;
         if (tablaPendientes) tablaPendientes.innerHTML = `<tr><td colspan="${TOTAL_COLUMNS}" class="text-warning text-center">Cargando solicitudes pendientes...</td></tr>`;
 
         try {
-            // Asumiendo que /api/clubs acepta query params para filtrar por estado
             const [resActivos, resPendientes] = await Promise.all([
                 fetch("/api/clubs?estado=activo", { headers }),
                 fetch("/api/clubs?estado=pendiente", { headers })
@@ -224,7 +164,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    /** Renderiza la tabla de clubes. */
     function renderTabla(contenedorTabla, clubes, status = 'ok') {
         if (!contenedorTabla) return;
 
@@ -267,7 +206,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const clubNameForBtn = escapeHtml(club.nombre_club || club.nombre_evento || `Club ID: ${club.id}`);
 
-            // ESTRUCTURA COINCIDENTE CON TU HTML (8 COLUMNAS):
             fila.innerHTML = `
                 <td>${escapeHtml(String(club.id || ''))}</td>
                 <td>${escapeHtml(club.nombre_club || 'Sin nombre')}</td>
@@ -291,7 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
             contenedorTabla.appendChild(fila);
         });
 
-        // Adjuntar listeners de eventos (mejor práctica que el inline onclick)
         contenedorTabla.querySelectorAll(".editar-btn").forEach(btn =>
             btn.addEventListener("click", cargarClubEnFormulario)
         );
@@ -310,10 +247,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // -----------------------------------------
-    // CARGAR CLUB EN FORMULARIO (EDITAR)
-    // -----------------------------------------
-
     async function cargarClubEnFormulario(e) {
         const id = e.currentTarget.dataset.id;
         const token = getToken();
@@ -324,7 +257,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
-            // Endpoint con query string ?id= para Next.js
             const res = await fetch(`/api/clubs?id=${id}`, { headers });
 
             if (!res.ok) {
@@ -341,38 +273,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Llenar el formulario con los datos del club
             if (inputId) inputId.value = c.id;
-            // Usar nombre_club o nombre_evento como fallback
             if (inputNombre) inputNombre.value = c.nombre_club || c.nombre_evento || "";
             if (inputDescripcion) inputDescripcion.value = c.descripcion || "";
-
-            // ARREGLO DE FECHA: Asegurar formato YYYY-MM-DD
             if (inputFecha) inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
-
             if (inputCiudad) inputCiudad.value = c.ciudad || "";
-            // CORRECCIÓN: Seleccionar el enfoque correcto
             if (inputEnfoque) inputEnfoque.value = c.enfoque || "";
-
             if (inputImagen) inputImagen.value = ""; // No se rellena el input file
-
-            // Cargar ID del presidente
             if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
-
-            // Mostrar el contenedor del selector de presidente si existe
             const presidenteSelectContainer = document.getElementById('presidente-select-container');
             if (presidenteSelectContainer) presidenteSelectContainer.style.display = 'block';
-
-            // Reajustar el título del formulario
             const h3Title = document.querySelector('.admin-section h3.text-danger');
             if (h3Title) h3Title.textContent = `Editar Club (ID: ${c.id})`;
-
             emitirAlerta(`Club ID ${c.id} cargado para edición.`, "info");
-
-            // Foco en el nombre si existe
             if (inputNombre) inputNombre.focus();
-
-            // Opcional: Si el formulario está en un modal, abrirlo
             if (clubModalEl && typeof bootstrap !== 'undefined') {
                 let inst = bootstrap.Modal.getInstance(clubModalEl);
                 if (!inst) inst = new bootstrap.Modal(clubModalEl);
@@ -389,14 +303,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-
-    // -----------------------------------------
-    // GUARDAR CLUB (POST / PUT) - SOLUCIÓN CLAVE
-    // -----------------------------------------
-
     if (form) {
         form.addEventListener("submit", async (e) => {
-            // ⭐ SOLUCIÓN CLAVE: Prevenir el envío por defecto 
             e.preventDefault();
 
             const token = getToken();
@@ -407,11 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const id = inputId ? inputId.value : '';
             const metodo = id ? "PUT" : "POST";
-
-            // URL con Query Parameter (convención para Next.js)
             const url = id ? `/api/clubs?id=${id}` : "/api/clubs";
-
-            // 🚨 VALIDACIÓN RÁPIDA DE CAMPOS OBLIGATORIOS
             if (
                 !inputNombre || !inputNombre.value.trim() ||
                 !inputCiudad || !inputCiudad.value.trim() ||
@@ -430,17 +334,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Usar FormData para manejar campos de texto e imagen (multipart/form-data)
             const formData = new FormData(form);
 
-            // ⭐ CORRECCIÓN DE IMAGEN EN EDICIÓN: Limpiar FormData si no se subió una nueva
-            // Si es PUT y el input file no tiene archivo, eliminamos el campo para no borrar la imagen existente.
             const imageFile = formData.get('imagen_club');
             if (metodo === 'PUT' && imageFile && imageFile.name === '' && imageFile.size === 0) {
                 formData.delete('imagen_club');
             }
 
-            // Aseguramos que el nombre sea el que el servidor espera ('nombre_club' o 'nombre_evento')
             formData.set("nombre_club", inputNombre.value);
             formData.set("nombre_evento", inputNombre.value);
 
@@ -449,15 +349,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (inputIdPresidente) {
                 const presidenteId = inputIdPresidente.value.trim();
                 if (presidenteId && !isNaN(parseInt(presidenteId))) {
-                    // Si es un número válido, se establece
                     formData.set("id_presidente", presidenteId);
                 } else {
-                    // Si está vacío o no es un número, se elimina para evitar enviar "" a un campo entero de DB (Error 500)
                     formData.delete("id_presidente");
                 }
             }
 
-            // Aseguramos que el estado sea activo al guardar/actualizar (creación por admin)
             formData.append("estado", "activo");
 
 
@@ -466,7 +363,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     method: metodo, // PUT o POST
                     headers: {
                         'Authorization': `Bearer ${token}`
-                        // ¡No se añade Content-Type! El navegador lo gestiona automáticamente con FormData.
                     },
                     body: formData // Enviar el FormData directamente
                 });
@@ -485,7 +381,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 emitirAlerta(id ? "Club actualizado correctamente" : "Club creado correctamente", "exito");
 
-                // Ocultar el modal si está abierto (y clubModalEl ya está definido)
                 if (clubModalEl && typeof bootstrap !== 'undefined') {
                     const inst = bootstrap.Modal.getInstance(clubModalEl);
                     if (inst) inst.hide();
@@ -504,11 +399,6 @@ document.addEventListener("DOMContentLoaded", () => {
         console.warn("Formulario #club-form no encontrado en el DOM.");
     }
 
-
-    // -----------------------------------------
-    // ELIMINAR CLUB
-    // -----------------------------------------
-
     function preguntarEliminarClub(e) {
         const id = e.currentTarget.dataset.id;
         const clubName = e.currentTarget.dataset.nombre || "este club";
@@ -519,8 +409,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}" (ID: ${id})? Esta acción es irreversible.`;
-
-        // ⭐ CORRECCIÓN: Almacenar el ID en el botón de confirmación para una lectura fiable.
         if (btnConfirmDelete) btnConfirmDelete.dataset.clubId = id;
 
         if (deleteConfirmModal) deleteConfirmModal.show();
@@ -530,7 +418,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btnConfirmDelete.addEventListener("click", async (e) => {
             const token = getToken();
 
-            // ⭐ CORRECCIÓN: Leer el ID del data-attribute o de la variable global (más robusto)
             const id = e.currentTarget.dataset.clubId || clubToDeleteId;
 
             if (!id || !token) {
@@ -542,7 +429,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
-                // Usar Query Parameter para DELETE.
                 const res = await fetch(`/api/clubs?id=${id}`, {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -562,7 +448,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 emitirAlerta("Club eliminado correctamente", "exito");
                 clubToDeleteId = null;
-                // Limpiar el atributo del botón
                 e.currentTarget.dataset.clubId = "";
                 cargarClubes();
 
@@ -573,11 +458,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-
-
-    // -------------------------------------------------------------------
-    // GESTIÓN DE ESTADO (APROBAR / RECHAZAR SOLICITUD)
-    // -------------------------------------------------------------------
 
     function preguntarCambioEstado(e, action) {
         const id = e.currentTarget.dataset.id;
@@ -622,7 +502,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 let successMessage;
 
                 if (action === 'aprobar') {
-                    // Endpoint específico para cambio de estado (PUT con JSON body)
                     const urlAprobar = `/api/clubs?id=${id}&status=change`;
                     res = await fetch(urlAprobar, {
                         method: 'PUT',
@@ -631,7 +510,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    // RECHAZAR = ELIMINAR (usando DELETE)
                     res = await fetch(`/api/clubs?id=${id}`, {
                         method: 'DELETE',
                         headers: headers
@@ -665,9 +543,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // -----------------------------------------
-    // Inicializar
-    // -----------------------------------------
     clearForm(); // Usamos clearForm para inicializar todos los campos
     cargarClubes();
 });
