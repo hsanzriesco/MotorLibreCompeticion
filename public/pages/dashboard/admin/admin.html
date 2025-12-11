@@ -52,79 +52,82 @@
             box-shadow: none !important;
         }
 
-        /* Estilos de tabla para visibilidad */
+        /* ======================================= */
+        /* MEJORA DE ESTRUCTURA DE TABLA */
+        /* ======================================= */
+        .table-responsive {
+            overflow-x: auto;
+            /* Asegura el scroll horizontal si la tabla es más ancha que la pantalla */
+        }
+
         table {
             color: white !important;
-            /* Asegura que el texto de la tabla sea blanco */
-            min-width: 900px;
-            /* Asegura un ancho mínimo para evitar compresión excesiva */
+            min-width: 1000px;
+            /* Fija un ancho mínimo para evitar que se comprima demasiado */
             table-layout: fixed;
-            /* Fija el tamaño de las columnas */
+            /* Permite fijar el ancho de las columnas */
         }
 
         .table-dark th,
         .table-dark td {
             border-color: rgba(229, 9, 20, 0.4);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            vertical-align: middle;
+            text-align: center;
+            /* Permite saltos de línea dentro de las celdas */
+            white-space: normal;
+            word-wrap: break-word;
         }
 
+        /* Ancho de columnas específico para un buen layout */
         .table-dark th:nth-child(1),
         .table-dark td:nth-child(1) {
-            width: 50px;
+            width: 5%;
         }
 
         /* ID */
         .table-dark th:nth-child(2),
         .table-dark td:nth-child(2) {
-            width: 150px;
+            width: 15%;
         }
 
         /* Nombre */
         .table-dark th:nth-child(3),
         .table-dark td:nth-child(3) {
-            width: 200px;
+            width: 25%;
         }
 
-        /* Descripción/Enfoque (combinados para la foto) */
+        /* Desc./Enfoque (La columna más ancha) */
         .table-dark th:nth-child(4),
         .table-dark td:nth-child(4) {
-            width: 120px;
+            width: 10%;
         }
 
-        /* Fecha */
+        /* Fecha Creación */
         .table-dark th:nth-child(5),
         .table-dark td:nth-child(5) {
-            width: 100px;
+            width: 10%;
         }
 
-        /* Estado */
+        /* Ciudad */
         .table-dark th:nth-child(6),
         .table-dark td:nth-child(6) {
-            width: 120px;
+            width: 15%;
         }
 
         /* Presidente */
         .table-dark th:nth-child(7),
         .table-dark td:nth-child(7) {
-            width: 80px;
+            width: 10%;
         }
 
         /* Imagen */
         .table-dark th:nth-child(8),
         .table-dark td:nth-child(8) {
-            width: 180px;
+            width: 10%;
         }
 
-        /* Acciones */
-
-        .table-responsive {
-            /* Permite el desplazamiento horizontal solo de la tabla si es necesario */
-            overflow-x: auto;
-            /* Oculta la barra de desplazamiento en otros ejes si no es necesario */
-            max-width: 100%;
-        }
+        /* Acciones (Botones) */
+        /* ======================================= */
 
 
         .btn-danger {
@@ -310,7 +313,7 @@
 
                 <div class="tab-pane fade show active" id="clubes-activos-pane" role="tabpanel">
                     <div class="table-responsive">
-                        <table class="table table-dark table-striped text-center">
+                        <table class="table table-dark table-striped">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -334,7 +337,7 @@
 
                 <div class="tab-pane fade" id="clubes-pendientes-pane" role="tabpanel">
                     <div class="table-responsive">
-                        <table class="table table-dark table-striped text-center">
+                        <table class="table table-dark table-striped">
                             <thead>
                                 <tr>
                                     <th>ID</th>
