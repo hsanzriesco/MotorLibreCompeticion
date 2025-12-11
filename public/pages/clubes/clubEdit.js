@@ -1,4 +1,4 @@
-// public/js/clubEdit.js - VERSIÓN FINAL Y CORREGIDA (CON MANEJO ROBUSTO DE JSON EN DELETE)
+// public/js/clubEdit.js - VERSIÓN FINAL Y CORREGIDA (CON MANEJO ROBUSTO DE JSON EN DELETE Y MEJORA EN PUT)
 
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
@@ -105,7 +105,8 @@ async function getClubIdAndUser() {
         const clubId = user.club_id || null;
 
         // 💡 Ajuste: Usar la propiedad 'is_presidente' o 'rol' para determinar si es presidente
-        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.rol === 'presidente';
+        // Nota: El backend clubs.js ahora pone is_presidente=true al presidente.
+        const isPresidente = user.is_presidente === true || user.role === 'presidente';
 
         // Opcional: Persistir el club_id en sesión para otros scripts
         if (clubId) {
@@ -130,6 +131,7 @@ async function getClubIdAndUser() {
 
 async function loadClubData(clubId) {
     const token = getToken();
+    // 🛑 CORRECCIÓN: Agregar includeMembers=false o dejarlo sin el query param, ya que no se necesitan.
     const clubUrl = `${API_CLUBS_URL}?id=${clubId}`;
 
     try {
@@ -254,9 +256,9 @@ async function handleFormSubmit(event) {
     if (!token || !clubId) {
         // Alerta específica si falta el ID del club. Este era el punto de fallo.
         if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta('ID del club es requerido para actualizar.', 'error');
+            mostrarAlerta('ID del club o token de sesión es requerido para actualizar.', 'error');
         } else {
-            alert('ID del club es requerido para actualizar.');
+            alert('ID del club o token de sesión es requerido para actualizar.');
         }
         // No redirigimos con manejarFaltaAutenticacion, solo mostramos el error de validación
         console.error("Error al actualizar el club: ID del club es requerido para actualizar.");
@@ -267,16 +269,17 @@ async function handleFormSubmit(event) {
     const formData = new FormData(form);
 
     // 🛑 CORRECCIÓN CLAVE: Mapear 'nombre_club' del cliente a 'nombre_evento' del servidor
-    // 'nombre_club' es el ID del input, 'nombre_evento' es lo que espera el backend
     const newName = formData.get('nombre_club');
-    formData.append('nombre_evento', newName);
-    formData.delete('nombre_club'); // Eliminar la clave redundante
+    if (newName) {
+        formData.append('nombre_evento', newName);
+        formData.delete('nombre_club'); // Eliminar la clave redundante
+    }
 
-    // El campo id es necesario para la API
+    // El campo id es necesario para la API. Usamos el clubId limpio.
     formData.append('id', clubId);
 
     // 🛑 CORRECCIÓN CLAVE: Asegurarse de que el input file coincida con el nombre del campo del HTML
-    const newImageFile = document.getElementById('imagen_club_nueva').files[0];
+    const newImageFile = document.getElementById('imagen_club_nueva')?.files[0];
     if (newImageFile) {
         // En el HTML el input tiene name="imagen_club_nueva", así se envía en FormData.
         formData.set('imagen_club_nueva', newImageFile);
@@ -298,6 +301,7 @@ async function handleFormSubmit(event) {
 
 
     try {
+        // 🛑 CORRECCIÓN: Usar el clubId limpio para la URL
         const response = await fetch(`${API_CLUBS_URL}?id=${clubId}`, {
             method: 'PUT',
             headers: {
@@ -310,6 +314,7 @@ async function handleFormSubmit(event) {
         if (!response.ok) {
             let errorMessage = 'Error desconocido al actualizar el club.';
             try {
+                // Intentar leer el cuerpo JSON para el mensaje de error
                 const errorData = await response.json();
                 errorMessage = errorData.message || errorData.error || errorMessage;
             } catch (e) {
@@ -317,12 +322,15 @@ async function handleFormSubmit(event) {
             }
 
             if (response.status === 401 || response.status === 403) {
-                throw new Error('Unauthorized');
+                // Si es un error de autorización, redirigir
+                manejarFaltaAutenticacion(errorMessage, 'error');
+                return;
             }
-            throw new Error(errorMessage);
+            throw new Error(errorMessage); // Lanzar el error de actualización
         }
 
         // Si la respuesta fue OK, parseamos el resultado
+        // Se asume que el backend devuelve JSON, aunque no sea necesario el cuerpo para PUT exitoso.
         const result = await response.json();
 
         if (typeof mostrarAlerta === 'function') {
@@ -338,21 +346,22 @@ async function handleFormSubmit(event) {
     } catch (error) {
         console.error("Error al actualizar el club:", error.message);
 
-        if (error.message.includes('Unauthorized')) {
-            manejarFaltaAutenticacion('Sesión expirada o no autorizado.', 'error');
-            return;
-        }
-
-        if (typeof mostrarAlerta === 'function') {
-            // ⭐ ORDEN: (mensaje, tipo)
-            mostrarAlerta(`Fallo al actualizar el club: ${error.message}`, 'error');
-        } else {
-            alert(`Fallo al actualizar: ${error.message}`);
+        // Ya fue manejado en el if (!response.ok), solo queda el manejo general.
+        if (!error.message.includes('Unauthorized')) {
+            if (typeof mostrarAlerta === 'function') {
+                // ⭐ ORDEN: (mensaje, tipo)
+                mostrarAlerta(`Fallo al actualizar el club: ${error.message}`, 'error');
+            } else {
+                alert(`Fallo al actualizar: ${error.message}`);
+            }
         }
     } finally {
+        // Este bloque se ejecuta siempre, asegurando que el botón se rehabilite
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Actualizar Club';
+            // También limpiar la alerta 'info' si sigue visible
+            if (typeof limpiarAlertas === 'function') limpiarAlertas();
         }
     }
 }
@@ -393,7 +402,6 @@ function handleClubDeletion(clubId) {
             } else {
                 alert(validationMessage);
             }
-            // Este console.error() era el que se veía en la línea 466 (o similar)
             console.error('Error al intentar eliminar el club:', validationMessage);
             return;
         }
@@ -451,7 +459,7 @@ function handleClubDeletion(clubId) {
             let result = {};
             // 🛑 CORRECCIÓN CLAVE: Intentar leer el cuerpo JSON de forma segura en el éxito.
             try {
-                // CLAVE: Intentar parsear el JSON. Si falla porque el cuerpo está vacío o es inválido, no es un error fatal.
+                // CLAVE: Intentar parsear el JSON. El servidor ahora devuelve el nuevo token aquí.
                 result = await response.json();
             } catch (e) {
                 // Si falla la lectura del JSON en una respuesta 200, asumimos éxito sin cuerpo.
@@ -481,6 +489,8 @@ function handleClubDeletion(clubId) {
             // 2. CLAVE: Guardar el nuevo token limpio si el servidor lo devuelve
             if (result.token) {
                 sessionStorage.setItem('jwtToken', result.token);
+                // Si tienes un sistema que usa el objeto 'usuario' en sesión, actualízalo también.
+                // Si el token es la única fuente de verdad, esto es suficiente.
             }
 
             // 3. Redirigir a la lista de clubes (el estado ya está limpio)
@@ -551,7 +561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
                 mostrarAlerta('Solo el presidente del club puede editar el perfil.', 'error', 'Acceso Denegado');
             }
-            // Redirigir si no es presidente (opcional, pero buena práctica)
+            // Redirigir si no es presidente
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
             return;
         }
