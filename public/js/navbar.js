@@ -7,8 +7,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
-    // ⭐ NUEVO: Referencia al enlace de Mi Club
+    // ⭐ Referencia al enlace de Mi Club
     const miClubLink = document.getElementById("mi-club-link");
+
+    // ⭐ REFUERZO DE SEGURIDAD: Asegurar que esté oculto al cargar JS (a menos que el HTML ya lo haga)
+    if (miClubLink) {
+        miClubLink.style.display = 'none';
+    }
 
     // 🛑 BANDERA DE CONTROL CRÍTICA
     let redireccionExternaEnCurso = false;
@@ -43,8 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (loginLink) loginLink.style.display = "none";
 
             // ⭐ LÓGICA ACTUALIZADA: Mostrar 'Mi Club' si is_presidente es TRUE
-            // Asegúrate de que tu objeto usuario devuelto por el backend incluya 'is_presidente'.
-            // Si el valor es TRUE (o true, dependiendo de cómo se almacene el JSON), se muestra el enlace.
             if (miClubLink && user.is_presidente === true) {
                 miClubLink.style.display = 'block';
             }
