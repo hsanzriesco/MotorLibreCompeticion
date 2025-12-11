@@ -30,7 +30,6 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
 
     // Muestra la ÚNICA alerta deseada
     if (typeof mostrarAlerta === 'function') {
-        // CORRECCIÓN: Usar el 'tipo' pasado para la alerta
         mostrarAlerta(tipo, mensaje, 1500);
     } else {
         alert(mensaje);
@@ -130,7 +129,6 @@ async function getClubIdAndUser() {
 
 async function loadClubData(clubId) {
     const token = getToken();
-    // 🛑 CORRECCIÓN: Usar 'clubId' como parámetro de query en lugar de 'id' (aunque ambos funcionan si el servidor está actualizado)
     const clubUrl = `${API_CLUBS_URL}?id=${clubId}`;
 
     try {
@@ -417,7 +415,7 @@ function handleClubDeletion(clubId) {
             // Si es OK, leemos el resultado
             const result = await response.json();
 
-            // 🛑 INICIO CORRECCIÓN DE SINCRONIZACIÓN
+            // 🛑 INICIO CORRECCIÓN DE SINCRONIZACIÓN (LA SOLUCIÓN DEFINITIVA)
             const successMessage = result.message || 'Club eliminado con éxito. Redirigiendo a la lista de clubes.';
 
             if (typeof mostrarAlerta === 'function') {
@@ -431,7 +429,7 @@ function handleClubDeletion(clubId) {
             sessionStorage.removeItem('role');
             sessionStorage.removeItem('usuario');
             sessionStorage.removeItem('user');
-            // Limpiar los tokens viejos (por si acaso)
+            // Limpiar los tokens viejos (es clave eliminar los tokens antiguos)
             sessionStorage.removeItem('token');
             sessionStorage.removeItem('jwtToken');
 
@@ -500,7 +498,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 COMPROBACIÓN CRÍTICA: Solo el presidente puede acceder a esta página
         if (!isPresidente) {
             if (typeof mostrarAlerta === 'function') {
-                // CORRECCIÓN: Se cambia 'Acceso denegado' (con espacio) por 'AccesoDenegado' (sin espacio)
                 mostrarAlerta('error', 'AccesoDenegado', 'Solo el presidente del club puede editar el perfil.');
             }
             // Redirigir si no es presidente (opcional, pero buena práctica)

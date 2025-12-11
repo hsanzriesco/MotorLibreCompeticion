@@ -105,27 +105,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgSrc = escapeHtml(vehicle.photo_url) || defaultImg;
 
         return `
-        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
-            <div class="car-card" role="button" tabindex="0">
-                <div class="car-image-container">
-                    <img src="${imgSrc}" 
-                                alt="Foto de ${escapeHtml(name)}" 
-                                loading="lazy"
-                                onerror="this.onerror=null;this.src='${defaultImg}';" />
-                </div>
-                <div class="car-details-content">
-                    <div class="car-name-group">
-                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
-                        <p class="car-model-year">
-                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
-                        </p>
-                    </div>
-                    <button class="btn btn-edit-car">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
+        <div class="col-12 col-sm-6 col-md-6 col-lg-6" data-vehicle-id="${vehicle.id}" data-vehicle-type="${vehicle.type}">
+            <div class="car-card" role="button" tabindex="0">
+                <div class="car-image-container">
+                    <img src="${imgSrc}" 
+                                 alt="Foto de ${escapeHtml(name)}" 
+                                 loading="lazy"
+                                 onerror="this.onerror=null;this.src='${defaultImg}';" />
+                </div>
+                <div class="car-details-content">
+                    <div class="car-name-group">
+                        <h5 class="car-name">${escapeHtml(name)} (${isCar ? 'Coche' : 'Moto'})</h5>
+                        <p class="car-model-year">
+                            ${escapeHtml(vehicle.model || 'Modelo N/A')} (${vehicle.year || 'Año N/A'})
+                        </p>
+                    </div>
+                    <button class="btn btn-edit-car">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
     }
 
     async function loadVehicles() {
@@ -138,8 +138,22 @@ document.addEventListener('DOMContentLoaded', () => {
         let carsHtml = '';
         let motorcyclesHtml = '';
 
+        // --- LÓGICA PARA COCHES (CORRECCIÓN APLICADA AQUÍ) ---
         try {
             const carsResp = await fetch(`/api/carGarage?user_id=${userId}`);
+
+            // 🛑 CORRECCIÓN CRÍTICA: Verifica explícitamente el estado de la API
+            if (carsResp.status === 401 || carsResp.status === 403) {
+                // Si la sesión expiró/es inválida, redirige
+                return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
+            }
+
+            // Manejo de otros errores no-OK (ej: 500 Internal Server Error)
+            if (!carsResp.ok) {
+                const errorJson = await carsResp.json().catch(() => ({ msg: `Error HTTP ${carsResp.status} al cargar coches.` }));
+                throw new Error(errorJson.msg || `Error HTTP ${carsResp.status} al cargar coches.`);
+            }
+
             const carsData = await carsResp.json();
             const cars = (carsData.cars || []).map(c => ({ ...c, type: 'car' }));
             allVehicles.push(...cars);
@@ -154,8 +168,22 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error al cargar coches:", e.message);
         }
 
+        // --- LÓGICA PARA MOTOS (CORRECCIÓN APLICADA AQUÍ) ---
         try {
             const bikesResp = await fetch(`/api/motosGarage?user_id=${userId}`);
+
+            // 🛑 CORRECCIÓN CRÍTICA: Verifica explícitamente el estado de la API
+            if (bikesResp.status === 401 || bikesResp.status === 403) {
+                // Si la sesión expiró/es inválida, redirige
+                return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
+            }
+
+            // Manejo de otros errores no-OK (ej: 500 Internal Server Error)
+            if (!bikesResp.ok) {
+                const errorJson = await bikesResp.json().catch(() => ({ msg: `Error HTTP ${bikesResp.status} al cargar motos.` }));
+                throw new Error(errorJson.msg || `Error HTTP ${bikesResp.status} al cargar motos.`);
+            }
+
             const bikesData = await bikesResp.json();
             const motorcycles = (bikesData.motorcycles || []).map(m => ({ ...m, type: 'motorcycle' }));
             allVehicles.push(...motorcycles);
@@ -353,6 +381,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
+            // CORRECCIÓN: Agregar chequeo de sesión en otras llamadas a la API
+            if (resp.status === 401 || resp.status === 403) {
+                return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
+            }
+
             const json = await resp.json();
             if (!resp.ok || !json.ok) throw new Error(json.msg || 'Fallo en el servidor.');
 
@@ -386,6 +419,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const resp = await fetch(`/api/${apiSegment}?id=${encodeURIComponent(currentVehicle.id)}`, {
                 method: 'DELETE'
             });
+
+            // CORRECCIÓN: Agregar chequeo de sesión en otras llamadas a la API
+            if (resp.status === 401 || resp.status === 403) {
+                return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
+            }
 
             if (!resp.ok) {
                 const json = await resp.json();
@@ -532,6 +570,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     newEmail: newEmail
                 })
             });
+
+            // CORRECCIÓN: Agregar chequeo de sesión en otras llamadas a la API
+            if (resp.status === 401 || resp.status === 403) {
+                return manejarFaltaAutenticacion("Tu sesión API ha expirado. Por favor, inicia sesión de nuevo.", 'error');
+            }
+
 
             const json = await resp.json();
             if (!resp.ok || !json.success) {
