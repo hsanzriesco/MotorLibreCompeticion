@@ -600,6 +600,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ==========================================================
+    // ⭐ NUEVA FUNCIÓN DE DESVINCULACIÓN DEL CLUB (GLOBAL)
+    // ==========================================================
+    window.desvincularUsuarioDelClub = async function () {
+        if (!user || redireccionEnCurso) return;
+
+        // 1. Confirmar la acción con el usuario
+        const confirmar = await mostrarConfirmacion('¿Estás seguro de que quieres salir de tu club?', 'Sí, Salir del Club');
+        if (!confirmar) {
+            mostrarAlerta('Desvinculación cancelada', 'info');
+            return;
+        }
+
+        try {
+            // 2. Llama a la API para desvincular al usuario del club (AJUSTA ESTE ENDPOINT)
+            const resp = await fetch('/api/club/desvincular', {
+                method: 'PUT', // O DELETE, según tu API
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.id
+                })
+            });
+
+            if (resp.status === 401 || resp.status === 403) {
+                return manejarFaltaAutenticacion("Tu sesión API ha expirado al intentar salir del club.", 'error');
+            }
+
+            const json = await resp.json();
+            if (!resp.ok || !json.success) {
+                throw new Error(json.msg || 'Fallo al desvincularse del club.');
+            }
+
+            // 3. Obtener la ubicación de almacenamiento (sessionStorage o localStorage)
+            const storage = localStorage.getItem('usuario') ? localStorage : sessionStorage;
+
+            // 4. Limpiar la información del club en el objeto de usuario (CLAVE)
+            // Se asume que estos campos definen la pertenencia
+            delete user.club_id;
+            delete user.clubId;
+
+            // Si el rol era de club, cambiarlo a usuario normal
+            if (user.role === 'presidente' || user.role === 'miembro') {
+                user.role = 'usuario';
+            }
+
+            // 5. Guardar el objeto de usuario actualizado (LIMPIO)
+            storage.setItem('usuario', JSON.stringify(user));
+
+            // 6. Establecer el indicador de recarga para clubes.html (CLAVE para la recarga)
+            sessionStorage.setItem('clubesDebeRecargar', 'true');
+
+            mostrarAlerta('Te has desvinculado del club con éxito. Actualizando lista de clubes...', 'exito');
+
+            // 7. Redirigir a clubes.html
+            redireccionEnCurso = true; // Impedir otras acciones
+            setTimeout(() => {
+                window.location.href = '../clubes/clubes.html';
+            }, 1200);
+
+        } catch (e) {
+            console.error("Error al salir del club:", e);
+            mostrarAlerta('Error al salir del club. ' + e.message, 'error');
+        }
+    }
+    // ==========================================================
+
+
     // --- LÓGICA DE CIERRE DE SESIÓN AGREGADA ---
 
     function cerrarSesion() {

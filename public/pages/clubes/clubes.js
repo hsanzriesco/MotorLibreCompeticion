@@ -3,6 +3,24 @@
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
 
+    // ==========================================================
+    // ⭐ LÓGICA CLAVE DE RECARGA: Detectar si el usuario se desvinculó de un club
+    // ==========================================================
+    if (sessionStorage.getItem('clubesDebeRecargar') === 'true') {
+
+        // 1. Limpiar el indicador inmediatamente para evitar bucles
+        sessionStorage.removeItem('clubesDebeRecargar');
+
+        // 2. Recargar la página (con 'true' para forzar una recarga completa)
+        // Esto asegura que la función getAuthStatus() lea la sesión limpia.
+        window.location.reload(true);
+
+        // 🛑 CRÍTICO: Detener el resto de la ejecución hasta que la página se recargue.
+        return;
+    }
+    // ==========================================================
+
+
     // --- FUNCIONES DE UTILIDAD DEL TOKEN Y SEGURIDAD ---
 
     /**

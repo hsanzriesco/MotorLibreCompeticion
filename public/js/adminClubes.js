@@ -70,6 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputIdPresidente = document.getElementById("id_presidente");
 
     // Modals de Bootstrap
+    // ✅ CORRECCIÓN: Se agrega la definición de clubModalEl, asumiendo el ID 'clubModal'
+    const clubModalEl = document.getElementById("clubModal");
+
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
     const btnConfirmDelete = document.getElementById("btnConfirmDelete");
     const deleteMessageEl = document.getElementById("deleteConfirmMessage");
@@ -251,8 +254,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (esPendiente) {
                 accionesEspeciales = `
-                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_club || '')}"><i class="bi bi-check-circle"></i> Aprobar</button>
-                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_club || '')}"><i class="bi bi-x-circle"></i> Rechazar</button>
+                    <button class="btn btn-success btn-sm me-2 aprobar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_club || club.nombre_evento || '')}"><i class="bi bi-check-circle"></i> Aprobar</button>
+                    <button class="btn btn-danger btn-sm rechazar-btn" data-id="${club.id}" data-nombre="${escapeHtml(club.nombre_club || club.nombre_evento || '')}"><i class="bi bi-x-circle"></i> Rechazar</button>
                 `;
             }
 
@@ -264,12 +267,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? escapeHtml(club.descripcion.substring(0, 50) + (club.descripcion.length > 50 ? '...' : ''))
                 : "Sin descripción";
 
-            const clubNameForBtn = escapeHtml(club.nombre_club || `Club ID: ${club.id}`);
+            const clubNameForBtn = escapeHtml(club.nombre_club || club.nombre_evento || `Club ID: ${club.id}`);
 
             // ESTRUCTURA COINCIDENTE CON TU HTML (8 COLUMNAS):
             fila.innerHTML = `
                 <td>${escapeHtml(String(club.id || ''))}</td>
-                <td>${escapeHtml(club.nombre_club || 'Sin nombre')}</td>
+                <td>${escapeHtml(club.nombre_club || club.nombre_evento || 'Sin nombre')}</td>
                 <td>
                     ${descripcionCorta}
                     <div class="small text-muted">${escapeHtml(club.enfoque || '')}</div>
@@ -333,6 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const r = await res.json();
+            // Aseguramos que la propiedad nombre_club se mapee correctamente de nombre_evento
             const c = r.club || r.pending_club;
 
             if (!r.success || !c) {
@@ -342,7 +346,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Llenar el formulario con los datos del club
             if (inputId) inputId.value = c.id;
-            if (inputNombre) inputNombre.value = c.nombre_club || "";
+            // Usar nombre_club o nombre_evento como fallback
+            if (inputNombre) inputNombre.value = c.nombre_club || c.nombre_evento || "";
             if (inputDescripcion) inputDescripcion.value = c.descripcion || "";
 
             // ARREGLO DE FECHA: Asegurar formato YYYY-MM-DD
@@ -369,6 +374,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Foco en el nombre si existe
             if (inputNombre) inputNombre.focus();
+
+            // Opcional: Si el formulario está en un modal, abrirlo
+            if (clubModalEl && typeof bootstrap !== 'undefined') {
+                let inst = bootstrap.Modal.getInstance(clubModalEl);
+                if (!inst) inst = new bootstrap.Modal(clubModalEl);
+                inst.show();
+            }
+
 
         } catch (error) {
             console.error("Error cargarClubEnFormulario:", error);
@@ -431,6 +444,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 formData.delete('imagen_club');
             }
 
+            // Aseguramos que el nombre sea el que el servidor espera ('nombre_club' o 'nombre_evento')
+            formData.set("nombre_club", inputNombre.value);
+            formData.set("nombre_evento", inputNombre.value);
+
+
             // Agregar el ID del presidente si está presente
             if (inputIdPresidente && inputIdPresidente.value) {
                 formData.set("id_presidente", inputIdPresidente.value);
@@ -464,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 emitirAlerta(id ? "Club actualizado correctamente" : "Club creado correctamente", "exito");
 
-                // Ocultar el modal si está abierto (si usas un modal para el formulario)
+                // Ocultar el modal si está abierto (y clubModalEl ya está definido)
                 if (clubModalEl && typeof bootstrap !== 'undefined') {
                     const inst = bootstrap.Modal.getInstance(clubModalEl);
                     if (inst) inst.hide();
