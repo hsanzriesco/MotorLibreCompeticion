@@ -1,5 +1,4 @@
 // public/js/clubes.js - VERSIÓN FINAL SÓLO CON SESSIONSTORAGE
-
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
 
@@ -38,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const decoded = decodeJWT(currentToken);
         return {
             id: decoded?.id || null,
+            // Usamos el valor del token decodificado como fuente de verdad
             club_id: decoded?.club_id ? Number(decoded.club_id) : null,
             role: decoded?.role || null
         };
@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // La fuente de verdad siempre es el token persistente (en sessionStorage)
         const authStatus = getAuthStatus();
         const isUserLoggedIn = authStatus.id !== null;
-        const userClubId = authStatus.club_id;
+        const userClubId = authStatus.club_id; // <-- Este es el valor clave
         const isPresidente = authStatus.role === 'presidente';
 
         // ... (El resto de la función renderClubes permanece igual) ...
@@ -130,10 +130,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (isMemberOfThisClub) {
                     // 🟢 Muestra estado de membresía
                     buttonHtml = `
-                        <button class="btn btn-success w-100" disabled
+                        <button class="btn btn-success w-100" 
                                 title="Para gestionar o salir de tu club, usa la sección de perfil/gestión.">
-                                ${isPresidente ? 'Presidente (Gestionar fuera de aquí)' : 'Miembro Activo'}
-                        </button>`;
+                                ${isPresidente ? 'Presidente' : 'Miembro Activo'}
+                        </button>`; // Eliminado 'disabled' para que el presidente pueda hacer clic si lo necesita
                 } else {
                     // 🔴 Botón UNIRME AL CLUB (o deshabilitado si ya es miembro de OTRO)
                     buttonHtml = `
@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const token = sessionStorage.getItem('token'); // 👈 SÓLO sessionStorage
             const res = await fetch("/api/clubs?action=join", {
-                method: "POST",
+                method: "POST", // Mantenemos POST aquí aunque sea un PUT en el servidor, si funciona así.
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify(bodyToSend)
             });
@@ -212,20 +212,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionStorage.setItem("token", data.token);
             }
 
-            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' con el nuevo club_id (SÓLO en sessionStorage)
+            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' (CORRECCIÓN)
             const storedUser = sessionStorage.getItem("usuario");
             if (storedUser) {
                 try {
                     const usuario = JSON.parse(storedUser);
+                    const newClubId = Number(club_id);
 
                     // Actualizamos las claves que uses para el club ID
-                    usuario.club_id = Number(club_id);
-                    usuario.clubId = Number(club_id);
+                    usuario.club_id = newClubId;
+                    usuario.clubId = newClubId;
 
                     // Guardar el objeto actualizado SOLO en sessionStorage
                     sessionStorage.setItem("usuario", JSON.stringify(usuario));
                     // También actualizar la clave 'clubId' separada si existe
-                    sessionStorage.setItem("clubId", Number(club_id));
+                    sessionStorage.setItem("clubId", newClubId);
                 } catch (parseError) {
                     console.error("Error al parsear o actualizar el objeto usuario:", parseError);
                 }
@@ -261,11 +262,16 @@ document.addEventListener("DOMContentLoaded", () => {
         newConfirmarBtn.onclick = () => {
             leaveClubAction(club_id);
         };
+        // Mostrar el modal si aún no está visible (asume que la función de gestión fuera de aquí lo maneja)
+        // Ejemplo de mostrar modal si se usa Bootstrap:
+        // const modal = new bootstrap.Modal(document.getElementById("modalSalirClub"));
+        // modal.show();
     }
 
     async function leaveClubAction(club_id) {
         const modalElement = document.getElementById("modalSalirClub");
         if (window.bootstrap && modalElement) {
+            // Ocultar el modal si está visible
             const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
             modal.hide();
         }
@@ -273,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const token = sessionStorage.getItem('token'); // 👈 SÓLO sessionStorage
             const res = await fetch("/api/clubs?action=leave", {
-                method: "POST",
+                method: "PUT", // Usamos PUT para reflejar la acción de actualización en el servidor (clubs.js)
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify({ club_id: Number(club_id) })
             });
@@ -286,10 +292,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // 1. Guardar el nuevo token (club_id: null) (SÓLO en sessionStorage)
             if (data.token) {
-                sessionStorage.setItem("token", data.token);
+                sessionStorage.setItem("token", data.token); // ✅ CORRECCIÓN CLAVE
             }
 
-            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' (SÓLO en sessionStorage)
+            // 2. 🛑 ACTUALIZACIÓN CLAVE: Sincronizar el objeto 'usuario' (CORRECCIÓN)
             const storedUser = sessionStorage.getItem("usuario");
             if (storedUser) {
                 try {
