@@ -1,5 +1,5 @@
 // =========================================================================
-// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 3 - AÑADIDO club_id al JWT)
+// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 4 - ESTABILIZACIÓN GET /ME)
 // =========================================================================
 
 import { Pool } from "pg";
@@ -196,7 +196,7 @@ async function loginUserHandler(req, res) {
                 id: user.id,
                 role: user.role,
                 club_id: user.club_id || null, // Asegurar que sea null si no existe
-                is_presidente: user.is_presidente === true // Asumir booleano 
+                is_presidente: user.is_presidente === true // Asegurar booleano (CORRECCIÓN: user.is_presidente ya viene de DB)
             },
             JWT_SECRET,
             { expiresIn: '24h' }
@@ -271,11 +271,12 @@ async function getMeHandler(req, res) {
 
         const userProfile = rows[0];
 
-        // Manejo de valores nulos y tipos
-        const clubId = userProfile.club_id ? parseInt(userProfile.club_id) : null;
+        // 🚨 CORRECCIÓN CRÍTICA: Manejo robusto de valores nulos.
+        // club_id será null si no está establecido (que es lo que el front espera).
+        const clubId = userProfile.club_id || null;
 
-        // Conversión robusta a booleano/numérico para is_presidente
-        const isPresidente = userProfile.is_presidente === true || userProfile.is_presidente === 1 || userProfile.is_presidente === '1';
+        // is_presidente es booleano. Se asegura que sea 'true' solo si es 'true' explícitamente.
+        const isPresidente = userProfile.is_presidente === true;
 
 
         // 4. Devolver los datos del perfil
