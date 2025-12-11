@@ -70,9 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputIdPresidente = document.getElementById("id_presidente");
 
     // Modals de Bootstrap
-    // Variable para el modal del formulario (corregida en el paso anterior)
     const clubModalEl = document.getElementById("clubModal");
-
     const deleteConfirmModalEl = document.getElementById("deleteConfirmModal");
     const btnConfirmDelete = document.getElementById("btnConfirmDelete");
     const deleteMessageEl = document.getElementById("deleteConfirmMessage");
@@ -447,9 +445,16 @@ document.addEventListener("DOMContentLoaded", () => {
             formData.set("nombre_evento", inputNombre.value);
 
 
-            // Agregar el ID del presidente si está presente
-            if (inputIdPresidente && inputIdPresidente.value) {
-                formData.set("id_presidente", inputIdPresidente.value);
+            // Agregar/Limpiar el ID del presidente
+            if (inputIdPresidente) {
+                const presidenteId = inputIdPresidente.value.trim();
+                if (presidenteId && !isNaN(parseInt(presidenteId))) {
+                    // Si es un número válido, se establece
+                    formData.set("id_presidente", presidenteId);
+                } else {
+                    // Si está vacío o no es un número, se elimina para evitar enviar "" a un campo entero de DB (Error 500)
+                    formData.delete("id_presidente");
+                }
             }
 
             // Aseguramos que el estado sea activo al guardar/actualizar (creación por admin)
@@ -509,12 +514,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const clubName = e.currentTarget.dataset.nombre || "este club";
         if (!id) return;
 
-        clubToDeleteId = id; // Lo mantenemos por consistencia, pero confiamos en data-club-id
+        // Mantener la variable global por si falla el data-attribute
+        clubToDeleteId = id;
 
         if (deleteMessageEl)
             deleteMessageEl.textContent = `¿Estás seguro de que deseas eliminar "${clubName}" (ID: ${id})? Esta acción es irreversible.`;
 
-        // ⭐ CORRECCIÓN CLAVE 1/2: Almacenar el ID en el botón de confirmación para una lectura fiable.
+        // ⭐ CORRECCIÓN: Almacenar el ID en el botón de confirmación para una lectura fiable.
         if (btnConfirmDelete) btnConfirmDelete.dataset.clubId = id;
 
         if (deleteConfirmModal) deleteConfirmModal.show();
@@ -524,8 +530,8 @@ document.addEventListener("DOMContentLoaded", () => {
         btnConfirmDelete.addEventListener("click", async (e) => {
             const token = getToken();
 
-            // ⭐ CORRECCIÓN CLAVE 2/2: Leer el ID directamente del botón de confirmación (la fuente más segura)
-            const id = e.currentTarget.dataset.clubId;
+            // ⭐ CORRECCIÓN: Leer el ID del data-attribute o de la variable global (más robusto)
+            const id = e.currentTarget.dataset.clubId || clubToDeleteId;
 
             if (!id || !token) {
                 emitirAlerta("ID del club o token inválido.", "error");
@@ -536,7 +542,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
-                // ⭐ CORRECCIÓN CLAVE: Usar Query Parameter para DELETE.
+                // Usar Query Parameter para DELETE.
                 const res = await fetch(`/api/clubs?id=${id}`, {
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -556,7 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 emitirAlerta("Club eliminado correctamente", "exito");
                 clubToDeleteId = null;
-                // Opcional: limpiar el atributo del botón
+                // Limpiar el atributo del botón
                 e.currentTarget.dataset.clubId = "";
                 cargarClubes();
 
