@@ -107,24 +107,14 @@ body {
   text-decoration: underline;
 }
 
-/* =================================================== */
-/* === ESTILOS AÑADIDOS PARA EL TOGGLE DE CONTRASEÑA === */
-/* =================================================== */
-
-/* Contenedor del campo de contraseña */
 .password-wrapper {
   position: relative;
-  /* Esencial: Permite posicionar el icono de forma absoluta respecto a este div */
   margin-top: 6px;
-  /* Para que esté justo debajo del label (ya que el input ya tiene margin-top: 6px) */
 }
 
-/* Ajuste del input dentro del wrapper */
 .password-wrapper input {
-  /* **Crucial:** Deja espacio a la derecha para que el icono no tape el texto */
   padding-right: 40px;
   margin-top: 0;
-  /* Anula el margin-top de 6px en el input ya que lo ponemos en el wrapper */
 }
 
 /* Estilo para el icono */

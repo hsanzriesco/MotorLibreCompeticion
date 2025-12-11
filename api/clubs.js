@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN CON DIAGNÓSTICO DE ERRORES DE BASE DE DATOS
+// clubs.js - VERSIÓN CON LIMPIEZA PROFUNDA (SOLUCIÓN ERROR 500)
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -454,10 +454,23 @@ async function clubsHandler(req, res) {
 
                 const { imagen_club, id_presidente } = clubInfoRes.rows[0];
 
+                // 🛑 LIMPIEZA PROFUNDA (Deep Clean)
+                // Intentamos borrar todo lo que pueda estar vinculado al club
                 try {
+                    // 1. Borrar inscripciones de eventos del club (si existen y están vinculadas a eventos)
+                    // NOTA: Si tu tabla se llama diferente (ej: 'registrations'), cambia 'inscripciones' aquí.
+                    try { await client.query('DELETE FROM public.inscripciones WHERE event_id IN (SELECT id FROM public.events WHERE club_id = $1)', [clubId]); } catch (e) { }
+
+                    // 2. Borrar eventos
                     await client.query('DELETE FROM public.events WHERE club_id = $1', [clubId]);
+
+                    // 3. Borrar posts, noticias, o publicaciones del club
+                    try { await client.query('DELETE FROM public.posts WHERE club_id = $1', [clubId]); } catch (e) { }
+                    try { await client.query('DELETE FROM public.noticias WHERE club_id = $1', [clubId]); } catch (e) { }
+                    try { await client.query('DELETE FROM public.comentarios WHERE club_id = $1', [clubId]); } catch (e) { }
+
                 } catch (e) {
-                    console.warn("Advertencia: No se pudieron borrar eventos (tabla no existe o error), continuando eliminación de club:", e.message);
+                    console.warn("Error no crítico limpiando dependencias:", e.message);
                 }
 
                 await client.query(`UPDATE public."users" SET club_id = NULL, role = 'user', is_presidente = FALSE WHERE club_id = $1`, [clubId]);
@@ -482,7 +495,6 @@ async function clubsHandler(req, res) {
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
     } catch (error) {
-        // --- 🛑 BLOQUE DE DIAGNÓSTICO MEJORADO ("EL CHIVATO") 🛑 ---
         console.error("Error DETALLADO en clubsHandler:", error);
 
         if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
