@@ -3,20 +3,16 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000, limpiarPrevias = true) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'alertas-container';
-        // Usamos el ID como clase por consistencia, asumiendo que el CSS usa esta clase.
         container.classList.add('alerta-container'); 
         document.body.appendChild(container);
     }
     
-    // === MODIFICACIÓN CLAVE: Cerrar alertas existentes para prevenir duplicación visible ===
     if (limpiarPrevias) {
         const alertasExistentes = container.querySelectorAll('.alerta');
         alertasExistentes.forEach(alerta => {
-            // Aseguramos que se inicie el proceso de remoción, incluso si la transición no ha terminado
             alerta.remove(); 
         });
     }
-    // ===================================================================================
 
     const alerta = document.createElement('div');
     alerta.classList.add('alerta', tipo);
@@ -27,7 +23,6 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000, limpiarPrevias = true) {
             iconoClase = 'bi-check-circle-fill';
             break;
         case 'error':
-            // Se mantiene el icono estándar de Bootstrap
             iconoClase = 'bi-x-octagon-fill'; 
             break;
         case 'advertencia':
@@ -43,13 +38,11 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000, limpiarPrevias = true) {
 
     container.appendChild(alerta);
 
-    // Forzar reflow para aplicar la transición de entrada
     alerta.offsetWidth; 
     alerta.classList.add('mostrar');
 
     const remover = () => {
         alerta.classList.remove('mostrar');
-        // Usar transitionend para asegurar que se remueve DESPUÉS de la animación de salida
         alerta.addEventListener('transitionend', () => {
             if (alerta.parentNode) {
                 alerta.remove();
@@ -67,11 +60,6 @@ function mostrarAlerta(mensaje, tipo, duracion = 4000, limpiarPrevias = true) {
     };
 }
 
-/**
- * Muestra una caja de confirmación modal.
- * @param {string} mensaje - El mensaje de confirmación a mostrar.
- * @returns {Promise<boolean>} Resuelve a true si el usuario presiona "Sí", false si presiona "No" o Escape.
- */
 function mostrarConfirmacion(mensaje) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -89,7 +77,6 @@ function mostrarConfirmacion(mensaje) {
         `;
 
         document.body.appendChild(overlay);
-        // Pequeño timeout para permitir que el CSS aplique la transición de entrada
         setTimeout(() => overlay.classList.add('mostrar'), 10); 
         
         const yesBtn = overlay.querySelector('.confirm-yes');
@@ -106,7 +93,6 @@ function mostrarConfirmacion(mensaje) {
             if (!overlay || !overlay.parentNode) return resolve(result);
 
             overlay.classList.remove('mostrar');
-            // Timeout para esperar la animación de salida (180ms)
             overlay.addEventListener('transitionend', () => {
                 if (overlay.parentNode) {
                     overlay.remove();
