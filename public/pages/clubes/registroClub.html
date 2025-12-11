@@ -15,31 +15,21 @@
     <link rel="icon" type="image/png" href="../../img/imagen-tfg.png">
 
     <style>
-        /* =========================================================
-        ESTILOS CLAVE para el "Sticky Footer" (Flexbox)
-        =========================================================
-        */
         body {
-            /* Reglas del Flexbox para empujar el footer */
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             margin: 0;
-            /* Asegura que no haya márgenes no deseados */
-
-            /* Tus estilos existentes */
             background-color: #111;
             color: white;
             font-family: 'Orbitron', sans-serif;
         }
 
         main {
-            /* Hace que el contenido principal absorba todo el espacio extra */
             flex-grow: 1;
             padding-top: 100px;
         }
 
-        /* Estilos específicos para este formulario */
         .form-control,
         .form-select {
             background-color: #222;
@@ -56,19 +46,16 @@
             color: white;
         }
 
-        /* Aseguramos que el color del texto dentro del select sea blanco */
         .form-select option {
             background-color: #222;
             color: white;
         }
 
-        /* Estilo para los label */
         .form-label {
             color: #ccc;
             font-weight: 600;
         }
 
-        /* Estilo para el contenedor del formulario */
         .club-register-container {
             padding: 30px;
             border-radius: 12px;
@@ -88,7 +75,6 @@
             color: white;
         }
 
-        /* Estilos del modal para cerrar sesión */
         .modal-content .btn-close-white {
             filter: invert(1) grayscale(100%) brightness(200%);
         }
@@ -270,33 +256,32 @@
             const loginIcon = document.getElementById("login-icon");
             const logoutBtn = document.getElementById("logout-btn");
             const miClubLink = document.getElementById("mi-club-link");
-            const presidenteClubLink = document.getElementById("presidente-club-link"); // Enlace de Presidente
+            const presidenteClubLink = document.getElementById("presidente-club-link");
 
-            // ⭐⭐ LÓGICA DE VISIBILIDAD DE ELEMENTOS ⭐⭐
             if (usuario) {
-                // 1. Visibilidad general de sesión
+                
                 userName.textContent = usuario.name;
                 userName.style.display = "inline";
                 loginIcon.style.display = "none";
                 logoutBtn.style.display = "block";
 
-                // 2. Redirección de Logo para Administrador
+                
                 if (usuario.role === "admin") {
                     const logoLink = document.getElementById("logo-link");
-                    // Ruta relativa al index.html de la raíz desde pages/clubes
+                    
                     if (logoLink) logoLink.href = "../dashboard/admin/admin.html";
                 }
 
-                // 3. Lógica para el enlace "Mi Club"
+                
                 const clubId = usuario.club_id || usuario.clubId || clubIdInSession;
-                // Consideramos a Admin y Presidente como usuarios con permisos de edición/gestión
+                
                 const isPresidenteOrAdmin = usuario.role === "admin" || usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
 
                 if (clubId && miClubLink) {
                     const clubPage = isPresidenteOrAdmin
-                        // Si es presidente/admin, va a la página de edición con el ID (Ruta relativa a pages/clubes/)
+                        
                         ? `./presidente/editarPresidente.html?id=${clubId}`
-                        // Si es solo miembro, va a una página de vista general (Ruta relativa a pages/clubes/)
+                        
                         : `./editarUsuario.html?id=${clubId}`;
 
                     miClubLink.href = clubPage;
@@ -306,26 +291,26 @@
                     miClubLink.style.display = "none";
                 }
 
-                // 🎯 4. LÓGICA ESPECÍFICA PARA PRESIDENTE DE CLUB
+                
                 const isPresidente = usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
 
                 if (isPresidente && presidenteClubLink) {
-                    // Si es presidente, mostramos el enlace adicional (Ruta relativa a pages/clubes/presidente/)
+                    
                     presidenteClubLink.style.display = "block";
                     presidenteClubLink.href = "./presidente/editarPresidente.html";
                 } else if (presidenteClubLink) {
-                    // Si hay sesión pero NO es presidente, ocultamos el enlace
+                    
                     presidenteClubLink.style.display = "none";
                 }
 
 
             } else {
-                // No hay sesión
+                
                 userName.style.display = "none";
                 loginIcon.style.display = "inline";
                 logoutBtn.style.display = "none";
 
-                // Ocultar todos los enlaces de usuario (Mi Club, Presidente)
+                
                 if (miClubLink) {
                     miClubLink.style.display = "none";
                 }
@@ -333,10 +318,10 @@
                     presidenteClubLink.style.display = "none";
                 }
             }
-            // ⭐⭐ FIN LÓGICA DE VISIBILIDAD ⭐⭐
+            
 
 
-            // Lógica para el botón de Cerrar Sesión (Modal y acción)
+            
             if (logoutBtn) {
                 logoutBtn.addEventListener("click", (e) => {
                     e.preventDefault();
@@ -359,7 +344,7 @@
                 btnConfirmLogout.addEventListener("click", () => {
                     if (logoutConfirmModal) logoutConfirmModal.hide();
 
-                    // Limpiar datos de sesión y almacenamiento local
+                    
                     sessionStorage.removeItem("usuario");
                     localStorage.removeItem("usuario");
                     sessionStorage.removeItem("clubId");
@@ -367,7 +352,7 @@
                     mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
                     setTimeout(() => {
-                        // Redirigir al login (Ruta relativa a pages/auth/login/login.html desde pages/clubes/)
+                        
                         window.location.href = "../auth/login/login.html";
                     }, 1500);
                 });
@@ -381,7 +366,7 @@
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
-                // 1. OBTENER EL TOKEN DESDE sessionStorage
+                
                 const token = sessionStorage.getItem('userToken') || sessionStorage.getItem('token');
 
                 if (!token) {
@@ -389,42 +374,43 @@
                     return;
                 }
 
-                // 2. CONSTRUIR FormData
+                
                 const formData = new FormData();
 
-                // Recolectar datos del formulario
+                
                 const clubName = document.getElementById('clubName').value.trim();
                 const clubCity = document.getElementById('clubCity').value.trim();
                 const clubFocus = document.getElementById('clubFocus').value;
                 const clubDescription = document.getElementById('clubDescription').value.trim();
 
-                // ----------------------------------------------------
-                // **SOLUCIÓN AL ERROR 400: AÑADIR CAMPO 'enfoque'**
-                // ----------------------------------------------------
+                
+                
+                
+                
 
                 if (!clubName || !clubCity || !clubFocus || !clubDescription) {
                     mostrarAlerta("Por favor, rellena todos los campos obligatorios del formulario.", "error");
                     return;
                 }
 
-                // Campos obligatorios requeridos por el backend:
+                
                 formData.append("nombre_evento", clubName);
                 formData.append("ciudad", clubCity);
-                // ✅ NUEVA LÍNEA CLAVE: Asegura que el campo 'enfoque' se envíe por separado
+                
                 formData.append("enfoque", clubFocus);
 
-                // La descripción principal
+                
                 const fullDescription = `[Enfoque: ${clubFocus}] ${clubDescription}`;
                 formData.append("descripcion", fullDescription);
 
 
-                // 3. Adjuntar la imagen (Opcional)
+                
                 const imagenInput = document.getElementById('clubImage');
                 if (imagenInput && imagenInput.files.length > 0) {
                     formData.append("imagen_club", imagenInput.files[0]);
                 }
 
-                // 4. HACER EL FETCH CON EL TOKEN
+                
                 try {
                     const apiUrl = 'https://motor-libre-competicion.vercel.app/api/clubs';
 
@@ -444,14 +430,14 @@
                     }
 
                     if (!res.ok) {
-                        // Si el backend sigue quejándose, mostramos el mensaje que nos ha devuelto.
+                        
                         const errorMsg = r.message || r.error || `Error ${res.status}: Fallo en la solicitud. El servidor devolvió datos incompletos.`;
                         mostrarAlerta(errorMsg, "error");
                         console.error("Respuesta de error completa:", r);
                         return;
                     }
 
-                    // 5. ÉXITO REAL
+                    
                     mostrarAlerta(r.message || "¡Solicitud enviada! Tu club está ahora Pendiente de Aprobación por la Administración.", "exito");
                     form.reset();
 
