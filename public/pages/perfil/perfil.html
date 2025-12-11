@@ -8,10 +8,11 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
 
     <link rel="icon" type="image/png" href="../../img/imagen-tfg.png" />
 
-    <link rel="stylesheet" href="../../css/navbar.css" />
     <link rel="stylesheet" href="../../css/alertas.css" />
     <link rel="stylesheet" href="../../css/style.css" />
     <link rel="stylesheet" href="./perfil.css" />
@@ -30,6 +31,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            font-family: 'Orbitron', sans-serif;
             /* ================================================= */
         }
 
@@ -52,8 +54,8 @@
         .card-mlc {
             background-color: #212529;
             /* Color de fondo de las tarjetas (gris oscuro) */
-            border: 1px solid #343a40;
-            /* Borde sutil */
+            border: 1px solid #e50914;
+            /* Borde rojo sutil */
             color: #f8f9fa;
             height: 100%;
             /* Asegura que ambas columnas tengan la misma altura */
@@ -134,15 +136,16 @@
     <div id="alerta-container" class="alerta-container"></div>
 
     <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+
         <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
             <img src="../../img/imagen-tfg.png" alt="MLC" height="70" class="me-2" />
         </a>
 
         <div class="d-flex align-items-center ms-auto me-1">
-            <a href="../../auth/login/login.html" id="login-icon" class="text-light me-3">
+            <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
                 <i class="bi bi-person-circle fs-4"></i>
             </a>
-            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem; display: none;"></span>
 
             <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
                 data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
@@ -153,7 +156,7 @@
 
     <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
         <div class="offcanvas-header border-bottom border-secondary">
-            <h5 class="offcanvas-title" id="offcanvas-title">Menú</h5>
+            <h5 class="offcanvas-title" id="offcanvas-title">Menú de Usuario</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
 
@@ -167,9 +170,12 @@
             <a href="../clubes/clubes.html" class="d-block text-light mb-2">
                 Clubes
             </a>
-            <a href="../clubes/presidente/editarPresidente.html" id="mi-club-link" class="d-block text-light mb-2"
-                style="display:none;">
-                Mi Club (Editar)
+            <a href="#" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
+                Mi Club (Miembro)
+            </a>
+            <a href="../clubes/presidente/editarPresidente.html" id="presidente-club-link"
+                class="d-block text-warning fw-bold mb-2" style="display:none;">
+                Presidente de Club
             </a>
             <a href="./perfil.html" class="d-block text-light mb-2">Mi perfil</a>
 
@@ -177,20 +183,21 @@
             <div id="admin-links" style="display:none;">
                 <hr class="border-secondary" />
                 <h6 class="text-danger mt-3">Gestión de Administrador</h6>
-                <a href="../adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de Eventos</a>
-                <a href="../lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de Lugares</a>
-                <a href="../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
+                <a href="../dashboard/adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de
+                    Eventos</a>
+                <a href="../dashboard/adminLugares/adminLugares.html" class="d-block text-light mb-2">Gestión de
+                    Lugares</a>
+                <a href="../dashboard/adminUsuarios/adminUsuarios.html" class="d-block text-light mb-2">Gestionar
+                    Usuarios</a>
             </div>
 
             <hr class="border-secondary" />
 
-            <a href="#" id="logout-btn" class="d-block text-danger" data-bs-toggle="modal"
-                data-bs-target="#logoutConfirmModal">
+            <a href="#" id="logout-btn" class="d-block text-danger" style="display: none;">
                 Cerrar sesión
             </a>
         </div>
     </div>
-
     <main class="container main-perfil flex-grow-1">
         <h1 class="text-center mb-5">Mi Perfil</h1>
 
@@ -247,6 +254,9 @@
             </div>
         </div>
     </main>
+
+    <footer id="main-footer" class="mt-5"></footer>
+
 
     <div class="modal fade" id="carModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -312,6 +322,7 @@
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -332,43 +343,127 @@
         </div>
     </div>
 
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="../../js/alertas.js"></script>
-    <script src="../../js/navbar.js"></script>
-    
+    <script src="../../footer/footer.js"></script>
+
     <script src="./perfil.js"></script>
 
     <script>
-        // Lógica de Adaptación de Navbar: 
-        // Si el usuario es 'admin' o 'presidente', se muestran los enlaces de gestión.
         document.addEventListener('DOMContentLoaded', () => {
-            const role = sessionStorage.getItem('role');
+            const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+            const clubIdInSession = sessionStorage.getItem("clubId");
+            const usuario = storedUser ? JSON.parse(storedUser) : null;
+
             const offcanvasTitle = document.getElementById('offcanvas-title');
             const adminLinks = document.getElementById('admin-links');
             const miClubLink = document.getElementById('mi-club-link');
+            const presidenteClubLink = document.getElementById('presidente-club-link');
             const logoLink = document.getElementById('logo-link');
 
-            if (role === 'admin') {
-                if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Administrador';
-                if (adminLinks) adminLinks.style.display = 'block';
-                // Si es admin, el logo lo lleva al dashboard de admin
-                if (logoLink) logoLink.href = '../admin.html';
-            } else if (role === 'presidente') {
-                if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Presidente';
-                if (miClubLink) miClubLink.style.display = 'block';
-                if (adminLinks) adminLinks.style.display = 'none';
-                // Para el presidente, el logo va al inicio normal
-                if (logoLink) logoLink.href = '../../index.html';
+            const userName = document.getElementById("user-name");
+            const loginIcon = document.getElementById("login-icon");
+            const logoutBtn = document.getElementById("logout-btn");
+
+            const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
+            const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
+            const btnConfirmLogout = document.getElementById("btnConfirmLogout");
+
+            // --- LÓGICA DE VISIBILIDAD DEL NAVBAR ---
+            if (usuario) {
+                // 1. Visibilidad general de sesión
+                userName.textContent = usuario.name;
+                userName.style.display = "inline";
+                loginIcon.style.display = "none";
+                logoutBtn.style.display = "block";
+
+                // 2. Roles y enlaces del menú
+                const role = usuario.role;
+                const clubId = usuario.club_id || usuario.clubId || clubIdInSession;
+                const isPresidente = role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
+
+                if (role === 'admin') {
+                    if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Administrador';
+                    if (adminLinks) adminLinks.style.display = 'block';
+                    // Ruta Admin Dashboard
+                    if (logoLink) logoLink.href = '../dashboard/admin.html';
+                } else if (isPresidente) {
+                    if (offcanvasTitle) offcanvasTitle.textContent = 'Menú Presidente';
+                    // Enlace de Presidente
+                    if (presidenteClubLink) presidenteClubLink.style.display = 'block';
+                    // Ocultar enlaces de admin para presidente
+                    if (adminLinks) adminLinks.style.display = 'none';
+                    // El logo va a la raíz
+                    if (logoLink) logoLink.href = '../../index.html';
+                } else {
+                    // Usuario Normal
+                    if (offcanvasTitle) offcanvasTitle.textContent = 'Menú de Usuario';
+                    if (adminLinks) adminLinks.style.display = 'none';
+                    if (presidenteClubLink) presidenteClubLink.style.display = 'none';
+                    if (logoLink) logoLink.href = '../../index.html';
+                }
+
+                // 3. Lógica para el enlace "Mi Club" (Miembro)
+                if (clubId && miClubLink && !isPresidente) {
+                    // Si el usuario es miembro de un club (no presidente)
+                    // Ruta relativa a pages/clubes/editarUsuario.html
+                    miClubLink.href = `../clubes/editarUsuario.html?id=${clubId}`;
+                    miClubLink.textContent = "Mi Club (Miembro)";
+                    miClubLink.style.display = "block";
+                } else if (miClubLink) {
+                    // Si no tiene club o es presidente, lo ocultamos para evitar duplicidad con "Presidente de Club"
+                    miClubLink.style.display = "none";
+                }
+
             } else {
-                // Si es usuario normal
-                if (offcanvasTitle) offcanvasTitle.textContent = 'Menú de Usuario';
+                // No hay sesión
+                userName.style.display = "none";
+                loginIcon.style.display = "inline";
+                logoutBtn.style.display = "none";
+
+                // Ocultar enlaces de gestión
                 if (adminLinks) adminLinks.style.display = 'none';
                 if (miClubLink) miClubLink.style.display = 'none';
-                if (logoLink) logoLink.href = '../../index.html';
+                if (presidenteClubLink) presidenteClubLink.style.display = 'none';
+            }
+            // --- FIN LÓGICA DE VISIBILIDAD DEL NAVBAR ---
+
+            // --- LÓGICA DE CERRAR SESIÓN (MODAL) ---
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (usuario && logoutConfirmModal) {
+                        logoutConfirmModal.show();
+                        // Cierra el offcanvas al abrir el modal
+                        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                        if (offcanvasMenu) offcanvasMenu.hide();
+                    } else {
+                        mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
+                    }
+                });
             }
 
-            // NOTA: La lógica de Cierre de Sesión (Logout) se maneja en 'navbar.js' y el modal.
+            if (btnConfirmLogout) {
+                btnConfirmLogout.addEventListener("click", () => {
+                    if (logoutConfirmModal) logoutConfirmModal.hide();
+
+                    // Limpiar datos de sesión y almacenamiento local
+                    sessionStorage.removeItem("usuario");
+                    localStorage.removeItem("usuario");
+                    sessionStorage.removeItem("clubId");
+                    sessionStorage.removeItem("role"); // Aseguramos que se limpie el rol
+
+                    mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
+
+                    setTimeout(() => {
+                        // Redirigir al login (Ruta relativa a pages/auth/login/login.html desde pages/perfil/)
+                        window.location.href = "../auth/login/login.html";
+                    }, 1500);
+                });
+            }
+            // --- FIN LÓGICA DE CERRAR SESIÓN ---
         });
     </script>
 </body>
