@@ -420,9 +420,9 @@ document.addEventListener("DOMContentLoaded", () => {
             // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE (AHORA CON DIAGNÓSTICO DETALLADO)
             // La condición es: si el elemento no existe (es null) O si existe y su valor está vacío.
             if (
-                !inputNombre || !inputNombre.value ||
-                !inputCiudad || !inputCiudad.value ||
-                !inputEnfoque || !inputEnfoque.value
+                !inputNombre || !inputNombre.value.trim() ||
+                !inputCiudad || !inputCiudad.value.trim() ||
+                !inputEnfoque || !inputEnfoque.value.trim() 
             ) {
                 // ⭐ MENSAJE CLAVE: Diagnostica exactamente cuál podría faltar
                 let missingFields = [];
