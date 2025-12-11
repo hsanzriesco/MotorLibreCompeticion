@@ -305,7 +305,7 @@ async function statusChangeHandler(req, res) {
 async function clubsHandler(req, res) {
     const { method, query } = req;
 
-    // 🛑 CORRECCIÓN CLAVE: Permite leer 'id' (de URL) o 'clubId' (del cliente JS) 🛑
+    // 🛑 CORRECCIÓN CLAVE 1: Permite leer 'id' (de URL) o 'clubId' (del cliente JS) 🛑
     const id = query.id || query.clubId;
     const estado = query.estado;
     // ----------------------------------------------------
@@ -353,8 +353,8 @@ async function clubsHandler(req, res) {
                         id as user_id, name as username, email, club_id 
                     FROM public."users" 
                     WHERE club_id = $1
-                    ORDER BY id_presidente DESC, name ASC 
-                `; // Se asume que president_id debe ser extraído de la tabla clubs para saber quién es presidente, pero se usa 'club_id' para filtrar
+                    ORDER BY name ASC 
+                `; // CORRECCIÓN CLAVE 2: Se eliminó ORDER BY id_presidente, que no existe en la tabla users y causaba el error 500.
                 const membersResult = await pool.query(membersQueryText, [clubIdNum]);
 
                 // Se añade una propiedad 'is_president' a cada miembro en el JS si es necesario, 
