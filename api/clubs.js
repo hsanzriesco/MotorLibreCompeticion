@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN FINAL CON SINCRONIZACIÓN DE TOKEN TRAS BORRADO DE CLUB
+// clubs.js (o renombrado a [id].js) - VERSIÓN FINAL CORREGIDA (Fix 404 de DELETE y Bug de Rechazo)
 
 import { Pool } from "pg";
 import formidable from "formidable";
@@ -276,20 +276,9 @@ async function statusChangeHandler(req, res) {
             }
 
         } else if (method === 'DELETE') {
-            const clubRes = await pool.query('SELECT imagen_club FROM public.clubs_pendientes WHERE id = $1', [id]);
-
-            const result = await pool.query('DELETE FROM public.clubs_pendientes WHERE id = $1 RETURNING id', [id]);
-
-            if (result.rows.length === 0) {
-                return res.status(404).json({ success: false, message: "Solicitud de club pendiente no encontrada para rechazar." });
-            }
-
-            // Eliminar imagen de Cloudinary si existe
-            if (clubRes.rows.length > 0 && clubRes.rows[0].imagen_club) {
-                await deleteFromCloudary(clubRes.rows[0].imagen_club);
-            }
-
-            return res.status(200).json({ success: true, message: "Solicitud de club rechazada y eliminada." });
+            // 🛑 LÓGICA ELIMINADA: La eliminación/rechazo de pendientes
+            // se ha movido al clubsHandler para manejar DELETE /api/clubs/ID.
+            return res.status(405).json({ success: false, message: "Método DELETE no permitido en este path. Use clubsHandler." });
         }
 
         return res.status(405).json({ success: false, message: "Método no permitido." });
@@ -903,94 +892,104 @@ async function clubsHandler(req, res) {
             }
         }
 
-        // --- LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO (CORREGIDA) ---
+        // --- LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO / RECHAZO DE PENDIENTE (MODIFICADA) ---
         if (method === "DELETE") {
             const clubId = parseInt(id);
             if (!clubId || isNaN(clubId)) {
                 return res.status(400).json({ success: false, message: "ID del club es requerido para eliminar." });
             }
 
-            // Verificar si es administrador O el presidente del club
-            try {
-                // CORRECCIÓN CLAVE: Usamos la función que permite eliminar al Admin O al Presidente del club
-                await verifyClubOwnershipOrAdmin(req, clubId);
-            } catch (error) {
-                // Si la verificación falla (no es admin ni presidente), lanzamos el error
-                // para que el catch general lo maneje y devuelva el 401 o 403 con el mensaje específico.
-                throw error;
-            }
-
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
 
-                // 1. Obtener datos del club (imagen y presidente) antes de eliminar
-                const clubInfoRes = await client.query(
-                    'SELECT imagen_club, id_presidente FROM public.clubs WHERE id = $1 FOR UPDATE',
+                // 1. Verificar si es un club ACTIVO
+                let clubInfoRes = await client.query(
+                    'SELECT imagen_club, id_presidente, estado FROM public.clubs WHERE id = $1 FOR UPDATE',
                     [clubId]
                 );
 
-                if (clubInfoRes.rows.length === 0) {
-                    await client.query('ROLLBACK');
-                    return res.status(404).json({ success: false, message: "Club no encontrado para eliminar." });
+                if (clubInfoRes.rows.length > 0) {
+                    // Es un club activo -> Aplicar lógica de eliminación de club activo
+
+                    // Lanza 401/403 si no es Admin o Presidente
+                    await verifyClubOwnershipOrAdmin(req, clubId);
+
+                    const { imagen_club, id_presidente } = clubInfoRes.rows[0];
+
+                    // Desvincular a todos los miembros (incluyendo al presidente)
+                    await client.query(
+                        `UPDATE public."users" 
+                        SET club_id = NULL, role = 'user', is_presidente = FALSE 
+                        WHERE club_id = $1`,
+                        [clubId]
+                    );
+
+                    // Sincronizar Token para el presidente
+                    const updatedUserRes = await client.query(
+                        'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
+                        [id_presidente]
+                    );
+                    const updatedUser = updatedUserRes.rows[0];
+                    const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
+
+                    // Eliminar el club
+                    await client.query('DELETE FROM public.clubs WHERE id = $1', [clubId]);
+
+                    // Eliminar imagen de Cloudinary
+                    if (imagen_club) {
+                        await deleteFromCloudary(imagen_club);
+                    }
+
+                    await client.query('COMMIT');
+                    return res.status(200).json({
+                        success: true,
+                        message: "Club activo y miembros desvinculados correctamente.",
+                        token: newToken
+                    });
+
+                } else {
+                    // 2. Si no es un club activo, verificar si es una solicitud PENDIENTE (solo Admin puede rechazar)
+                    // Lanza 401/403 si no es Admin
+                    verifyAdmin(req);
+
+                    clubInfoRes = await client.query(
+                        'SELECT imagen_club FROM public.clubs_pendientes WHERE id = $1 FOR UPDATE',
+                        [clubId]
+                    );
+
+                    if (clubInfoRes.rows.length > 0) {
+                        // Es una solicitud pendiente (Rechazo)
+                        const { imagen_club } = clubInfoRes.rows[0];
+
+                        // Eliminar la solicitud pendiente
+                        await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [clubId]);
+
+                        // Eliminar imagen de Cloudinary
+                        if (imagen_club) {
+                            await deleteFromCloudary(imagen_club);
+                        }
+
+                        await client.query('COMMIT');
+                        return res.status(200).json({
+                            success: true,
+                            message: "Solicitud de club rechazada y eliminada correctamente.",
+                        });
+
+                    } else {
+                        // 3. No se encontró el club en ninguna tabla
+                        await client.query('ROLLBACK');
+                        return res.status(404).json({ success: false, message: "Club o solicitud pendiente no encontrado para eliminar." });
+                    }
                 }
-
-                const { imagen_club, id_presidente } = clubInfoRes.rows[0];
-
-                // 2. Desvincular a todos los miembros (incluyendo al presidente)
-                // Se actualizan: club_id = NULL, role = 'user', is_presidente = FALSE.
-                await client.query(
-                    `UPDATE public."users" 
-                    SET club_id = NULL, role = 'user', is_presidente = FALSE 
-                    WHERE club_id = $1`,
-                    [clubId]
-                );
-
-                // ⭐ INICIO CORRECCIÓN SINCRONIZACIÓN DE TOKEN (DELETE)
-                // Obtener los datos del usuario actualizados (club_id = NULL)
-                const updatedUserRes = await client.query(
-                    'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
-                    [id_presidente]
-                );
-                const updatedUser = updatedUserRes.rows[0];
-
-                // Generar un nuevo token con los datos frescos
-                const newToken = jwt.sign(updatedUser, JWT_SECRET, { expiresIn: '1d' });
-                // ⭐ FIN CORRECCIÓN SINCRONIZACIÓN DE TOKEN
-
-                // 3. Eliminar el club de la tabla 'clubs'
-                const deleteClubRes = await client.query(
-                    'DELETE FROM public.clubs WHERE id = $1 RETURNING id',
-                    [clubId]
-                );
-
-                if (deleteClubRes.rows.length === 0) {
-                    await client.query('ROLLBACK');
-                    return res.status(404).json({ success: false, message: "Club no encontrado para eliminar (fallo de concurrencia)." });
-                }
-
-                // 4. Eliminar imagen de Cloudinary
-                if (imagen_club) {
-                    await deleteFromCloudary(imagen_club);
-                }
-
-                await client.query('COMMIT');
-                return res.status(200).json({
-                    success: true,
-                    message: "Club y miembros desvinculados correctamente.",
-                    token: newToken // <-- DEVOLVER EL NUEVO TOKEN ACTUALIZADO
-                });
-
             } catch (error) {
                 await client.query('ROLLBACK');
-                console.error("Error en DELETE de club activo:", error);
-                // Re-lanza el error para que el catch externo lo maneje
                 throw error;
             } finally {
                 client.release();
             }
         }
-        // --- FIN LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO ---
+        // --- FIN LÓGICA DE ELIMINACIÓN DE CLUB ACTIVO / RECHAZO DE PENDIENTE ---
 
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
@@ -1001,14 +1000,17 @@ async function clubsHandler(req, res) {
         const isLoginRequired = error.message.includes('Necesitas iniciar sesión');
         const isPresidentRequired = error.message.includes('Necesitas ser presidente');
         const isTokenInvalid = error.message.includes('Token');
+        const isAdminRequired = error.message.includes('Acceso denegado: Se requiere rol de administrador.');
+
 
         if (isLoginRequired || isTokenInvalid) {
             // Caso 1: No logueado o token inválido -> 401
             return res.status(401).json({ success: false, message: error.message });
         }
 
-        if (isPresidentRequired) {
-            // Caso 2: Logueado pero sin permisos de presidente -> 403
+        // El administrador no debería ver el error de presidente, pero lo cubrimos.
+        if (isPresidentRequired || isAdminRequired) {
+            // Caso 2: Logueado pero sin permisos de presidente/admin -> 403
             return res.status(403).json({ success: false, message: error.message });
         }
 
@@ -1040,11 +1042,11 @@ async function clubsHandler(req, res) {
 export default async function clubsCombinedHandler(req, res) {
     const { query } = req;
 
-    // Si la query incluye 'status=change', se usa el handler específico de aprobación/rechazo
+    // 🛑 IMPORTANTE: Si está usando esta función en un archivo [id].js, este bloque de query.status=change no se usará.
     if (query.status === 'change') {
         return statusChangeHandler(req, res);
     }
 
-    // Si no, se usa el handler principal para CRUD y Join/Leave
+    // Si no, se usa el handler principal para CRUD, Join/Leave y DELETE por ID.
     return clubsHandler(req, res);
 }
