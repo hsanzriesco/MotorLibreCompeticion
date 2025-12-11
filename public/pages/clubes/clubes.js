@@ -1,279 +1,450 @@
-// public/js/clubes.js - VERSIÓN MODIFICADA Y CORREGIDA
+<!DOCTYPE html>
+<html lang="es">
 
-document.addEventListener("DOMContentLoaded", () => {
-    const container = document.getElementById("clubes-container");
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Club - Motor Libre Competición</title>
 
-    // ==========================================================
-    // ⭐ LÓGICA CLAVE DE RECARGA: Detectar si el usuario se desvinculó de un club
-    // ==========================================================
-    if (sessionStorage.getItem('clubesDebeRecargar') === 'true') {
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 
-        // 1. Limpiar el indicador inmediatamente para evitar bucles
-        sessionStorage.removeItem('clubesDebeRecargar');
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/alertas.css">
+    <link rel="icon" type="image/png" href="../../img/imagen-tfg.png">
 
-        // 2. Recargar la página (con 'true' para forzar una recarga completa)
-        // Esto asegura que la función getAuthStatus() lea la sesión limpia.
-        window.location.reload(true);
-
-        // 🛑 CRÍTICO: Detener el resto de la ejecución hasta que la página se recargue.
-        return;
-    }
-    // ==========================================================
-
-
-    // --- FUNCIONES DE UTILIDAD DEL TOKEN Y SEGURIDAD ---
-
-    /**
-     * Decodifica el payload de un token JWT (compatible con JS vanilla).
-     * @param {string} token
-     * @returns {object|null}
-     */
-    function decodeJWT(token) {
-        if (!token) return null;
-        try {
-            // El payload es la segunda parte del token (entre los puntos)
-            const payload = token.split('.')[1];
-            // Rellena el padding si es necesario y reemplaza caracteres no-Base64
-            const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-            const base64Padded = base64.length % 4 === 0 ? base64 : base64 + '==='.slice(0, 4 - (base64.length % 4));
-
-            // Decodifica Base64 y luego el URI (para manejar caracteres especiales)
-            const jsonPayload = decodeURIComponent(atob(base64Padded).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            console.error("Error decodificando JWT:", e);
-            // Limpiamos los tokens si son inválidos
-            sessionStorage.removeItem("token");
-            localStorage.removeItem("token");
-            return null;
-        }
-    }
-
-    /**
-     * Obtiene el ID del club y el rol del usuario logueado.
-     * @returns {{club_id: number|null, role: string|null, id: number|null}}
-     */
-    function getAuthStatus() {
-        // Priorizamos localStorage para la persistencia
-        const currentToken = localStorage.getItem("token") || sessionStorage.getItem("token");
-        const decoded = decodeJWT(currentToken);
-        return {
-            id: decoded?.id || null,
-            // Aseguramos que el club_id sea un número (o null si es 0, null, o undefined)
-            club_id: decoded?.club_id ? Number(decoded.club_id) : null,
-            role: decoded?.role || null
-        };
-    }
-
-    // --- RESTO DE FUNCIONES HELPER ---
-
-    function escapeHtml(s = "") {
-        return String(s)
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#39;");
-    }
-
-    function getImageUrl(imageData) {
-        // CORRECCIÓN: el club puede tener 'imagen_club' o 'imagen_url' (si lo devuelve la API)
-        const imageSource = imageData || '../../img/placeholder.jpg';
-        if (imageSource.startsWith('http') || imageSource.startsWith('data:image/')) {
-            return imageSource;
-        }
-        // Asume que si no es URL, es una cadena Base64
-        return `data:image/jpeg;base64,${imageSource}`;
-    }
-
-    // Asegúrate de que existe una función global para mostrar alertas
-    if (typeof mostrarAlerta !== 'function') {
-        window.mostrarAlerta = (mensaje, tipo) => {
-            console.log(`[ALERTA ${tipo.toUpperCase()}]: ${mensaje.replace(/\*\*|/g, '')}`);
-            // Fallback simple si no existe una librería de alertas
-            // alert(`[${tipo.toUpperCase()}] ${mensaje.replace(/\*\*|/g, '')}`);
-        };
-    }
-
-    // --- LÓGICA PRINCIPAL DE CARGA Y RENDERIZADO ---
-
-    async function cargarClubes() {
-        if (!container) return; // Salir si el contenedor no existe
-
-        try {
-            // Obtener el token para enviarlo en la petición
-            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-            container.innerHTML = `<div class="col-12 mt-5 text-center text-secondary">Cargando clubes...</div>`;
-
-            // Petición a la API, asumiendo que solo trae los clubes activos
-            const res = await fetch("/api/clubs?estado=activo", { headers });
-
-            if (!res.ok) throw new Error("HTTP " + res.status);
-            const data = await res.json();
-
-            if (!data.success) {
-                mostrarAlerta(data.message || "Error cargando clubes", "error");
-                return;
-            }
-            renderClubes(data.clubs);
-
-        } catch (err) {
-            console.error("Error cargando clubes:", err);
-            mostrarAlerta("No se pudo conectar con el servidor", "error");
-            container.innerHTML = `<div class="col-12 mt-5"><p class="text-danger fw-bold">Error de conexión con el servidor.</p></div>`;
-        }
-    }
-
-    function renderClubes(clubes) {
-        container.innerHTML = "";
-
-        // La fuente de verdad siempre es el token persistente
-        const authStatus = getAuthStatus();
-        const isUserLoggedIn = authStatus.id !== null;
-        const userClubId = authStatus.club_id;
-        const isPresidente = authStatus.role === 'presidente';
-
-        if (!Array.isArray(clubes) || clubes.length === 0) {
-            container.innerHTML = `<div class="col-12 mt-5"><p class="text-secondary fw-bold text-center">Aún no hay clubes activos registrados.</p></div>`;
-            return;
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #111;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
         }
 
-        const row = document.createElement("div");
-        row.className = "row gy-3";
+        main {
+            flex-grow: 1;
+            padding-top: 100px;
+        }
 
-        clubes.forEach(club => {
-            const col = document.createElement("div");
-            col.className = "col-md-4";
+        .form-control,
+        .form-select {
+            background-color: #222;
+            color: white;
+            border: 1px solid #e50914;
+            transition: all 0.2s ease;
+        }
 
-            const clubIdNum = Number(club.id);
-            const isMemberOfThisClub = userClubId === clubIdNum;
-            const isMemberOfAnyClub = userClubId !== null;
+        .form-control:focus,
+        .form-select:focus {
+            background-color: #333;
+            border-color: #ff0a1e;
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+            color: white;
+        }
 
-            // ⭐ CORRECCIÓN CLAVE: Usar 'nombre_club' en lugar de 'nombre_evento'
-            const clubName = club.nombre_club || 'Club sin nombre';
-            const clubDescription = club.descripcion || 'Sin descripción';
-            // Usamos 'imagen_club' si viene de la API, si no usamos 'imagen_url' como fallback
-            const clubImageSource = getImageUrl(club.imagen_club || club.imagen_url);
+        .form-select option {
+            background-color: #222;
+            color: white;
+        }
 
-            let buttonHtml = '';
+        .form-label {
+            color: #ccc;
+            font-weight: 600;
+        }
 
-            if (isUserLoggedIn) {
-                if (isMemberOfThisClub) {
-                    // 🟢 Miembro del club actual (solo estado, no acción de salir)
-                    buttonHtml = `
-                        <button class="btn btn-success w-100" disabled
-                                title="Para gestionar o salir de tu club, usa la sección de perfil/gestión.">
-                                ${isPresidente ? 'Presidente (Gestionar fuera de aquí)' : 'Miembro Activo'}
-                        </button>`;
-                } else {
-                    // 🔴 Botón UNIRME AL CLUB 
-                    buttonHtml = `
-                        <button class="btn btn-netflix w-100 join-btn" 
-                                data-id="${club.id}"
-                                ${isMemberOfAnyClub ? 'disabled title="Ya eres miembro de otro club. Debes abandonarlo primero."' : ''}>
-                                ${isMemberOfAnyClub ? 'Ya eres miembro de otro club' : 'Unirme al club'}
-                        </button>`;
-                }
-            } else {
-                // 🟡 MOSTRAR INICIAR SESIÓN (si no hay token)
-                buttonHtml = `<a href="/pages/auth/login.html" class="btn btn-netflix w-100">Inicia sesión para unirte</a>`;
-            }
+        .club-register-container {
+            padding: 30px;
+            border-radius: 12px;
+            background-color: #1a1a1a;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
 
-            // El borde de la tarjeta cambia si eres miembro
-            const cardBorderColor = isMemberOfThisClub ? 'rgba(0,180,0,0.5)' : 'rgba(229,9,20,0.2)';
+        .btn-custom {
+            background-color: #e50914;
+            border-color: #e50914;
+            color: white;
+        }
 
-            // --- HTML DE LA TARJETA ---
-            col.innerHTML = `
-                <div class="club-card h-100 p-3 d-flex flex-column" data-club-id="${club.id}"
-                    style="background:#141414;border:1px solid ${cardBorderColor};border-radius:8px">
+        .btn-custom:hover {
+            background-color: #b20710;
+            border-color: #b20710;
+            color: white;
+        }
 
-                    <img src="${escapeHtml(clubImageSource)}" 
-                        alt="${escapeHtml(clubName)} Logo" 
-                        class="img-fluid rounded mb-2" 
-                        style="max-height:160px;object-fit:cover;width:100%;">
-                    
-                    <div class="flex-grow-1">
-                        <h4 class="text-danger">${escapeHtml(clubName)}</h4>
-                        <p>${escapeHtml(clubDescription)}</p>
-                        <small class="text-secondary">${escapeHtml(club.ciudad || 'Ciudad no especificada')}</small>
-                        <div class="badge bg-dark">${escapeHtml(club.enfoque || 'General')}</div>
-                    </div>
-                    
-                    <div class="mt-auto pt-2">
-                        ${buttonHtml}
-                    </div>
+        .modal-content .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        .modal-content {
+            background: #111;
+            border: 1px solid #e50914;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+
+        <a id="logo-link" href="../../index.html" class="navbar-brand d-flex align-items-center">
+            <img src="../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2">
+        </a>
+
+        <div class="d-flex align-items-center">
+
+            <a href="../auth/login/login.html" id="login-icon" class="text-light me-3">
+                <i class="bi bi-person-circle fs-4"></i>
+            </a>
+
+            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem; display: none;"></span>
+
+            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+
+        </div>
+    </nav>
+
+    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title">Menú</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body">
+
+            <a href="../../index.html" id="menu-inicio" class="d-block text-light mb-2">
+                Inicio
+            </a>
+
+            <a href="../calendario/calendario.html" class="d-block text-light mb-2">
+                Calendario
+            </a>
+
+            <a href="./clubes.html" class="d-block text-light mb-2">
+                Clubes
+            </a>
+
+            <a href="./editarUsuario.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
+                Mi Club
+            </a>
+
+            <a href="./presidente/editarPresidente.html" id="presidente-club-link"
+                class="d-block text-warning fw-bold mb-2" style="display:none;">
+                Presidente de Club
+            </a>
+
+            <a href="../perfil/perfil.html" class="d-block text-light mb-2">
+                Mi perfil
+            </a>
+
+            <hr class="border-secondary">
+
+            <a href="#" id="logout-btn" class="d-block text-danger" style="display:none;">
+                Cerrar sesión
+            </a>
+        </div>
+    </div>
+    <main class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <div class="club-register-container">
+                    <h1 class="text-center text-danger mb-4" style="font-weight: 800;">Registro de Nuevo Club</h1>
+                    <p class="text-center text-light mb-4">
+                        Completa este formulario para solicitar la creación de un club. Una vez aprobado por la
+                        administración, serás designado como el **Presidente del Club**.
+                    </p>
+
+                    <form id="clubRegistrationForm">
+
+                        <div class="mb-3">
+                            <label for="clubName" class="form-label">Nombre del Club</label>
+                            <input type="text" class="form-control" id="clubName"
+                                placeholder="Ej: Los Rápidos de Madrid" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="clubCity" class="form-label">Ciudad / Región Principal</label>
+                            <input type="text" class="form-control" id="clubCity" placeholder="Ej: Barcelona" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="clubFocus" class="form-label">Enfoque Principal del Club</label>
+                            <select class="form-select" id="clubFocus" required>
+                                <option value="" selected disabled>Selecciona el enfoque</option>
+                                <option value="Drifting">Drifting / Derrape</option>
+                                <option value="DragRace">Drag Race / Aceleración</option>
+                                <option value="TimeAttack">Time Attack / Circuito</option>
+                                <option value="Exposicion">Exposición / Tuning</option>
+                                <option value="Multidisciplinar">Multidisciplinar</option>
+                                <option value="Otros">Otros</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="clubDescription" class="form-label">Descripción del Club (Misión y
+                                Objetivos)</label>
+                            <textarea class="form-control" id="clubDescription" rows="4"
+                                placeholder="Describe brevemente qué hace vuestro club y vuestros principales objetivos en la competición o exhibición."
+                                required></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="clubImage" class="form-label">Logo o Imagen Representativa del Club
+                                (Opcional)</label>
+                            <input type="file" class="form-control" id="clubImage" accept="image/*">
+                            <div class="form-text text-muted">Máximo 5MB. Formatos: JPG, PNG.</div>
+                        </div>
+
+                        <p class="text-danger small text-center mb-4">
+                            * Al enviar, el usuario con la sesión activa será registrado como Presidente pendiente.
+                        </p>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-custom btn-lg">Solicitar Registro del Club</button>
+                        </div>
+
+                    </form>
                 </div>
-            `;
+            </div>
+        </div>
+    </main>
 
-            row.appendChild(col);
+    <footer id="main-footer" class="mt-5">
+    </footer>
+
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title text-light" id="logoutConfirmModalLabel">Confirmar Cierre de Sesión</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-light">
+                    ¿Estás seguro de que quieres cerrar tu sesión?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../../js/alertas.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../footer/footer.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
+            const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
+            const btnConfirmLogout = document.getElementById("btnConfirmLogout");
+
+            const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+            const clubIdInSession = sessionStorage.getItem("clubId");
+            const usuario = storedUser ? JSON.parse(storedUser) : null;
+
+            const userName = document.getElementById("user-name");
+            const loginIcon = document.getElementById("login-icon");
+            const logoutBtn = document.getElementById("logout-btn");
+            const miClubLink = document.getElementById("mi-club-link");
+            const presidenteClubLink = document.getElementById("presidente-club-link");
+
+            if (usuario) {
+                
+                userName.textContent = usuario.name;
+                userName.style.display = "inline";
+                loginIcon.style.display = "none";
+                logoutBtn.style.display = "block";
+
+                
+                if (usuario.role === "admin") {
+                    const logoLink = document.getElementById("logo-link");
+                    
+                    if (logoLink) logoLink.href = "../dashboard/admin/admin.html";
+                }
+
+                
+                const clubId = usuario.club_id || usuario.clubId || clubIdInSession;
+                
+                const isPresidenteOrAdmin = usuario.role === "admin" || usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
+
+                if (clubId && miClubLink) {
+                    const clubPage = isPresidenteOrAdmin
+                        
+                        ? `./presidente/editarPresidente.html?id=${clubId}`
+                        
+                        : `./editarUsuario.html?id=${clubId}`;
+
+                    miClubLink.href = clubPage;
+                    miClubLink.textContent = isPresidenteOrAdmin ? "Mi Club (Editar)" : "Mi Club";
+                    miClubLink.style.display = "block";
+                } else if (miClubLink) {
+                    miClubLink.style.display = "none";
+                }
+
+                
+                const isPresidente = usuario.role === "presidente" || usuario.is_presidente === 1 || usuario.is_presidente === true;
+
+                if (isPresidente && presidenteClubLink) {
+                    
+                    presidenteClubLink.style.display = "block";
+                    presidenteClubLink.href = "./presidente/editarPresidente.html";
+                } else if (presidenteClubLink) {
+                    
+                    presidenteClubLink.style.display = "none";
+                }
+
+
+            } else {
+                
+                userName.style.display = "none";
+                loginIcon.style.display = "inline";
+                logoutBtn.style.display = "none";
+
+                
+                if (miClubLink) {
+                    miClubLink.style.display = "none";
+                }
+                if (presidenteClubLink) {
+                    presidenteClubLink.style.display = "none";
+                }
+            }
+            
+
+
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+
+                    if (!usuario) {
+                        mostrarAlerta("No puedes cerrar sesión si no has iniciado sesión.", 'error', 3000);
+                        const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                        if (offcanvasMenu) offcanvasMenu.hide();
+                        return;
+                    }
+
+                    if (logoutConfirmModal) logoutConfirmModal.show();
+
+                    const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                    if (offcanvasMenu) offcanvasMenu.hide();
+                });
+            }
+
+            if (btnConfirmLogout) {
+                btnConfirmLogout.addEventListener("click", () => {
+                    if (logoutConfirmModal) logoutConfirmModal.hide();
+
+                    
+                    sessionStorage.removeItem("usuario");
+                    localStorage.removeItem("usuario");
+                    sessionStorage.removeItem("clubId");
+
+                    mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
+
+                    setTimeout(() => {
+                        
+                        window.location.href = "../auth/login/login.html";
+                    }, 1500);
+                });
+            }
         });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('clubRegistrationForm');
 
-        container.appendChild(row);
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
 
-        // Agregamos listeners solo a los botones de UNIRSE habilitados
-        document.querySelectorAll(".join-btn:not([disabled])").forEach(btn => btn.addEventListener("click", joinClub));
+                
+                const token = sessionStorage.getItem('userToken') || sessionStorage.getItem('token');
 
-        // El listener de salir del club no se adjunta aquí (coherente con el requisito)
-    }
+                if (!token) {
+                    mostrarAlerta("Error: Debes iniciar sesión para registrar un club.", "error");
+                    return;
+                }
 
-    // --- MANEJADOR DE JOIN CLUB ---
-    async function joinClub(e) {
-        const club_id = e.currentTarget.dataset.id;
-        const authStatus = getAuthStatus();
+                
+                const formData = new FormData();
 
-        if (!authStatus.id) {
-            mostrarAlerta("Debes iniciar sesión para unirte a un club", "error");
-            return;
-        }
+                
+                const clubName = document.getElementById('clubName').value.trim();
+                const clubCity = document.getElementById('clubCity').value.trim();
+                const clubFocus = document.getElementById('clubFocus').value;
+                const clubDescription = document.getElementById('clubDescription').value.trim();
 
-        e.currentTarget.disabled = true; // Deshabilitar el botón temporalmente
-        e.currentTarget.textContent = 'Uniéndote...';
+                
 
-        const bodyToSend = { club_id: Number(club_id) };
+                if (!clubName || !clubCity || !clubFocus || !clubDescription) {
+                    mostrarAlerta("Por favor, rellena todos los campos obligatorios del formulario.", "error");
+                    return;
+                }
 
-        try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            // Usamos un query param 'action=join' para diferenciar en el backend
-            const res = await fetch("/api/clubs?action=join", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                body: JSON.stringify(bodyToSend)
+                
+                formData.append("nombre_evento", clubName);
+                formData.append("ciudad", clubCity);
+                
+                formData.append("enfoque", clubFocus);
+
+                
+                const fullDescription = `[Enfoque: ${clubFocus}] ${clubDescription}`;
+                formData.append("descripcion", fullDescription);
+
+
+                
+                const imagenInput = document.getElementById('clubImage');
+                if (imagenInput && imagenInput.files.length > 0) {
+                    formData.append("imagen_club", imagenInput.files[0]);
+                }
+
+                
+                try {
+                    const apiUrl = 'https://motor-libre-competicion.vercel.app/api/clubs';
+
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData,
+                    });
+
+                    let r = {};
+                    try {
+                        r = await res.json();
+                    } catch (e) {
+                        console.error("Respuesta no es JSON:", e);
+                    }
+
+                    if (!res.ok) {
+                        
+                        const errorMsg = r.message || r.error || `Error ${res.status}: Fallo en la solicitud. El servidor devolvió datos incompletos.`;
+                        mostrarAlerta(errorMsg, "error");
+                        console.error("Respuesta de error completa:", r);
+                        return;
+                    }
+
+                    
+                    mostrarAlerta(r.message || "¡Solicitud enviada! Tu club está ahora Pendiente de Aprobación por la Administración.", "exito");
+                    form.reset();
+
+                } catch (error) {
+                    console.error("Error al registrar club (Network/Server):", error);
+                    mostrarAlerta("Error de conexión con el servidor. Verifica tu red.", "error");
+                }
             });
-            const data = await res.json();
+        });
+    </script>
+</body>
 
-            if (!res.ok) {
-                throw new Error(data.message || `Error HTTP ${res.status}`);
-            }
-
-            // ⭐ CLAVE: Guardar el nuevo token que contiene el club_id actualizado
-            if (data.token) {
-                sessionStorage.setItem("token", data.token);
-                localStorage.setItem("token", data.token);
-            }
-
-            mostrarAlerta("Te has unido al club", "exito");
-            cargarClubes(); // Recargar la lista para reflejar el cambio de botones y bordes
-        } catch (err) {
-            console.error("Error joinClub:", err);
-            mostrarAlerta(`Error al unirse al club: ${err.message}`, "error");
-            e.currentTarget.disabled = false;
-            e.currentTarget.textContent = 'Unirme al club';
-        }
-    }
-
-    // --- LÓGICA DE MODAL Y LEAVE CLUB (MANTENIDA PERO SIN ENLACE EN ESTA PÁGINA) ---
-
-    // La lógica de setupLeaveModal y leaveClubAction se mantiene en el script
-    // pero no se usa en 'renderClubes' según la solicitud de no mostrar el botón de salir
-    // en la lista principal, sino que se gestiona desde el perfil del usuario.
-
-    // (*** Funciones setupLeaveModal y leaveClubAction originales OMITIDAS para un código más limpio, 
-    // ya que no se usan en esta página. Si se usan en otra, se deben mantener. ***)
-
-    cargarClubes();
-});
+</html>
