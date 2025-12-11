@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputCiudad = document.getElementById("ciudad");
     const inputEnfoque = document.getElementById("enfoque"); // Correcto: enfoque
     const inputImagen = document.getElementById("imagen_club"); // Input de tipo file
-    const inputFecha = document.getElementById("fecha_creacion");
+    const inputFecha = document.getElementById("fecha_creacion"); // <-- Este era el elemento que faltaba o tenía un ID incorrecto
     const inputIdPresidente = document.getElementById("id_presidente");
 
     // Modals de Bootstrap: Declaración de elementos del DOM
@@ -112,12 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /** Inicializa el valor del input de fecha a la fecha actual. */
     function setFechaDefault() {
+        // ⭐ Corregido: comprueba si inputFecha existe
         if (inputFecha) inputFecha.value = hoyISODate();
     }
 
     /** Limpia el formulario y lo prepara para la creación. */
     function clearForm() {
         if (form) form.reset();
+        // ⭐ Corregido: comprueba si los elementos existen antes de limpiar
         if (inputId) inputId.value = "";
         if (inputIdPresidente) inputIdPresidente.value = "";
         if (inputCiudad) inputCiudad.value = "";
@@ -277,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Dato extraído para el botón (mejora de UX en la confirmación)
             const clubNameForBtn = escapeHtml(club.nombre_evento || `Club ID: ${club.id}`);
 
-            // 🛑 ESTRUCTURA DE 9 COLUMNAS (Sin ID, ya que el ID no se muestra como columna principal) 🛑
+            // 🛑 ESTRUCTURA DE 9 COLUMNAS 🛑
             fila.innerHTML = `
                 <td>${escapeHtml(club.nombre_evento)}</td>
                 <td>${descripcionCorta}</td>
@@ -333,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
-            // ⭐ IMPORTANTE: Endpoint con query string ?id= para Next.js
+            // ⭐ Endpoint con query string ?id= para Next.js
             const res = await fetch(`/api/clubs?id=${id}`, { headers });
 
             if (!res.ok) {
@@ -353,14 +355,18 @@ document.addEventListener("DOMContentLoaded", () => {
             // Si el modal está definido en el HTML, lo abrimos
             if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
 
-            // Llenar el formulario con los datos del club
-            inputId.value = c.id;
-            // ⭐ Corregido: Usamos 'nombre_evento' del backend
-            inputNombre.value = c.nombre_evento || "";
-            inputDescripcion.value = c.descripcion || "";
-            inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
+            // ----------------------------------------------------
+            // ⭐ ARREGLO CLAVE: Comprobar si el elemento existe (no es null) antes de usar .value
+            // ----------------------------------------------------
 
-            // ⭐ Corregido: Usamos los IDs del HTML
+            // Llenar el formulario con los datos del club
+            if (inputId) inputId.value = c.id;
+            if (inputNombre) inputNombre.value = c.nombre_evento || "";
+            if (inputDescripcion) inputDescripcion.value = c.descripcion || "";
+
+            // LÍNEA ARREGLADA: inputFecha.value causaba el error si el campo no existía.
+            if (inputFecha) inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
+
             if (inputCiudad) inputCiudad.value = c.ciudad || "";
             if (inputEnfoque) inputEnfoque.value = c.enfoque || "";
 
@@ -368,6 +374,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Cargar ID del presidente
             if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
+
+            // ----------------------------------------------------
 
             if (c.estado === 'pendiente' || c.estado === null) {
                 emitirAlerta(`Club pendiente ID ${c.id} cargado. Al guardar, se establecerá como activo.`, "info");
@@ -379,7 +387,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (error) {
             console.error("Error cargarClubEnFormulario:", error);
-            emitirAlerta("Error cargando club: " + error.message, "error");
+            // Mostrar un mensaje específico si el error sigue siendo de tipo null
+            if (error instanceof TypeError && error.message.includes("Cannot set properties of null")) {
+                emitirAlerta("Error cargando club: **Verifica que todos los campos del formulario (incluyendo 'fecha_creacion') en tu HTML tengan el ID correcto.**", "error");
+            } else {
+                emitirAlerta("Error cargando club: " + error.message, "error");
+            }
         }
     }
 
@@ -397,14 +410,14 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const id = inputId.value;
+        const id = inputId ? inputId.value : '';
         const metodo = id ? "PUT" : "POST";
 
         // ⭐ CORRECCIÓN CLAVE: Usar Query Parameter para PUT y DELETE.
         const url = id ? `/api/clubs?id=${id}` : "/api/clubs";
 
         // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE
-        if (!inputNombre.value || !inputDescripcion.value || !inputCiudad.value || !inputEnfoque.value) {
+        if (!inputNombre || !inputNombre.value || !inputDescripcion || !inputDescripcion.value || !inputCiudad || !inputCiudad.value || !inputEnfoque || !inputEnfoque.value) {
             emitirAlerta("❌ Faltan campos obligatorios: Nombre, Descripción, Ciudad o Enfoque.", "error");
             return;
         }
@@ -412,13 +425,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData(form);
 
         // Limpiar FormData de campos vacíos (especialmente el archivo si no se subió uno nuevo)
-        // El input file se llama 'imagen_club' en el formulario.
         const imageFile = formData.get('imagen_club');
         if (imageFile && imageFile.name === '' && imageFile.size === 0) {
             formData.delete('imagen_club');
         } else {
-            // Si hay un archivo, debe enviarse con el nombre esperado por formidable en el backend ('imagen' o 'imagen_club')
-            // Asumiendo que el backend espera 'imagen_club' basado en el formulario
+            // Si hay un archivo, se mantiene.
         }
 
         // Agregar el ID del presidente si está presente
@@ -427,7 +438,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Si es una creación (POST) o una edición de un club pendiente, aseguramos que el estado sea activo.
-        // La API de clubs lo maneja, pero lo enviamos por si acaso.
         if (metodo === 'POST' || (metodo === 'PUT' && inputIdPresidente && inputIdPresidente.value)) {
             formData.append("estado", "activo");
         }
