@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    // ✅ CORRECCIÓN: Se añade '.env' para acceder correctamente a la variable de entorno.
+    // ✅ CORRECCIÓN: Aseguramos el acceso correcto a la variable de entorno.
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
@@ -29,7 +29,7 @@ export const config = {
     api: { bodyParser: false, },
 };
 
-// 🛠️ HELPER: Función para leer el cuerpo JSON (para join/leave)
+// 🛠️ HELPER: Función para leer el cuerpo JSON (para join/leave y status change)
 const getBody = async (req) => {
     try {
         const chunks = [];
@@ -313,8 +313,10 @@ async function clubsHandler(req, res) {
     const { method, query } = req;
 
     // 💡 CORRECCIÓN CRÍTICA: Obtenemos el ID de forma robusta
-    let { estado, clubId: queryClubId } = query;
-    let id = queryClubId;
+    // Añadido 'id: queryId' para capturar el parámetro 'id' enviado por el cliente. (Fix Error 400)
+    let { estado, clubId: queryClubId, id: queryId } = query;
+    // La variable 'id' prioriza 'queryId' (como lo usa adminClubes.js), luego 'queryClubId'
+    let id = queryId || queryClubId;
 
     if (!id && req.url) {
         // Intento de parsear el ID de la URL si no viene en la query
@@ -530,7 +532,7 @@ async function clubsHandler(req, res) {
 
                     // --- SINCRONIZACIÓN DE TOKEN (JOIN) ---
                     // 3. Obtener los datos del usuario actualizados (con el nuevo club_id)
-                    const updatedUserRes = await client.query(
+                    const updatedUserRes = await pool.query(
                         'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
                         [requestingUserId]
                     );
@@ -721,7 +723,7 @@ async function clubsHandler(req, res) {
                     await client.query('BEGIN');
 
                     // 1. Verificar el club actual del usuario y si es presidente
-                    const userRes = await client.query('SELECT club_id, is_presidente, role FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
+                    const userRes = await pool.query('SELECT club_id, is_presidente, role FROM public."users" WHERE id = $1 FOR UPDATE', [requestingUserId]);
 
                     if (userRes.rows.length === 0) {
                         await client.query('ROLLBACK');
@@ -745,7 +747,7 @@ async function clubsHandler(req, res) {
 
                     // --- SINCRONIZACIÓN DE TOKEN (LEAVE) ---
                     // 3. Obtener los datos del usuario actualizados (club_id = NULL)
-                    const updatedUserRes = await client.query(
+                    const updatedUserRes = await pool.query(
                         'SELECT id, name, email, role, club_id, is_presidente FROM public."users" WHERE id = $1',
                         [requestingUserId]
                     );
@@ -845,9 +847,19 @@ async function clubsHandler(req, res) {
                         values.push(newEstado);
                     }
                     if (newIdPresidente) {
-                        // Lógica de transferencia de presidencia (más compleja, asumiendo que solo el admin lo hace simple)
-                        updates.push(`id_presidente = $${paramIndex++}`);
-                        values.push(newIdPresidente);
+                        // ⭐ CORRECCIÓN CLAVE (Error 500 mitigado): Convertir el ID de presidente a entero.
+                        const presidentIdNum = parseInt(newIdPresidente);
+
+                        // Solo actualizamos si es un número válido y positivo.
+                        if (!isNaN(presidentIdNum) && presidentIdNum > 0) {
+                            updates.push(`id_presidente = $${paramIndex++}`);
+                            values.push(presidentIdNum);
+                        } else {
+                            // Si se envía un valor que no es un número válido y se espera un cambio, 
+                            // esto podría causar un 400 o ignorarse. Optamos por ignorar el campo 
+                            // si no es un número válido y dejar que el cliente maneje la validación.
+                            console.warn(`ADVERTENCIA: ID de presidente no válido (${newIdPresidente}) ignorado en actualización.`);
+                        }
                     }
                 }
 
@@ -939,7 +951,7 @@ async function clubsHandler(req, res) {
 
                 // Si no se encuentra como club activo, buscar como solicitud pendiente
                 if (clubInfoRes.rows.length === 0) {
-                    const pendingInfoRes = await client.query('SELECT imagen_club FROM public.clubs_pendientes WHERE id = $1', [clubId]);
+                    const pendingInfoRes = await pool.query('SELECT imagen_club FROM public.clubs_pendientes WHERE id = $1', [clubId]);
                     if (pendingInfoRes.rows.length > 0) {
                         // Es una solicitud pendiente que el Admin está borrando con DELETE /api/clubs/ID
                         const { imagen_club } = pendingInfoRes.rows[0];

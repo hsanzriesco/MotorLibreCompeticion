@@ -241,11 +241,25 @@ async function loadClubData(clubId) {
 async function handleFormSubmit(event) {
     event.preventDefault();
 
-    const clubId = document.getElementById('club-id').value;
+    // 🛑 INICIO CORRECCIÓN: Usar sessionStorage como respaldo
+    let clubId = document.getElementById('club-id')?.value;
     const token = getToken();
 
+    // Si el DOM falla o el campo está vacío, intentar obtenerlo de SessionStorage
+    if (!clubId) {
+        clubId = sessionStorage.getItem('club_id');
+    }
+    // 🛑 FIN CORRECCIÓN
+
     if (!token || !clubId) {
-        manejarFaltaAutenticacion('Sesión inválida', 'error');
+        // Alerta específica si falta el ID del club. Este era el punto de fallo.
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('ID del club es requerido para actualizar.', 'error');
+        } else {
+            alert('ID del club es requerido para actualizar.');
+        }
+        // No redirigimos con manejarFaltaAutenticacion, solo mostramos el error de validación
+        console.error("Error al actualizar el club: ID del club es requerido para actualizar.");
         return;
     }
 
@@ -362,9 +376,13 @@ function handleClubDeletion(clubId) {
 
     // Definimos la función de clic aquí para que tenga acceso al 'clubId' pasado como argumento
     async function handleConfirmDeleteClick() {
-        // ⭐ CORRECCIÓN CLAVE: Usamos el 'clubId' pasado al inicializar, que es más fiable
-        //                     que leer el campo oculto del DOM, que puede estar vacío.
-        const clubToDeleteId = clubId;
+        // ⭐ INICIO CORRECCIÓN: Usamos el 'clubId' pasado, y si no existe, usamos sessionStorage
+        let clubToDeleteId = clubId;
+        if (!clubToDeleteId) {
+            clubToDeleteId = sessionStorage.getItem('club_id');
+        }
+        // ⭐ FIN CORRECCIÓN
+
         const token = getToken(); // Obtiene el token de sessionStorage
 
         if (!clubToDeleteId) {
@@ -375,8 +393,8 @@ function handleClubDeletion(clubId) {
             } else {
                 alert(validationMessage);
             }
-            // En lugar de hacer throw Error, simplemente retornamos después de mostrar el aviso.
-            console.error(validationMessage);
+            // Este console.error() era el que se veía en la línea 466 (o similar)
+            console.error('Error al intentar eliminar el club:', validationMessage);
             return;
         }
 
@@ -466,7 +484,7 @@ function handleClubDeletion(clubId) {
             console.error('Error al intentar eliminar el club:', error);
 
             // La alerta ya se mostró dentro del if (!response.ok), solo manejamos el finally aquí.
-            if (!error.message.includes('Error al eliminar el club') && !error.message.includes('Unauthorized')) {
+            if (!error.message.includes('Error al eliminar el club') && !error.message.includes('Unauthorized') && !error.message.includes('ID del club es requerido')) {
                 if (typeof mostrarAlerta === 'function') {
                     // ⭐ ORDEN: (mensaje, tipo)
                     mostrarAlerta('Error de conexión o inesperado al eliminar el club.', 'error');
