@@ -17,7 +17,6 @@
             background-color: #111;
             color: white;
             padding-top: 100px;
-            /* Para dejar espacio al nav fijo */
         }
 
         .article-container {
@@ -37,7 +36,6 @@
             font-weight: bold;
         }
 
-        /* Estilos necesarios para el modal (copiados del index) */
         .modal-content {
             background-color: #111;
             color: white;
@@ -195,17 +193,14 @@
             const clubIdInSession = sessionStorage.getItem("clubId");
             const usuario = storedUser ? JSON.parse(storedUser) : null;
 
-            // Note: 'bienvenida' element is not present on this page, but the logic is fine.
-            // const bienvenida = document.getElementById("bienvenida"); 
             const userName = document.getElementById("user-name");
             const loginIcon = document.getElementById("login-icon");
             const logoutBtn = document.getElementById("logout-btn");
             const miClubLink = document.getElementById("mi-club-link");
             const logoLink = document.getElementById("logo-link");
 
-            // ⭐⭐ LÓGICA DE VISIBILIDAD DE ELEMENTOS ⭐⭐
             if (usuario) {
-                // bienvenida.textContent = `Bienvenido, ${usuario.name}!`; // Comentado, ya que este elemento no existe en esta página
+                
                 userName.textContent = usuario.name;
 
                 userName.style.display = "inline";
@@ -213,11 +208,11 @@
                 logoutBtn.style.display = "block";
 
                 if (usuario.role === "admin" && logoLink) {
-                    // Ruta al admin dashboard ajustada: ../dashboard/admin/admin.html
+                    
                     logoLink.href = "../dashboard/admin/admin.html";
                 }
 
-                // Lógica específica para el Presidente del Club
+                
                 const hasClub = !!usuario.clubId || !!usuario.club_id || !!clubIdInSession;
 
                 if (hasClub && miClubLink) {
@@ -233,7 +228,7 @@
                     miClubLink.style.display = "none";
                 }
             }
-            // ⭐⭐ FIN LÓGICA DE VISIBILIDAD ⭐⭐
+            
 
 
             if (logoutBtn) {
@@ -259,7 +254,7 @@
 
                     if (logoutConfirmModal) logoutConfirmModal.hide();
 
-                    // Limpiar datos de sesión y almacenamiento local
+                    
                     sessionStorage.removeItem("usuario");
                     localStorage.removeItem("usuario");
                     sessionStorage.removeItem("clubId");
@@ -267,7 +262,7 @@
                     mostrarAlerta("Has cerrado sesión correctamente.", 'exito', 1500);
 
                     setTimeout(() => {
-                        // Ruta de redirección ajustada: ../auth/login/login.html
+                        
                         window.location.href = "../auth/login/login.html";
                     }, 1500);
                 });
