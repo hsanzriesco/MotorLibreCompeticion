@@ -2,19 +2,27 @@
 <html lang="es">
 
 <head>
+       
     <meta charset="UTF-8" />
+       
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Editar Club</title>
+        <title>Editar Club</title>
 
+       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+       
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
 
+       
     <link rel="stylesheet" href="../../../css/navbar.css" />
+       
     <link rel="stylesheet" href="../../../css/style.css" />
+       
     <link rel="stylesheet" href="../../../css/alertas.css" />
+       
     <link rel="icon" href="../../../img/imagen-tfg.png" type="image/png" />
 
-    <style>
+        <style>
         /* Estilos generales y del panel */
         body {
             /* === MODIFICACIONES CLAVE PARA STICKY FOOTER === */
@@ -111,194 +119,232 @@
 
 <body>
 
-    <div id="alertas-container" class="alerta-container"></div>
+        <div id="alertas-container" class="alerta-container"></div>
 
-    <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
-        <a id="logo-link" href="../../../index.html" class="navbar-brand d-flex align-items-center">
-            <img src="../../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2" />
-        </a>
+        <nav class="navbar navbar-dark bg-dark border-bottom border-danger px-3 fixed-top">
+                <a id="logo-link" href="../../../index.html" class="navbar-brand d-flex align-items-center">
+                        <img src="../../../img/imagen-tfg.png" alt="Logo" height="70" class="me-2" />
+                    </a>
 
-        <div class="d-flex align-items-center">
-            <a href="../../auth/login/login.html" id="login-icon" class="text-light me-3">
-                <i class="bi bi-person-circle fs-4"></i>
-            </a>
-            <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
+                <div class="d-flex align-items-center">
+                        <a href="../../auth/login/login.html" id="login-icon" class="text-light me-3">
+                                <i class="bi bi-person-circle fs-4"></i>
+                            </a>
+                        <span id="user-name" class="text-danger fw-bold me-3" style="font-size: 1.1rem;"></span>
 
-            <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                <i class="bi bi-list fs-4"></i>
-            </button>
-        </div>
-    </nav>
+                        <button class="btn btn-dark border border-secondary" type="button" data-bs-toggle="offcanvas"  
+                              data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                                <i class="bi bi-list fs-4"></i>
+                            </button>
+                    </div>
+            </nav>
 
-    <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
-        <div class="offcanvas-header border-bottom border-secondary">
-            <h5 id="offcanvas-title">Menú</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
+        <div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="offcanvasMenu">
+                <div class="offcanvas-header border-bottom border-secondary">
+                        <h5 id="offcanvas-title">Menú</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+                    </div>
 
-        <div class="offcanvas-body">
-            <a id="menu-inicio" class="d-block text-light mb-2" href="../../../index.html">
-                Inicio
-            </a>
-            <a href="../../calendario/calendario.html" class="d-block text-light mb-2">Calendario</a>
-            <a href="../../clubes/clubes.html" class="d-block text-light mb-2">Clubes</a>
-            <a href="./editarPresidente.html" id="mi-club-link" class="d-block text-light mb-2" style="display:none;">
-                Mi Club
-            </a>
-            <a href="../../perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
+                <div class="offcanvas-body">
+                        <a id="menu-inicio" class="d-block text-light mb-2" href="../../../index.html">
+                                Inicio
+                            </a>
+                        <a href="../../calendario/calendario.html" class="d-block text-light mb-2">Calendario</a>
+                        <a href="../../clubes/clubes.html" class="d-block text-light mb-2">Clubes</a>
+                        <a href="./editarPresidente.html" id="mi-club-link" class="d-block text-light mb-2"
+                style="display:none;">
+                                Mi Club
+                            </a>
+                        <a href="../../perfil/perfil.html" class="d-block text-light mb-2">Mi perfil</a>
 
-            <div id="admin-links" style="display:none;">
+                        <div id="admin-links" style="display:none;">
+                               
                 <hr class="border-secondary" />
-                <h6 class="text-danger mt-3">Gestión de Administrador</h6>
-                <a href="../../adminCalendario/adminCalendario.html" class="d-block text-light mb-2">Gestión de
-                    Eventos</a>
-                <a href="../../lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de Lugares</a>
-                <a href="../../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
+                                <h6 class="text-danger mt-3">Gestión de Administrador</h6>
+                                <a href="../../adminCalendario/adminCalendario.html"
+                    class="d-block text-light mb-2">Gestión de
+                                        Eventos</a>
+                                <a href="../../lugares/adminLugares.html" class="d-block text-light mb-2">Gestión de
+                    Lugares</a>
+                                <a href="../../user/users.html" class="d-block text-light mb-2">Gestionar Usuarios</a>
+                           
             </div>
 
+                       
             <hr class="border-secondary" />
 
-            <a href="#" id="logout-btn" class="d-block text-danger">Cerrar sesión</a>
+                        <a href="#" id="logout-btn" class="d-block text-danger">Cerrar sesión</a>
+                   
         </div>
-    </div>
-    <main>
-        <section class="admin-section">
-            <h2 class="text-center mb-5 text-danger">📝 Editar Club</h2>
-            <form id="club-edit-form" class="mb-4" enctype="multipart/form-data">
-                <input type="hidden" id="club-id" name="club-id">
+            </div>
+        <main>
+                <section class="admin-section">
+                        <h2 class="text-center mb-5 text-danger">📝 Editar Club</h2>
+                        <form id="club-edit-form" class="mb-4" enctype="multipart/form-data">
+                                <input type="hidden" id="club-id" name="club-id">
 
-                <div class="row g-4">
-                    <div class="col-md-7">
-                        <div class="mb-4">
-                            <label class="form-label text-light fw-bold">Nombre del Club *</label>
-                            <input type="text" class="form-control input-dark" id="nombre_club" name="nombre_club"
+                                <div class="row g-4">
+                                        <div class="col-md-7">
+                                                <div class="mb-4">
+                                                        <label class="form-label text-light fw-bold">Nombre del Club
+                                *</label>
+                                                        <input type="text" class="form-control input-dark"
+                                id="nombre_club" name="nombre_club"                                
                                 placeholder="Introduce el nombre del club" required />
-                        </div>
+                                                    </div>
 
-                        <div class="mb-4">
-                            <label class="form-label text-light fw-bold">Enfoque del Club *</label>
-                            <input type="text" class="form-control input-dark" id="enfoque" name="enfoque"
+                                                <div class="mb-4">
+                                                        <label class="form-label text-light fw-bold">Enfoque del Club
+                                *</label>
+                                                        <input type="text" class="form-control input-dark" id="enfoque"
+                                name="enfoque"                                
                                 placeholder="Ej: Drift, Drag Race, Rally, etc." required />
-                            <small class="form-text text-secondary">El tipo de actividad principal a la que se
-                                dedica el club.</small>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label text-light fw-bold">Descripción</label>
-                            <textarea class="form-control input-dark" id="descripcion" name="descripcion"
-                                rows="5"></textarea>
-                        </div>
+                                                        <small class="form-text text-secondary">El tipo de actividad
+                                principal a la que se
+                                                                dedica el club.</small>
+                                                    </div>
+                                                <div class="mb-4">
+                                                        <label class="form-label text-light fw-bold">Descripción</label>
+                                                        <textarea class="form-control input-dark" id="descripcion"
+                                name="descripcion"                                 rows="5"></textarea>
+                                                    </div>
 
-                        <div class="row g-3 mb-4">
-                            <div class="col-sm-6">
-                                <label class="form-label text-light fw-bold">Ciudad</label>
-                                <input type="text" class="form-control input-dark" id="ciudad" name="ciudad"
+                                                <div class="row g-3 mb-4">
+                                                        <div class="col-sm-6">
+                                                                <label
+                                    class="form-label text-light fw-bold">Ciudad</label>
+                                                                <input type="text" class="form-control input-dark"
+                                    id="ciudad" name="ciudad"                                    
                                     placeholder="Introduce la ciudad del club" required />
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label text-light fw-bold">Fecha de Creación</label>
-                                <input type="text" class="form-control input-dark" id="fecha_creacion"
-                                    name="fecha_creacion" readonly />
-                            </div>
-                        </div>
+                                                            </div>
+                                                        <div class="col-sm-6">
+                                                                <label class="form-label text-light fw-bold">Fecha de
+                                    Creación</label>
+                                                                <input type="text" class="form-control input-dark"
+                                    id="fecha_creacion"                                     name="fecha_creacion"
+                                    readonly />
+                                                            </div>
+                                                    </div>
 
-                    </div>
+                                            </div>
 
-                    <div class="col-md-5 border-start border-secondary ps-4">
-                        <div class="mb-4">
-                            <label class="form-label text-light fw-bold">Imagen Actual</label>
-                            <div id="imagen_actual_preview" class="text-center bg-dark p-2 rounded">
-                                <img id="current-club-thumb" src="" alt="Imagen actual del Club" class="img-fluid" />
-                                <span id="no-image-text" class="text-secondary small mt-2" style="display:none;">(No
-                                    hay
-                                    imagen)</span>
-                            </div>
-                        </div>
+                                        <div class="col-md-5 border-start border-secondary ps-4">
+                                                <div class="mb-4">
+                                                        <label class="form-label text-light fw-bold">Imagen
+                                Actual</label>
+                                                        <div id="imagen_actual_preview"
+                                class="text-center bg-dark p-2 rounded">
+                                                                <img id="current-club-thumb" src=""
+                                    alt="Imagen actual del Club" class="img-fluid" />
+                                                                <span id="no-image-text"
+                                    class="text-secondary small mt-2" style="display:none;">(No
+                                                                        hay
+                                                                        imagen)</span>
+                                                            </div>
+                                                    </div>
 
+                                               
                         <hr class="border-secondary" />
 
-                        <div class="mb-4">
-                            <label class="form-label text-light fw-bold">Nueva Imagen (Opcional)</label>
-                            <input type="file" class="form-control input-dark" id="imagen_club_nueva"
-                                name="imagen_club_nueva" accept="image/*" />
-                            <small class="form-text text-secondary">Sube un nuevo logo o imagen. Máx. 5MB.</small>
-                        </div>
+                                                <div class="mb-4">
+                                                        <label class="form-label text-light fw-bold">Nueva Imagen
+                                (Opcional)</label>
+                                                        <input type="file" class="form-control input-dark"
+                                id="imagen_club_nueva"                                 name="imagen_club_nueva"
+                                accept="image/*" />
+                                                        <small class="form-text text-secondary">Sube un nuevo logo o
+                                imagen. Máx. 5MB.</small>
+                                                    </div>
+                                           
                     </div>
-                </div>
+                                    </div>
 
-                <button type="submit" class="btn btn-danger btn-lg mt-5 w-100"><i class="bi bi-save"></i>
-                    Actualizar
-                    Club</button>
-            </form>
+                                <button type="submit" class="btn btn-danger btn-lg mt-5 w-100"><i
+                        class="bi bi-save"></i>
+                                        Actualizar
+                                        Club</button>
+                            </form>
 
-            <button type="button" id="btn-delete-club" class="btn btn-outline-danger btn-sm mt-3 w-100"
-                data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
-                <i class="bi bi-trash"></i> Eliminar Club
-            </button>
-            <div class="text-center mt-4">
-                <a href="../../../index.html" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver al
-                    Inicio</a>
-            </div>
+                        <button type="button" id="btn-delete-club" class="btn btn-outline-danger btn-sm mt-3 w-100"    
+                            data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
+                                <i class="bi bi-trash"></i> Eliminar Club
+                            </button>
+                        <div class="text-center mt-4">
+                                <a href="../../../index.html" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>
+                    Volver al
+                                        Inicio</a>
+                            </div>
 
-        </section>
-    </main>
+                    </section>
+            </main>
 
-    <footer id="footer-placeholder">
-    </footer>
+        <footer id="footer-placeholder">
+            </footer>
 
-    <div class="modal fade" id="logoutConfirmModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
+        <div class="modal fade" id="logoutConfirmModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-content">
 
-                <div class="modal-header border-danger">
-                    <h5 class="modal-title">Confirmar Cierre de Sesión</h5>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
+                                <div class="modal-header border-danger">
+                                        <h5 class="modal-title">Confirmar Cierre de Sesión</h5>
+                                        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
 
-                <div class="modal-body">
-                    <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
-                </div>
+                                <div class="modal-body">
+                                        <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+                                    </div>
 
-                <div class="modal-footer border-danger">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
-                </div>
+                                <div class="modal-footer border-danger">
+                                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                                    </div>
 
-            </div>
-        </div>
-    </div>
+                            </div>
+                    </div>
+            </div>
 
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel"
+        <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel"        
         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
+                <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-content">
 
-                <div class="modal-header border-danger">
-                    <h5 class="modal-title text-danger" id="deleteConfirmModalLabel">Confirmar Eliminación</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
+                                <div class="modal-header border-danger">
+                                        <h5 class="modal-title text-danger" id="deleteConfirmModalLabel">Confirmar
+                        Eliminación</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                    </div>
 
-                <div class="modal-body">
-                    <p><strong>ATENCIÓN:</strong> ¿Estás seguro de que deseas eliminar este club?</p>
-                    <p class="text-warning">Esta acción es irreversible y desvinculará a todos sus miembros.</p>
-                </div>
+                                <div class="modal-body">
+                                        <p><strong>ATENCIÓN:</strong> ¿Estás seguro de que deseas eliminar este club?
+                    </p>
+                                        <p class="text-warning">Esta acción es irreversible y desvinculará a todos sus
+                        miembros.</p>
+                                    </div>
 
-                <div class="modal-footer border-danger">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="btnConfirmDelete">Sí, Eliminar Club</button>
-                </div>
+                                <div class="modal-footer border-danger">
+                                        <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="button" class="btn btn-danger" id="btnConfirmDelete">Sí, Eliminar
+                        Club</button>
+                                    </div>
 
-            </div>
-        </div>
-    </div>
+                            </div>
+                    </div>
+            </div>
 
+       
     <script src="../../../js/alertas.js"></script>
+       
     <script src="../../../js/navbar.js"></script>
+       
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="./clubEdit.js"></script>
+           
+    <script src="../../../js/clubEdit.js"></script>
+       
     <script src="../../../footer/footer.js"></script>
 
+       
     <script>
         // Lógica de Adaptación de Navbar: 
         // Si el usuario es 'admin', se muestran los enlaces de administración.
