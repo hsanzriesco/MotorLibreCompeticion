@@ -42,8 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
             // Ocultar el icono de inicio de sesión
             if (loginLink) loginLink.style.display = "none";
 
-            // ⭐ LÓGICA REQUERIDA: Mostrar 'Mi Club' solo si el rol es 'presidente'
-            if (miClubLink && user.role === 'presidente') {
+            // ⭐ LÓGICA ACTUALIZADA: Mostrar 'Mi Club' si is_presidente es TRUE
+            // Asegúrate de que tu objeto usuario devuelto por el backend incluya 'is_presidente'.
+            // Si el valor es TRUE (o true, dependiendo de cómo se almacene el JSON), se muestra el enlace.
+            if (miClubLink && user.is_presidente === true) {
                 miClubLink.style.display = 'block';
             }
 
@@ -178,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             redireccionExternaEnCurso = true; // Activar la bandera de control
 
-            // MODIFICACIÓN DE ALERTA: Usando 'error' para el estilo crítico, como se solicitó.
+            // Usando 'error' para el estilo crítico.
             if (typeof mostrarAlerta === 'function') {
                 mostrarAlerta("Tienes que iniciar sesión para acceder a esta página.", "error");
             }
