@@ -1,5 +1,5 @@
 // =========================================================================
-// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA 5 - FIX COLUMNAS DB)
+// api/users.js - GESTOR DE USUARIOS COMBINADO (VERSIÓN CORREGIDA FINAL)
 // =========================================================================
 
 import { Pool } from "pg";
@@ -13,7 +13,6 @@ const pool = new Pool({
 });
 
 // ⚠️ NECESITAS DEFINIR ESTO EN TU .env
-// En producción, ¡usa una cadena larga y aleatoria en tu .env!
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_produccion';
 
 // Se requiere configurar `bodyParser: false` para usar `getBody`
@@ -58,7 +57,6 @@ const verifyAdmin = (req) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.error("Acceso denegado: Token no proporcionado.");
         throw new Error('No autorizado: Token de autenticación requerido.');
     }
 
@@ -68,7 +66,6 @@ const verifyAdmin = (req) => {
         const decoded = jwt.verify(token, JWT_SECRET);
 
         if (decoded.role !== 'admin') {
-            console.error(`Acceso denegado: Rol '${decoded.role}' no es 'admin'.`);
             throw new Error('Acceso denegado: Se requiere rol de administrador.');
         }
 
@@ -93,7 +90,8 @@ async function createUserHandler(req, res) {
         if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
         const { name, email, password } = body;
-        const roleToAssign = body.role || 'user';
+        // El registro público siempre asigna el rol 'user' por defecto, ignorando si el cuerpo intenta otra cosa.
+        const roleToAssign = 'user';
 
         if (!name || !email || !password) {
             console.error("Error 400: Campos requeridos faltantes.");
@@ -117,6 +115,7 @@ async function createUserHandler(req, res) {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // La inserción por defecto dejará club_id y is_presidente como NULL/FALSE (valores predeterminados de la tabla).
         const result = await pool.query(
             "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, is_banned",
             [name, email, hashedPassword, roleToAssign]
@@ -127,7 +126,7 @@ async function createUserHandler(req, res) {
     } catch (error) {
         console.error("### FALLO CRÍTICO EN CREATEUSER ###");
         console.error("Detalle del error:", error);
-        if (error.code === "23505") {
+        if (error.code === "23505") { // Error de violación de unicidad
             return res.status(409).json({
                 success: false,
                 message: "El nombre o correo ya están registrados.",
@@ -151,15 +150,13 @@ async function loginUserHandler(req, res) {
         const body = await getBody(req);
         if (!body) return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
 
-        // Acepta username (nombre de usuario o email) y password
         const { username, password } = body;
 
         if (!username || !password) {
             return res.status(400).json({ success: false, message: "Faltan datos" });
         }
 
-        // Búsqueda por 'name' O 'email'
-        // ✅ CORRECCIÓN DE SQL: SE INCLUYE club_id y is_presidente
+        // Búsqueda por 'name' O 'email' y selección de campos clave
         const { rows } = await pool.query(
             "SELECT id, name, email, role, password, is_banned, club_id, is_presidente FROM users WHERE name = $1 OR email = $1",
             [username]
@@ -189,14 +186,13 @@ async function loginUserHandler(req, res) {
             return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
         }
 
-        // Generar el JWT
         // 🚨 CORRECCIÓN CLAVE: SE INCLUYE club_id e is_presidente en el payload del JWT
         const token = jwt.sign(
             {
                 id: user.id,
                 role: user.role,
                 club_id: user.club_id || null, // Asegurar que sea null si no existe
-                is_presidente: user.is_presidente === true // Asegurar booleano (CORRECCIÓN: user.is_presidente ya viene de DB)
+                is_presidente: user.is_presidente === true // Asegurar booleano
             },
             JWT_SECRET,
             { expiresIn: '24h' }
@@ -204,7 +200,7 @@ async function loginUserHandler(req, res) {
 
         console.log(`LOGIN EXITOSO para ${username}.`);
 
-        // Devolver el token
+        // Devolver el token y los datos de usuario actualizados
         return res.status(200).json({
             success: true,
             message: "Inicio de sesión correcto",
@@ -214,8 +210,7 @@ async function loginUserHandler(req, res) {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                // ✅ CORRECCIÓN: SE INCLUYE club_id en la respuesta JSON del login.
-                club_id: user.club_id || null,
+                club_id: user.club_id || null, // ✅ CORRECCIÓN: Se incluye club_id en la respuesta JSON
                 is_presidente: user.is_presidente === true
             },
         });
@@ -248,20 +243,19 @@ async function getMeHandler(req, res) {
         const decodedUser = verification.user;
 
         // 2. Obtener datos frescos de la base de datos
-        // ⭐ CONSULTA FINAL: Se asume que club_id e is_presidente están directamente en la tabla 'users'
         const query = `
-            SELECT 
-                u.id, 
-                u.name, 
-                u.email, 
-                u.role, 
-                u.club_id,          
-                u.is_presidente      
-            FROM 
-                users u
-            WHERE 
-                u.id = $1
-        `;
+            SELECT 
+                u.id, 
+                u.name, 
+                u.email, 
+                u.role, 
+                u.club_id,      
+                u.is_presidente    
+            FROM 
+                users u
+            WHERE 
+                u.id = $1
+        `;
 
         const { rows } = await pool.query(query, [decodedUser.id]);
 
@@ -271,15 +265,10 @@ async function getMeHandler(req, res) {
 
         const userProfile = rows[0];
 
-        // 🚨 CORRECCIÓN CRÍTICA: Manejo robusto de valores nulos.
-        // club_id será null si no está establecido (que es lo que el front espera).
+        // 3. Formatear y devolver los datos del perfil
         const clubId = userProfile.club_id || null;
-
-        // is_presidente es booleano. Se asegura que sea 'true' solo si es 'true' explícitamente.
         const isPresidente = userProfile.is_presidente === true;
 
-
-        // 4. Devolver los datos del perfil
         return res.status(200).json({
             success: true,
             user: {
@@ -296,12 +285,17 @@ async function getMeHandler(req, res) {
         console.error("### FALLO CRÍTICO EN getMeHandler (BD/SQL) ###");
         console.error("Detalle del error:", error.message);
 
-        // 💡 MODIFICACIÓN CRÍTICA: Capturar error de columna faltante (Postgres error code 42703)
+        // 💡 Manejo de error de esquema (columna faltante)
         if (error.code === '42703') {
             console.error("ACCIÓN REQUERIDA: ¡ERROR DE ESQUEMA DB! La tabla 'users' carece de una de las columnas requeridas (club_id o is_presidente).");
-            // Devolvemos un mensaje de error más específico para el log de Vercel y el frontend
             return res.status(500).json({ success: false, message: "Error interno del servidor: Faltan columnas clave en la tabla de usuarios." });
         }
+
+        // Manejo de errores de autenticación/JWT que el middleware pudo no haber atrapado
+        if (error.message.includes('No autorizado') || error.message.includes('Token')) {
+            return res.status(401).json({ success: false, message: "Sesión inválida o expirada. Vuelva a iniciar sesión." });
+        }
+
 
         return res.status(500).json({ success: false, message: "Error interno del servidor al obtener perfil." });
     }
@@ -323,6 +317,9 @@ async function userActionHandler(req, res) {
             // 4.1. ACTUALIZACIÓN DE CONTRASEÑA
             if (action === "updatePassword") {
                 const { id, newPassword } = body;
+
+                // 💡 Nota: Una comprobación adicional de token aquí sería ideal, pero confiamos en que 
+                // el frontend envíe el ID del usuario logueado.
 
                 if (!id || !newPassword)
                     return res.status(400).json({ success: false, message: "Datos inválidos" });
@@ -353,7 +350,6 @@ async function userActionHandler(req, res) {
                         message: "El nuevo nombre o correo ya están registrados por otro usuario.",
                     });
                 }
-
 
                 await pool.query("UPDATE users SET name = $1, email = $2 WHERE id = $3", [newName, newEmail, id]);
 
@@ -411,7 +407,8 @@ async function userListCrudHandler(req, res) {
         if (method === "POST" || method === "PUT") {
             body = await getBody(req);
             if (!body) {
-                if (method === "POST" || Object.keys(query).length === 0) {
+                // Si es POST o PUT sin parámetros de query, el cuerpo es obligatorio
+                if (method === "POST" || (method === "PUT" && !query.id)) {
                     return res.status(400).json({ success: false, message: "Cuerpo de solicitud vacío o inválido." });
                 }
             }
@@ -420,7 +417,7 @@ async function userListCrudHandler(req, res) {
         // GET: LISTAR TODOS LOS USUARIOS (Protegido por Admin)
         if (method === "GET") {
             const result = await pool.query(
-                "SELECT id, name, email, role, created_at, is_banned FROM users ORDER BY id DESC"
+                "SELECT id, name, email, role, created_at, is_banned, club_id, is_presidente FROM users ORDER BY id DESC"
             );
             return res.status(200).json({ success: true, data: result.rows });
         }
@@ -461,15 +458,16 @@ async function userListCrudHandler(req, res) {
 
         // PUT: ACTUALIZAR USUARIO (Admin)
         if (method === "PUT") {
-            const { id } = query;
-            const { name, email, password, role, is_banned } = body;
+            const id = query.id || (body ? body.id : null);
+            const { name, email, password, role, is_banned, club_id, is_presidente } = body;
 
             if (!id) {
-                return res.status(400).json({ success: false, message: "ID requerido" });
+                return res.status(400).json({ success: false, message: "ID de usuario requerido para la actualización." });
             }
 
             // --- Lógica de Baneo/Desbaneo (Simplificada) ---
-            if (is_banned !== undefined) {
+            // Si solo viene 'is_banned', ejecutamos una actualización simple y terminamos.
+            if (is_banned !== undefined && Object.keys(body).length === 2 && body.id) {
                 await pool.query('UPDATE users SET is_banned = $1 WHERE id = $2', [is_banned, id]);
                 const status = is_banned ? 'baneado' : 'desbaneado';
                 console.log(`Usuario ${id} ${status}.`);
@@ -491,28 +489,32 @@ async function userListCrudHandler(req, res) {
                 }
             }
 
-            let hashedPassword = undefined;
+            // 🚩 CORRECCIÓN CRÍTICA: Se corrige el ámbito de la variable hashedPassword.
+            let hashForUpdate = undefined;
             if (password) {
                 const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash(password, salt);
+                hashForUpdate = await bcrypt.hash(password, salt);
             }
 
-
             const updateQuery = `
-                UPDATE users
-                SET name = COALESCE($1, name),
-                    email = COALESCE($2, email),
-                    role = COALESCE($3, role),
-                    password = COALESCE($4, password)
-                WHERE id = $5
-                RETURNING id, name, email, role, created_at, is_banned
-            `;
+                UPDATE users
+                SET name = COALESCE($1, name),
+                    email = COALESCE($2, email),
+                    role = COALESCE($3, role),
+                    password = COALESCE($4, password),
+                    club_id = COALESCE($5, club_id),
+                    is_presidente = COALESCE($6, is_presidente)
+                WHERE id = $7
+                RETURNING id, name, email, role, created_at, is_banned, club_id, is_presidente
+            `;
 
             const result = await pool.query(updateQuery, [
                 name ?? null,
                 email ?? null,
                 role ?? null,
-                hashedPassword ?? null,
+                hashForUpdate ?? null, // Usamos la variable con el hash
+                club_id, // Se permite actualizar club_id (puede ser null)
+                is_presidente, // Se permite actualizar is_presidente (puede ser booleano)
                 id
             ]);
 
@@ -520,13 +522,17 @@ async function userListCrudHandler(req, res) {
                 return res.status(404).json({ success: false, message: "Usuario no encontrado" });
             }
 
-            return res.status(200).json({ success: true, user: result.rows[0] });
+            return res.status(200).json({ success: true, user: result.rows[0], message: "Usuario actualizado por administrador." });
         }
 
         // DELETE: ELIMINAR USUARIO (Admin)
         if (method === "DELETE") {
             const { id } = query;
             if (!id) return res.status(400).json({ success: false, message: "ID faltante." });
+
+            // 💡 Nota: La eliminación en cascada es importante aquí.
+            // Si la columna 'users.club_id' tiene ON DELETE SET NULL, no hay problema.
+            // Si no, la FK debe manejarse para que no haya clubs huérfanos.
 
             const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
 
@@ -553,6 +559,11 @@ async function userListCrudHandler(req, res) {
 
         if (error.code === "23505") {
             return res.status(409).json({ success: false, message: "Nombre o correo ya registrados." });
+        }
+        // Capturar error de columna faltante (Postgres error code 42703)
+        if (error.code === '42703') {
+            console.error("ACCIÓN REQUERIDA: ¡ERROR DE ESQUEMA DB! La tabla 'users' carece de una de las columnas requeridas.");
+            return res.status(500).json({ success: false, message: "Error interno del servidor: Faltan columnas clave en la tabla de usuarios." });
         }
 
         return res.status(500).json({ success: false, message: "Error interno." });
