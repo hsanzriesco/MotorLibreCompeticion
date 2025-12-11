@@ -7,14 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoLink = document.getElementById("logo-link");
     const menuInicio = document.getElementById("menu-inicio");
 
-    // 1. NUEVOS ELEMENTOS DEL OFFCANVAS
+    // 1. ELEMENTOS DEL OFFCANVAS
     const miClubLink = document.getElementById("mi-club-link");
-    const presidenteClubLink = document.getElementById("presidente-club-link"); // <-- NUEVO ENLACE
+    // const presidenteClubLink = document.getElementById("presidente-club-link"); // <-- ELIMINADO POR REDUNDANCIA
 
     // 🛑 BANDERA DE CONTROL CRÍTICA
     let redireccionExternaEnCurso = false;
 
-    // 🟢 RUTAS CENTRALIZADAS DEL DASHBOARD
+    // 🟢 RUTAS CENTRALIZADAS
     const ADMIN_DASHBOARD_HOME = "/pages/dashboard/admin/admin.html";
     const LOGIN_PAGE_PATH = "/auth/login/login.html";
     const REGISTER_PAGE_PATH = "/auth/register.html";
@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ⭐ Referencias para el modal de Cierre de Sesión
     const logoutConfirmModalEl = document.getElementById("logoutConfirmModal");
+    // Se usa 'bootstrap.Modal' directamente para evitar problemas si aún no se ha cargado totalmente
     const logoutConfirmModal = logoutConfirmModalEl ? new bootstrap.Modal(logoutConfirmModalEl) : null;
     const btnConfirmLogout = document.getElementById("btnConfirmLogout");
 
@@ -66,24 +67,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const pathSegments = window.location.pathname.split('/').filter(s => s.length > 0 && s !== 'index.html');
         let depth = 0;
 
-        // Calcular la profundidad después de la raíz (ignorando el primer segmento si existe, que suele ser la raíz)
-        if (pathSegments.length > 0) {
-            // Si el primer segmento es 'pages', la cuenta comienza desde ahí.
-            const pagesIndex = pathSegments.indexOf('pages');
-            if (pagesIndex !== -1) {
-                depth = pathSegments.length - pagesIndex; // Ej: ['pages', 'clubes', 'editarUsuario.html'] -> depth = 2
-            } else {
-                depth = pathSegments.length; // Ej: ['otra_pagina.html'] -> depth = 1
-            }
-        }
-
         // Si la página es la raíz o index.html, usar './'
         if (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
             return './';
         }
 
-        // De lo contrario, subir tantos niveles como profundidad - 1 (para ignorar el nombre del archivo)
-        // Por ejemplo: /pages/clubes/editarUsuario.html necesita ../../
+        // Calcular la profundidad de la carpeta si existe el segmento 'pages'
+        const pagesIndex = pathSegments.indexOf('pages');
+        if (pagesIndex !== -1) {
+            // Ejemplo: ['pages', 'clubes', 'editarUsuario.html'] -> depth = 2 (clubes, editarUsuario.html)
+            depth = pathSegments.length - pagesIndex;
+        } else {
+            // Ejemplo: ['otra_pagina.html'] -> depth = 1
+            depth = pathSegments.length;
+        }
+
+        // Generar '../' por cada nivel de profundidad
         return Array(depth).fill('../').join('');
     }
 
@@ -95,29 +94,22 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!user) { // Si no hay usuario:
         if (userName) userName.style.display = "none";
         if (loginLink) loginLink.style.display = "block";
-
-        if (logoutBtn) {
-            logoutBtn.classList.add('disabled-link');
-            logoutBtn.removeAttribute('href');
-        }
+        if (logoutBtn) logoutBtn.style.display = "none";
 
         // Ocultar links específicos del usuario
         if (miClubLink) miClubLink.style.display = "none";
-        if (presidenteClubLink) presidenteClubLink.style.display = "none"; // <-- OCULTAR SI NO HAY USUARIO
+        // if (presidenteClubLink) presidenteClubLink.style.display = "none"; // ELIMINADO
 
     } else {
-        // Si el usuario está logueado, aseguramos que el botón esté habilitado
-        if (logoutBtn) {
-            logoutBtn.classList.remove('disabled-link');
-            logoutBtn.href = "#";
-        }
+        // Si el usuario está logueado, aseguramos que el botón de logout esté visible
+        if (logoutBtn) logoutBtn.style.display = "block";
 
         // =========================================================
         // ⭐ LÓGICA DE VISIBILIDAD DE ENLACES DE CLUBES ⭐
         // =========================================================
         const clubId = user.club_id || user.clubId || clubIdInSession;
         // La validación de presidente debe ser robusta
-        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.role === "presidente" || user.role === "admin";
+        const isPresidenteOrAdmin = user.is_presidente === 1 || user.is_presidente === true || user.role === "presidente" || user.role === "admin";
 
         // Quitar la barra inicial de las constantes para hacer la ruta relativa
         const clubPathPresidenteBase = CLUB_EDITAR_PRESIDENTE_PATH.substring(1);
@@ -125,27 +117,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         // --- Lógica del Mi Club (Editar/Ver) ---
+        // ESTE ENLACE AHORA GESTIONA TODA LA NAVEGACIÓN DE CLUBES DE USUARIO
         if (clubId && miClubLink) {
 
-            const targetPathBase = isPresidente ? clubPathPresidenteBase : clubPathUsuarioBase;
+            const targetPathBase = isPresidenteOrAdmin ? clubPathPresidenteBase : clubPathUsuarioBase;
 
             miClubLink.href = `${relativeToRootPrefix}${targetPathBase}?id=${clubId}`;
-            miClubLink.textContent = isPresidente ? "Mi Club (Presidente)" : "Mi Club";
+            miClubLink.textContent = isPresidenteOrAdmin ? "Mi Club (Presidente)" : "Mi Club";
             miClubLink.style.display = "block";
         } else if (miClubLink) {
             miClubLink.style.display = "none";
         }
 
-        // --- Lógica del Presidente de Club (Solo si es presidente) ---
-        // Este enlace es visible si el usuario es presidente Y tiene un club asignado.
-        if (presidenteClubLink) {
-            if (isPresidente && clubId) {
-                presidenteClubLink.href = `${relativeToRootPrefix}${clubPathPresidenteBase}?id=${clubId}`;
-                presidenteClubLink.style.display = "block";
-            } else {
-                presidenteClubLink.style.display = "none";
-            }
-        }
+        // ❌ No se necesita lógica adicional para presidenteClubLink ya que se eliminó.
     }
 
 
@@ -182,6 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Redirigir a la raíz absoluta
         setTimeout(() => {
+            // Asegurar que la redirección sea siempre a la raíz del proyecto para evitar problemas de rutas
             window.location.href = "/index.html";
         }, 500);
     }
@@ -190,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 6. LÓGICA DE CIERRE DE SESIÓN AUTOMÁTICO POR INACTIVIDAD
     // -----------------------------------------------------------------------------------
 
-    const INACTIVITY_TIMEOUT = 60000;
+    const INACTIVITY_TIMEOUT = 60000; // 1 minuto
     let inactivityTimeout;
 
     function resetTimer() {
@@ -267,20 +252,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // -----------------------------------------------------------------------------------
     if (logoLink) {
         if (user && user.role === "admin") {
-            logoLink.href = ADMIN_DASHBOARD_HOME;
+            logoLink.href = `${relativeToRootPrefix}${ADMIN_DASHBOARD_HOME.substring(1)}`;
         } else {
-            logoLink.href = "/index.html";
+            logoLink.href = `${relativeToRootPrefix}index.html`;
         }
     }
 
-    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS (Asumiendo que es el link con id="menu-inicio")
+    // 3. REDIRECCIÓN DEL BOTÓN 'INICIO' DEL OFFCANVAS
     if (menuInicio) {
         menuInicio.addEventListener("click", (ev) => {
             ev.preventDefault();
             if (user && user.role === "admin") {
-                window.location.href = ADMIN_DASHBOARD_HOME;
+                window.location.href = `${relativeToRootPrefix}${ADMIN_DASHBOARD_HOME.substring(1)}`;
             } else {
-                window.location.href = "/index.html";
+                window.location.href = `${relativeToRootPrefix}index.html`;
             }
         });
     }
