@@ -690,6 +690,11 @@ async function clubsHandler(req, res) {
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
                     await deleteFromCloudary(imagen_club_url);
                 }
+                // Limpiar archivo temporal si existe
+                if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
+                    await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
+                }
+
                 console.error("Error durante la creación (POST):", uploadError.message);
 
                 if (uploadError.message.includes('Cloudinary upload failed')) {
@@ -899,6 +904,7 @@ async function clubsHandler(req, res) {
                 if (isCloudinaryUploadSuccess && imagen_club_url) {
                     await deleteFromCloudary(imagen_club_url);
                 }
+                // Limpiar archivo temporal si existe
                 if (imagenFilePathTemp && fs.existsSync(imagenFilePathTemp)) {
                     await unlinkAsync(imagenFilePathTemp).catch(e => console.error("Error al limpiar temp file:", e));
                 }
@@ -958,8 +964,8 @@ async function clubsHandler(req, res) {
                         await client.query('DELETE FROM public.clubs_pendientes WHERE id = $1', [clubId]);
                         if (imagen_club) await deleteFromCloudary(imagen_club);
                         await client.query('COMMIT');
-                        // Respuesta correcta para un DELETE exitoso (204 No Content)
-                        return res.status(204).json({ success: true, message: "Solicitud pendiente eliminada correctamente." });
+                        // ⭐ CORRECCIÓN DE ESTADO: Se cambia 204 a 200 para poder devolver el cuerpo.
+                        return res.status(200).json({ success: true, message: "Solicitud pendiente eliminada correctamente." });
                     }
 
                     await client.query('ROLLBACK');
@@ -994,8 +1000,8 @@ async function clubsHandler(req, res) {
                 }
 
                 await client.query('COMMIT');
-                // Respuesta correcta para un DELETE exitoso (204 No Content)
-                return res.status(204).json({ success: true, message: "Club y miembros desvinculados correctamente." });
+                // ⭐ CORRECCIÓN DE ESTADO: Se cambia 204 a 200 para poder devolver el cuerpo.
+                return res.status(200).json({ success: true, message: "Club y miembros desvinculados correctamente." });
 
             } catch (error) {
                 await client.query('ROLLBACK');
