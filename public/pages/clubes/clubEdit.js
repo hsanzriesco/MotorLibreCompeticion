@@ -115,7 +115,8 @@ async function getClubIdAndUser() {
 
         if (!clubId) {
             // Este es el error original si el usuario no tiene club asociado.
-            throw new new Error('El usuario no está asignado a un club.');
+            // Corregido un pequeño error tipográfico: 'new new Error' -> 'new Error'
+            throw new Error('El usuario no está asignado a un club.');
         }
 
         console.log("ID de club del usuario obtenido:", clubId);
@@ -488,7 +489,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 COMPROBACIÓN CRÍTICA: Solo el presidente puede acceder a esta página
         if (!isPresidente) {
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('error', 'Acceso denegado', 'Solo el presidente del club puede editar el perfil.');
+                // 🛑 CORRECCIÓN: Se cambia 'Acceso denegado' (con espacio) por 'AccesoDenegado' (sin espacio)
+                // para evitar el error 'Failed to execute add on DOMTokenList'.
+                mostrarAlerta('error', 'AccesoDenegado', 'Solo el presidente del club puede editar el perfil.');
             }
             // Redirigir si no es presidente (opcional, pero buena práctica)
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
@@ -511,7 +514,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
         } else {
             if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta('error', `Error al iniciar la edición: ${error.message}`);
+                // 🛑 CORRECCIÓN: Si `mostrarAlerta` usa el segundo argumento como clase,
+                // aseguramos un token limpio y pasamos el mensaje completo como tercero.
+                mostrarAlerta('error', 'ErrorAlIniciar', `Error al iniciar la edición: ${error.message}`);
             }
         }
     }
