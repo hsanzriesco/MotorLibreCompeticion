@@ -1,4 +1,3 @@
-// clubs.js - VERSIÓN CON LIMPIEZA PROFUNDA (SOLUCIÓN ERROR 500)
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -454,13 +453,11 @@ async function clubsHandler(req, res) {
 
                 const { imagen_club, id_presidente } = clubInfoRes.rows[0];
 
-                // 🛑 LIMPIEZA PROFUNDA (Deep Clean) - CORRECCIÓN CLAVE
-                // La eliminación de dependencias se hace secuencialmente. Si una falla,
-                // la transacción entera fallará al instante y el catch lo detectará correctamente.
+                // 🛑 LIMPIEZA PROFUNDA (Deep Clean) - CORRECCIÓN CLAVE DE TRANSACCIÓN Y LÓGICA
+                // La eliminación de dependencias se hace secuencialmente. 
 
                 // 1. Borrar inscripciones de eventos del club
-                // Si la tabla 'inscripciones' no existe o falla, el catch final te dirá por qué.
-                await client.query('DELETE FROM public.clubs WHERE event_id IN (SELECT id FROM public.events WHERE id = $1)', [clubId]);
+                await client.query('DELETE FROM public.inscripciones WHERE event_id IN (SELECT id FROM public.events WHERE club_id = $1)', [clubId]);
 
                 // 2. Borrar eventos
                 await client.query('DELETE FROM public.events WHERE club_id = $1', [clubId]);
@@ -469,7 +466,7 @@ async function clubsHandler(req, res) {
                 await client.query('DELETE FROM public.posts WHERE club_id = $1', [clubId]);
                 await client.query('DELETE FROM public.noticias WHERE club_id = $1', [clubId]);
                 await client.query('DELETE FROM public.comentarios WHERE club_id = $1', [clubId]);
-
+                
                 // 4. Desvincular usuarios y borrar el club
                 await client.query(`UPDATE public."users" SET club_id = NULL, role = 'user', is_presidente = FALSE WHERE club_id = $1`, [clubId]);
                 await client.query('DELETE FROM public.clubs WHERE id = $1', [clubId]);
@@ -487,7 +484,8 @@ async function clubsHandler(req, res) {
                 return res.status(200).json({ success: true, message: "Club eliminado.", token: newToken });
 
             } catch (error) {
-                // 🛑 CORRECTO: Si algo falla, el ROLLBACK se ejecuta y luego se lanza el error al manejador final.
+                // Si alguna de las eliminaciones falló (ej. por una tabla que no existe, código 42P01), 
+                // hacemos ROLLBACK para liberar la conexión y propagamos el error al catch final para el mensaje detallado.
                 await client.query('ROLLBACK');
                 throw error;
             } finally { client.release(); }
@@ -502,11 +500,11 @@ async function clubsHandler(req, res) {
         if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
             return res.status(401).json({ success: false, message: error.message });
         }
-
+        
         // 42P01: Tabla no existe. Esto ocurrirá si una de las tablas de limpieza profunda no existe.
         if (error.code === '42P01') {
             const tableName = error.message.match(/relation "public\.(.+?)"/)?.[1] || 'una tabla desconocida';
-            return res.status(500).json({ success: false, message: `Error de la base de datos: La tabla "${tableName}" no fue encontrada.` });
+            return res.status(500).json({ success: false, message: `Error de la base de datos: La tabla "${tableName}" no fue encontrada. (DEBE ELIMINAR LA LÍNEA DE CÓDIGO QUE REFERENCIA A ESA TABLA)` });
         }
 
         // 23xxx: Violación de integridad (Foreign Key). Esto ocurrirá si la limpieza no fue suficiente.
@@ -517,9 +515,9 @@ async function clubsHandler(req, res) {
                 mensajeAmigable += ` La tabla vinculada es: ${detalle.split('table')[1]}`;
             }
 
-            return res.status(500).json({
-                success: false,
-                message: `${mensajeAmigable} (Detalle técnico: ${detalle})`
+            return res.status(500).json({ 
+                success: false, 
+                message: `${mensajeAmigable} (Detalle técnico: ${detalle})` 
             });
         }
 
