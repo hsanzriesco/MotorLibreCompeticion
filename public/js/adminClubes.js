@@ -1,4 +1,5 @@
-// public/js/adminClubes.js - VERSIÓN FINAL CORREGIDA Y MEJORADA
+// public/js/adminClubes.js - VERSIÓN FINAL COMPLETAMENTE CORREGIDA
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // -----------------------------------------
@@ -64,13 +65,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const clubModalEl = document.getElementById('clubModal'); // El modal contenedor
 
     // Elementos del formulario de edición/creación
+    // Todos estos elementos deben existir en el HTML con el ID exacto.
     const inputId = document.getElementById("club-id");
-    const inputNombre = document.getElementById("nombre_evento"); // Correcto: nombre_evento
+    const inputNombre = document.getElementById("nombre_evento"); // <--- Importante
     const inputDescripcion = document.getElementById("descripcion");
     const inputCiudad = document.getElementById("ciudad");
-    const inputEnfoque = document.getElementById("enfoque"); // Correcto: enfoque
+    const inputEnfoque = document.getElementById("enfoque"); // <--- Importante
     const inputImagen = document.getElementById("imagen_club"); // Input de tipo file
-    const inputFecha = document.getElementById("fecha_creacion"); // <-- Elemento de fecha
+    const inputFecha = document.getElementById("fecha_creacion"); // <--- Importante
     const inputIdPresidente = document.getElementById("id_presidente");
 
     // Modals de Bootstrap: Declaración de elementos del DOM
@@ -360,6 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (inputId) inputId.value = c.id;
             if (inputNombre) inputNombre.value = c.nombre_evento || "";
             if (inputDescripcion) inputDescripcion.value = c.descripcion || "";
+            // ARREGLO DE FECHA
             if (inputFecha) inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
 
             if (inputCiudad) inputCiudad.value = c.ciudad || "";
@@ -384,7 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error cargarClubEnFormulario:", error);
             // Mostrar un mensaje específico si el error sigue siendo de tipo null
             if (error instanceof TypeError && (error.message.includes("Cannot set properties of null") || error.message.includes("Cannot read properties of null"))) {
-                emitirAlerta("Error cargando club: **Verifica que todos los campos del formulario (incluyendo 'fecha_creacion' y 'nombre_evento') en tu HTML tengan el ID correcto.**", "error");
+                emitirAlerta("Error cargando club: **Verifica que todos los campos del formulario (IDs: 'fecha_creacion', 'nombre_evento', etc.) en tu HTML existan y sean correctos.**", "error");
             } else {
                 emitirAlerta("Error cargando club: " + error.message, "error");
             }
@@ -411,9 +414,28 @@ document.addEventListener("DOMContentLoaded", () => {
         // ⭐ CORRECCIÓN CLAVE: Usar Query Parameter para PUT y DELETE.
         const url = id ? `/api/clubs?id=${id}` : "/api/clubs";
 
-        // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE (Añadido chequeo de existencia de input)
-        if (!inputNombre || !inputNombre.value || !inputDescripcion || !inputDescripcion.value || !inputCiudad || !inputCiudad.value || !inputEnfoque || !inputEnfoque.value) {
-            emitirAlerta("❌ Faltan campos obligatorios: Nombre, Descripción, Ciudad o Enfoque.", "error");
+        // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE (AHORA CON DIAGNÓSTICO DETALLADO)
+        // La condición es: si el elemento no existe (es null) O si existe y su valor está vacío.
+        if (
+            !inputNombre || !inputNombre.value ||
+            !inputDescripcion || !inputDescripcion.value ||
+            !inputCiudad || !inputCiudad.value ||
+            !inputEnfoque || !inputEnfoque.value
+        ) {
+            // ⭐ MENSAJE CLAVE: Diagnostica exactamente cuál podría faltar
+            let missingFields = [];
+            // Si el elemento es null, o si existe pero su valor es cadena vacía.
+            if (!inputNombre || inputNombre.value.trim() === "") missingFields.push("Nombre (ID: nombre_evento)");
+            if (!inputDescripcion || inputDescripcion.value.trim() === "") missingFields.push("Descripción (ID: descripcion)");
+            if (!inputCiudad || inputCiudad.value.trim() === "") missingFields.push("Ciudad (ID: ciudad)");
+            if (!inputEnfoque || inputEnfoque.value.trim() === "") missingFields.push("Enfoque (ID: enfoque)");
+
+            // Si el error es por valor vacío o elemento HTML faltante:
+            if (missingFields.length > 0) {
+                emitirAlerta(`❌ Faltan campos obligatorios o el elemento HTML no fue encontrado: **${missingFields.join(', ')}**. Por favor, revisa que los IDs HTML sean correctos.`, "error");
+            } else {
+                emitirAlerta("❌ Error desconocido en la validación de formulario.", "error");
+            }
             return;
         }
 
@@ -463,6 +485,7 @@ document.addEventListener("DOMContentLoaded", () => {
             emitirAlerta(id ? "Club actualizado" : "Club creado", "exito");
 
             // Ocultar el modal si está abierto
+            // Usamos el operador de encadenamiento opcional para mayor seguridad
             if (clubModalEl) bootstrap.Modal.getInstance(clubModalEl)?.hide();
 
             clearForm();
