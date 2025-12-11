@@ -1,4 +1,4 @@
-// clubs.js - VERSIÓN CORREGIDA (SOLUCIÓN AL HANGING)
+// clubs.js - VERSIÓN CON DIAGNÓSTICO DE ERRORES DE BASE DE DATOS
 import { Pool } from "pg";
 import formidable from "formidable";
 import fs from "fs";
@@ -21,11 +21,10 @@ cloudinary.config({
 
 const unlinkAsync = promisify(fs.unlink);
 
-// CONFIGURACIÓN IMPORTANTE PARA EVITAR QUE SE CUELGUE
 export const config = {
     api: {
-        bodyParser: false, // Necesario para formidable
-        externalResolver: true, // Ayuda a evitar timeouts fantasma
+        bodyParser: false,
+        externalResolver: true,
     },
 };
 
@@ -363,12 +362,9 @@ async function clubsHandler(req, res) {
         }
 
         if (method === "PUT") {
-            // 🛑 CORRECCIÓN CRÍTICA: DETECCIÓN DE CONTENT-TYPE
             const contentType = req.headers['content-type'] || '';
 
-            // --- A. LÓGICA 'LEAVE' (SOLO SI ES JSON) ---
             if (contentType.includes('application/json')) {
-                // Solo leemos el body si estamos seguros que es JSON
                 const body = await getBody(req);
                 if (body && body.action === 'leave') {
                     const verification = verifyToken(req);
@@ -390,17 +386,12 @@ async function clubsHandler(req, res) {
                 }
             }
 
-            // --- B. LÓGICA UPDATE (MULTIPART FORM) ---
-            // Si no es JSON (o no entramos al if), procedemos con parseForm. 
-            // IMPORTANTE: NO HEMOS LLAMADO A getBody() AQUÍ, ASÍ QUE EL STREAM ESTÁ INTACTO.
-
             const clubIdToUpdate = id;
             if (!clubIdToUpdate) return res.status(400).json({ success: false, message: "ID requerido." });
 
             let imagenFilePathTemp = null, imagen_club_url = null, old_imagen_club_url = null, isCloudinaryUploadSuccess = false;
 
             try {
-                // Aquí parseForm podrá leer el stream porque getBody NO lo consumió antes
                 const { fields, files, imagenFilePathTemp: tempPath } = await parseForm(req);
                 imagenFilePathTemp = tempPath;
                 const { nombre_club, nombre_evento, descripcion, ciudad: newCiudad, enfoque: newEnfoque, estado: newEstado, id_presidente: newIdPresidente } = fields;
@@ -491,8 +482,35 @@ async function clubsHandler(req, res) {
         return res.status(405).json({ success: false, message: "Método no permitido." });
 
     } catch (error) {
-        if (error.message.includes('Acceso denegado') || error.message.includes('Token')) return res.status(401).json({ success: false, message: error.message });
-        return res.status(500).json({ success: false, message: error.message });
+        // --- 🛑 BLOQUE DE DIAGNÓSTICO MEJORADO ("EL CHIVATO") 🛑 ---
+        console.error("Error DETALLADO en clubsHandler:", error);
+
+        if (error.message.includes('Acceso denegado') || error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Debe iniciar sesión')) {
+            return res.status(401).json({ success: false, message: error.message });
+        }
+
+        if (error.code === '42P01') {
+            return res.status(500).json({ success: false, message: "Error crítico: Falta una tabla en la base de datos." });
+        }
+
+        if (error.code && error.code.startsWith('23')) {
+            const detalle = error.detail ? error.detail : `Código de error: ${error.code}`;
+            let mensajeAmigable = "No se puede eliminar el club porque tiene elementos asociados.";
+            if (detalle.includes('table')) {
+                mensajeAmigable += ` Revisa la tabla: ${detalle.split('table')[1]}`;
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: `${mensajeAmigable} (Detalle técnico: ${detalle})`
+            });
+        }
+
+        if (error.message.includes('Cloudinary')) {
+            return res.status(500).json({ success: false, message: "Error en Cloudinary. Revise los logs." });
+        }
+
+        return res.status(500).json({ success: false, message: `Error interno: ${error.message}` });
     }
 }
 
