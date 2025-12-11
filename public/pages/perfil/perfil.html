@@ -27,23 +27,23 @@
             /* Ajuste para el navbar fijo */
 
             /* ================================================= */
-            /* === MODIFICACIONES PARA STICKY FOOTER (FLEXBOX) === */
-            /* 1. Hacemos que el cuerpo ocupe toda la altura de la ventana */
+            /* === CÓDIGO AÑADIDO/MODIFICADO PARA STICKY FOOTER === */
             min-height: 100vh;
-            /* Ocupar 100% de la altura de la ventana */
+            /* Ocupa 100% de la altura de la ventana */
             display: flex;
-            /* Habilitar Flexbox */
+            /* Habilita Flexbox */
             flex-direction: column;
-            /* Apilar los elementos verticalmente */
+            /* Apila los elementos verticalmente */
             /* ================================================= */
         }
 
         .main-perfil {
             padding-top: 2rem;
             padding-bottom: 2rem;
-            /* 2. El main debe crecer para ocupar el espacio restante */
+            /* ================================================= */
+            /* Hace que el main crezca y empuje el footer hacia abajo */
             flex-grow: 1;
-            /* Esto empuja el footer hacia abajo */
+            /* ================================================= */
         }
 
         h1,
@@ -334,6 +334,9 @@
             </div>
         </div>
     </div>
+
+    <footer id="main-footer" class="bg-dark border-top border-danger pt-3">
+    </footer>
 
     <script src="../../js/alertas.js"></script>
     <script src="../../js/navbar.js"></script>
