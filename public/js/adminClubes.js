@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputCiudad = document.getElementById("ciudad");
     const inputEnfoque = document.getElementById("enfoque"); // Correcto: enfoque
     const inputImagen = document.getElementById("imagen_club"); // Input de tipo file
-    const inputFecha = document.getElementById("fecha_creacion"); // <-- Este era el elemento que faltaba o tenía un ID incorrecto
+    const inputFecha = document.getElementById("fecha_creacion"); // <-- Elemento de fecha
     const inputIdPresidente = document.getElementById("id_presidente");
 
     // Modals de Bootstrap: Declaración de elementos del DOM
@@ -112,14 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /** Inicializa el valor del input de fecha a la fecha actual. */
     function setFechaDefault() {
-        // ⭐ Corregido: comprueba si inputFecha existe
+        // Corregido: comprueba si inputFecha existe
         if (inputFecha) inputFecha.value = hoyISODate();
     }
 
     /** Limpia el formulario y lo prepara para la creación. */
     function clearForm() {
         if (form) form.reset();
-        // ⭐ Corregido: comprueba si los elementos existen antes de limpiar
+        // Corregido: comprueba si los elementos existen antes de limpiar
         if (inputId) inputId.value = "";
         if (inputIdPresidente) inputIdPresidente.value = "";
         if (inputCiudad) inputCiudad.value = "";
@@ -355,16 +355,11 @@ document.addEventListener("DOMContentLoaded", () => {
             // Si el modal está definido en el HTML, lo abrimos
             if (clubModalEl) new bootstrap.Modal(clubModalEl).show();
 
-            // ----------------------------------------------------
-            // ⭐ ARREGLO CLAVE: Comprobar si el elemento existe (no es null) antes de usar .value
-            // ----------------------------------------------------
-
             // Llenar el formulario con los datos del club
+            // Se añaden los 'if' para prevenir errores si el elemento no existe en el HTML
             if (inputId) inputId.value = c.id;
             if (inputNombre) inputNombre.value = c.nombre_evento || "";
             if (inputDescripcion) inputDescripcion.value = c.descripcion || "";
-
-            // LÍNEA ARREGLADA: inputFecha.value causaba el error si el campo no existía.
             if (inputFecha) inputFecha.value = c.fecha_creacion ? c.fecha_creacion.toString().split('T')[0] : hoyISODate();
 
             if (inputCiudad) inputCiudad.value = c.ciudad || "";
@@ -375,7 +370,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // Cargar ID del presidente
             if (inputIdPresidente) inputIdPresidente.value = c.id_presidente || "";
 
-            // ----------------------------------------------------
 
             if (c.estado === 'pendiente' || c.estado === null) {
                 emitirAlerta(`Club pendiente ID ${c.id} cargado. Al guardar, se establecerá como activo.`, "info");
@@ -383,13 +377,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 emitirAlerta(`Club ID ${c.id} cargado para edición.`, "info");
             }
 
-            inputNombre.focus();
+            // ⭐ ARREGLO CLAVE: Comprobar si inputNombre existe antes de llamar a .focus()
+            if (inputNombre) inputNombre.focus();
 
         } catch (error) {
             console.error("Error cargarClubEnFormulario:", error);
             // Mostrar un mensaje específico si el error sigue siendo de tipo null
-            if (error instanceof TypeError && error.message.includes("Cannot set properties of null")) {
-                emitirAlerta("Error cargando club: **Verifica que todos los campos del formulario (incluyendo 'fecha_creacion') en tu HTML tengan el ID correcto.**", "error");
+            if (error instanceof TypeError && (error.message.includes("Cannot set properties of null") || error.message.includes("Cannot read properties of null"))) {
+                emitirAlerta("Error cargando club: **Verifica que todos los campos del formulario (incluyendo 'fecha_creacion' y 'nombre_evento') en tu HTML tengan el ID correcto.**", "error");
             } else {
                 emitirAlerta("Error cargando club: " + error.message, "error");
             }
@@ -416,7 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // ⭐ CORRECCIÓN CLAVE: Usar Query Parameter para PUT y DELETE.
         const url = id ? `/api/clubs?id=${id}` : "/api/clubs";
 
-        // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE
+        // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE (Añadido chequeo de existencia de input)
         if (!inputNombre || !inputNombre.value || !inputDescripcion || !inputDescripcion.value || !inputCiudad || !inputCiudad.value || !inputEnfoque || !inputEnfoque.value) {
             emitirAlerta("❌ Faltan campos obligatorios: Nombre, Descripción, Ciudad o Enfoque.", "error");
             return;
