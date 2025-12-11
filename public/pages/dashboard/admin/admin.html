@@ -52,14 +52,80 @@
             box-shadow: none !important;
         }
 
+        /* Estilos de tabla para visibilidad */
         table {
             color: white !important;
+            /* Asegura que el texto de la tabla sea blanco */
+            min-width: 900px;
+            /* Asegura un ancho mínimo para evitar compresión excesiva */
+            table-layout: fixed;
+            /* Fija el tamaño de las columnas */
         }
 
         .table-dark th,
         .table-dark td {
             border-color: rgba(229, 9, 20, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
+        .table-dark th:nth-child(1),
+        .table-dark td:nth-child(1) {
+            width: 50px;
+        }
+
+        /* ID */
+        .table-dark th:nth-child(2),
+        .table-dark td:nth-child(2) {
+            width: 150px;
+        }
+
+        /* Nombre */
+        .table-dark th:nth-child(3),
+        .table-dark td:nth-child(3) {
+            width: 200px;
+        }
+
+        /* Descripción/Enfoque (combinados para la foto) */
+        .table-dark th:nth-child(4),
+        .table-dark td:nth-child(4) {
+            width: 120px;
+        }
+
+        /* Fecha */
+        .table-dark th:nth-child(5),
+        .table-dark td:nth-child(5) {
+            width: 100px;
+        }
+
+        /* Estado */
+        .table-dark th:nth-child(6),
+        .table-dark td:nth-child(6) {
+            width: 120px;
+        }
+
+        /* Presidente */
+        .table-dark th:nth-child(7),
+        .table-dark td:nth-child(7) {
+            width: 80px;
+        }
+
+        /* Imagen */
+        .table-dark th:nth-child(8),
+        .table-dark td:nth-child(8) {
+            width: 180px;
+        }
+
+        /* Acciones */
+
+        .table-responsive {
+            /* Permite el desplazamiento horizontal solo de la tabla si es necesario */
+            overflow-x: auto;
+            /* Oculta la barra de desplazamiento en otros ejes si no es necesario */
+            max-width: 100%;
+        }
+
 
         .btn-danger {
             background-color: #e50914 !important;
@@ -158,7 +224,7 @@
         <section class="admin-section">
             <h2 class="text-center mb-4">Gestión de Clubes</h2>
 
-            <h3 class="text-center mb-3">Formulario de Club</h3>
+            <h3 class="text-center mb-3 text-danger">Guardar Club</h3>
 
             <form id="club-form" class="mb-4" enctype="multipart/form-data">
                 <input type="hidden" id="club-id" name="id">
@@ -167,7 +233,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Nombre del Club *</label>
-                        <input type="text" class="form-control input-dark" id="nombre_evento" name="nombre_evento"
+                        <input type="text" class="form-control input-dark" id="nombre_club" name="nombre_club"
                             placeholder="Introduce el nombre del club" required />
                     </div>
 
@@ -207,6 +273,13 @@
                         <input type="date" class="form-control input-dark" id="fecha_creacion" name="fecha_creacion"
                             readonly />
                     </div>
+
+                    <div class="col-md-6" id="presidente-select-container" style="display: none;">
+                        <label class="form-label">Asignar Presidente</label>
+                        <select class="form-select input-dark" id="presidente-select" name="presidente-select">
+                            <option value="" selected>Selecciona un usuario (opcional)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <button class="btn btn-danger mt-3 w-100">Guardar Club</button>
@@ -242,12 +315,12 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Nombre</th>
-                                    <th>Descripción</th>
-                                    <th>Fecha</th>
-                                    <th>Estado</th>
+                                    <th>Desc./Enfoque</th>
+                                    <th>Fecha Creación</th>
+                                    <th>Ciudad</th>
                                     <th>Presidente</th>
                                     <th>Imagen</th>
-                                    <th style="min-width: 250px;">Acciones</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-clubes-activos">
@@ -266,12 +339,12 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Nombre</th>
-                                    <th>Descripción</th>
+                                    <th>Desc./Enfoque</th>
                                     <th>Fecha Solicitud</th>
-                                    <th>Estado</th>
+                                    <th>Ciudad</th>
                                     <th>Presidente Solicitante</th>
                                     <th>Imagen</th>
-                                    <th style="min-width: 250px;">Acciones</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-clubes-pendientes">
