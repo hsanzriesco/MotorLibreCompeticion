@@ -1,5 +1,10 @@
-// pages/api/clubs/[id].js
-// ESTE ARCHIVO ES EL CONTENIDO ÍNTEGRO DE TU CLUBS.JS (AHORA LLAMADO [ID].JS)
+// 🛑 IMPORTANTE:
+// 1. Hemos quitado 'pages/api/clubs/[id].js' del comentario inicial.
+// 2. Hemos quitado 'export const config' (ya no es necesario en Express).
+// 3. Hemos quitado la función 'clubsCombinedHandler' y la hemos reemplazado por la lógica de Express.Router.
+
+import express from "express"; // ✅ Nueva importación para Express
+const router = express.Router(); // ✅ Inicialización del router de Express
 
 import { Pool } from "pg";
 import formidable from "formidable";
@@ -19,19 +24,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_no_usar_en_producc
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET // CORRECCIÓN: Usar process.env.CLOUDINARY_API_SECRET
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // Convertir fs.unlink en una función Promise para usar con async/await
 const unlinkAsync = promisify(fs.unlink);
 
-// Desactiva el body parser de Next.js para permitir que formidable lea el cuerpo del request
-export const config = {
-    api: { bodyParser: false, },
-};
-
 // 🛠️ HELPER: Función para leer el cuerpo JSON (para join/leave)
 const getBody = async (req) => {
+    // Si req.body ya fue parseado por express.json() en server.js, lo usamos.
+    if (req.body && Object.keys(req.body).length > 0) return req.body;
+
     try {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
@@ -247,7 +250,7 @@ async function statusChangeHandler(req, res) {
 
                 let nombrePresidente;
                 const presidenteNameRes = await client.query('SELECT name FROM public."users" WHERE id = $1', [club.id_presidente]);
-                nombrePresidente = presidenteNameNameRes.rows[0]?.name || 'Usuario desconocido';
+                nombrePresidente = presidenteNameRes.rows[0]?.name || 'Usuario desconocido';
 
                 // ⭐ MODIFICACIÓN INSERT: Se incluye 'enfoque'
                 const insertRes = await client.query(
@@ -307,7 +310,7 @@ async function statusChangeHandler(req, res) {
 async function clubsHandler(req, res) {
     const { method, query } = req;
 
-    // 🛑 CORRECCIÓN CLAVE 1: Permite leer 'id' (de URL) o 'clubId' (del cliente JS) 🛑
+    // 🛑 ADAPTACIÓN CLAVE: ID puede venir de req.query.id (de la adaptación de Express) 🛑
     const id = query.id || query.clubId;
     const estado = query.estado;
     // ----------------------------------------------------
@@ -1038,14 +1041,40 @@ async function clubsHandler(req, res) {
     }
 }
 
-export default async function clubsCombinedHandler(req, res) {
-    const { query } = req;
 
-    // Si la query incluye 'status=change', se usa el handler específico de aprobación/rechazo
-    if (query.status === 'change') {
-        return statusChangeHandler(req, res);
+// ***************************************************************
+// 🛑 REEMPLAZO DE LA FUNCIÓN EXPORT DEFAULT DE NEXT.JS POR EXPRESS.ROUTER 🛑
+// ***************************************************************
+
+// El router de Express captura tanto /api/clubs como /api/clubs/24
+router.all(['/', '/:id'], async (req, res) => {
+    // 1. Adaptar la solicitud de Express a la estructura esperada por tu lógica Next.js
+    const idFromParams = req.params.id; // ID de la ruta dinámica /:id
+
+    // Creamos un objeto de solicitud adaptado
+    const adaptedReq = {
+        ...req,
+        // 2. Fusionar req.params.id en req.query.id
+        query: {
+            ...req.query,
+            id: idFromParams || req.query.id, // Usa el ID del path o el de la query
+            clubId: req.query.clubId || idFromParams // clubId también es usado en tu lógica
+        },
+    };
+
+    // 3. Replicar la lógica original de selección de handler (status vs clubs)
+    if (adaptedReq.query.status === 'change') {
+        return statusChangeHandler(adaptedReq, res);
     }
 
-    // Si no, se usa el handler principal para CRUD y Join/Leave
-    return clubsHandler(req, res);
-}
+    // Si no es un cambio de estado, usar el handler principal
+    return clubsHandler(adaptedReq, res);
+});
+
+
+// 🛑 EXPORTAMOS EL ROUTER DE EXPRESS 🛑
+export default router;
+
+// ***************************************************************
+// 🛑 FIN DEL ARCHIVO CLUBS.JS MODIFICADO 🛑
+// ***************************************************************
