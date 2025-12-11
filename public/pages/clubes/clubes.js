@@ -1,4 +1,4 @@
-// public/js/clubes.js - VERSIÓN MODIFICADA (SIN BOTÓN SALIR EN LA LISTA)
+// public/js/clubes.js - VERSIÓN MODIFICADA (CON ACTUALIZACIÓN DE SESIÓN TRAS UNIRSE)
 
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("clubes-container");
@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
 
+            // ⚠️ Importante: El token decodificado SÍ tiene que tener club_id si el servidor lo incluye.
             return JSON.parse(jsonPayload);
         } catch (e) {
             // Si el token falla, lo limpiamos para evitar errores futuros y devolvemos nulo
@@ -42,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const decoded = decodeJWT(currentToken);
         return {
             id: decoded?.id || null,
+            // club_id se lee del token decodificado
             club_id: decoded?.club_id ? Number(decoded.club_id) : null,
             role: decoded?.role || null
         };
@@ -218,6 +220,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("token", data.token);
             }
 
+            // 🛑 INICIO DEL CAMBIO CLAVE: Sincronizar el objeto 'usuario' con el nuevo club_id
+            const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+            if (storedUser) {
+                try {
+                    const usuario = JSON.parse(storedUser);
+
+                    // Actualizamos las dos posibles claves para el club ID
+                    usuario.club_id = Number(club_id);
+                    usuario.clubId = Number(club_id);
+
+                    // Guardar el objeto actualizado en ambos almacenes si aplica
+                    sessionStorage.setItem("usuario", JSON.stringify(usuario));
+                    if (localStorage.getItem("usuario")) {
+                        localStorage.setItem("usuario", JSON.stringify(usuario));
+                    }
+                } catch (parseError) {
+                    console.error("Error al parsear o actualizar el objeto usuario:", parseError);
+                }
+            }
+            // 🛑 FIN DEL CAMBIO CLAVE
+
             mostrarAlerta("Te has unido al club", "exito");
             cargarClubes(); // Recargar la lista para reflejar el cambio de botones
         } catch (err) {
@@ -276,6 +299,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 sessionStorage.setItem("token", data.token);
                 localStorage.setItem("token", data.token);
             }
+
+            // 🛑 CAMBIO CLAVE: Sincronizar el objeto 'usuario' tras salir del club (club_id = null)
+            const storedUser = sessionStorage.getItem("usuario") || localStorage.getItem("usuario");
+            if (storedUser) {
+                try {
+                    const usuario = JSON.parse(storedUser);
+
+                    // Asegurar que se eliminen ambas posibles claves para el club ID
+                    usuario.club_id = null;
+                    usuario.clubId = null;
+
+                    // Guardar el objeto actualizado
+                    sessionStorage.setItem("usuario", JSON.stringify(usuario));
+                    if (localStorage.getItem("usuario")) {
+                        localStorage.setItem("usuario", JSON.stringify(usuario));
+                    }
+                } catch (parseError) {
+                    console.error("Error al parsear o actualizar el objeto usuario al salir:", parseError);
+                }
+            }
+            // 🛑 FIN DEL CAMBIO CLAVE
 
             mostrarAlerta("Te has salido del club", "exito");
             cargarClubes(); // Recargar la lista para reflejar el cambio de botones
