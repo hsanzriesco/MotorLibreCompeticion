@@ -1,4 +1,4 @@
-// public/js/clubEdit.js - VERSIÓN FINAL Y CORREGIDA (CON MANEJO ROBUSTO DE JSON EN DELETE Y MEJORA EN PUT)
+// public/js/clubEdit.js
 
 const API_USERS_ME_URL = '/api/users?action=me';
 const API_CLUBS_URL = '/api/clubs';
@@ -6,34 +6,24 @@ const API_CLUBS_URL = '/api/clubs';
 // 🛑 BANDERA DE CONTROL Y FUNCIÓN CENTRALIZADA
 let redireccionEnCurso = false;
 
-/**
- * Función para manejar la falta de autenticación o errores críticos de sesión.
- * Limpia la sesión y redirige a la página de login.
- */
 function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
     if (redireccionEnCurso) return;
 
     redireccionEnCurso = true;
 
-    // Limpiar todas las claves de sesión posibles para un logout forzado (SÓLO SESSIONSTORAGE)
+    // Limpiar cualquier sesión corrupta o residual (Todas las claves posibles)
     sessionStorage.removeItem('usuario');
-    sessionStorage.removeItem('user');
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('jwtToken');
-    sessionStorage.removeItem('club_id');
-    sessionStorage.removeItem('role');
-
-    // Limpiar localStorage (SE MANTIENE la limpieza para eliminar estados antiguos, aunque no se usa en getToken)
     localStorage.removeItem('usuario');
     localStorage.removeItem('token');
     localStorage.removeItem('jwtToken');
 
     // Muestra la ÚNICA alerta deseada
     if (typeof mostrarAlerta === 'function') {
-        // ⭐ ORDEN: (mensaje, tipo, duración)
-        mostrarAlerta(mensaje, tipo, 1500);
+        mostrarAlerta('Tienes que iniciar sesión para acceder a esta página', 'error');
     } else {
-        alert(mensaje);
+        alert('Tienes que iniciar sesión para acceder a esta página');
     }
 
     // Redirige
@@ -43,30 +33,34 @@ function manejarFaltaAutenticacion(mensaje, tipo = 'error') {
     }, 1200);
 }
 
+// ---------------------------------------------
+
 /**
  * Función mejorada para obtener el token.
- * Busca SOLO en sessionStorage para alinearse con la política 'SÓLO CON SESSIONSTORAGE'.
- * @returns {string|null} El token encontrado.
+ * Busca en sessionStorage y localStorage, y busca 'jwtToken' o 'token'.
  */
 function getToken() {
+    // 1. Prioridad: sessionStorage 'jwtToken' (estándar usado en otros scripts)
     let token = sessionStorage.getItem('jwtToken');
     if (token) return token;
 
+    // 2. Fallback: sessionStorage 'token'
     token = sessionStorage.getItem('token');
     if (token) return token;
 
-    // Eliminada la búsqueda en localStorage para forzar política SessionStorage.
-    return null;
+    // 3. Fallback: localStorage (si implementaste "recordarme")
+    token = localStorage.getItem('jwtToken');
+    if (token) return token;
+
+    return localStorage.getItem('token');
 }
 
 /**
- * MODIFICADO: Ahora devuelve el clubId, el objeto de usuario y la bandera isPresidente.
+ * MODIFICADO: Ahora devuelve el objeto de usuario completo.
+ * Lanza error si no tiene club_id.
  */
 async function getClubIdAndUser() {
     const token = getToken();
-    if (!token) {
-        throw new Error('Unauthorized: Token no encontrado.');
-    }
 
     try {
         console.log("Intentando obtener perfil del usuario desde:", API_USERS_ME_URL);
@@ -79,48 +73,34 @@ async function getClubIdAndUser() {
         });
 
         if (!response.ok) {
-            let errorMessage = `Fallo en la API al obtener el perfil. Código: ${response.status}`;
-
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-            } catch (e) {
-                // Fallback
-            }
-
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 throw new Error('Unauthorized');
             }
-            throw new Error(errorMessage);
+            throw new Error(`Fallo en la API al obtener el perfil. Código: ${response.status}`);
         }
 
         const data = await response.json();
+        // Ajuste: A veces la API devuelve data.data.user o data.user
         const user = data.user || data.data?.user;
 
         if (!user) {
             throw new Error('No se encontró el objeto de usuario en la respuesta.');
         }
 
-        // Asumimos que la API devuelve 'club_id'
         const clubId = user.club_id || null;
 
-        // 💡 Ajuste: Usar la propiedad 'is_presidente' o 'rol' para determinar si es presidente
-        // Nota: El backend clubs.js ahora pone is_presidente=true al presidente.
-        const isPresidente = user.is_presidente === true || user.role === 'presidente';
-
-        // Opcional: Persistir el club_id en sesión para otros scripts
-        if (clubId) {
-            sessionStorage.setItem('club_id', clubId);
-        }
-
         if (!clubId) {
-            // Este es el error si el usuario no tiene club asociado.
+            // Este es el error original que salta.
             throw new Error('El usuario no está asignado a un club.');
         }
+
+        // 💡 NOTA: Asumimos que la API YA devuelve 'is_presidente'
+        const isPresidente = user.is_presidente === 1 || user.is_presidente === true || user.rol === 'presidente';
 
         console.log("ID de club del usuario obtenido:", clubId);
         console.log("Es presidente:", isPresidente);
 
+        // Devolvemos el objeto completo para usar más adelante si es necesario
         return { clubId, user, isPresidente };
 
     } catch (error) {
@@ -131,7 +111,6 @@ async function getClubIdAndUser() {
 
 async function loadClubData(clubId) {
     const token = getToken();
-    // 🛑 CORRECCIÓN: Agregar includeMembers=false o dejarlo sin el query param, ya que no se necesitan.
     const clubUrl = `${API_CLUBS_URL}?id=${clubId}`;
 
     try {
@@ -139,47 +118,35 @@ async function loadClubData(clubId) {
         const response = await fetch(clubUrl, {
             method: 'GET',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             }
         });
 
         if (!response.ok) {
-            let errorMessage = `Fallo al cargar los datos del club. Código: ${response.status}`;
-
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-            } catch (e) {
-                // Fallback
-            }
-
             if (response.status === 401) {
                 throw new Error('Unauthorized');
             }
-            throw new Error(errorMessage);
+            throw new Error(`Fallo al cargar los datos del club. Código: ${response.status}`);
         }
 
         const data = await response.json();
-        // Buscar el objeto club en diferentes formatos de respuesta
         const clubData = data.club || (Array.isArray(data.clubs) ? data.clubs[0] : null) || (Array.isArray(data) ? data[0] : null);
 
         if (!clubData) {
             throw new Error('No se encontraron datos para este club ID.');
         }
 
-        // Rellenar campos del formulario
         document.getElementById('club-id').value = clubData.id || '';
 
-        // 🛑 Importante: Mapear a nombre_club del formulario
-        const clubName = clubData.nombre_evento || clubData.nombre || clubData.name || clubData.titulo || '';
+        const clubName = clubData.nombre || clubData.name || clubData.titulo || clubData.nombre_evento || '';
         document.getElementById('nombre_club').value = clubName;
 
-        // Si el backend es moderno, ya devuelve estos campos
-        const enfoque = clubData.enfoque || '';
-        const ciudad = clubData.ciudad || '';
         let descripcion = clubData.descripcion || '';
+        let ciudad = clubData.ciudad || '';
+        let enfoque = clubData.enfoque || '';
 
-        // Lógica de compatibilidad legacy (por si el backend no se ha actualizado a columnas separadas)
+        // --- Lógica de compatibilidad (dejamos la tuya para evitar regresiones) ---
         if (!ciudad && descripcion) {
             const cityMatch = descripcion.match(/\[Ciudad:\s*([^\]]+)\]/i);
             if (cityMatch && cityMatch[1]) {
@@ -194,31 +161,40 @@ async function loadClubData(clubId) {
                 descripcion = descripcion.replace(/\[Enfoque:\s*[^\]]+\]\s*/i, '').trim();
             }
         }
-        // Fin Lógica de compatibilidad
+        // --- Fin Lógica de compatibilidad ---
 
-        document.getElementById('enfoque').value = enfoque;
+        const enfoqueInput = document.getElementById('enfoque');
+        if (enfoqueInput) {
+            enfoqueInput.value = enfoque;
+        }
+
         document.getElementById('descripcion').value = descripcion;
-        document.getElementById('ciudad').value = ciudad;
+
+        const ciudadInput = document.getElementById('ciudad');
+        if (ciudadInput) {
+            ciudadInput.value = ciudad;
+        }
 
         const fechaCreacionInput = document.getElementById('fecha_creacion');
         if (fechaCreacionInput && clubData.fecha_creacion) {
             const date = new Date(clubData.fecha_creacion);
-            // Mostrar la fecha de creación en formato local
-            fechaCreacionInput.value = date.toLocaleDateString();
+            // Formatear a YYYY-MM-DD para input[type="date"] o mostrar correctamente
+            fechaCreacionInput.value = date.toISOString().split('T')[0];
         }
 
-        // Lógica de imagen
         const currentImage = document.getElementById('current-club-thumb');
         const noImageText = document.getElementById('no-image-text');
 
-        const imgUrl = clubData.imagen_url || clubData.imagen_club;
-        if (imgUrl) {
-            currentImage.src = imgUrl;
-            currentImage.style.display = 'inline';
-            if (noImageText) noImageText.style.display = 'none';
-        } else {
-            currentImage.style.display = 'none';
-            if (noImageText) noImageText.style.display = 'inline';
+        if (currentImage) {
+            const imgUrl = clubData.imagen_url || clubData.imagen_club;
+            if (imgUrl) {
+                currentImage.src = imgUrl;
+                currentImage.style.display = 'inline';
+                if (noImageText) noImageText.style.display = 'none';
+            } else {
+                currentImage.style.display = 'none';
+                if (noImageText) noImageText.style.display = 'inline';
+            }
         }
 
         console.log("Datos del club cargados exitosamente y formulario rellenado.");
@@ -227,12 +203,11 @@ async function loadClubData(clubId) {
         console.error("Error al cargar los datos del club:", error.message);
 
         if (error.message.includes('Unauthorized')) {
-            manejarFaltaAutenticacion('Sesión expirada o no autorizado.', 'error');
+            manejarFaltaAutenticacion('Sesión expirada', 'error');
             return;
         }
 
         if (typeof mostrarAlerta === 'function') {
-            // ⭐ ORDEN: (mensaje, tipo)
             mostrarAlerta(`Error al cargar: ${error.message}`, 'error');
         } else {
             alert(`Error: No se pudieron cargar los datos del club. ${error.message}`);
@@ -243,99 +218,58 @@ async function loadClubData(clubId) {
 async function handleFormSubmit(event) {
     event.preventDefault();
 
-    // 🛑 INICIO CORRECCIÓN: Usar sessionStorage como respaldo
-    let clubId = document.getElementById('club-id')?.value;
+    const clubId = document.getElementById('club-id').value;
     const token = getToken();
 
-    // Si el DOM falla o el campo está vacío, intentar obtenerlo de SessionStorage
-    if (!clubId) {
-        clubId = sessionStorage.getItem('club_id');
-    }
-    // 🛑 FIN CORRECCIÓN
-
     if (!token || !clubId) {
-        // Alerta específica si falta el ID del club. Este era el punto de fallo.
-        if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta('ID del club o token de sesión es requerido para actualizar.', 'error');
-        } else {
-            alert('ID del club o token de sesión es requerido para actualizar.');
-        }
-        // No redirigimos con manejarFaltaAutenticacion, solo mostramos el error de validación
-        console.error("Error al actualizar el club: ID del club es requerido para actualizar.");
+        manejarFaltaAutenticacion('Sesión inválida', 'error');
         return;
     }
 
-    const form = event.target;
-    const formData = new FormData(form);
+    const newName = document.getElementById('nombre_club').value;
+    const newDescription = document.getElementById('descripcion').value;
+    const newCity = document.getElementById('ciudad')?.value || '';
+    const newEnfoque = document.getElementById('enfoque')?.value || '';
+    // Asegurarse de usar la clave del input file correcta (imagen_club_nueva es una convención común)
+    const newImageFile = document.getElementById('imagen_club_nueva').files[0];
 
-    // 🛑 CORRECCIÓN CLAVE: Mapear 'nombre_club' del cliente a 'nombre_evento' del servidor
-    const newName = formData.get('nombre_club');
-    if (newName) {
-        formData.append('nombre_evento', newName);
-        formData.delete('nombre_club'); // Eliminar la clave redundante
-    }
+    const updateData = new FormData();
+    updateData.append('id', clubId);
+    updateData.append('nombre_evento', newName); // Clave correcta para backend
+    updateData.append('descripcion', newDescription);
+    updateData.append('ciudad', newCity);
+    updateData.append('enfoque', newEnfoque);
 
-    // El campo id es necesario para la API. Usamos el clubId limpio.
-    formData.append('id', clubId);
-
-    // 🛑 CORRECCIÓN CLAVE: Asegurarse de que el input file coincida con el nombre del campo del HTML
-    const newImageFile = document.getElementById('imagen_club_nueva')?.files[0];
     if (newImageFile) {
-        // En el HTML el input tiene name="imagen_club_nueva", así se envía en FormData.
-        formData.set('imagen_club_nueva', newImageFile);
-    } else {
-        // Si no hay nueva imagen, asegurarse de no enviar una clave con valor vacío o file vacío
-        formData.delete('imagen_club_nueva');
+        updateData.append('imagen', newImageFile); // El backend debe esperar 'imagen' o 'imagen_club_nueva'
     }
 
-    const submitBtn = document.querySelector('button[type="submit"]');
+    const submitBtn = event.submitter;
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Actualizando...';
     }
 
-    // Ocultar la alerta info si existe
-    if (typeof limpiarAlertas === 'function') limpiarAlertas();
-    // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
-    if (typeof mostrarAlerta === 'function') mostrarAlerta('Actualizando...', 'info', 'Enviando datos...');
-
-
     try {
-        // 🛑 CORRECCIÓN: Usar el clubId limpio para la URL
         const response = await fetch(`${API_CLUBS_URL}?id=${clubId}`, {
             method: 'PUT',
             headers: {
-                // ⚠️ NOTA: Al enviar FormData, NO se debe incluir el Content-Type.
                 'Authorization': `Bearer ${token}`
             },
-            body: formData // FormData se encarga del Content-Type: multipart/form-data
+            body: updateData
         });
 
-        if (!response.ok) {
-            let errorMessage = 'Error desconocido al actualizar el club.';
-            try {
-                // Intentar leer el cuerpo JSON para el mensaje de error
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-            } catch (e) {
-                errorMessage += ` (Código: ${response.status})`;
-            }
-
-            if (response.status === 401 || response.status === 403) {
-                // Si es un error de autorización, redirigir
-                manejarFaltaAutenticacion(errorMessage, 'error');
-                return;
-            }
-            throw new Error(errorMessage); // Lanzar el error de actualización
-        }
-
-        // Si la respuesta fue OK, parseamos el resultado
-        // Se asume que el backend devuelve JSON, aunque no sea necesario el cuerpo para PUT exitoso.
         const result = await response.json();
 
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Unauthorized');
+            }
+            throw new Error(result.message || 'Error desconocido al actualizar el club.');
+        }
+
         if (typeof mostrarAlerta === 'function') {
-            // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
-            mostrarAlerta('¡Club actualizado exitosamente!', 'exito', result.message || 'Los cambios se han guardado.');
+            mostrarAlerta('Club actualizado exitosamente!', 'exito');
         } else {
             alert('Club actualizado exitosamente!');
         }
@@ -346,245 +280,172 @@ async function handleFormSubmit(event) {
     } catch (error) {
         console.error("Error al actualizar el club:", error.message);
 
-        // Ya fue manejado en el if (!response.ok), solo queda el manejo general.
-        if (!error.message.includes('Unauthorized')) {
-            if (typeof mostrarAlerta === 'function') {
-                // ⭐ ORDEN: (mensaje, tipo)
-                mostrarAlerta(`Fallo al actualizar el club: ${error.message}`, 'error');
-            } else {
-                alert(`Fallo al actualizar: ${error.message}`);
-            }
+        if (error.message.includes('Unauthorized')) {
+            manejarFaltaAutenticacion('Sesión expirada', 'error');
+            return;
+        }
+
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta(`Fallo al actualizar el club: ${error.message}`, 'error');
+        } else {
+            alert(`Fallo al actualizar: ${error.message}`);
         }
     } finally {
-        // Este bloque se ejecuta siempre, asegurando que el botón se rehabilite
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Actualizar Club';
-            // También limpiar la alerta 'info' si sigue visible
-            if (typeof limpiarAlertas === 'function') limpiarAlertas();
         }
     }
 }
 
 /**
- * Función CLAVE: Maneja el evento de clic en el botón de confirmación de eliminación.
+ * 💡 NUEVA FUNCIÓN CLAVE: Maneja el evento de clic en el botón de confirmación de eliminación.
  * @param {string} clubId El ID del club a eliminar.
  */
-function handleClubDeletion(clubId) {
+async function handleClubDeletion(clubId) {
     const btnConfirmDelete = document.getElementById('btnConfirmDelete');
     const deleteConfirmModalEl = document.getElementById('deleteConfirmModal');
 
-    // Comprobación de que Bootstrap y el modal están cargados
+    // El modal de Bootstrap debe estar disponible globalmente
     if (!deleteConfirmModalEl || typeof bootstrap === 'undefined') {
-        console.error("ADVERTENCIA: Elemento del modal o Bootstrap no está cargado. La eliminación no puede ser manejada.");
+        console.warn("ADVERTENCIA: No se encontró el elemento del modal o Bootstrap no está cargado. La eliminación NO funcionará.");
         return;
     }
 
-    // Usar una instancia del modal para poder ocultarlo programáticamente
+    // Inicializar el modal de Bootstrap
     const deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl);
 
-    // Definimos la función de clic aquí para que tenga acceso al 'clubId' pasado como argumento
-    async function handleConfirmDeleteClick() {
-        // ⭐ INICIO CORRECCIÓN: Usamos el 'clubId' pasado, y si no existe, usamos sessionStorage
-        let clubToDeleteId = clubId;
-        if (!clubToDeleteId) {
-            clubToDeleteId = sessionStorage.getItem('club_id');
-        }
-        // ⭐ FIN CORRECCIÓN
-
-        const token = getToken(); // Obtiene el token de sessionStorage
-
-        if (!clubToDeleteId) {
-            deleteConfirmModal.hide();
-            const validationMessage = 'ID del club es requerido para eliminar.';
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta(validationMessage, 'error');
-            } else {
-                alert(validationMessage);
-            }
-            console.error('Error al intentar eliminar el club:', validationMessage);
-            return;
-        }
-
-        if (!token) {
-            deleteConfirmModal.hide();
-            manejarFaltaAutenticacion('Sesión inválida o ID de club faltante.', 'error');
-            return;
-        }
-
-        // Deshabilitar botón
-        btnConfirmDelete.disabled = true;
-        btnConfirmDelete.textContent = 'Eliminando...';
-
-        try {
-            // Ocultar el modal ANTES de la llamada a la API
-            deleteConfirmModal.hide();
-            // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
-            if (typeof mostrarAlerta === 'function') mostrarAlerta('Eliminando...', 'info', 'Procesando la solicitud de eliminación.');
-
-            // Llamada a la API con método DELETE
-            const response = await fetch(`${API_CLUBS_URL}?id=${clubToDeleteId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                let errorMessage = 'Error al eliminar el club.';
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.error || errorMessage;
-                } catch (e) {
-                    errorMessage += ` (Código: ${response.status})`;
-                }
-
-                if (response.status === 401 || response.status === 403) {
-                    manejarFaltaAutenticacion('Error de autorización al intentar eliminar el club. ', 'error');
-                    return;
-                }
-
-                if (typeof mostrarAlerta === 'function') {
-                    // ⭐ ORDEN: (mensaje, tipo)
-                    mostrarAlerta(errorMessage, 'error');
-                } else {
-                    alert(errorMessage);
-                }
-
-                throw new Error(errorMessage); // Lanzar para el catch y el finally
-            }
-
-            // Si es OK, parseamos el resultado
-            let result = {};
-            // 🛑 CORRECCIÓN CLAVE: Intentar leer el cuerpo JSON de forma segura en el éxito.
-            try {
-                // CLAVE: Intentar parsear el JSON. El servidor ahora devuelve el nuevo token aquí.
-                result = await response.json();
-            } catch (e) {
-                // Si falla la lectura del JSON en una respuesta 200, asumimos éxito sin cuerpo.
-                console.warn("ADVERTENCIA: Respuesta 200/OK recibida sin un cuerpo JSON válido. Asumiendo éxito.", e.message);
-                result = { success: true, message: "Club eliminado con éxito. (Sin mensaje detallado del servidor)" };
-            }
-
-            // 🛑 INICIO LÓGICA DE ÉXITO Y REDIRECCIÓN
-            const successMessage = result.message || 'Club eliminado con éxito. Redirigiendo a la lista de clubes.';
-
-            if (typeof mostrarAlerta === 'function') {
-                // ⭐ ORDEN: (mensaje, tipo, duración)
-                mostrarAlerta(successMessage, 'exito', 3000);
-            } else {
-                alert(successMessage);
-            }
-
-            // 1. Limpiar todas las referencias al club antiguo
-            sessionStorage.removeItem('club_id');
-            sessionStorage.removeItem('role');
-            sessionStorage.removeItem('usuario');
-            sessionStorage.removeItem('user');
-            // Limpiar los tokens viejos (es clave eliminar los tokens antiguos)
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('jwtToken');
-
-            // 2. CLAVE: Guardar el nuevo token limpio si el servidor lo devuelve
-            if (result.token) {
-                sessionStorage.setItem('jwtToken', result.token);
-                // Si tienes un sistema que usa el objeto 'usuario' en sesión, actualízalo también.
-                // Si el token es la única fuente de verdad, esto es suficiente.
-            }
-
-            // 3. Redirigir a la lista de clubes (el estado ya está limpio)
-            setTimeout(() => {
-                window.location.href = '/pages/clubes/clubes.html';
-            }, 1500);
-            // 🛑 FIN LÓGICA DE ÉXITO Y REDIRECCIÓN
-
-        } catch (error) {
-            console.error('Error al intentar eliminar el club:', error);
-
-            // La alerta ya se mostró dentro del if (!response.ok), solo manejamos el finally aquí.
-            if (!error.message.includes('Error al eliminar el club') && !error.message.includes('Unauthorized') && !error.message.includes('ID del club es requerido')) {
-                if (typeof mostrarAlerta === 'function') {
-                    // ⭐ ORDEN: (mensaje, tipo)
-                    mostrarAlerta('Error de conexión o inesperado al eliminar el club.', 'error');
-                }
-            }
-        } finally {
-            // Volver a habilitar el botón
-            btnConfirmDelete.disabled = false;
-            btnConfirmDelete.textContent = 'Sí, Eliminar Club';
-        }
-    }
-
     if (btnConfirmDelete) {
-        // Asegurarse de adjuntar el evento solo una vez
-        btnConfirmDelete.removeEventListener('click', handleConfirmDeleteClick);
-        btnConfirmDelete.addEventListener('click', handleConfirmDeleteClick);
+        btnConfirmDelete.addEventListener('click', async () => {
+            const clubToDeleteId = document.getElementById('club-id').value;
+            const token = getToken();
+
+            if (!clubToDeleteId || !token) {
+                deleteConfirmModal.hide();
+                manejarFaltaAutenticacion('Sesión inválida o ID de club faltante.');
+                return;
+            }
+
+            // Deshabilitar botón
+            btnConfirmDelete.disabled = true;
+            btnConfirmDelete.textContent = 'Eliminando...';
+
+            try {
+                // Llamada a la API con método DELETE
+                const response = await fetch(`${API_CLUBS_URL}?id=${clubToDeleteId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                deleteConfirmModal.hide(); // Ocultar el modal
+
+                if (response.ok) {
+
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta(result.message || 'Club eliminado. Redirigiendo...', 'exito', 3000);
+                    } else {
+                        alert(result.message || 'Club eliminado. Redirigiendo...');
+                    }
+
+                    // Limpiar datos de sesión relevantes
+                    sessionStorage.removeItem('club_id');
+                    sessionStorage.removeItem('role');
+
+                    // Redirigir a la lista de clubes
+                    setTimeout(() => {
+                        // AJUSTA ESTA RUTA A DONDE DEBA IR EL USUARIO DESPUÉS DE ELIMINAR SU CLUB
+                        window.location.href = '/pages/clubes/clubes.html';
+                    }, 1500);
+
+                } else {
+                    if (response.status === 401) {
+                        manejarFaltaAutenticacion(result.message || 'Acceso no autorizado para eliminar club.');
+                        return;
+                    }
+                    if (typeof mostrarAlerta === 'function') {
+                        mostrarAlerta(result.message || 'Error al eliminar el club.', 'error');
+                    } else {
+                        alert(result.message || 'Error al eliminar el club.');
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error al intentar eliminar el club:', error);
+                deleteConfirmModal.hide();
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta('Error de conexión con el servidor al eliminar el club.', 'error');
+                } else {
+                    alert('Error de conexión con el servidor al eliminar el club.');
+                }
+            } finally {
+                // Volver a habilitar el botón
+                btnConfirmDelete.disabled = false;
+                btnConfirmDelete.textContent = 'Sí, Eliminar Club';
+            }
+        });
     }
 }
 
 function initializeClubEditor(clubId) {
     console.log(`Editor de club inicializado para el Club ID: ${clubId}.`);
-
-    // 1. Cargar datos del club
     loadClubData(clubId);
 
-    // 2. Adjuntar listener para la actualización
     const form = document.getElementById('club-edit-form');
     if (form) {
-        form.removeEventListener('submit', handleFormSubmit); // Evitar duplicados
         form.addEventListener('submit', handleFormSubmit);
     } else {
         console.error("No se encontró el formulario con ID 'club-edit-form'.");
     }
 
-    // 3. Inicializar el manejo de la eliminación, pasando el ID como variable
+    // 💡 MODIFICACIÓN CLAVE: Inicializar el manejo de la eliminación
     handleClubDeletion(clubId);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 🛑 PRIMERA COMPROBACIÓN (rápida)
+    // 🛑 PRIMERA COMPROBACIÓN
     const localToken = getToken();
 
     if (!localToken) {
-        manejarFaltaAutenticacion('Debes iniciar sesión para acceder', 'error');
+        manejarFaltaAutenticacion('Debes iniciar sesión', 'error');
         return;
     }
 
     try {
-        // MODIFICADO: Llamamos a la nueva función que devuelve el objeto de usuario completo
+        // MODIFICADO: Llamamos a la nueva función que devuelve el objeto
         const { clubId, isPresidente } = await getClubIdAndUser();
 
-        // 💡 COMPROBACIÓN CRÍTICA: Solo el presidente puede acceder a esta página
+        // 💡 NUEVA COMPROBACIÓN ADICIONAL
         if (!isPresidente) {
             if (typeof mostrarAlerta === 'function') {
-                // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
-                mostrarAlerta('Solo el presidente del club puede editar el perfil.', 'error', 'Acceso Denegado');
+                mostrarAlerta('Acceso denegado: Solo el presidente del club puede editar.', 'error');
             }
-            // Redirigir si no es presidente
+            // Redirigir si no es presidente (opcional, pero buena práctica)
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
             return;
         }
 
-        // Si es presidente, inicializar el editor
+        // Llamamos a initializeClubEditor CON el clubId que obtuvimos
         initializeClubEditor(clubId);
 
     } catch (error) {
         console.error("Error crítico durante la inicialización:", error.message);
 
-        if (error.message.includes('Unauthorized')) {
-            manejarFaltaAutenticacion('Error de autenticación: Sesión expirada.', 'error');
+        if (error.message.includes('Token') || error.message.includes('Unauthorized')) {
+            manejarFaltaAutenticacion('Error de autenticación', 'error');
         } else if (error.message.includes('asignado')) {
             if (typeof mostrarAlerta === 'function') {
-                // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
-                mostrarAlerta('No tienes un club asignado para editar.', 'error', 'No tienes club');
+                mostrarAlerta('No tienes un club asignado para editar.', 'error');
             }
             // Redirigir a la lista de clubes
             setTimeout(() => { window.location.href = '/pages/clubes/clubes.html'; }, 1500);
         } else {
             if (typeof mostrarAlerta === 'function') {
-                // ⭐ ORDEN: (mensaje, tipo, duración/subtítulo)
-                mostrarAlerta(`Error al iniciar la edición: ${error.message}`, 'error', 'Error al iniciar');
+                mostrarAlerta(`Error al iniciar la edición: ${error.message}`, 'error');
             }
         }
     }
