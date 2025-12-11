@@ -387,8 +387,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = inputId.value;
         const metodo = id ? "PUT" : "POST";
 
-        // Usar la ruta estándar RESTful /api/clubs/ID para PUT
-        const url = id ? `/api/clubs/${id}` : "/api/clubs";
+        // ⭐ CORRECCIÓN: Usar Query Parameter para PUT para evitar el 404 del router de Next.js.
+        const url = id ? `/api/clubs?id=${id}` : "/api/clubs"; // <-- ¡CAMBIADO!
 
         // 🚨 VERIFICACIÓN RÁPIDA EN EL CLIENTE
         if (!inputNombre.value || !inputDescripcion.value || !inputCiudad.value || !inputEnfoque.value) {
@@ -484,8 +484,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (deleteConfirmModal) deleteConfirmModal.hide();
 
             try {
-                // Usar la ruta RESTful /api/clubs/ID (Esto es correcto, el 404 está en el servidor)
-                const res = await fetch(`/api/clubs/${id}`, {
+                // ⭐ CORRECCIÓN: Usar Query Parameter para DELETE para evitar el 404 del router de Next.js.
+                const res = await fetch(`/api/clubs?id=${id}`, { // <-- ¡CAMBIADO!
                     method: "DELETE",
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -571,8 +571,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     successMessage = "Club aprobado y activado correctamente.";
                 } else if (action === 'rechazar') {
-                    // Usar la ruta RESTful /api/clubs/ID para la eliminación/rechazo.
-                    res = await fetch(`/api/clubs/${id}`, {
+                    // ⭐ CORRECCIÓN: Usar Query Parameter para DELETE (Rechazo) para evitar el 404 del router de Next.js.
+                    res = await fetch(`/api/clubs?id=${id}`, { // <-- ¡CAMBIADO!
                         method: 'DELETE',
                         headers: headers
                     });
